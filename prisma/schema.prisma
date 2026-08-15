@@ -1,0 +1,15 @@
+// Prisma schema — SmartLearning backend
+// 連線 URL 已移至 prisma.config.ts（Prisma 7 新制），schema 僅保留 provider。
+// 管理指令：
+//   npx prisma generate       產生 client（schema 變更後執行）
+//   npx prisma migrate dev    開發環境建立/套用 migration
+//   npx prisma studio         開啟資料庫 GUI
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

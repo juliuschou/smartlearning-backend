@@ -24,3 +24,6 @@ coverage
 .env.development
 .env.test
 .env.production
+
+# Prisma generated client（由 prisma generate 產生，不入版控）
+/generated
