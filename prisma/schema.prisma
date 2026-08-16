@@ -110,8 +110,168 @@ model Course {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  owner Account @relation("CourseOwner", fields: [ownerAccountId], references: [id], onDelete: Restrict)
+  owner         Account              @relation("CourseOwner", fields: [ownerAccountId], references: [id], onDelete: Restrict)
+  questions     QuestionDefinition[]
+  liveSessions  LiveSession[]
 
   @@index([ownerAccountId], map: "idx_course_owner")
   @@map("course")
+}
+
+/// Reusable, course-owned question definition. This slice writes poll/single only.
+model QuestionDefinition {
+  id            String   @id @db.Uuid
+  courseId      String   @map("course_id") @db.Uuid
+  type          String
+  prompt        String
+  selectionMode String?  @map("selection_mode")
+  position      Int
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  course           Course                         @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  options          QuestionOption[]
+  sessionQuestions SessionQuestion[]
+  sessionSelections LiveSessionQuestionSelection[]
+
+  @@unique([courseId, position], map: "uq_question_definition_course_position")
+  @@unique([id, courseId], map: "uq_question_definition_id_course")
+  @@index([courseId], map: "idx_question_definition_course")
+  @@map("question_definition")
+}
+
+model QuestionOption {
+  id                   String             @id @db.Uuid
+  questionDefinitionId String             @map("question_definition_id") @db.Uuid
+  optionRef            String?            @map("option_ref")
+  text                 String
+  isCorrect            Boolean            @default(false) @map("is_correct")
+  position             Int
+
+  questionDefinition QuestionDefinition @relation(fields: [questionDefinitionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([questionDefinitionId, optionRef], map: "uq_question_option_question_ref")
+  @@unique([questionDefinitionId, position], map: "uq_question_option_question_position")
+  @@index([questionDefinitionId, position], map: "idx_question_option_question_position")
+  @@map("question_option")
+}
+
+/// One classroom run for a Course.
+model LiveSession {
+  id          String    @id @db.Uuid
+  courseId    String    @map("course_id") @db.Uuid
+  status      String    @default("waiting")
+  sessionCode String    @unique @map("session_code")
+  startedAt   DateTime? @map("started_at") @db.Timestamptz
+  closedAt    DateTime? @map("closed_at") @db.Timestamptz
+  autoClosed  Boolean   @default(false) @map("auto_closed")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  course            Course                      @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  questionSelections LiveSessionQuestionSelection[]
+  questions         SessionQuestion[]
+  participants      Participant[]
+  submissions       Submission[]
+
+  @@unique([id, courseId], map: "uq_live_session_id_course")
+  @@index([courseId], map: "idx_live_session_course")
+  @@map("live_session")
+}
+
+/// Ordered source-question selection retained while a LiveSession is waiting.
+/// The denormalized courseId is constrained against both parents so a direct
+/// database writer cannot join a session to a question from another course.
+model LiveSessionQuestionSelection {
+  id                   String @id @db.Uuid
+  liveSessionId        String @map("live_session_id") @db.Uuid
+  questionDefinitionId String @map("question_definition_id") @db.Uuid
+  courseId             String @map("course_id") @db.Uuid
+  position             Int
+
+  liveSession        LiveSession        @relation(fields: [liveSessionId, courseId], references: [id, courseId], onDelete: Cascade, onUpdate: NoAction)
+  questionDefinition QuestionDefinition @relation(fields: [questionDefinitionId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: NoAction)
+
+  @@unique([liveSessionId, position], map: "uq_live_session_selection_session_position")
+  @@unique([liveSessionId, questionDefinitionId], map: "uq_live_session_selection_question")
+  @@index([liveSessionId, position], map: "idx_live_session_selection_session_position")
+  @@map("live_session_question_selection")
+}
+
+/// Immutable question snapshot belonging to a LiveSession.
+model SessionQuestion {
+  id                    String    @id @db.Uuid
+  liveSessionId         String    @map("live_session_id") @db.Uuid
+  questionDefinitionId  String?   @map("question_definition_id") @db.Uuid
+  position              Int
+  status                String    @default("not_open")
+  snapshotType          String    @map("snapshot_type")
+  snapshotPrompt        String    @map("snapshot_prompt")
+  snapshotSelectionMode String?   @map("snapshot_selection_mode")
+  openedAt              DateTime? @map("opened_at") @db.Timestamptz
+  closedAt              DateTime? @map("closed_at") @db.Timestamptz
+
+  liveSession        LiveSession            @relation(fields: [liveSessionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  questionDefinition QuestionDefinition?    @relation(fields: [questionDefinitionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  options            SessionQuestionOption[]
+  submissions        Submission[]
+
+  @@unique([id, liveSessionId], map: "uq_session_question_id_live_session")
+  @@unique([liveSessionId, position], map: "uq_session_question_session_position")
+  @@index([liveSessionId, position], map: "idx_session_question_session_position")
+  @@map("session_question")
+}
+
+model SessionQuestionOption {
+  id                String  @id @db.Uuid
+  sessionQuestionId String  @map("session_question_id") @db.Uuid
+  optionRef         String? @map("option_ref")
+  text              String
+  isCorrect         Boolean @default(false) @map("is_correct")
+  position          Int
+
+  sessionQuestion SessionQuestion @relation(fields: [sessionQuestionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([sessionQuestionId, optionRef], map: "uq_session_question_option_question_ref")
+  @@unique([sessionQuestionId, position], map: "uq_session_question_option_question_position")
+  @@index([sessionQuestionId, position], map: "idx_session_question_option_question_position")
+  @@map("session_question_option")
+}
+
+/// Anonymous participant identity scoped to one LiveSession.
+model Participant {
+  id            String   @id @db.Uuid
+  liveSessionId String   @map("live_session_id") @db.Uuid
+  displayName   String   @map("display_name")
+  tokenHash     String   @map("token_hash")
+  joinedAt      DateTime @default(now()) @map("joined_at") @db.Timestamptz
+
+  liveSession LiveSession  @relation(fields: [liveSessionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  submissions Submission[]
+
+  @@unique([id, liveSessionId], map: "uq_participant_id_live_session")
+  @@unique([liveSessionId, tokenHash], map: "uq_participant_session_token_hash")
+  @@index([liveSessionId, tokenHash], map: "idx_participant_session_token_hash")
+  @@map("participant")
+}
+
+/// First accepted answer; no update path. Answer refs are JSONB for future parity.
+model Submission {
+  id                 String   @id @db.Uuid
+  liveSessionId      String   @map("live_session_id") @db.Uuid
+  sessionQuestionId  String   @map("session_question_id") @db.Uuid
+  participantId      String   @map("participant_id") @db.Uuid
+  idempotencyKey     String   @unique @map("idempotency_key") @db.Uuid
+  selectedOptionRefs Json?    @map("selected_option_refs")
+  textAnswer         String?  @map("text_answer")
+  submittedAt        DateTime @default(now()) @map("submitted_at") @db.Timestamptz
+
+  liveSession     LiveSession     @relation(fields: [liveSessionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  sessionQuestion SessionQuestion @relation(fields: [sessionQuestionId, liveSessionId], references: [id, liveSessionId], onDelete: Restrict, onUpdate: NoAction)
+  participant     Participant     @relation(fields: [participantId, liveSessionId], references: [id, liveSessionId], onDelete: Restrict, onUpdate: NoAction)
+
+  @@unique([participantId, sessionQuestionId], map: "uq_submission_participant_question")
+  @@index([sessionQuestionId], map: "idx_submission_session_question")
+  @@index([liveSessionId], map: "idx_submission_live_session")
+  @@map("submission")
 }

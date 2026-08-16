@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -62,7 +63,7 @@ export class CoursesController {
   @Get(':id')
   @UseGuards(SessionGuard)
   async detail(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAccount() auth: AuthContext,
   ): Promise<CourseDto> {
     const course = await this.courses.getCourse(id, {
@@ -75,7 +76,7 @@ export class CoursesController {
   @Post(':id/archive')
   @UseGuards(SessionGuard, CsrfGuard)
   async archive(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAccount() auth: AuthContext,
   ): Promise<CourseDto> {
     const course = await this.courses.archiveCourse(id, {

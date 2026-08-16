@@ -326,3 +326,65 @@ Review verification after hardening: focused HTTP tests 3 suites / 18 tests, ful
 - Added stale-login race protection, same-password rejection, UUID-case-safe self-target protection, and runtime Pino secret redaction.
 - PostgreSQL-backed regression covers force-change gating, old-password/session invalidation, cross-session and expired step-up, active-session disable revocation, restore non-revival, and secret-free projections.
 - Existing Nest `LegacyRouteConverter` wildcard route warnings remain non-blocking. Redis rate limiting, LoginAttempt, CLI credentials, full AuditEvent persistence, login-CSRF hardening, and broader governance work remain intentionally deferred.
+
+### 2026-08-16 — Poll single-choice mock contract + Question → LiveSession → Participant → Submission
+
+#### Context and acceptance criteria
+
+- [x] Freeze one executable `poll` + `single` mock contract before runtime implementation.
+- [x] Implement the smallest persisted Question → LiveSession → Participant → Submission path.
+- [x] Keep the current `/api/v1` envelope, UUID v7, UTC timestamps, Web Session/CSRF semantics, and PostgreSQL authority.
+- [x] Do not include Socket.IO, results/archive, batch question validation, CLI, scheduler, or other question types in this slice.
+
+#### Checklist
+
+- [x] Add DB-free canonical fixture/spec for poll single-choice normalization, snapshot, participant token boundary, and Submission replay/conflict semantics.
+- [x] Add additive Prisma models/migrations for QuestionDefinition/Option, LiveSession/SessionQuestion snapshot, Participant, and Submission.
+- [x] Add questions/live-sessions/participants/submissions domain, application, API, and guard boundaries.
+- [x] Add owner/state guards, session code generation, participant token hashing, exact-one option validation, and immutable Submission/idempotency handling.
+- [x] Add PostgreSQL integration and HTTP e2e regression coverage.
+- [x] Run Prisma, targeted poll tests, typecheck, lint, format, build, and `git diff --check`.
+- [ ] Run the full repository unit/integration/e2e suites; targeted coverage is complete, but full-suite execution remains outside this slice's final verification run.
+
+#### Risk & rollback
+
+- **Risk: high** — new relational state, partial unique/check constraints, anonymous bearer token, and immutable answer/transaction semantics.
+- **Rollback:** revert application routes/services while retaining additive tables; do not rely on destructive down migration or restore already-created Submission/token rows.
+- **Monitoring:** migration status, DB unique/lock errors, `SESSION_NOT_JOINABLE`, `SUBMISSION_CONFLICT`, accepted/replayed/rejected Submission counts, and redaction of participant token/idempotency/answer fields.
+
+#### Working notes / invariants
+
+- Question input is camelCase `poll` + `single`, prompt 1–1,000 trimmed Unicode code points, 2–10 unique options, option text 1–250 code points, optional unique option refs, and no `correctOptionRefs`.
+- LiveSession is `waiting → active`; activation revalidates the source and creates immutable SessionQuestion/Option snapshots. SessionQuestion is `not_open → open → closed`, with at most one open per session.
+- Participant token is high-entropy opaque, scoped to one LiveSession, raw only in join response, and hashed in PostgreSQL.
+- Submission accepts a formal snapshot option UUID or declared option ref, canonicalizes persistence to the formal option UUID, and is accepted only for an active session/open snapshot; one selected option; unique `(participantId, sessionQuestionId)`; same-key same-payload replay; different answer/key conflict; no update path.
+- Course append/archive/session-start and question submit/open/close paths use centralized PostgreSQL advisory/row-lock boundaries; UUID inputs enforce RFC version/variant shape before raw casts.
+- The option-ref fields are in the separate `20260816140000_add_poll_option_refs` migration so the already-applied hardening migration checksum remains stable.
+- `20260816150000_scope_live_session_question_selection` adds a denormalized Course scope with composite foreign keys and fails closed on pre-existing cross-course selection rows.
+- Activation revalidates the full poll contract, snapshot creation has an explicit 30-second transaction timeout for the 50-question bound, and formal option IDs take precedence over colliding wire refs.
+- Test DB setup force-loads `.env.test` and refuses to migrate/truncate a database whose name is not `smartlearning_test`.
+
+#### Deferred scope
+
+- Socket.IO/outbox/replay, result aggregate/vote-to-reveal, ArchivedResult/retention/deletion/tombstone, full LiveSession close/cancel/auto-close, quiz/open_text, batch validation/preview/confirm, CLI credentials, rate limiting, and full W1–W8 load/race matrix.
+- Because terminal LiveSession lifecycle routes are intentionally deferred, an abandoned waiting/active session remains an archive blocker until a later lifecycle implementation or controlled administrative remediation is provided.
+- Participant snapshots currently use the existing Submission indexes; add a forward composite `(live_session_id, participant_id)` index before high-volume classroom rollout if profiling confirms the expected access pattern.
+
+#### Verification
+
+| Command | Result |
+| --- | --- |
+| `npm run prisma:generate` | PASS — Prisma Client 7.9.1 generated |
+| `npm run prisma:validate` | PASS — schema valid |
+| `NODE_ENV=test npm run prisma:migrate:status` | PASS — PostgreSQL `smartlearning_test`, 7 migrations, schema up to date |
+| `npm test -- --runInBand src/common/crypto/uuid.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts src/modules/participants/domain/display-name.spec.ts src/common/observability/pino-redaction.spec.ts` | PASS — 4 suites / 15 tests |
+| `npm test -- --runInBand` | PASS — 16 suites / 63 tests |
+| `npm run test:integration -- --runInBand test/poll-submission.integration-spec.ts` | PASS — PostgreSQL-backed, 1 suite / 4 tests, 0 skipped |
+| `npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | PASS — PostgreSQL-backed, 1 suite / 1 test, 0 skipped |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `git diff --check` | PASS |
+
+Targeted verification is complete against real PostgreSQL; the full repository unit/integration/e2e suites were not run. The migration setup applies all seven migrations idempotently, and the poll suites fail loudly rather than treating an unavailable or stale database as a skip.

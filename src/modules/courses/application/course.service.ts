@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Course } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { TransactionService } from '../../../prisma/transaction.service';
 import { newId } from '../../../common/crypto';
 import { NotFoundError, ConflictError } from '../../../common/errors';
 import {
@@ -8,6 +9,7 @@ import {
   canArchive,
   isCourseStatus,
 } from '../domain/course-status';
+import { LiveSessionStatus } from '../../live-sessions/domain';
 import {
   type PageRequest,
   type Page,
@@ -30,7 +32,10 @@ import {
  */
 @Injectable()
 export class CourseService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly transactions: TransactionService,
+  ) {}
 
   private get db() {
     return this.prismaService.prisma;
@@ -92,21 +97,45 @@ export class CourseService {
     return course;
   }
 
-  /** Archive a draft course (terminal). */
+  /** Archive a draft course (terminal), only when no live session is open. */
   async archiveCourse(
     courseId: string,
     caller: { id: string; role: string },
   ): Promise<Course> {
-    const course = await this.getCourse(courseId, caller);
-    if (!isCourseStatus(course.status)) {
-      throw new ConflictError('Invalid course status');
-    }
-    if (!canArchive(course.status)) {
-      throw new ConflictError('Only draft courses can be archived', 'status');
-    }
-    return this.db.course.update({
-      where: { id: courseId },
-      data: { status: CourseStatus.ARCHIVED },
+    return this.transactions.run(async (tx) => {
+      await this.transactions.lockCourseForUpdate(tx, courseId);
+      const course = await tx.course.findUnique({ where: { id: courseId } });
+      if (
+        !course ||
+        (course.ownerAccountId !== caller.id && caller.role !== 'admin')
+      ) {
+        throw new NotFoundError('Course not found', 'id');
+      }
+      if (!isCourseStatus(course.status)) {
+        throw new ConflictError('Invalid course status');
+      }
+      if (!canArchive(course.status)) {
+        throw new ConflictError('Only draft courses can be archived', 'status');
+      }
+      const openSession = await tx.liveSession.findFirst({
+        where: {
+          courseId,
+          status: {
+            in: [LiveSessionStatus.WAITING, LiveSessionStatus.ACTIVE],
+          },
+        },
+        select: { id: true },
+      });
+      if (openSession) {
+        throw new ConflictError(
+          'Course cannot be archived while a LiveSession is waiting or active.',
+          'status',
+        );
+      }
+      return tx.course.update({
+        where: { id: courseId },
+        data: { status: CourseStatus.ARCHIVED },
+      });
     });
   }
 }

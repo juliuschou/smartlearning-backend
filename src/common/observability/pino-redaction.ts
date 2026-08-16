@@ -8,16 +8,25 @@ export const PINO_REDACT_PATHS: string[] = [
   'req.headers.authorization',
   'req.headers.cookie',
   'req.headers["x-csrf-token"]',
+  'req.headers["x-participant-token"]',
+  'req.headers["idempotency-key"]',
   'req.body.password',
   'req.body.currentPassword',
   'req.body.newPassword',
   'req.body.tempPassword',
   'req.body.cookieSecret',
+  'req.body.selectedOptionRefs',
+  'req.body.textAnswer',
   // response
   'res.headers["set-cookie"]',
   'res.body.token',
   'res.body.sessionToken',
   'res.body.participantToken',
+  'res.body.data.participantToken',
+  'res.body.selectedOptionRefs',
+  'res.body.data.selectedOptionRefs',
+  'res.body.textAnswer',
+  'res.body.data.textAnswer',
 ];
 
 export const PINO_REDACT_REMOVE = true;

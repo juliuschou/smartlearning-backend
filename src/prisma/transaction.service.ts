@@ -23,20 +23,35 @@ export class TransactionService {
   }
 
   /** Run a unit of work inside a Prisma interactive transaction. */
-  async run<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
-    return this.prismaService.prisma.$transaction(fn);
+  async run<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    options?: {
+      maxWait?: number;
+      timeout?: number;
+      isolationLevel?: Prisma.TransactionIsolationLevel;
+    },
+  ): Promise<T> {
+    return this.prismaService.prisma.$transaction(fn, options);
   }
 
   /**
-   * Lock a session_question row FOR UPDATE within the current transaction.
-   * Used by submit and close so DB commit order linearizes the race
-   * (M2 §3). Throws if the row is missing/not open.
+   * Lock an existing session_question row FOR UPDATE within the current
+   * transaction. Submit and close enforce session/status transitions after the
+   * lock so DB commit order linearizes their race (M2 §3).
    */
   async lockSessionQuestionForUpdate(
     tx: Prisma.TransactionClient,
     sessionQuestionId: string,
   ): Promise<void> {
-    await tx.$queryRaw`SELECT id FROM session_question WHERE id = ${sessionQuestionId}::uuid FOR UPDATE`;
+    const rows = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM session_question
+      WHERE id = ${sessionQuestionId}::uuid
+      FOR UPDATE
+    `;
+    if (rows.length === 0) {
+      throw new NotFoundError('SessionQuestion not found', 'sessionQuestionId');
+    }
   }
 
   /**
@@ -52,6 +67,22 @@ export class TransactionService {
     // result deserialization path for SELECT queries.
     const key = `qdef:${courseId}`;
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`;
+  }
+
+  /** Lock a Course row so archive/session/question writes re-check one state. */
+  async lockCourseForUpdate(
+    tx: Prisma.TransactionClient,
+    courseId: string,
+  ): Promise<void> {
+    await tx.$queryRaw`SELECT id FROM course WHERE id = ${courseId}::uuid FOR UPDATE`;
+  }
+
+  /** Lock a LiveSession row while joining or changing its lifecycle. */
+  async lockLiveSessionForUpdate(
+    tx: Prisma.TransactionClient,
+    sessionId: string,
+  ): Promise<void> {
+    await tx.$queryRaw`SELECT id FROM live_session WHERE id = ${sessionId}::uuid FOR UPDATE`;
   }
 
   /**

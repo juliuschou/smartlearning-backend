@@ -7,6 +7,10 @@ import { AuthModule } from './common/auth';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CoursesModule } from './modules/courses/courses.module';
+import { QuestionsModule } from './modules/questions';
+import { LiveSessionsModule } from './modules/live-sessions';
+import { ParticipantsModule } from './modules/participants';
+import { SubmissionsModule } from './modules/submissions';
 import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from './common/observability';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -58,6 +62,10 @@ const isProduction = process.env.NODE_ENV === 'production';
     HealthModule,
     IdentityModule,
     CoursesModule,
+    QuestionsModule,
+    LiveSessionsModule,
+    ParticipantsModule,
+    SubmissionsModule,
   ],
   controllers: [],
   providers: [],

@@ -27,6 +27,7 @@ describe('Auth + Courses (e2e)', () => {
   let bootstrap: BootstrapService;
   let sessions: SessionService;
   let dbReachable = false;
+  let migrationsReady = false;
 
   const TEST_ORIGIN = 'http://localhost:3000';
   const ADMIN = {
@@ -57,14 +58,16 @@ describe('Auth + Courses (e2e)', () => {
   beforeAll(async () => {
     try {
       setupTestDb();
+      migrationsReady = true;
     } catch {
-      // migrate deploy failed; reachability probe decides skip.
+      // Keep the suite blocked when any migration fails; do not probe stale schema.
     }
     app = await createTestApp();
     await app.init();
     prisma = app.get(PrismaService);
     bootstrap = app.get(BootstrapService);
     sessions = app.get(SessionService);
+    if (!migrationsReady) return;
     try {
       await prisma.prisma.$queryRaw`SELECT 1`;
       dbReachable = true;

@@ -8,9 +8,14 @@ export function newId(): string {
   return uuidv7();
 }
 
-/** Validate a string is a UUID (any version) — used at API boundaries. */
+/** Validate a string is an RFC UUID (any version) — used at API boundaries. */
 export function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+/** Canonicalize a validated UUID for stable application-side comparisons. */
+export function normalizeUuid(value: string): string {
+  return value.toLowerCase();
 }

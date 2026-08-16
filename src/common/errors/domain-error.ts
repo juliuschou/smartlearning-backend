@@ -64,6 +64,18 @@ export class ValidationError extends DomainError {
   }
 }
 
+export class QuestionValidationError extends DomainError {
+  constructor(code: ErrorCode, message: string, field?: string) {
+    super(
+      code,
+      message,
+      HttpStatus.BAD_REQUEST,
+      field,
+      'Correct the highlighted field and retry the request.',
+    );
+  }
+}
+
 export class NotFoundError extends DomainError {
   constructor(message: string, field?: string) {
     super('NOT_FOUND' as ErrorCode, message, HttpStatus.NOT_FOUND, field);

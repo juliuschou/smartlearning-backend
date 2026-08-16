@@ -13,6 +13,8 @@ describe('Pino auth redaction', () => {
         'req.headers.cookie',
         'req.headers["x-csrf-token"]',
         'res.headers["set-cookie"]',
+        'res.body.data.selectedOptionRefs',
+        'res.body.data.textAnswer',
       ]),
     );
     expect(PINO_REDACT_REMOVE).toBe(true);
@@ -54,6 +56,15 @@ describe('Pino auth redaction', () => {
           headers: {
             'set-cookie': ['__Host-session=response-secret'],
           },
+          body: {
+            data: {
+              participantToken: 'participant-token-secret',
+              selectedOptionRefs: ['selected-option-secret'],
+              textAnswer: 'text-answer-secret',
+            },
+            selectedOptionRefs: ['top-level-option-secret'],
+            textAnswer: 'top-level-answer-secret',
+          },
         },
       },
       'request',
@@ -67,5 +78,10 @@ describe('Pino auth redaction', () => {
     expect(output).not.toContain('session-secret');
     expect(output).not.toContain('csrf-secret');
     expect(output).not.toContain('response-secret');
+    expect(output).not.toContain('participant-token-secret');
+    expect(output).not.toContain('selected-option-secret');
+    expect(output).not.toContain('text-answer-secret');
+    expect(output).not.toContain('top-level-option-secret');
+    expect(output).not.toContain('top-level-answer-secret');
   });
 });

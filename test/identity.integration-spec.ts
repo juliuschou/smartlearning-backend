@@ -18,18 +18,21 @@ describe('Identity (integration)', () => {
   let bootstrap: BootstrapService;
   let accounts: AccountService;
   let dbReachable = false;
+  let migrationsReady = false;
 
   beforeAll(async () => {
     try {
       setupTestDb();
+      migrationsReady = true;
     } catch {
-      // migrate deploy failed — fall through; the reachability probe decides.
+      // Keep the suite blocked when any migration fails; do not probe stale schema.
     }
     app = await createTestApp();
     await app.init();
     prisma = app.get(PrismaService);
     bootstrap = app.get(BootstrapService);
     accounts = app.get(AccountService);
+    if (!migrationsReady) return;
     try {
       await prisma.prisma.$queryRaw`SELECT 1`;
       dbReachable = true;
