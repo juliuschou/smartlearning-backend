@@ -98,7 +98,7 @@ describe('Auth + Courses (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ username: ADMIN.username, password: ADMIN.password });
     expect(res.status).toBe(201);
-    expect(res.body.accountId).toBeDefined();
+    expect(res.body.data.accountId).toBeDefined();
     const setCookie = res.headers['set-cookie'];
     expect(setCookie).toBeDefined();
     const cookie = Array.isArray(setCookie) ? setCookie[0] : setCookie;
@@ -139,9 +139,9 @@ describe('Auth + Courses (e2e)', () => {
       .post('/api/v1/courses')
       .send({ name: 'Algorithms 101', description: 'Intro course' });
     expect(res.status).toBe(201);
-    expect(res.body.id).toBeDefined();
-    expect(res.body.name).toBe('Algorithms 101');
-    expect(res.body.status).toBe('draft');
+    expect(res.body.data.id).toBeDefined();
+    expect(res.body.data.name).toBe('Algorithms 101');
+    expect(res.body.data.status).toBe('draft');
   });
 
   it('teacher cannot create a course if can_create_course is false', async () => {
@@ -170,10 +170,10 @@ describe('Auth + Courses (e2e)', () => {
       .send({ name: 'Data Structures' });
     const list = await teacher.get('/api/v1/courses');
     expect(list.status).toBe(200);
-    expect(list.body.data.length).toBeGreaterThan(0);
-    const detail = await teacher.get(`/api/v1/courses/${created.body.id}`);
+    expect(list.body.data.data.length).toBeGreaterThan(0);
+    const detail = await teacher.get(`/api/v1/courses/${created.body.data.id}`);
     expect(detail.status).toBe(200);
-    expect(detail.body.id).toBe(created.body.id);
+    expect(detail.body.data.id).toBe(created.body.data.id);
   });
 
   it('teacher archives a draft course (terminal)', async () => {
@@ -184,13 +184,13 @@ describe('Auth + Courses (e2e)', () => {
       .post('/api/v1/courses')
       .send({ name: 'To Archive' });
     const res = await teacher.post(
-      `/api/v1/courses/${created.body.id}/archive`,
+      `/api/v1/courses/${created.body.data.id}/archive`,
     );
     expect(res.status).toBe(201);
-    expect(res.body.status).toBe('archived');
+    expect(res.body.data.status).toBe('archived');
     // Re-archiving a terminal course fails.
     const again = await teacher.post(
-      `/api/v1/courses/${created.body.id}/archive`,
+      `/api/v1/courses/${created.body.data.id}/archive`,
     );
     expect(again.status).toBe(409);
   });

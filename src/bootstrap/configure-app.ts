@@ -4,7 +4,11 @@ import type { INestApplication } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { GlobalExceptionFilter } from '../common/http';
+import {
+  ApiResponseInterceptor,
+  GlobalExceptionFilter,
+  validationExceptionFactory,
+} from '../common/http';
 import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from '../common/observability';
 import { AppModule } from '../app.module';
 
@@ -59,10 +63,12 @@ export function configureApplication(app: INestApplication): void {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 
-  // Global error envelope.
+  // Global response/error envelopes.
+  expressApp.useGlobalInterceptors(new ApiResponseInterceptor());
   expressApp.useGlobalFilters(new GlobalExceptionFilter());
 
   // Graceful shutdown: SIGTERM/SIGINT trigger module destroy hooks (Prisma disconnect).

@@ -136,3 +136,63 @@
 - `@nestjs/swagger@11.4.6` 帶入脆弱的 transitive js-yaml（DoS）；Phase 1 不需 OpenAPI，移除以保 `npm audit` 乾淨；完整定義留後續設計階段再加回並鎖定安全版本。
 - ConfigModule `validate` hook（而非 `load`）才能在 dotenv 載入 envFilePath 後驗證已解析的 env，避免 `configuration()` 在 env 載入前跑而讀到空 process.env。
 - 本次 auth/course e2e 回歸的失敗模式、檢測訊號與防止規則已整理於 `tasks/lessons.md`。
+
+### 2026-08-16 — Implementation slice 1: Common API envelope / stable error contract
+
+#### Acceptance criteria
+
+- [x] `/api/v1/**` JSON success responses use `{ data, meta: { schemaVersion: 1, requestId }, error: null }`.
+- [x] `/api/v1/**` errors use `data: null`, the same metadata, existing stable error keys, and `retryAfterSeconds`.
+- [x] `x-request-id` header and `meta.requestId` match; invalid/missing inbound IDs remain safely generated.
+- [x] `/health/live` and `/health/ready` remain raw operational responses.
+- [x] Prisma targets, stack traces, validation objects, and internal messages are not exposed.
+
+#### Checklist
+
+- [x] Add common envelope types/helpers and global success interceptor.
+- [x] Extend exception filter/domain error integration without changing domain HTTP concerns.
+- [x] Add focused interceptor/filter/validation contract tests.
+- [x] Update `/api/v1` e2e success assertions and add request-ID/validation coverage.
+- [x] Run typecheck, lint, format, unit, e2e, integration, and build verification.
+
+#### Verification
+
+| Command | Result |
+|---|---|
+| `npm test -- --runInBand common/http` | PASS — 3 suites / 18 tests |
+| `npm test -- --runInBand` | PASS — 8 suites / 36 tests |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS after formatting fix |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `npm run test:e2e -- --runInBand` | PASS — 3 suites / 16 tests |
+| `npm run test:integration -- --runInBand` | PASS — 2 suites / 6 tests |
+
+#### Results
+
+- Added a centralized v1 REST success interceptor and complete error envelope with schema/request metadata.
+- Preserved raw health probe responses, HTTP status codes, existing stable error codes, and request-ID headers.
+- Added deterministic, transport-safe validation issue normalization and Prisma/internal error redaction tests.
+- No Prisma schema, migration, database, CLI, Socket.IO, or later-slice behavior changed.
+
+#### Risk & rollback
+
+- Risk: medium; existing `/api/v1` success consumers must read fields under `body.data`.
+- Rollback: revert common HTTP/filter/bootstrap/test changes; no database or migration rollback required.
+
+#### Working notes
+
+- Controllers remain unchanged; wrapping is centralized.
+- Pagination remains nested under `data`; outer `meta` is reserved for schema/request metadata.
+- CLI, Socket.IO, shared Web/CLI fixtures, question schema, token/hash, idempotency, race, outbox, and retention work remain later slices.
+
+#### Review hardening
+
+- [x] Normalize handler-returned envelope metadata to the current request ID and reject malformed envelope-shaped values.
+- [x] Map unmapped 4xx statuses to client-error codes instead of `INTERNAL_ERROR`.
+- [x] Restrict built-in `HttpException` messages to shared validation output or safe status messages.
+- [x] Use bracket notation for array validation paths and locale-independent deterministic ordering.
+- [x] Remove raw 5xx exception messages/stacks from global error logs; retain request ID, status, stable code, and exception type.
+- [x] Add regression coverage for stale/malformed envelopes, safe messages, 422 mapping, array paths, and log redaction.
+
+Review verification after hardening: focused HTTP tests 3 suites / 18 tests, full unit tests 8 suites / 36 tests, typecheck, lint, format, build, e2e 3 suites / 16 tests, integration 2 suites / 6 tests, and `git diff --check` all passed. Existing Nest legacy wildcard route warnings remain non-blocking and unchanged.

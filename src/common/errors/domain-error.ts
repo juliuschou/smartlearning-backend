@@ -15,6 +15,8 @@ export interface ErrorEnvelope {
     blocking: boolean;
     /** Optional actionable next step for the client. */
     nextStep?: string;
+    /** Optional retry hint; transport layers serialize absent hints as null. */
+    retryAfterSeconds?: number | null;
   };
 }
 
@@ -30,6 +32,7 @@ export class DomainError extends Error {
     public readonly httpStatus: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
     public readonly field?: string,
     public readonly nextStep?: string,
+    public readonly retryAfterSeconds?: number | null,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -43,6 +46,7 @@ export class DomainError extends Error {
         field: this.field,
         blocking: true,
         nextStep: this.nextStep,
+        retryAfterSeconds: this.retryAfterSeconds,
       },
     };
   }
