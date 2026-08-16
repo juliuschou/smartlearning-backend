@@ -98,7 +98,18 @@
 - Phase 1：fresh checkout 流程（README Quick start）可 prisma:generate → migrate:deploy → start:dev → health check；typecheck/lint/format/build/test/e2e/integration 全綠。
 - 本次續作：Identity/Course 垂直切片 migration 已套用至 `smartlearning_dev`；advisory lock、URI version、auth error/guard semantics、test cookie defaults 已修正，完整 unit/integration/e2e 驗證全綠。
 - 已知非阻擋警告：Nest/path-to-regexp 仍提示 `health/(.*)` 與 `/api/*` legacy route pattern，後續可改為 named wildcard syntax。
-- 後續：完成 Phase 2 前置的完整 M2 設計文件（至少 #1 領域分析、#3 ERD、#4 Web Auth），並將 `tasks/lessons.md` 的 tripwire 納入後續實作檢查。
+### Phase 2 前置 — M2 設計 gate
+
+- [x] #1 領域分析：`docs/智學互動平台/20_系統分析/系統領域與需求分析.md`
+- [x] #3 資料模型與 ERD：`docs/智學互動平台/30_系統設計/資料模型與 ER 設計.md`
+- [x] #4 Web Auth 與安全：`docs/智學互動平台/30_系統設計/Web Auth 與安全設計.md`
+- [x] 文件依賴順序完成：#1 → #3 → #4；三份文件均區分 current implementation、target design 與 gap。
+- [x] 文件已引用 SPEC、M2 決策、Prisma schema/migration 與現有 Identity/Course/Auth source；未把 deferred capability 宣稱為已完成。
+- [x] `tasks/lessons.md` 的 `$executeRaw` advisory lock、explicit URI version、test cookie Secure、401/403 guard semantics 已接入後續實作 checklist。
+- [ ] 開始 Phase 2 code 前，先完成其餘 M2 設計文件與各文件間的 contract review。
+- [ ] 不在本 design gate 內修改 runtime、Prisma schema、migration、DB 或新增安全功能實作。
+
+本次設計 gate 的文件檢查僅屬靜態一致性驗證；Phase 1 的歷史 typecheck/lint/format/build/unit/e2e/integration 綠燈保留於上方紀錄，不重複宣稱為本次文件工作的 runtime 驗證。
 
 ## Lessons
 
