@@ -49,6 +49,10 @@ export class AuthService {
     const { token, session } = await this.sessions.createSession(account, meta);
     return { token, session, account };
   }
+
+  async logout(sessionId: string): Promise<void> {
+    await this.sessions.revokeSession(sessionId);
+  }
 }
 
 // A stable dummy hash so the missing-account path does the same Argon2id work

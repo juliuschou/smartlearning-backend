@@ -103,3 +103,13 @@ export class ForbiddenError extends DomainError {
     super('FORBIDDEN' as ErrorCode, message, HttpStatus.FORBIDDEN);
   }
 }
+
+export class CsrfError extends DomainError {
+  constructor() {
+    super(
+      'AUTH_CSRF_INVALID' as ErrorCode,
+      'Invalid CSRF token or Origin',
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}

@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { SessionService } from './session.service';
 import { SessionGuard } from './session.guard';
+import { CsrfGuard } from './csrf.guard';
 import { AdminGuard, CanCreateCourseGuard } from './authorization.guards';
 
 /**
@@ -10,7 +11,19 @@ import { AdminGuard, CanCreateCourseGuard } from './authorization.guards';
  */
 @Global()
 @Module({
-  providers: [SessionService, SessionGuard, AdminGuard, CanCreateCourseGuard],
-  exports: [SessionService, SessionGuard, AdminGuard, CanCreateCourseGuard],
+  providers: [
+    SessionService,
+    SessionGuard,
+    CsrfGuard,
+    AdminGuard,
+    CanCreateCourseGuard,
+  ],
+  exports: [
+    SessionService,
+    SessionGuard,
+    CsrfGuard,
+    AdminGuard,
+    CanCreateCourseGuard,
+  ],
 })
 export class AuthModule {}

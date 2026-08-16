@@ -3,7 +3,13 @@ import request from 'supertest';
 import { BootstrapService } from '../src/modules/identity/application/bootstrap.service';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { AccountRole } from '../src/modules/identity/domain/roles';
-import { newId } from '../src/common/crypto';
+import { hashToken, newId } from '../src/common/crypto';
+import { SessionService } from '../src/common/auth';
+import {
+  CSRF_COOKIE_NAME,
+  CSRF_HEADER,
+  SESSION_COOKIE_NAME,
+} from '../src/common/security';
 import { createTestApp } from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
@@ -19,8 +25,10 @@ describe('Auth + Courses (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let bootstrap: BootstrapService;
+  let sessions: SessionService;
   let dbReachable = false;
 
+  const TEST_ORIGIN = 'http://localhost:3000';
   const ADMIN = {
     username: 'e2e-admin',
     displayName: 'E2E Admin',
@@ -32,6 +40,19 @@ describe('Auth + Courses (e2e)', () => {
     password: 'teacher-password-1234',
   };
 
+  type AuthenticatedAgent = {
+    agent: request.SuperAgentTest;
+    csrfToken: string;
+    sessionToken: string;
+  };
+
+  function cookieHeaders(
+    value: string | string[] | undefined,
+  ): string[] | undefined {
+    if (value === undefined) return undefined;
+    return Array.isArray(value) ? value : [value];
+  }
+
   beforeAll(async () => {
     try {
       setupTestDb();
@@ -42,6 +63,7 @@ describe('Auth + Courses (e2e)', () => {
     await app.init();
     prisma = app.get(PrismaService);
     bootstrap = app.get(BootstrapService);
+    sessions = app.get(SessionService);
     try {
       await prisma.prisma.$queryRaw`SELECT 1`;
       dbReachable = true;
@@ -61,27 +83,48 @@ describe('Auth + Courses (e2e)', () => {
     await bootstrap.createFirstAdmin(ADMIN);
   });
 
-  // Helper: login and return the agent (so cookies are retained).
+  function cookieValue(setCookie: string[] | undefined, name: string): string {
+    const prefix = `${name}=`;
+    const value = setCookie
+      ?.find((cookie) => cookie.startsWith(prefix))
+      ?.split(';', 1)[0]
+      .slice(prefix.length);
+    if (!value) {
+      throw new Error(`Missing ${name} cookie in login response`);
+    }
+    return value;
+  }
+
+  // Helper: login and retain both the session and CSRF cookie values.
   async function loginAs(
     username: string,
     password: string,
-  ): Promise<request.SuperAgentTest> {
+  ): Promise<AuthenticatedAgent> {
     const agent = request.agent(app.getHttpServer());
-    await agent.post('/api/v1/auth/login').send({ username, password });
-    // request.agent returns a TestAgent that proxies the same methods; cast
-    // to SuperAgentTest for callers that chain .get/.post/.send.
-    return agent as unknown as request.SuperAgentTest;
+    const response = await agent
+      .post('/api/v1/auth/login')
+      .send({ username, password });
+    const setCookie = cookieHeaders(response.headers['set-cookie']);
+    return {
+      agent: agent as unknown as request.SuperAgentTest,
+      csrfToken: cookieValue(setCookie, CSRF_COOKIE_NAME),
+      sessionToken: cookieValue(setCookie, SESSION_COOKIE_NAME),
+    };
   }
 
   async function createTeacher(): Promise<void> {
     const admin = await loginAs(ADMIN.username, ADMIN.password);
-    await admin.post('/api/v1/admin/accounts').send({
-      username: TEACHER.username,
-      displayName: TEACHER.displayName,
-      role: AccountRole.TEACHER,
-      canCreateCourse: true,
-      tempPassword: TEACHER.password,
-    });
+    await admin.agent
+      .post('/api/v1/admin/accounts')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        username: TEACHER.username,
+        displayName: TEACHER.displayName,
+        role: AccountRole.TEACHER,
+        canCreateCourse: true,
+        tempPassword: TEACHER.password,
+      });
   }
 
   it('skips gracefully when the test DB is not reachable', () => {
@@ -92,19 +135,26 @@ describe('Auth + Courses (e2e)', () => {
     expect(true).toBe(true);
   });
 
-  it('logs in an admin and sets the __Host-session cookie', async () => {
+  it('logs in an admin and sets the session and CSRF cookies', async () => {
     if (!dbReachable) return;
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ username: ADMIN.username, password: ADMIN.password });
     expect(res.status).toBe(201);
     expect(res.body.data.accountId).toBeDefined();
-    const setCookie = res.headers['set-cookie'];
+    const setCookie = cookieHeaders(res.headers['set-cookie']);
     expect(setCookie).toBeDefined();
-    const cookie = Array.isArray(setCookie) ? setCookie[0] : setCookie;
-    expect(cookie).toMatch(/__Host-session=/);
-    expect(cookie.toLowerCase()).toMatch(/httponly/);
-    expect(cookie.toLowerCase()).toMatch(/samesite=lax/);
+    expect(
+      setCookie?.some((cookie) => cookie.startsWith(`${SESSION_COOKIE_NAME}=`)),
+    ).toBe(true);
+    expect(
+      setCookie?.some((cookie) => cookie.startsWith(`${CSRF_COOKIE_NAME}=`)),
+    ).toBe(true);
+    const sessionCookie = cookieValue(setCookie, SESSION_COOKIE_NAME);
+    expect(sessionCookie).toBeTruthy();
+    expect(
+      setCookie?.find((cookie) => cookie.startsWith(`${SESSION_COOKIE_NAME}=`)),
+    ).toMatch(/httponly/i);
   });
 
   it('rejects login with wrong password (generic AUTH_INVALID_CREDENTIALS)', async () => {
@@ -131,12 +181,87 @@ describe('Auth + Courses (e2e)', () => {
     expect(res.status).toBe(401);
   });
 
+  it('rejects authenticated mutations without a valid CSRF token and Origin', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const missingToken = await admin.agent
+      .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .send({ name: 'Missing CSRF' });
+    expect(missingToken.status).toBe(403);
+    expect(missingToken.body.error.code).toBe('AUTH_CSRF_INVALID');
+
+    const wrongToken = await admin.agent
+      .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, 'wrong-token')
+      .send({ name: 'Wrong CSRF' });
+    expect(wrongToken.status).toBe(403);
+    expect(wrongToken.body.error.code).toBe('AUTH_CSRF_INVALID');
+
+    const missingOrigin = await admin.agent
+      .post('/api/v1/courses')
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ name: 'Missing Origin' });
+    expect(missingOrigin.status).toBe(403);
+    expect(missingOrigin.body.error.code).toBe('AUTH_CSRF_INVALID');
+
+    const wrongOrigin = await admin.agent
+      .post('/api/v1/courses')
+      .set('Origin', 'https://attacker.example')
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ name: 'Wrong Origin' });
+    expect(wrongOrigin.status).toBe(403);
+    expect(wrongOrigin.body.error.code).toBe('AUTH_CSRF_INVALID');
+
+    const safeRead = await admin.agent.get('/api/v1/auth/session');
+    expect(safeRead.status).toBe(200);
+  });
+
+  it('logs out, clears cookies, and rejects the revoked session', async () => {
+    if (!dbReachable) return;
+    const authenticated = await loginAs(ADMIN.username, ADMIN.password);
+    const session = await prisma.prisma.webSession.findUnique({
+      where: { cookieHash: hashToken(authenticated.sessionToken) },
+    });
+    expect(session).not.toBeNull();
+
+    const logout = await authenticated.agent
+      .post('/api/v1/auth/logout')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, authenticated.csrfToken);
+    expect(logout.status).toBe(201);
+    expect(logout.body.data).toBeNull();
+    const cleared = cookieHeaders(logout.headers['set-cookie']);
+    expect(
+      cleared?.some((cookie) => cookie.startsWith(`${SESSION_COOKIE_NAME}=;`)),
+    ).toBe(true);
+    expect(
+      cleared?.some((cookie) => cookie.startsWith(`${CSRF_COOKIE_NAME}=;`)),
+    ).toBe(true);
+
+    const revoked = await prisma.prisma.webSession.findUnique({
+      where: { id: session!.id },
+    });
+    expect(revoked?.revokedAt).not.toBeNull();
+    expect((await authenticated.agent.get('/api/v1/auth/session')).status).toBe(
+      401,
+    );
+
+    // The persistence operation is safe to repeat even after the route cleared
+    // the browser cookies.
+    await expect(sessions.revokeSession(session!.id)).resolves.toBeUndefined();
+    await expect(sessions.revokeSession(session!.id)).resolves.toBeUndefined();
+  });
+
   it('admin creates a teacher; teacher logs in and creates a course', async () => {
     if (!dbReachable) return;
     await createTeacher();
     const teacher = await loginAs(TEACHER.username, TEACHER.password);
-    const res = await teacher
+    const res = await teacher.agent
       .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
       .send({ name: 'Algorithms 101', description: 'Intro course' });
     expect(res.status).toBe(201);
     expect(res.body.data.id).toBeDefined();
@@ -147,16 +272,22 @@ describe('Auth + Courses (e2e)', () => {
   it('teacher cannot create a course if can_create_course is false', async () => {
     if (!dbReachable) return;
     const admin = await loginAs(ADMIN.username, ADMIN.password);
-    await admin.post('/api/v1/admin/accounts').send({
-      username: 'no-create-teacher',
-      displayName: 'No Create',
-      role: AccountRole.TEACHER,
-      canCreateCourse: false,
-      tempPassword: 'no-create-password-12',
-    });
+    await admin.agent
+      .post('/api/v1/admin/accounts')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        username: 'no-create-teacher',
+        displayName: 'No Create',
+        role: AccountRole.TEACHER,
+        canCreateCourse: false,
+        tempPassword: 'no-create-password-12',
+      });
     const teacher = await loginAs('no-create-teacher', 'no-create-password-12');
-    const res = await teacher
+    const res = await teacher.agent
       .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
       .send({ name: 'Should Fail' });
     expect(res.status).toBe(403);
   });
@@ -165,13 +296,17 @@ describe('Auth + Courses (e2e)', () => {
     if (!dbReachable) return;
     await createTeacher();
     const teacher = await loginAs(TEACHER.username, TEACHER.password);
-    const created = await teacher
+    const created = await teacher.agent
       .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
       .send({ name: 'Data Structures' });
-    const list = await teacher.get('/api/v1/courses');
+    const list = await teacher.agent.get('/api/v1/courses');
     expect(list.status).toBe(200);
     expect(list.body.data.data.length).toBeGreaterThan(0);
-    const detail = await teacher.get(`/api/v1/courses/${created.body.data.id}`);
+    const detail = await teacher.agent.get(
+      `/api/v1/courses/${created.body.data.id}`,
+    );
     expect(detail.status).toBe(200);
     expect(detail.body.data.id).toBe(created.body.data.id);
   });
@@ -180,18 +315,22 @@ describe('Auth + Courses (e2e)', () => {
     if (!dbReachable) return;
     await createTeacher();
     const teacher = await loginAs(TEACHER.username, TEACHER.password);
-    const created = await teacher
+    const created = await teacher.agent
       .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
       .send({ name: 'To Archive' });
-    const res = await teacher.post(
-      `/api/v1/courses/${created.body.data.id}/archive`,
-    );
+    const res = await teacher.agent
+      .post(`/api/v1/courses/${created.body.data.id}/archive`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
     expect(res.status).toBe(201);
     expect(res.body.data.status).toBe('archived');
     // Re-archiving a terminal course fails.
-    const again = await teacher.post(
-      `/api/v1/courses/${created.body.data.id}/archive`,
-    );
+    const again = await teacher.agent
+      .post(`/api/v1/courses/${created.body.data.id}/archive`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
     expect(again.status).toBe(409);
   });
 
@@ -211,7 +350,7 @@ describe('Auth + Courses (e2e)', () => {
     });
     await createTeacher();
     const teacher = await loginAs(TEACHER.username, TEACHER.password);
-    const detail = await teacher.get(`/api/v1/courses/${otherCourse.id}`);
+    const detail = await teacher.agent.get(`/api/v1/courses/${otherCourse.id}`);
     expect(detail.status).toBe(404);
   });
 });

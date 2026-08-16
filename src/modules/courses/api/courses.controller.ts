@@ -10,6 +10,7 @@ import {
 import { CourseService } from '../application/course.service';
 import {
   SessionGuard,
+  CsrfGuard,
   CanCreateCourseGuard,
   CurrentAccount,
 } from '../../../common/auth';
@@ -28,7 +29,7 @@ export class CoursesController {
   constructor(private readonly courses: CourseService) {}
 
   @Post()
-  @UseGuards(SessionGuard, CanCreateCourseGuard)
+  @UseGuards(SessionGuard, CsrfGuard, CanCreateCourseGuard)
   async create(
     @Body() dto: CreateCourseDto,
     @CurrentAccount() auth: AuthContext,
@@ -72,7 +73,7 @@ export class CoursesController {
   }
 
   @Post(':id/archive')
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, CsrfGuard)
   async archive(
     @Param('id') id: string,
     @CurrentAccount() auth: AuthContext,

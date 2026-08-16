@@ -196,3 +196,53 @@
 - [x] Add regression coverage for stale/malformed envelopes, safe messages, 422 mapping, array paths, and log redaction.
 
 Review verification after hardening: focused HTTP tests 3 suites / 18 tests, full unit tests 8 suites / 36 tests, typecheck, lint, format, build, e2e 3 suites / 16 tests, integration 2 suites / 6 tests, and `git diff --check` all passed. Existing Nest legacy wildcard route warnings remain non-blocking and unchanged.
+
+### 2026-08-16 — Implementation slice 2: Web Auth mutation safety
+
+#### Context and scope
+
+- [x] The repository has no authoritative literal “slice 2” entry; this inferred slice follows the roadmap-authoritative Phase 2 Web Auth hardening boundary.
+- [x] Implement current-session logout/revocation plus CSRF/Origin enforcement for existing authenticated mutations.
+- [x] Keep rate limiting, step-up, password change/reset, disable/restore, CLI credentials, audit/login attempts, QuestionDefinition, Socket.IO, and governance work deferred.
+
+#### Acceptance criteria
+
+- [x] Login issues a high-entropy non-HttpOnly `__Host-csrf` cookie alongside `__Host-session`; raw CSRF values never enter JSON, logs, DB, or AuthContext.
+- [x] `POST /api/v1/auth/logout` idempotently revokes the current WebSession and clears both auth cookies.
+- [x] Authenticated POST mutations reject missing/mismatched CSRF token/header or missing/unapproved Origin with 403 `AUTH_CSRF_INVALID`.
+- [x] Safe GET routes remain usable without CSRF headers; login remains an unauthenticated entry point.
+- [x] CSRF comparisons use constant-time comparison; Origin matching is exact and fail-closed.
+- [x] Production cannot explicitly disable Secure cookies; test-only plain HTTP behavior remains available.
+- [x] Existing v1 envelope, request IDs, 401/403 semantics, health routes, authorization, and course behavior remain unchanged.
+
+#### Checklist
+
+- [x] Add CSRF helper/guard and stable domain-error path; export through common auth/security boundaries.
+- [x] Extend cookie options, login CSRF issuance, SessionService idempotent revoke, logout endpoint, and cookie clearing.
+- [x] Apply CSRF guard to admin account creation and course create/archive mutations.
+- [x] Add focused CSRF/cookie/env unit tests and auth/course e2e regression coverage.
+- [x] Run targeted and full verification; record command outcomes and DB availability.
+
+#### Risk & rollback
+
+- **Risk:** medium/high; all existing authenticated mutations gain a fail-closed security check.
+- **Rollback:** revert application/guard/cookie/test changes; no Prisma migration or database rollback is expected. Do not restore already-revoked sessions during rollback.
+
+#### Verification plan
+
+- `npm test -- --runInBand` plus focused CSRF/security tests.
+- `NODE_ENV=test npm run prisma:migrate:status`.
+- `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts`.
+- `npm run test:integration -- --runInBand test/identity.integration-spec.ts`.
+- `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, `git diff --check`.
+
+#### Results
+
+- Targeted verification: `npm run typecheck` passed; focused CSRF and environment-validation tests passed (2 suites, 6 tests).
+- Final wildcard-Origin hardening recheck: typecheck, focused suites, and auth/courses E2E all passed (E2E: 1 suite, 12 tests).
+- Full unit suite: passed (10 suites, 42 tests).
+- PostgreSQL verification: `NODE_ENV=test npm run prisma:migrate:status` passed; PostgreSQL was reachable, 2 migrations were present, and the schema was up to date.
+- Database-backed regression: auth/courses E2E passed (1 suite, 12 tests); identity integration passed (1 suite, 5 tests).
+- Final quality gates after wildcard-Origin hardening: lint, format check, build, and `git diff --check` all passed.
+- Non-blocking warning: E2E/integration startup emitted existing Nest `LegacyRouteConverter` wildcard-route warnings; no test failed.
+- No Prisma schema or migration changes were introduced.

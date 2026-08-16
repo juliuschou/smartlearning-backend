@@ -96,5 +96,10 @@ export function validateEnv(
       .join('; ');
     throw new Error(`Invalid environment configuration: ${messages}`);
   }
+  if (config.NODE_ENV !== 'test' && config.SESSION_COOKIE_SECURE === false) {
+    throw new Error(
+      'SESSION_COOKIE_SECURE=false is only allowed in NODE_ENV=test',
+    );
+  }
   return config;
 }

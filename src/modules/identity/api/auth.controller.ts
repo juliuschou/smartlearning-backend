@@ -10,10 +10,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from '../application/auth.service';
-import { SessionGuard, CurrentAccount } from '../../../common/auth';
+import { SessionGuard, CsrfGuard, CurrentAccount } from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
 import {
+  CSRF_COOKIE_NAME,
   SESSION_COOKIE_NAME,
+  csrfCookieOptions,
+  generateCsrfToken,
   sessionCookieOptions,
 } from '../../../common/security';
 import { LoginDto } from './dto/login.dto';
@@ -22,8 +25,8 @@ import { SessionDto } from './dto/account.dto';
 /**
  * Auth endpoints under /api/v1/auth.
  *
- * Slice scope: login (sets cookie), current session lookup. Logout/CSRF/
- * rate limit/step-up are deferred.
+ * Slice scope: login, current session lookup, and CSRF-protected logout.
+ * Rate limiting, password lifecycle, and step-up remain deferred.
  */
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -44,10 +47,16 @@ export class AuthController {
       { userAgent: req.get('user-agent') },
     );
     const secure = this.secureCookie();
+    const maxAgeMs = session.expiresAt.getTime() - Date.now();
     res.cookie(
       SESSION_COOKIE_NAME,
       token,
-      sessionCookieOptions(session.expiresAt.getTime() - Date.now(), secure),
+      sessionCookieOptions(maxAgeMs, secure),
+    );
+    res.cookie(
+      CSRF_COOKIE_NAME,
+      generateCsrfToken(),
+      csrfCookieOptions(maxAgeMs, secure),
     );
     return {
       accountId: account.id,
@@ -58,6 +67,19 @@ export class AuthController {
       sessionId: session.id,
       expiresAt: session.expiresAt.toISOString(),
     };
+  }
+
+  @Post('logout')
+  @UseGuards(SessionGuard, CsrfGuard)
+  async logout(
+    @CurrentAccount() auth: AuthContext,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<null> {
+    await this.auth.logout(auth.sessionId);
+    const secure = this.secureCookie();
+    res.clearCookie(SESSION_COOKIE_NAME, sessionCookieOptions(0, secure));
+    res.clearCookie(CSRF_COOKIE_NAME, csrfCookieOptions(0, secure));
+    return null;
   }
 
   @Get('session')

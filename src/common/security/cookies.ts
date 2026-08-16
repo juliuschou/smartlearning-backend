@@ -29,10 +29,13 @@ export const SESSION_COOKIE_NAME = '__Host-session';
 /** CSRF token cookie (non-HttpOnly so the client JS can read and echo it). */
 export const CSRF_COOKIE_NAME = '__Host-csrf';
 
-export function csrfCookieOptions(maxAgeMs: number): CookieOptions {
+export function csrfCookieOptions(
+  maxAgeMs: number,
+  secure = true,
+): CookieOptions {
   return {
     httpOnly: false,
-    secure: true,
+    secure,
     sameSite: 'lax',
     path: '/',
     maxAge: maxAgeMs,

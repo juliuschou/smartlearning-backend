@@ -16,8 +16,8 @@ import { UnauthorizedError } from '../errors';
  * PostgreSQL is the single authority — only the SHA-256 hash of the opaque
  * token is persisted; the raw token lives only in the cookie (M2 §4).
  *
- * Slice scope: create on login, load+touch on every guarded request. Logout/
- * rotation/full revocation are deferred.
+ * Slice scope: create on login, load+touch on guarded requests, and revoke the
+ * current session on logout. Rotation/full-account revocation remain deferred.
  */
 @Injectable()
 export class SessionService {
@@ -62,6 +62,14 @@ export class SessionService {
       },
     });
     return { token, session };
+  }
+
+  /** Revoke a session safely when logout is repeated or retried. */
+  async revokeSession(sessionId: string): Promise<void> {
+    await this.db.webSession.updateMany({
+      where: { id: sessionId, revokedAt: null },
+      data: { revokedAt: new Date(this.clock.nowMs()) },
+    });
   }
 
   /**

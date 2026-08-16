@@ -1,6 +1,11 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { AccountService } from '../application/account.service';
-import { SessionGuard, AdminGuard, CurrentAccount } from '../../../common/auth';
+import {
+  SessionGuard,
+  CsrfGuard,
+  AdminGuard,
+  CurrentAccount,
+} from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { AccountDto } from './dto/account.dto';
@@ -8,11 +13,12 @@ import { AccountDto } from './dto/account.dto';
 /**
  * Admin account-management endpoints under /api/v1/admin.
  *
- * Slice scope: create teacher/admin account. Disable/restore, CLI credential
- * lifecycle, course-permission toggle are deferred.
+ * Slice scope: CSRF-protected teacher/admin account creation.
+ * Disable/restore, CLI credential lifecycle, and course-permission toggle remain
+ * deferred.
  */
 @Controller({ path: 'admin', version: '1' })
-@UseGuards(SessionGuard, AdminGuard)
+@UseGuards(SessionGuard, CsrfGuard, AdminGuard)
 export class AdminController {
   constructor(private readonly accounts: AccountService) {}
 
