@@ -59,6 +59,14 @@ export class TransactionService {
    * over catching Prisma errors directly, but the global filter also maps
    * them as a safety net.
    */
+  /** Lock an account row so password/status transitions serialize. */
+  async lockAccountForUpdate(
+    tx: Prisma.TransactionClient,
+    accountId: string,
+  ): Promise<void> {
+    await tx.$queryRaw`SELECT id FROM account WHERE id = ${accountId}::uuid FOR UPDATE`;
+  }
+
   mapError(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002')

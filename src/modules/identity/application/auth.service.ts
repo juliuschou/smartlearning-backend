@@ -1,24 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import type { Account, WebSession } from '../../../../generated/prisma/client';
-import { AccountService } from './account.service';
-import { SessionService } from '../../../common/auth';
-import { verifyPassword } from '../../../common/crypto';
+import { SessionService, type SessionMeta } from '../../../common/auth';
+import { hashPassword, verifyPassword } from '../../../common/crypto';
+import {
+  InvalidCredentialsError,
+  UnauthorizedError,
+  ValidationError,
+} from '../../../common/errors';
+import { TransactionService } from '../../../prisma/transaction.service';
 import { AccountStatus } from '../domain/account-status';
-import { InvalidCredentialsError } from '../../../common/errors';
+import {
+  PasswordPolicyError,
+  validatePassword,
+} from '../domain/password-policy';
+import { AccountService } from './account.service';
 
 /**
- * Login + current-session resolution.
- *
- * Generic failure: every failure path — missing account, wrong password,
- * disabled account — returns the same AUTH_INVALID_CREDENTIALS 401 so account
- * existence is not disclosed (P0-03 防 enumeration). No rate limit in this
- * slice (deferred — recorded as a security gap).
+ * Login, step-up, password lifecycle, and current-session operations.
+ * All password failures remain generic to preserve anti-enumeration behavior.
  */
 @Injectable()
 export class AuthService {
   constructor(
     private readonly accounts: AccountService,
     private readonly sessions: SessionService,
+    private readonly transactions: TransactionService,
   ) {}
 
   /**
@@ -28,30 +34,163 @@ export class AuthService {
   async login(
     username: string,
     password: string,
-    meta?: { ipAddress?: string; userAgent?: string },
+    meta?: SessionMeta,
   ): Promise<{ token: string; session: WebSession; account: Account }> {
     const account = await this.accounts.findByUsername(username);
 
     // Constant-ish path: always verify against a real hash when present, and
     // against a dummy hash when the account is missing, to avoid timing oracle
-    // on account existence.
-    const ok = account?.passwordHash
-      ? await verifyPassword(account.passwordHash, password)
+    // on account existence. Verify before taking the row lock so repeated
+    // wrong-password attempts do not hold a database connection while Argon2
+    // runs; the short transaction below rejects any credential/status change
+    // observed after that verification.
+    if (!account) {
+      await verifyDummy(password);
+      throw new InvalidCredentialsError();
+    }
+
+    const ok = account.passwordHash
+      ? await verifySafely(account.passwordHash, password)
       : await verifyDummy(password);
-
-    if (!account || !account.passwordHash || !ok) {
+    if (
+      !account.passwordHash ||
+      !ok ||
+      account.status !== AccountStatus.ACTIVE
+    ) {
       throw new InvalidCredentialsError();
     }
-    if (account.status !== AccountStatus.ACTIVE) {
+
+    return this.transactions.run(async (txClient) => {
+      await this.transactions.lockAccountForUpdate(txClient, account.id);
+      const current = await txClient.account.findUnique({
+        where: { id: account.id },
+      });
+      if (
+        !current ||
+        current.status !== AccountStatus.ACTIVE ||
+        current.passwordHash !== account.passwordHash
+      ) {
+        throw new InvalidCredentialsError();
+      }
+
+      const { token, session } = await this.sessions.createSessionInTransaction(
+        txClient,
+        current,
+        meta,
+      );
+      return { token, session, account: current };
+    });
+  }
+
+  async stepUp(
+    accountId: string,
+    sessionId: string,
+    password: string,
+  ): Promise<Date> {
+    const account = await this.accounts.findById(accountId);
+    if (
+      !account ||
+      account.status !== AccountStatus.ACTIVE ||
+      !account.passwordHash ||
+      !(await verifySafely(account.passwordHash, password))
+    ) {
       throw new InvalidCredentialsError();
     }
+    return this.sessions.markStepUp(accountId, sessionId);
+  }
 
-    const { token, session } = await this.sessions.createSession(account, meta);
-    return { token, session, account };
+  async changePassword(input: {
+    accountId: string;
+    sessionId: string;
+    currentPassword: string;
+    newPassword: string;
+    sessionMeta?: SessionMeta;
+  }): Promise<{ token: string; session: WebSession; account: Account }> {
+    this.validatePassword(input.newPassword, 'newPassword');
+
+    const account = await this.accounts.findById(input.accountId);
+    if (
+      !account ||
+      account.status !== AccountStatus.ACTIVE ||
+      !account.passwordHash ||
+      !(await verifySafely(account.passwordHash, input.currentPassword))
+    ) {
+      throw new InvalidCredentialsError();
+    }
+    if (await verifySafely(account.passwordHash, input.newPassword)) {
+      throw new ValidationError(
+        'New password must differ from the current password',
+        'newPassword',
+      );
+    }
+    const newPasswordHash = await hashPassword(input.newPassword);
+
+    return this.transactions.run(async (txClient) => {
+      await this.transactions.lockAccountForUpdate(txClient, input.accountId);
+      const activeSession = await txClient.webSession.findFirst({
+        where: {
+          id: input.sessionId,
+          accountId: input.accountId,
+          revokedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!activeSession) throw new UnauthorizedError();
+      const current = await txClient.account.findUnique({
+        where: { id: input.accountId },
+      });
+      if (
+        !current ||
+        current.status !== AccountStatus.ACTIVE ||
+        !current.passwordHash ||
+        !(await verifySafely(current.passwordHash, input.currentPassword))
+      ) {
+        throw new InvalidCredentialsError();
+      }
+      if (await verifySafely(current.passwordHash, input.newPassword)) {
+        throw new ValidationError(
+          'New password must differ from the current password',
+          'newPassword',
+        );
+      }
+      const updated = await txClient.account.update({
+        where: { id: input.accountId },
+        data: {
+          passwordHash: newPasswordHash,
+          mustChangePassword: false,
+          passwordChangedAt: new Date(),
+        },
+      });
+      const rotated = await this.sessions.rotateAfterCredentialChange(
+        txClient,
+        { id: input.accountId },
+        input.sessionMeta,
+      );
+      return { ...rotated, account: updated };
+    });
   }
 
   async logout(sessionId: string): Promise<void> {
     await this.sessions.revokeSession(sessionId);
+  }
+
+  private validatePassword(password: string, field: string): void {
+    try {
+      validatePassword(password);
+    } catch (e) {
+      if (e instanceof PasswordPolicyError) {
+        throw new ValidationError(e.message, field);
+      }
+      throw e;
+    }
+  }
+}
+
+async function verifySafely(hash: string, password: string): Promise<boolean> {
+  try {
+    return await verifyPassword(hash, password);
+  } catch {
+    return false;
   }
 }
 
@@ -61,10 +200,9 @@ const DUMMY_HASH =
   '$argon2id$v=19$m=65536,t=3,p=1$AAAAAAAAAAAAAAAAAAAAAA$' +
   'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
-async function verifyDummy(_password: string): Promise<boolean> {
-  // Always returns false; the work is done to match timing.
+async function verifyDummy(password: string): Promise<boolean> {
   try {
-    await verifyPassword(DUMMY_HASH, _password);
+    await verifyPassword(DUMMY_HASH, password);
   } catch {
     // Hash is malformed; ignore — the result is false either way.
   }

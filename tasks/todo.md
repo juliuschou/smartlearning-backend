@@ -11,12 +11,14 @@
 ## Checklist
 
 ### Phase 0 — 關鍵技術決策
+
 - [x] 新增 `docs/智學互動平台/30_系統設計/M2 關鍵技術決策.md`
 - [x] 定案 11 項紅卡（UUID v7、TEXT+CHECK、lock protocol、Web Session、Argon2id、validation token、advisory lock、can_create_course scope、open-text 投影、wire contract、Redis 邊界）
 - [x] 紅卡狀態表（已定案/方向已定待驗證/非阻擋 + 驗證 phase）
 - [x] 註記完整 7 份 M2 設計文件仍待後續 phase 前交付
 
 ### Phase 1 — 工程與資料基礎
+
 - [x] 依賴安裝：helmet、cookie-parser、uuid、supertest、@types/*
 - [x] 移除 @nestjs/swagger（transitive js-yaml 漏洞；完整 OpenAPI 留後續設計階段）
 - [x] package.json scripts：prisma:generate/validate/migrate:deploy/migrate:status/seed、typecheck、lint:check、format:check、test:integration
@@ -41,6 +43,7 @@
 - [x] README.md 更新
 
 ### 本次續作 — Identity/Course 垂直切片驗證
+
 - [x] 授權並套用 `20260815174233_add_identity_and_course` 至 `smartlearning_dev`
 - [x] advisory lock 改用 `$executeRaw`，避免 Prisma 7 反序列化 PostgreSQL `void`
 - [x] Identity/Course controller 明確設定 URI version `v1`
@@ -76,21 +79,21 @@
 
 ## Verification（執行結果）
 
-| 命令 | 結果 |
-|------|------|
-| `NODE_ENV=development npm run prisma:migrate:deploy` | ✅ 套用 `20260815174233_add_identity_and_course` 至 `smartlearning_dev` |
-| `NODE_ENV=development npm run prisma:migrate:status` | ✅ Database schema is up to date |
-| `NODE_ENV=test npm run prisma:migrate:status` | ✅ Test database schema is up to date |
-| `npm run prisma:generate` | ✅ Prisma Client 7.9.1 generated |
-| `npm run prisma:validate` | ✅ schema valid |
-| `npm run typecheck` | ✅ 通過 |
-| `npm run lint:check` | ✅ 通過（0 errors） |
-| `npm run format:check` | ✅ All matched files use Prettier code style |
-| `npm run build` | ✅ nest build 通過 |
-| `npm test -- --runInBand` | ✅ 5 suites / 18 tests passed |
-| `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts` | ✅ 1 suite / 10 tests passed |
-| `npm run test:e2e -- --runInBand` | ✅ 2 suites / 12 tests passed |
-| `npm run test:integration -- --runInBand` | ✅ 2 suites / 6 tests passed |
+| 命令                                                            | 結果                                                                    |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `NODE_ENV=development npm run prisma:migrate:deploy`            | ✅ 套用 `20260815174233_add_identity_and_course` 至 `smartlearning_dev` |
+| `NODE_ENV=development npm run prisma:migrate:status`            | ✅ Database schema is up to date                                        |
+| `NODE_ENV=test npm run prisma:migrate:status`                   | ✅ Test database schema is up to date                                   |
+| `npm run prisma:generate`                                       | ✅ Prisma Client 7.9.1 generated                                        |
+| `npm run prisma:validate`                                       | ✅ schema valid                                                         |
+| `npm run typecheck`                                             | ✅ 通過                                                                 |
+| `npm run lint:check`                                            | ✅ 通過（0 errors）                                                     |
+| `npm run format:check`                                          | ✅ All matched files use Prettier code style                            |
+| `npm run build`                                                 | ✅ nest build 通過                                                      |
+| `npm test -- --runInBand`                                       | ✅ 5 suites / 18 tests passed                                           |
+| `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts` | ✅ 1 suite / 10 tests passed                                            |
+| `npm run test:e2e -- --runInBand`                               | ✅ 2 suites / 12 tests passed                                           |
+| `npm run test:integration -- --runInBand`                       | ✅ 2 suites / 6 tests passed                                            |
 
 ## 結果
 
@@ -98,6 +101,7 @@
 - Phase 1：fresh checkout 流程（README Quick start）可 prisma:generate → migrate:deploy → start:dev → health check；typecheck/lint/format/build/test/e2e/integration 全綠。
 - 本次續作：Identity/Course 垂直切片 migration 已套用至 `smartlearning_dev`；advisory lock、URI version、auth error/guard semantics、test cookie defaults 已修正，完整 unit/integration/e2e 驗證全綠。
 - 已知非阻擋警告：Nest/path-to-regexp 仍提示 `health/(.*)` 與 `/api/*` legacy route pattern，後續可改為 named wildcard syntax。
+
 ### Phase 2 前置 — M2 設計 gate
 
 - [x] #1 領域分析：`docs/智學互動平台/20_系統分析/系統領域與需求分析.md`
@@ -157,16 +161,16 @@
 
 #### Verification
 
-| Command | Result |
-|---|---|
-| `npm test -- --runInBand common/http` | PASS — 3 suites / 18 tests |
-| `npm test -- --runInBand` | PASS — 8 suites / 36 tests |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS after formatting fix |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `npm run test:e2e -- --runInBand` | PASS — 3 suites / 16 tests |
-| `npm run test:integration -- --runInBand` | PASS — 2 suites / 6 tests |
+| Command                                   | Result                     |
+| ----------------------------------------- | -------------------------- |
+| `npm test -- --runInBand common/http`     | PASS — 3 suites / 18 tests |
+| `npm test -- --runInBand`                 | PASS — 8 suites / 36 tests |
+| `npm run typecheck`                       | PASS                       |
+| `npm run lint:check`                      | PASS after formatting fix  |
+| `npm run format:check`                    | PASS                       |
+| `npm run build`                           | PASS                       |
+| `npm run test:e2e -- --runInBand`         | PASS — 3 suites / 16 tests |
+| `npm run test:integration -- --runInBand` | PASS — 2 suites / 6 tests  |
 
 #### Results
 
@@ -246,3 +250,79 @@ Review verification after hardening: focused HTTP tests 3 suites / 18 tests, ful
 - Final quality gates after wildcard-Origin hardening: lint, format check, build, and `git diff --check` all passed.
 - Non-blocking warning: E2E/integration startup emitted existing Nest `LegacyRouteConverter` wildcard-route warnings; no test failed.
 - No Prisma schema or migration changes were introduced.
+
+### 2026-08-16 — Implementation slice 3: Step-up and account credential lifecycle
+
+#### Context and scope
+
+- [x] Implement session-bound 10-minute step-up authentication and `StepUpGuard`.
+- [x] Implement self password change with forced temp-password flow and full session revocation/rotation.
+- [x] Implement admin reset-password, disable, and restore endpoints with step-up protection.
+- [x] Keep Redis rate limiting, LoginAttempt, CLI credentials, full AuditEvent persistence, QuestionDefinition, Socket.IO, and governance work deferred.
+
+#### Acceptance criteria
+
+- [x] `POST /api/v1/auth/step-up` re-verifies the current password, stores state only on the current Account/WebSession, and returns no password/token.
+- [x] Missing, expired, revoked, disabled, or cross-session step-up state returns `AUTH_STEP_UP_REQUIRED`.
+- [x] Temp/reset passwords set `mustChangePassword`; force-change accounts can only use the allowed session/logout/step-up/password-change paths until changed.
+- [x] Password change updates `passwordChangedAt`, invalidates the old password, revokes all previous sessions transactionally, and rotates the current session/CSRF cookies.
+- [x] Admin reset/disable/restore are CSRF-protected, step-up-protected, transactional, and never return password/hash/cookie/token values.
+- [x] Disable immediately invalidates all target sessions; restore never revives revoked sessions.
+- [x] Error responses, logs, and any audit metadata contain no raw password, cookie, token, or password hash.
+
+#### Checklist
+
+- [x] Add nullable WebSession step-up timestamp and additive migration.
+- [x] Add step-up validity helper/guard, password-change-required guard semantics, stable errors, and transaction/account-lock helpers.
+- [x] Extend SessionService/AuthService/AccountService and controllers/DTOs.
+- [x] Update safe response projections and Pino redaction paths.
+- [x] Add focused unit tests plus PostgreSQL-backed identity/e2e regression coverage.
+- [x] Run Prisma, typecheck, lint, format, unit, integration, e2e, build, and diff verification.
+
+#### Risk & rollback
+
+- **Risk:** high; authentication, password state, session validity, and account availability change together.
+- **Rollback:** revert application routes/guards/services while retaining the nullable additive step-up column; never restore revoked sessions or old credentials.
+
+#### Verification plan
+
+- `NODE_ENV=test npm run prisma:migrate:status`
+- `npm run prisma:generate && npm run prisma:validate`
+- `npm test -- --runInBand`
+- `npm run test:integration -- --runInBand test/identity.integration-spec.ts`
+- `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts`
+- `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, `git diff --check`
+
+#### Working notes
+
+- Current route contract explicitly uses POST for `/admin/accounts/:id/reset-password`, `/disable`, and `/restore`; retain that user-requested contract.
+- Existing Account fields `mustChangePassword`, `passwordChangedAt`, `disabledAt` and WebSession `revokedAt` are reused.
+- Self-target admin lifecycle operations are denied by default; self password changes use `/auth/change-password`.
+- Login re-verifies the originally checked password hash under an account lock before inserting a session, preventing stale login sessions after reset/change/disable races without holding the lock during Argon2 verification.
+- Password changes reject reuse of the current credential, and self-target UUID checks canonicalize case-insensitive PostgreSQL UUID input.
+- Account-wide session revocation clears step-up state; step-up marking locks the account and conditionally updates an unrevoked session.
+- Pino request/response redaction is wired at `LoggerModule` configuration and covered by an emitted-record test.
+
+#### Verification results
+
+| Command | Result |
+| --- | --- |
+| `NODE_ENV=test npm run prisma:migrate:deploy` | PASS — applied `20260816100000_add_step_up_at` to `smartlearning_test` |
+| `NODE_ENV=test npm run prisma:migrate:status` | PASS — database schema up to date |
+| `npm run prisma:generate && npm run prisma:validate` | PASS — Prisma Client 7.9.1 generated; schema valid |
+| `npm test -- --runInBand` | PASS — 12 suites / 47 tests |
+| `npm run test:integration -- --runInBand test/identity.integration-spec.ts` | PASS — 1 suite / 5 tests |
+| `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts` | PASS — 1 suite / 14 tests |
+| `npm run typecheck` | PASS |
+| `npm run format:check` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run build` | PASS |
+| `git diff --check` | PASS |
+
+#### Results
+
+- Added persistent Account + WebSession-bound 10-minute step-up and method-level `StepUpGuard` protection for admin reset, disable, and restore.
+- Connected forced password-change enforcement, self password rotation, transactional full-session revoke, current-session/CSRF-cookie rotation, admin reset, disable, and restore.
+- Added stale-login race protection, same-password rejection, UUID-case-safe self-target protection, and runtime Pino secret redaction.
+- PostgreSQL-backed regression covers force-change gating, old-password/session invalidation, cross-session and expired step-up, active-session disable revocation, restore non-revival, and secret-free projections.
+- Existing Nest `LegacyRouteConverter` wildcard route warnings remain non-blocking. Redis rate limiting, LoginAttempt, CLI credentials, full AuditEvent persistence, login-CSRF hardening, and broader governance work remain intentionally deferred.

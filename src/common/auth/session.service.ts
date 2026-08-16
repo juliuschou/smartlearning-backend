@@ -1,7 +1,12 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { WebSession, Account } from '../../../generated/prisma/client';
+import {
+  Prisma,
+  type WebSession,
+  type Account,
+} from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TransactionService } from '../../prisma/transaction.service';
 import { Clock, SystemClock } from '../clock';
 import { generateToken, hashToken, newId } from '../crypto';
 import {
@@ -9,15 +14,19 @@ import {
   absoluteExpiry,
 } from '../../modules/identity/domain/session-limits';
 import { AccountStatus } from '../../modules/identity/domain/account-status';
-import { UnauthorizedError } from '../errors';
+import { StepUpRequiredError, UnauthorizedError } from '../errors';
+import { isStepUpValid } from './step-up';
+
+export type SessionMeta = {
+  ipAddress?: string;
+  userAgent?: string;
+};
 
 /**
- * Web Session lifecycle: create, load (cookie → hash → DB), touch idle clock.
- * PostgreSQL is the single authority — only the SHA-256 hash of the opaque
- * token is persisted; the raw token lives only in the cookie (M2 §4).
- *
- * Slice scope: create on login, load+touch on guarded requests, and revoke the
- * current session on logout. Rotation/full-account revocation remain deferred.
+ * Web Session lifecycle: create, load (cookie → hash → DB), touch idle clock,
+ * step-up state, rotation, and account-wide revocation. PostgreSQL is the
+ * single authority — only the SHA-256 hash of the opaque token is persisted;
+ * raw tokens live only in cookies (M2 §4).
  */
 @Injectable()
 export class SessionService {
@@ -28,6 +37,7 @@ export class SessionService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly config: ConfigService,
+    private readonly transactions: TransactionService,
     @Optional() clock?: Clock,
   ) {
     this.clock = clock ?? new SystemClock();
@@ -40,21 +50,36 @@ export class SessionService {
     return this.prismaService.prisma;
   }
 
-  /**
-   * Create a session for an account. Returns the raw token (to set in the
-   * cookie) and the persisted DB row.
-   */
+  /** Create a session for an account and return its raw cookie token once. */
   async createSession(
     account: Pick<Account, 'id'>,
-    meta?: { ipAddress?: string; userAgent?: string },
+    meta?: SessionMeta,
+  ): Promise<{ token: string; session: WebSession }> {
+    return this.transactions.run(async (tx) => {
+      await this.transactions.lockAccountForUpdate(tx, account.id);
+      const current = await tx.account.findUnique({
+        where: { id: account.id },
+        select: { status: true },
+      });
+      if (!current || current.status !== AccountStatus.ACTIVE) {
+        throw new UnauthorizedError();
+      }
+      return this.createSessionInTransaction(tx, account, meta);
+    });
+  }
+
+  /** Create a session inside a caller-owned transaction. */
+  async createSessionInTransaction(
+    tx: Prisma.TransactionClient,
+    account: Pick<Account, 'id'>,
+    meta?: SessionMeta,
   ): Promise<{ token: string; session: WebSession }> {
     const token = generateToken();
-    const cookieHash = hashToken(token);
-    const session = await this.db.webSession.create({
+    const session = await tx.webSession.create({
       data: {
         id: newId(),
         accountId: account.id,
-        cookieHash,
+        cookieHash: hashToken(token),
         ipAddress: meta?.ipAddress,
         userAgent: meta?.userAgent,
         lastSeenAt: new Date(this.clock.nowMs()),
@@ -68,15 +93,92 @@ export class SessionService {
   async revokeSession(sessionId: string): Promise<void> {
     await this.db.webSession.updateMany({
       where: { id: sessionId, revokedAt: null },
-      data: { revokedAt: new Date(this.clock.nowMs()) },
+      data: { revokedAt: new Date(this.clock.nowMs()), stepUpAt: null },
     });
+  }
+
+  /** Revoke every active session for an account in a caller-owned transaction. */
+  async revokeAllForAccountInTransaction(
+    tx: Prisma.TransactionClient,
+    accountId: string,
+    revokedAt = new Date(this.clock.nowMs()),
+  ): Promise<void> {
+    await tx.webSession.updateMany({
+      where: { accountId, revokedAt: null },
+      data: { revokedAt, stepUpAt: null },
+    });
+  }
+
+  /**
+   * Revoke all existing sessions and create a replacement current session in
+   * the same transaction. The replacement has no inherited step-up state.
+   */
+  async rotateAfterCredentialChange(
+    tx: Prisma.TransactionClient,
+    account: Pick<Account, 'id'>,
+    meta?: SessionMeta,
+  ): Promise<{ token: string; session: WebSession }> {
+    await this.revokeAllForAccountInTransaction(tx, account.id);
+    return this.createSessionInTransaction(tx, account, meta);
+  }
+
+  /**
+   * Mark the current active session as recently step-up authenticated. The
+   * account status is rechecked inside the transaction so disabled accounts
+   * cannot create a new step-up state during a concurrent disable.
+   */
+  async markStepUp(accountId: string, sessionId: string): Promise<Date> {
+    const markedAt = new Date(this.clock.nowMs());
+    await this.transactions.run(async (tx) => {
+      await this.transactions.lockAccountForUpdate(tx, accountId);
+      const session = await tx.webSession.findFirst({
+        where: {
+          id: sessionId,
+          accountId,
+          revokedAt: null,
+          account: { status: AccountStatus.ACTIVE },
+        },
+        select: { id: true },
+      });
+      if (!session) throw new UnauthorizedError();
+
+      const updated = await tx.webSession.updateMany({
+        where: {
+          id: session.id,
+          accountId,
+          revokedAt: null,
+        },
+        data: { stepUpAt: markedAt },
+      });
+      if (updated.count !== 1) throw new UnauthorizedError();
+    });
+    return markedAt;
+  }
+
+  /** Require a non-expired step-up for this exact account/session pair. */
+  async assertRecentStepUp(
+    accountId: string,
+    sessionId: string,
+  ): Promise<void> {
+    const session = await this.db.webSession.findFirst({
+      where: {
+        id: sessionId,
+        accountId,
+        revokedAt: null,
+        account: { status: AccountStatus.ACTIVE },
+      },
+      select: { stepUpAt: true },
+    });
+    if (!session || !isStepUpValid(session.stepUpAt, this.clock.nowMs())) {
+      throw new StepUpRequiredError();
+    }
   }
 
   /**
    * Resolve a raw cookie token to a valid, active session + account.
    * Throws UnauthorizedError if the token has no session, the session is
-   * expired/idle/revoked, or the account is no longer active.
-   * Touches lastSeenAt on success.
+   * expired/idle/revoked, or the account is no longer active. Touches
+   * lastSeenAt on success.
    */
   async loadActiveSession(rawToken: string): Promise<{
     session: WebSession;

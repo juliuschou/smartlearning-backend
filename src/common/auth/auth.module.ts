@@ -3,6 +3,7 @@ import { SessionService } from './session.service';
 import { SessionGuard } from './session.guard';
 import { CsrfGuard } from './csrf.guard';
 import { AdminGuard, CanCreateCourseGuard } from './authorization.guards';
+import { StepUpGuard } from './step-up.guard';
 
 /**
  * Global auth wiring: session resolution + role/permission guards.
@@ -17,6 +18,7 @@ import { AdminGuard, CanCreateCourseGuard } from './authorization.guards';
     CsrfGuard,
     AdminGuard,
     CanCreateCourseGuard,
+    StepUpGuard,
   ],
   exports: [
     SessionService,
@@ -24,6 +26,7 @@ import { AdminGuard, CanCreateCourseGuard } from './authorization.guards';
     CsrfGuard,
     AdminGuard,
     CanCreateCourseGuard,
+    StepUpGuard,
   ],
 })
 export class AuthModule {}

@@ -1,8 +1,8 @@
 /**
  * Account status (TEXT + CHECK). active ⇄ disabled.
  * disabled accounts cannot log in and all sessions/CLI credentials become
- * invalid (P0-03). The disable/restore flow is deferred from this slice;
- * status is still modeled so the schema/queries are ready.
+ * invalid (P0-03). Account transitions are transactionally enforced by the
+ * identity application service.
  */
 export const AccountStatus = {
   ACTIVE: 'active',

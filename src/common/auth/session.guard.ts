@@ -1,7 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { SESSION_COOKIE_NAME } from '../security';
-import { UnauthorizedError } from '../errors';
+import { PasswordChangeRequiredError, UnauthorizedError } from '../errors';
+import { ALLOW_PASSWORD_CHANGE_REQUIRED } from './password-change-required.decorator';
 import { SessionService } from './session.service';
 import type { AuthContext } from './auth-context';
 
@@ -16,7 +18,10 @@ import type { AuthContext } from './auth-context';
  */
 @Injectable()
 export class SessionGuard implements CanActivate {
-  constructor(private readonly sessions: SessionService) {}
+  constructor(
+    private readonly sessions: SessionService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx
@@ -27,6 +32,14 @@ export class SessionGuard implements CanActivate {
       throw new UnauthorizedError();
     }
     const { session, account } = await this.sessions.loadActiveSession(raw);
+    const allowPasswordChangeRequired =
+      this.reflector.getAllAndOverride<boolean>(
+        ALLOW_PASSWORD_CHANGE_REQUIRED,
+        [ctx.getHandler(), ctx.getClass()],
+      ) ?? false;
+    if (account.mustChangePassword && !allowPasswordChangeRequired) {
+      throw new PasswordChangeRequiredError();
+    }
     req.authContext = {
       account: {
         id: account.id,
@@ -35,6 +48,7 @@ export class SessionGuard implements CanActivate {
         role: account.role,
         status: account.status,
         canCreateCourse: account.canCreateCourse,
+        mustChangePassword: account.mustChangePassword,
       },
       sessionId: session.id,
     };

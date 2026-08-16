@@ -37,7 +37,8 @@ describe('Auth + Courses (e2e)', () => {
   const TEACHER = {
     username: 'e2e-teacher',
     displayName: 'E2E Teacher',
-    password: 'teacher-password-1234',
+    tempPassword: 'teacher-temp-password-1234',
+    password: 'teacher-password-final-1234',
   };
 
   type AuthenticatedAgent = {
@@ -114,7 +115,7 @@ describe('Auth + Courses (e2e)', () => {
 
   async function createTeacher(): Promise<void> {
     const admin = await loginAs(ADMIN.username, ADMIN.password);
-    await admin.agent
+    const created = await admin.agent
       .post('/api/v1/admin/accounts')
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, admin.csrfToken)
@@ -123,8 +124,22 @@ describe('Auth + Courses (e2e)', () => {
         displayName: TEACHER.displayName,
         role: AccountRole.TEACHER,
         canCreateCourse: true,
-        tempPassword: TEACHER.password,
+        tempPassword: TEACHER.tempPassword,
       });
+    expect(created.status).toBe(201);
+    expect(created.body.data.mustChangePassword).toBe(true);
+
+    const temporary = await loginAs(TEACHER.username, TEACHER.tempPassword);
+    const changed = await temporary.agent
+      .post('/api/v1/auth/change-password')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, temporary.csrfToken)
+      .send({
+        currentPassword: TEACHER.tempPassword,
+        newPassword: TEACHER.password,
+      });
+    expect(changed.status).toBe(201);
+    expect(changed.body.data.mustChangePassword).toBe(false);
   }
 
   it('skips gracefully when the test DB is not reachable', () => {
@@ -254,6 +269,220 @@ describe('Auth + Courses (e2e)', () => {
     await expect(sessions.revokeSession(session!.id)).resolves.toBeUndefined();
   });
 
+  it('forces temp-password replacement and revokes all previous sessions', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const created = await admin.agent
+      .post('/api/v1/admin/accounts')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        username: 'force-change-teacher',
+        displayName: 'Force Change Teacher',
+        role: AccountRole.TEACHER,
+        canCreateCourse: true,
+        tempPassword: 'force-temp-password-1234',
+      });
+    expect(created.status).toBe(201);
+    expect(created.body.data.mustChangePassword).toBe(true);
+
+    const first = await loginAs(
+      'force-change-teacher',
+      'force-temp-password-1234',
+    );
+    const second = await loginAs(
+      'force-change-teacher',
+      'force-temp-password-1234',
+    );
+    const blocked = await first.agent.get('/api/v1/courses');
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.error.code).toBe('AUTH_PASSWORD_CHANGE_REQUIRED');
+
+    const unchanged = await second.agent
+      .post('/api/v1/auth/change-password')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, second.csrfToken)
+      .send({
+        currentPassword: 'force-temp-password-1234',
+        newPassword: 'force-temp-password-1234',
+      });
+    expect(unchanged.status).toBe(400);
+    expect(unchanged.body.error.code).toBe('VALIDATION_FAILED');
+
+    const changed = await first.agent
+      .post('/api/v1/auth/change-password')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, first.csrfToken)
+      .send({
+        currentPassword: 'force-temp-password-1234',
+        newPassword: 'force-final-password-1234',
+      });
+    expect(changed.status).toBe(201);
+    expect(changed.body.data.mustChangePassword).toBe(false);
+    expect(JSON.stringify(changed.body)).not.toContain(
+      'force-final-password-1234',
+    );
+
+    expect((await first.agent.get('/api/v1/auth/session')).status).toBe(200);
+    expect((await second.agent.get('/api/v1/auth/session')).status).toBe(401);
+    expect(
+      (
+        await request(app.getHttpServer()).post('/api/v1/auth/login').send({
+          username: 'force-change-teacher',
+          password: 'force-temp-password-1234',
+        })
+      ).status,
+    ).toBe(401);
+  });
+
+  it('requires step-up and protects admin account lifecycle transitions', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const created = await admin.agent
+      .post('/api/v1/admin/accounts')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        username: 'lifecycle-teacher',
+        displayName: 'Lifecycle Teacher',
+        role: AccountRole.TEACHER,
+        canCreateCourse: true,
+        tempPassword: 'lifecycle-temp-password-1234',
+      });
+    expect(created.status).toBe(201);
+    const targetId = created.body.data.id as string;
+
+    const temporary = await loginAs(
+      'lifecycle-teacher',
+      'lifecycle-temp-password-1234',
+    );
+    const changed = await temporary.agent
+      .post('/api/v1/auth/change-password')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, temporary.csrfToken)
+      .send({
+        currentPassword: 'lifecycle-temp-password-1234',
+        newPassword: 'lifecycle-final-password-1234',
+      });
+    expect(changed.status).toBe(201);
+    const target = temporary;
+
+    const withoutStepUp = await admin.agent
+      .post(`/api/v1/admin/accounts/${targetId}/disable`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(withoutStepUp.status).toBe(403);
+    expect(withoutStepUp.body.error.code).toBe('AUTH_STEP_UP_REQUIRED');
+
+    const stepUp = await admin.agent
+      .post('/api/v1/auth/step-up')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ password: ADMIN.password });
+    expect(stepUp.status).toBe(201);
+    expect(stepUp.body.data.expiresAt).toBeDefined();
+
+    const adminSession = await admin.agent.get('/api/v1/auth/session');
+    expect(adminSession.status).toBe(200);
+    const selfDisable = await admin.agent
+      .post(
+        `/api/v1/admin/accounts/${String(
+          adminSession.body.data.accountId,
+        ).toUpperCase()}/disable`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(selfDisable.status).toBe(403);
+    expect(selfDisable.body.error.code).toBe('FORBIDDEN');
+
+    const otherAdmin = await loginAs(ADMIN.username, ADMIN.password);
+    const crossSession = await otherAdmin.agent
+      .post(`/api/v1/admin/accounts/${targetId}/disable`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, otherAdmin.csrfToken);
+    expect(crossSession.status).toBe(403);
+    expect(crossSession.body.error.code).toBe('AUTH_STEP_UP_REQUIRED');
+
+    const reset = await admin.agent
+      .post(`/api/v1/admin/accounts/${targetId}/reset-password`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ tempPassword: 'lifecycle-reset-password-1234' });
+    expect(reset.status).toBe(201);
+    expect(reset.body.data.mustChangePassword).toBe(true);
+    expect(reset.body.data.passwordHash).toBeUndefined();
+    expect(JSON.stringify(reset.body)).not.toContain(
+      'lifecycle-reset-password-1234',
+    );
+    expect((await target.agent.get('/api/v1/auth/session')).status).toBe(401);
+
+    const activeTarget = await loginAs(
+      'lifecycle-teacher',
+      'lifecycle-reset-password-1234',
+    );
+    expect((await activeTarget.agent.get('/api/v1/auth/session')).status).toBe(
+      200,
+    );
+
+    const targetSession = await prisma.prisma.webSession.findUnique({
+      where: { cookieHash: hashToken(admin.sessionToken) },
+    });
+    await prisma.prisma.webSession.update({
+      where: { id: targetSession!.id },
+      data: { stepUpAt: new Date(Date.now() - 11 * 60 * 1000) },
+    });
+    const expired = await admin.agent
+      .post(`/api/v1/admin/accounts/${targetId}/disable`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(expired.status).toBe(403);
+    expect(expired.body.error.code).toBe('AUTH_STEP_UP_REQUIRED');
+
+    await admin.agent
+      .post('/api/v1/auth/step-up')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ password: ADMIN.password });
+    const disabled = await admin.agent
+      .post(`/api/v1/admin/accounts/${targetId}/disable`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(disabled.status).toBe(201);
+    expect(disabled.body.data.status).toBe('disabled');
+    expect(
+      (
+        await request(app.getHttpServer()).post('/api/v1/auth/login').send({
+          username: 'lifecycle-teacher',
+          password: 'lifecycle-reset-password-1234',
+        })
+      ).status,
+    ).toBe(401);
+    expect((await activeTarget.agent.get('/api/v1/auth/session')).status).toBe(
+      401,
+    );
+
+    const restored = await admin.agent
+      .post(`/api/v1/admin/accounts/${targetId}/restore`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(restored.status).toBe(201);
+    expect(restored.body.data.status).toBe('active');
+    expect((await target.agent.get('/api/v1/auth/session')).status).toBe(401);
+    expect((await activeTarget.agent.get('/api/v1/auth/session')).status).toBe(
+      401,
+    );
+
+    const resetLogin = await loginAs(
+      'lifecycle-teacher',
+      'lifecycle-reset-password-1234',
+    );
+    expect(resetLogin.agent).toBeDefined();
+    expect(
+      (await resetLogin.agent.get('/api/v1/auth/session')).body.data
+        .mustChangePassword,
+    ).toBe(true);
+  });
+
   it('admin creates a teacher; teacher logs in and creates a course', async () => {
     if (!dbReachable) return;
     await createTeacher();
@@ -283,7 +512,24 @@ describe('Auth + Courses (e2e)', () => {
         canCreateCourse: false,
         tempPassword: 'no-create-password-12',
       });
-    const teacher = await loginAs('no-create-teacher', 'no-create-password-12');
+    const temporary = await loginAs(
+      'no-create-teacher',
+      'no-create-password-12',
+    );
+    const changed = await temporary.agent
+      .post('/api/v1/auth/change-password')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, temporary.csrfToken)
+      .send({
+        currentPassword: 'no-create-password-12',
+        newPassword: 'no-create-final-password-12',
+      });
+    expect(changed.status).toBe(201);
+    temporary.csrfToken = cookieValue(
+      cookieHeaders(changed.headers['set-cookie']),
+      CSRF_COOKIE_NAME,
+    );
+    const teacher = temporary;
     const res = await teacher.agent
       .post('/api/v1/courses')
       .set('Origin', TEST_ORIGIN)

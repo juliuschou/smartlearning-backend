@@ -9,6 +9,8 @@ export class AccountDto {
   role!: string;
   status!: string;
   canCreateCourse!: boolean;
+  mustChangePassword!: boolean;
+  disabledAt!: string | null;
   createdAt!: string;
 }
 
@@ -18,6 +20,7 @@ export class SessionDto {
   displayName!: string;
   role!: string;
   canCreateCourse!: boolean;
+  mustChangePassword!: boolean;
   sessionId!: string;
   expiresAt!: string;
 }

@@ -9,10 +9,8 @@ import { ACCOUNT_ROLES, type AccountRole } from '../../domain/roles';
 
 /**
  * Admin creates a teacher/admin account. A one-time temporary password is
- * supplied by the admin and hashed with Argon2id before storage.
- *
- * Slice note: `must_change_password` is forced false in this slice (forced
- * first-login change is deferred). The flag is kept on the model for later.
+ * supplied by the admin and hashed with Argon2id before storage; the account
+ * must replace it before using other protected operations.
  */
 export class CreateAccountDto {
   @IsString()

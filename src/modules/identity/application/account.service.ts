@@ -1,28 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import { Account } from '../../../../generated/prisma/client';
+import type { Account } from '../../../../generated/prisma/client';
+import { SessionService } from '../../../common/auth';
+import { isUuid, newId, hashPassword } from '../../../common/crypto';
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '../../../common/errors';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
-import { newId, hashPassword } from '../../../common/crypto';
 import { ACCOUNT_ROLES, AccountRole, isAccountRole } from '../domain/roles';
 import { AccountStatus } from '../domain/account-status';
 import {
   validatePassword,
   PasswordPolicyError,
 } from '../domain/password-policy';
-import { ConflictError, ValidationError } from '../../../common/errors';
 
 /**
  * Account write operations. Application layer is the single write entry point
- * — controllers do not touch Prisma directly.
- *
- * Slice scope: admin creates teacher/admin accounts. Disable/restore is
- * deferred.
+ * — controllers do not touch Prisma.
  */
 @Injectable()
 export class AccountService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly tx: TransactionService,
+    private readonly sessions: SessionService,
   ) {}
 
   private get db() {
@@ -45,7 +49,7 @@ export class AccountService {
     if (!isAccountRole(input.role)) {
       throw new ValidationError(`Invalid role: ${input.role}`, 'role');
     }
-    void ACCOUNT_ROLES; // referenced for exhaustiveness intent
+    void ACCOUNT_ROLES;
     try {
       validatePassword(input.tempPassword);
     } catch (e) {
@@ -75,8 +79,7 @@ export class AccountService {
           status: AccountStatus.ACTIVE,
           canCreateCourse: input.canCreateCourse,
           passwordHash,
-          // Slice: no forced first-login change.
-          mustChangePassword: false,
+          mustChangePassword: true,
           passwordChangedAt: new Date(),
           createdBy: input.createdBy,
         },
@@ -87,5 +90,123 @@ export class AccountService {
   /** Look up an account by username (login path). */
   findByUsername(username: string): Promise<Account | null> {
     return this.db.account.findUnique({ where: { username } });
+  }
+
+  findById(id: string): Promise<Account | null> {
+    return this.db.account.findUnique({ where: { id } });
+  }
+
+  async resetPassword(
+    targetAccountId: string,
+    tempPassword: string,
+    actorAccountId: string,
+  ): Promise<Account> {
+    this.assertNotSelfTarget(targetAccountId, actorAccountId);
+    this.validatePasswordOrThrow(tempPassword, 'tempPassword');
+    const passwordHash = await hashPassword(tempPassword);
+
+    return this.tx.run(async (txClient) => {
+      await this.tx.lockAccountForUpdate(txClient, targetAccountId);
+      const target = await txClient.account.findUnique({
+        where: { id: targetAccountId },
+      });
+      if (!target) throw new NotFoundError('Account not found');
+
+      const updated = await txClient.account.update({
+        where: { id: targetAccountId },
+        data: {
+          passwordHash,
+          mustChangePassword: true,
+          passwordChangedAt: new Date(),
+        },
+      });
+      await this.sessions.revokeAllForAccountInTransaction(
+        txClient,
+        targetAccountId,
+      );
+      return updated;
+    });
+  }
+
+  async disableAccount(
+    targetAccountId: string,
+    actorAccountId: string,
+  ): Promise<Account> {
+    this.assertNotSelfTarget(targetAccountId, actorAccountId);
+
+    return this.tx.run(async (txClient) => {
+      await this.tx.lockAccountForUpdate(txClient, targetAccountId);
+      const target = await txClient.account.findUnique({
+        where: { id: targetAccountId },
+      });
+      if (!target) throw new NotFoundError('Account not found');
+      if (target.status === AccountStatus.DISABLED) {
+        await this.sessions.revokeAllForAccountInTransaction(
+          txClient,
+          targetAccountId,
+        );
+        return target;
+      }
+
+      const updated = await txClient.account.update({
+        where: { id: targetAccountId },
+        data: {
+          status: AccountStatus.DISABLED,
+          disabledAt: new Date(),
+        },
+      });
+      await this.sessions.revokeAllForAccountInTransaction(
+        txClient,
+        targetAccountId,
+      );
+      return updated;
+    });
+  }
+
+  async restoreAccount(
+    targetAccountId: string,
+    actorAccountId: string,
+  ): Promise<Account> {
+    this.assertNotSelfTarget(targetAccountId, actorAccountId);
+
+    return this.tx.run(async (txClient) => {
+      await this.tx.lockAccountForUpdate(txClient, targetAccountId);
+      const target = await txClient.account.findUnique({
+        where: { id: targetAccountId },
+      });
+      if (!target) throw new NotFoundError('Account not found');
+      if (target.status === AccountStatus.ACTIVE) return target;
+
+      return txClient.account.update({
+        where: { id: targetAccountId },
+        data: {
+          status: AccountStatus.ACTIVE,
+          disabledAt: null,
+        },
+      });
+    });
+  }
+
+  private assertNotSelfTarget(
+    targetAccountId: string,
+    actorAccountId: string,
+  ): void {
+    if (!isUuid(targetAccountId)) {
+      throw new NotFoundError('Account not found');
+    }
+    if (targetAccountId.toLowerCase() === actorAccountId.toLowerCase()) {
+      throw new ForbiddenError('Use the self-service password operation');
+    }
+  }
+
+  private validatePasswordOrThrow(password: string, field: string): void {
+    try {
+      validatePassword(password);
+    } catch (e) {
+      if (e instanceof PasswordPolicyError) {
+        throw new ValidationError(e.message, field);
+      }
+      throw e;
+    }
   }
 }

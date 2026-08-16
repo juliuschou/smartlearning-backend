@@ -86,8 +86,10 @@ model WebSession {
   lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz
   /// 絕對過期時間 = 建立時 now + 8h
   expiresAt  DateTime  @map("expires_at") @db.Timestamptz
-  /// 撤銷時間（logout/password-change/disable）；切片未實作撤銷流程
+  /// 撤銷時間（logout/password-change/disable）
   revokedAt  DateTime? @map("revoked_at") @db.Timestamptz
+  /// 最近一次完成 password step-up 的時間；有效期由 application layer 固定為 10 分鐘
+  stepUpAt   DateTime? @map("step_up_at") @db.Timestamptz
 
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 

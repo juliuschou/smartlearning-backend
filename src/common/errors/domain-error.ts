@@ -113,3 +113,27 @@ export class CsrfError extends DomainError {
     );
   }
 }
+
+export class StepUpRequiredError extends DomainError {
+  constructor() {
+    super(
+      'AUTH_STEP_UP_REQUIRED' as ErrorCode,
+      'Recent password verification required',
+      HttpStatus.FORBIDDEN,
+      undefined,
+      'Complete step-up authentication and retry the operation.',
+    );
+  }
+}
+
+export class PasswordChangeRequiredError extends DomainError {
+  constructor() {
+    super(
+      'AUTH_PASSWORD_CHANGE_REQUIRED' as ErrorCode,
+      'Password change required',
+      HttpStatus.FORBIDDEN,
+      undefined,
+      'Change the account password before continuing.',
+    );
+  }
+}

@@ -9,6 +9,7 @@ export const PINO_REDACT_PATHS: string[] = [
   'req.headers.cookie',
   'req.headers["x-csrf-token"]',
   'req.body.password',
+  'req.body.currentPassword',
   'req.body.newPassword',
   'req.body.tempPassword',
   'req.body.cookieSecret',

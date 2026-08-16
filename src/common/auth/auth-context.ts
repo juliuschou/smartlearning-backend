@@ -7,7 +7,13 @@ import type { Account } from '../../../generated/prisma/client';
 export interface AuthContext {
   account: Pick<
     Account,
-    'id' | 'username' | 'displayName' | 'role' | 'status' | 'canCreateCourse'
+    | 'id'
+    | 'username'
+    | 'displayName'
+    | 'role'
+    | 'status'
+    | 'canCreateCourse'
+    | 'mustChangePassword'
   >;
   sessionId: string;
 }
