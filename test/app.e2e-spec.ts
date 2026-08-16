@@ -1,16 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../src/app.module';
+import type { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { createTestApp } from './setup/app-factory';
 
-describe('AppModule (e2e)', () => {
+describe('Application (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
+    app = await createTestApp();
     await app.init();
   });
 
@@ -18,7 +14,19 @@ describe('AppModule (e2e)', () => {
     await app.close();
   });
 
-  it('should compile and initialize the application', () => {
-    expect(app).toBeDefined();
+  it('GET /health/live → 200 ok (no DB dependency)', async () => {
+    const res = await request(app.getHttpServer()).get('/health/live');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+  });
+
+  it('GET /health/ready → 200 with a db check object', async () => {
+    const res = await request(app.getHttpServer()).get('/health/ready');
+    // Controller returns 200 with status ok|degraded; we assert the db check
+    // shape rather than a hard healthy=true so the suite stays green in a
+    // DB-less CI sandbox.
+    expect(res.status).toBe(200);
+    expect(res.body.checks).toHaveProperty('db');
+    expect(typeof res.body.checks.db.healthy).toBe('boolean');
   });
 });

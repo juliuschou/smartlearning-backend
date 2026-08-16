@@ -4,6 +4,11 @@
 //   npx prisma generate       產生 client（schema 變更後執行）
 //   npx prisma migrate dev    開發環境建立/套用 migration
 //   npx prisma studio         開啟資料庫 GUI
+//
+// 設計前提（M2 關鍵技術決策）：
+//   - Identity：UUID v7（app 層產生，寫入帶值）。PK 型別為 String(@db.Uuid)。
+//   - 狀態：TEXT + CHECK（CHECK 由手寫 raw SQL migration 補，Prisma 不直接支援）。
+//   - 其餘 domain model 留待 Phase 2+ 依完整 ERD 建立。
 
 generator client {
   provider = "prisma-client"
@@ -12,4 +17,99 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+/// 系統設定 / bootstrap 狀態旗標。Phase 1 baseline，供 health/migration 流程驗證。
+model SystemSetting {
+  /// UUID v7（app 層產生）
+  id        String   @id @db.Uuid
+  /// 設定鍵，全域唯一（如 "bootstrap_completed"）
+  key       String   @unique
+  /// 設定值（JSONB）
+  value     Json
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@map("system_setting")
+}
+
+/// Web 帳號。MVP 只建 admin 與 teacher 兩種角色，無 student 帳號。
+/// 身分：UUID v7（app 層產生）。狀態：TEXT + CHECK（role/status），CHECK 由手寫 migration 補。
+/// 切片範圍：bootstrap→首位 admin、admin 建 teacher、login、session。disable/restore 延後。
+model Account {
+  /// UUID v7（app 層產生）
+  id                 String    @id @db.Uuid
+  /// 登入識別碼，全域唯一
+  username           String    @unique
+  /// 顯示名稱
+  displayName        String    @map("display_name")
+  /// 角色：admin | teacher（CHECK 由 migration 補）
+  role               String
+  /// 狀態：active | disabled（CHECK 由 migration 補，default active）
+  status             String    @default("active")
+  /// 帳號級「可建立 Course」授權旗標（US-F16），由 admin 切換
+  canCreateCourse    Boolean   @default(false) @map("can_create_course")
+  /// Argon2id 雜湊；bootstrap/admin 建立時寫入，永不存明文
+  passwordHash       String?   @map("password_hash")
+  /// 首次登入是否強制改密碼；切片一律 false（force-change 延後）
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  /// 密碼變更時間，作為 credential 失效參考點（切片未用於撤銷）
+  passwordChangedAt  DateTime? @map("password_changed_at") @db.Timestamptz
+  /// 停用時間（disable/restore 延後，欄位先建以保持 additive）
+  disabledAt         DateTime? @map("disabled_at") @db.Timestamptz
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  /// 建立者；bootstrap 首位 admin 為 null，self-FK ON DELETE RESTRICT
+  createdBy          String?   @map("created_by") @db.Uuid
+
+  sessions   WebSession[]
+  courses    Course[]     @relation("CourseOwner")
+  createdByAccount Account? @relation("AccountCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAccounts Account[] @relation("AccountCreatedBy")
+
+  @@index([createdBy], map: "idx_account_created_by")
+  @@map("account")
+}
+
+/// Web Session — PostgreSQL 為唯一權威。Cookie 只放高熵 opaque token，DB 存 SHA-256 hash。
+/// 期限：idle 30m（lastSeenAt）、absolute 8h（expiresAt）。撤銷/rotation/全 session 撤銷延後。
+model WebSession {
+  /// UUID v7（app 層產生）
+  id         String    @id @db.Uuid
+  accountId  String    @map("account_id") @db.Uuid
+  /// cookie 原值的 SHA-256 hash，唯一
+  cookieHash String    @unique @map("cookie_hash")
+  /// 建立時來源 IP（切片不強制）
+  ipAddress  String?   @map("ip_address")
+  userAgent  String?   @map("user_agent")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  /// 上次活動時間，idle 30m 過期依此
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz
+  /// 絕對過期時間 = 建立時 now + 8h
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  /// 撤銷時間（logout/password-change/disable）；切片未實作撤銷流程
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId], map: "idx_web_session_account")
+  @@map("web_session")
+}
+
+/// 課程。owner 不可變、draft→archived terminal、archived 不可寫。
+/// 題目/live_session 依後續 phase 加入。切片只做 create/list/detail/archive。
+model Course {
+  /// UUID v7（app 層產生）
+  id            String   @id @db.Uuid
+  ownerAccountId String  @map("owner_account_id") @db.Uuid
+  name          String
+  description   String?
+  /// 狀態：draft | archived（CHECK 由 migration 補，default draft）
+  status        String   @default("draft")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  owner Account @relation("CourseOwner", fields: [ownerAccountId], references: [id], onDelete: Restrict)
+
+  @@index([ownerAccountId], map: "idx_course_owner")
+  @@map("course")
 }

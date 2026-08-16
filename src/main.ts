@@ -1,20 +1,16 @@
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { configureApplication } from './bootstrap/configure-app';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-
   app.useLogger(app.get(Logger));
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
+  // Shared setup for production + e2e (prefix, versioning, validation, error
+  // envelope, helmet, cookies, CORS, shutdown hooks).
+  configureApplication(app);
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
@@ -24,4 +20,4 @@ async function bootstrap() {
   logger.log(`Application is running on port ${port}`);
 }
 
-bootstrap();
+void bootstrap();

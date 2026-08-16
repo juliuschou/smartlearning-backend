@@ -1,0 +1,23 @@
+/**
+ * Account response projection — never includes password_hash.
+ * Wire contract: UUID id, UTC timestamps, stable field names.
+ */
+export class AccountDto {
+  id!: string;
+  username!: string;
+  displayName!: string;
+  role!: string;
+  status!: string;
+  canCreateCourse!: boolean;
+  createdAt!: string;
+}
+
+export class SessionDto {
+  accountId!: string;
+  username!: string;
+  displayName!: string;
+  role!: string;
+  canCreateCourse!: boolean;
+  sessionId!: string;
+  expiresAt!: string;
+}
