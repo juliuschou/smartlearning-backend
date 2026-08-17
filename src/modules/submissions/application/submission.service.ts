@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '../../../../generated/prisma/client';
 import { isUuid, newId, normalizeUuid } from '../../../common/crypto';
 import {
@@ -14,6 +14,7 @@ import {
   LiveSessionStatus,
   SessionQuestionStatus,
 } from '../../live-sessions/domain';
+import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
 import type { ParticipantContext } from '../../participants/application/participant.service';
 import type { CreateSubmissionDto } from '../api/dto';
 
@@ -28,7 +29,31 @@ export interface SubmissionProjection {
 
 @Injectable()
 export class SubmissionService {
-  constructor(private readonly transactions: TransactionService) {}
+  private readonly logger = new Logger(SubmissionService.name);
+
+  constructor(
+    private readonly transactions: TransactionService,
+    private readonly eventBus: LiveSessionEventBus,
+  ) {}
+
+  /**
+   * Fire-and-forget realtime signal publish (post-commit). A failure is logged
+   * and swallowed so it can never fail the domain mutation. Only the accepted
+   * (fresh or idempotent-replay) path reaches here; the conflict throws never
+   * publish.
+   */
+  private publish(signal: Parameters<LiveSessionEventBus['publish']>[0]): void {
+    void this.eventBus.publish(signal).catch((error) => {
+      this.logger.error(
+        {
+          signalType: signal.type,
+          liveSessionId: signal.liveSessionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Realtime publish failed; mutation already committed',
+      );
+    });
+  }
 
   async submit(
     liveSessionId: string,
@@ -54,7 +79,7 @@ export class SubmissionService {
       normalizeSubmissionRef,
     );
 
-    return this.transactions.run(async (tx) => {
+    const submission = await this.transactions.run(async (tx) => {
       await this.transactions.lockSessionQuestionForUpdate(
         tx,
         canonicalQuestionId,
@@ -187,6 +212,16 @@ export class SubmissionService {
         throw error;
       }
     });
+    // Publish after the submission transaction commits. Reached only on the
+    // accepted path (fresh create or idempotent replay); conflict throws never
+    // reach here.
+    this.publish({
+      type: 'submission.committed',
+      liveSessionId: submission.liveSessionId,
+      sessionQuestionId: submission.sessionQuestionId,
+      participantId: submission.participantId,
+    });
+    return submission;
   }
 }
 

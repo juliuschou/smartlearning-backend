@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '../../../../generated/prisma/client';
 import { newId, normalizeUuid } from '../../../common/crypto';
 import {
@@ -10,6 +10,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { QuestionService } from '../../questions/application/question.service';
 import { CourseStatus } from '../../courses/domain/course-status';
+import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
 import {
   aggregateResults,
   canCancelLiveSession,
@@ -63,14 +64,35 @@ export interface SessionQuestionProjection {
 
 @Injectable()
 export class LiveSessionService {
+  private readonly logger = new Logger(LiveSessionService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly transactions: TransactionService,
     private readonly questions: QuestionService,
+    private readonly eventBus: LiveSessionEventBus,
   ) {}
 
   private get db() {
     return this.prismaService.prisma;
+  }
+
+  /**
+   * Fire-and-forget realtime signal publish. Called only AFTER the mutation
+   * transaction has committed (design §1: commit then publish). A publish
+   * failure is logged and swallowed so it can never fail the domain mutation.
+   */
+  private publish(signal: Parameters<LiveSessionEventBus['publish']>[0]): void {
+    void this.eventBus.publish(signal).catch((error) => {
+      this.logger.error(
+        {
+          signalType: signal.type,
+          liveSessionId: signal.liveSessionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Realtime publish failed; mutation already committed',
+      );
+    });
   }
 
   async createSession(
@@ -166,7 +188,7 @@ export class LiveSessionService {
     caller: { id: string; role: string },
   ): Promise<SessionProjection> {
     const canonicalSessionId = normalizeUuid(sessionId);
-    return this.transactions.run(
+    const session = await this.transactions.run(
       async (tx) => {
         await this.transactions.lockLiveSessionForUpdate(
           tx,
@@ -253,6 +275,12 @@ export class LiveSessionService {
       },
       { timeout: 30_000 },
     );
+    this.publish({
+      type: 'session.state_changed',
+      liveSessionId: canonicalSessionId,
+      status: LiveSessionStatus.ACTIVE,
+    });
+    return session;
   }
 
   async openQuestion(
@@ -273,46 +301,73 @@ export class LiveSessionService {
     caller: { id: string; role: string },
   ): Promise<SessionProjection> {
     const canonicalSessionId = normalizeUuid(sessionId);
-    return this.transactions.run(async (tx) => {
-      await this.transactions.lockLiveSessionForUpdate(tx, canonicalSessionId);
-      const session = await tx.liveSession.findUnique({
-        where: { id: canonicalSessionId },
-        include: { course: true },
-      });
-      if (!session)
-        throw new NotFoundError('LiveSession not found', 'liveSessionId');
-      this.assertCourseAccess(session.course, caller);
-      if (!canCloseLiveSession(session.status as LiveSessionStatus)) {
-        throw new ConflictError(
-          'LiveSession cannot be closed from its current state.',
-          'status',
+    const { session, closedQuestionIds } = await this.transactions.run(
+      async (tx) => {
+        await this.transactions.lockLiveSessionForUpdate(
+          tx,
+          canonicalSessionId,
         );
-      }
+        const session = await tx.liveSession.findUnique({
+          where: { id: canonicalSessionId },
+          include: {
+            course: true,
+            questions: { where: { status: SessionQuestionStatus.OPEN } },
+          },
+        });
+        if (!session)
+          throw new NotFoundError('LiveSession not found', 'liveSessionId');
+        this.assertCourseAccess(session.course, caller);
+        if (!canCloseLiveSession(session.status as LiveSessionStatus)) {
+          throw new ConflictError(
+            'LiveSession cannot be closed from its current state.',
+            'status',
+          );
+        }
 
-      const closedAt = new Date();
-      // Close the currently open SessionQuestion(s) under the same transaction.
-      // The session row is already FOR UPDATE; the commit of this transaction is
-      // the linearization point shared with the question-close path (design §5.2).
-      await tx.sessionQuestion.updateMany({
-        where: {
-          liveSessionId: session.id,
-          status: SessionQuestionStatus.OPEN,
-        },
-        data: { status: SessionQuestionStatus.CLOSED, closedAt },
+        const closedAt = new Date();
+        // Close the currently open SessionQuestion(s) under the same transaction.
+        // The session row is already FOR UPDATE; the commit of this transaction is
+        // the linearization point shared with the question-close path (design §5.2).
+        const closedQuestionIds = session.questions.map((q) => q.id);
+        await tx.sessionQuestion.updateMany({
+          where: {
+            liveSessionId: session.id,
+            status: SessionQuestionStatus.OPEN,
+          },
+          data: { status: SessionQuestionStatus.CLOSED, closedAt },
+        });
+        await tx.liveSession.update({
+          where: { id: session.id },
+          data: {
+            status: LiveSessionStatus.CLOSED,
+            closedAt,
+            autoClosed: false,
+          },
+        });
+        return {
+          session: await tx.liveSession.findUniqueOrThrow({
+            where: { id: session.id },
+            include: sessionForProjection,
+          }),
+          closedQuestionIds,
+        };
+      },
+    );
+    // Publish after commit. Bulk-close emits a question.closed signal per
+    // previously-open question (at most one by invariant) plus the state change.
+    for (const qid of closedQuestionIds) {
+      this.publish({
+        type: 'question.closed',
+        liveSessionId: canonicalSessionId,
+        sessionQuestionId: qid,
       });
-      await tx.liveSession.update({
-        where: { id: session.id },
-        data: {
-          status: LiveSessionStatus.CLOSED,
-          closedAt,
-          autoClosed: false,
-        },
-      });
-      return tx.liveSession.findUniqueOrThrow({
-        where: { id: session.id },
-        include: sessionForProjection,
-      });
+    }
+    this.publish({
+      type: 'session.state_changed',
+      liveSessionId: canonicalSessionId,
+      status: LiveSessionStatus.CLOSED,
     });
+    return session;
   }
 
   async cancelSession(
@@ -320,7 +375,7 @@ export class LiveSessionService {
     caller: { id: string; role: string },
   ): Promise<SessionProjection> {
     const canonicalSessionId = normalizeUuid(sessionId);
-    return this.transactions.run(async (tx) => {
+    const session = await this.transactions.run(async (tx) => {
       await this.transactions.lockLiveSessionForUpdate(tx, canonicalSessionId);
       const session = await tx.liveSession.findUnique({
         where: { id: canonicalSessionId },
@@ -346,6 +401,12 @@ export class LiveSessionService {
         include: sessionForProjection,
       });
     });
+    this.publish({
+      type: 'session.state_changed',
+      liveSessionId: canonicalSessionId,
+      status: LiveSessionStatus.CANCELLED,
+    });
+    return session;
   }
 
   async closeQuestion(
@@ -620,7 +681,7 @@ export class LiveSessionService {
   ): Promise<SessionQuestionProjection> {
     const canonicalSessionId = normalizeUuid(sessionId);
     const canonicalQuestionId = normalizeUuid(sessionQuestionId);
-    return this.transactions.run(async (tx) => {
+    const updated = await this.transactions.run(async (tx) => {
       await this.transactions.lockSessionQuestionForUpdate(
         tx,
         canonicalQuestionId,
@@ -680,6 +741,13 @@ export class LiveSessionService {
         throw error;
       }
     });
+    // Publish after commit. The transition target maps 1:1 to a signal type.
+    this.publish({
+      type: target === 'open' ? 'question.opened' : 'question.closed',
+      liveSessionId: canonicalSessionId,
+      sessionQuestionId: updated.id,
+    });
+    return updated;
   }
 
   private assertCourseAccess(

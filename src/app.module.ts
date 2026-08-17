@@ -11,6 +11,7 @@ import { QuestionsModule } from './modules/questions';
 import { LiveSessionsModule } from './modules/live-sessions';
 import { ParticipantsModule } from './modules/participants';
 import { SubmissionsModule } from './modules/submissions';
+import { RealtimeModule } from './modules/realtime';
 import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from './common/observability';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -66,6 +67,7 @@ const isProduction = process.env.NODE_ENV === 'production';
     LiveSessionsModule,
     ParticipantsModule,
     SubmissionsModule,
+    RealtimeModule,
   ],
   controllers: [],
   providers: [],

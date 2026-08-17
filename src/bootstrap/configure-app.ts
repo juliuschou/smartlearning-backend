@@ -11,6 +11,7 @@ import {
 } from '../common/http';
 import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from '../common/observability';
 import { AppModule } from '../app.module';
+import { configureWebSocket } from './configure-websocket';
 
 export const API_PREFIX = 'api';
 export const API_VERSION = 'v1';
@@ -70,6 +71,10 @@ export function configureApplication(app: INestApplication): void {
   // Global response/error envelopes.
   expressApp.useGlobalInterceptors(new ApiResponseInterceptor());
   expressApp.useGlobalFilters(new GlobalExceptionFilter());
+
+  // Socket.IO adapter (R-1 lite /live namespace). Bound here so production and
+  // the e2e app factory share one websocket setup path.
+  configureWebSocket(expressApp);
 
   // Graceful shutdown: SIGTERM/SIGINT trigger module destroy hooks (Prisma disconnect).
   expressApp.enableShutdownHooks();

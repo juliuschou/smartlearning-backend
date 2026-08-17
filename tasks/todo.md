@@ -436,8 +436,8 @@ Targeted verification is complete against real PostgreSQL; the full repository u
 
 - [ ] **S-1** LiveSession close/cancel:`POST /live-sessions/:id/close`、`POST /live-sessions/:id/cancel`;補 `closed`/`cancelled` 狀態轉移(目前只有 `waiting→active`)。解除 todo 行 370 的封存阻斷。
 - [x] **S-2** 老師端 session detail:獨立 `GET /live-sessions/:id`(目前靠 snapshot)→ 回完整 projection 含 joined/voted 人數。
-- [ ] **S-3** 結果/聚合 endpoint:`GET /live-sessions/:id/questions/:qid/results` → 選項計數 + vote-to-reveal 投影 + 匿名聚合(US-F17);quiz 正確率 / open_text 投影隨 Q-3 一起。前端占位:結果頁先 mock 靜態資料 + 介面抽象成 `ResultsProvider`,後端就緒後切換。
-- [ ] **S-4** joined/voted 即時人數:見 P3 即時通道;無 Socket 前先用 snapshot 輪詢頂著。
+- [x] **S-3** 結果/聚合 endpoint:`GET /live-sessions/:id/questions/:qid/results` → 選項計數 + vote-to-reveal 投影 + 匿名聚合(US-F17);quiz 正確率 / open_text 投影隨 Q-3 一起。前端占位:結果頁先 mock 靜態資料 + 介面抽象成 `ResultsProvider`,後端就緒後切換。
+- [x] **S-4** joined/voted 即時人數:見 P3 即時通道;無 Socket 前先用 snapshot 輪詢頂著。
 - [ ] **S-5** 封存/保留:`POST /live-sessions/:id/archive` → ArchivedResult + 90 天保留 + 早刪/tombstone(依《即時同步與結果治理設計》)。需 S-1 先完成。
 
 ##### P3 — 學員課堂流程補完
@@ -912,3 +912,173 @@ waiting session(joined 0/voted 0,無 sessionQuestion)、active + open 題(4 join
 - 即時 joined/voted 推送(S-4)— 無 Socket 前可輪詢本 endpoint 頂著。
 - Reconcile `snapshot`(teacher path)與本 S-2 路由 — 日後 teacher read path 統一。
 - Session-level `GET /live-sessions/:id/results`(M2 API catalog)— 隨 R-1。
+
+### 2026-08-17 — Slice 7: S-4 / R-1 lite Socket.IO 即時通道基礎(完成)
+
+#### Context
+
+P2 課堂老師端第三個缺口:joined/voted 即時人數的 **push** 交付。S-2 已交付 polling stopgap(`GET /api/v1/live-sessions/:id` 回 `joinedCount`/`votedCount`),本 slice 補 Socket.IO 即時通道(R-1 lite),把題目生命週期 + 即時人數 + 答題聚合用 push 交付。完整設計見 `/home/user/.claude/plans/snoopy-toasting-wreath.md`。
+
+**Scope 決策(使用者確認):** 交付 R-1 lite — `/live` namespace + handshake auth + session/teacher rooms + in-process event bus + 生命週期事件 push;**defer** outbox table / `eventSeq` / `aggregateVersion` / replay / `sync.required` / coalescing / Redis adapter / per-participant vote-to-reveal socket projection 至完整 R-1。reconnect = 新連線 = fresh `session.snapshot`(lite 無 eventSeq,reconnect 不重播)。
+
+**Authority(《即時同步與結果治理設計》):** PostgreSQL 為唯一權威;socket 為通知層,不授權結果。每個 mutation **先 commit 再 publish**(§1);publish 失敗只記 log,不讓 mutation 失敗(fire-and-forget)。raw participant token 永不入 event payload/log;teacher aggregate 永遠匿名(無 display-name→answer mapping);非 owner 先 404/拒連再說狀態;closed/cancelled session 拒 reconnect。
+
+#### Checklist
+
+- [x] 新依賴:`@nestjs/websockets@^11`、`@nestjs/platform-socket.io@^11`、`socket.io@^4.8`、dev `socket.io-client@^4.8`;`npm audit` 0 vulnerabilities。
+- [x] `src/modules/realtime/live-session-event-bus.ts`:leaf in-memory bus,`publish`(fan-out、listener error 隔離、不 reject)+ `subscribe`(回 unsubscribe)。Signal union: `participant.joined`/`question.opened`/`question.closed`/`session.state_changed`/`submission.committed`。
+- [x] `src/modules/realtime/live-session-event-bus.spec.ts`:5 unit tests(fan-out、throwing listener 隔離、async rejecting listener 隔離、unsubscribe、多 signal)。
+- [x] `src/modules/realtime/live-gateway.ts`:`@WebSocketGateway({ namespace: 'live' })`。handshake auth — teacher:手動 parse `socket.request.headers.cookie`(`cookie` 模組,因 socket.io handshake 不走 express middleware,cookie-parser 不會 populate `request.cookies`)→ `SessionService.loadActiveSession` → `getTeacherDetail` 驗 owner/admin;participant:`handshake.auth.{participantToken,sessionCode}` → `findByCode` + `ParticipantService.authenticate`。成功 join `session:<id>`(+ teacher 再 join `teacher:<id>`)→ emit `session.snapshot`(teacher: getTeacherDetail+counts;participant: getParticipantSnapshot learner 投影,無答案)。失敗 emit `error {code}` + disconnect(`SESSION_NOT_JOINABLE` DomainError code 保留,其餘 fail-closed `UNAUTHORIZED`)。`@SubscribeMessage('snapshot.fetch')` 供 client 主動重取。
+- [x] gateway `onModuleInit` subscribe bus → `handleSignal` per signal 重算投影並 emit(`participant.joined`→teacher `counts.updated`;`question.opened`→`session:<id>` `question.opened` + teacher `counts.updated`;`question.closed`→`session:<id>` `question.closed` + teacher `counts.updated` + `result.updated`;`session.state_changed`→`session:<id>`(+ `session.closed` 當 closed);`submission.committed`→teacher `counts.updated` + `result.updated`)。events envelope `{schemaVersion, serverTimestamp, liveSessionId, visibility, data}`(**無** `eventSeq`/`aggregateVersion`,lite 不可重播)。per-signal catch+log,下游失敗不影響 bus。
+- [x] `src/bootstrap/configure-websocket.ts`:`CorsIoAdapter extends IoAdapter` 覆寫 `createIOServer` 注入 env-derived CORS allowlist(`ConfigService` runtime 讀,非 decorator 靜態期)+ `configureWebSocket(app)`;`configureApplication` 呼叫(production + e2e 共用)。
+- [x] `src/modules/realtime/realtime.module.ts`:`@Global` 匯出 `LiveSessionEventBus`(leaf,無 service dep → 無 cycle),import `LiveSessionsModule`/`ParticipantsModule`(gateway → read services),services 只注入 bus(單向依賴)。
+- [x] mutation services 注入 bus + post-commit `publish`(fire-and-forget、try/catch log+swallow):`LiveSessionService`(startSession/openQuestion/closeQuestion/closeSession[bulk-close open questions emit `question.closed` per + `session.state_changed`]/cancelSession)、`ParticipantService`(join)、`SubmissionService`(submit,只有 accepted 路徑[新建立或 idempotent replay],conflict throw 不 publish)。
+- [x] `src/app.module.ts` import `RealtimeModule`。
+- [x] `src/common/observability/pino-redaction.ts`:加 `req.body.participantToken`、`req.body.sessionCode`(socket `auth` payload 防洩)。
+- [x] `test/live-session-realtime.e2e-spec.ts`:9 e2e(teacher snapshot、open→`question.opened`+`counts.updated`、participant learner snapshot 無 isCorrect/答案、submit→teacher `counts.updated`+`result.updated`[participant 無 result push]、close→`question.closed`+`result.updated`、invalid token 拒、unknown code 拒 `SESSION_NOT_JOINABLE`、non-owner teacher 拒、cancel→`session.state_changed`+reconnect 拒)。
+
+#### 設計要點
+
+- **commit-then-publish:** `publish` 只在 `await this.transactions.run(...)` 返回(已 commit)後呼叫;`void this.eventBus.publish(signal).catch(...)` 確保 bus 失敗不讓 mutation 失敗。
+- **socket.io handshake cookie:** socket.io 的 handshake 請求(`/socket.io/...`)在 express middleware 之前被 socket.io engine 攔截,cookie-parser 不會 populate `request.cookies`。gateway 手動 `cookie.parse(socket.request.headers.cookie)` 讀 `__Host-session`(opaque/unsigned,不需 secret)。
+- **reconnect = fresh snapshot:** lite 無 outbox/eventSeq,reconnect 等同新連線,server 重發 `session.snapshot`。`eventSeq`/`aggregateVersion` 故意省略(非 durable,標了會誤導 client);完整 R-1 加 outbox 時 reconcile 此 divergence。
+- **vote-to-reveal 仍由 REST S-3 守:** lite 不 push per-participant result projection;participant 收到 lifecycle ping 後自行 refetch `GET .../results`(S-3 服務端守 reveal gate)。
+- **teacher room recompute:** `emitTeacherCounts`/`emitTeacherResults` 用 `role:'admin'` internal recompute(teacher-room 成員已在 connect 時驗過 owner/admin);非 owner 從不進 teacher room。
+- **無 schema/migration:** 純 additive runtime,aggregate 從既有 indexed rows 即時計算。
+
+#### Verification
+
+| 命令 | 結果 |
+| --- | --- |
+| `npm install` + `npm audit` | ✅ 0 vulnerabilities |
+| `npm run typecheck` | ✅ PASS |
+| `npm run lint:check` | ✅ 0 errors |
+| `npm run format:check` | ✅ All matched files use Prettier |
+| `npm run build` | ✅ nest build PASS |
+| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts` | ✅ 1 suite / 5 tests |
+| `npm test -- --runInBand`(全 unit) | ✅ 20 suites / 104 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped) |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e) | ✅ 14 suites / 98 tests(無回歸) |
+| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
+| `NODE_ENV=test npm run prisma:migrate:status` | ✅ 8 migrations, schema up to date(無新 migration) |
+| `git diff --check` | ✅ PASS |
+
+#### Debugging lesson(關鍵根因)
+
+1. **cookie-parser 不作用於 socket.io handshake:** 初版用 `socket.request.cookies`(`cookie-parser` populate 的),但 socket.io engine 攔截 handshake 請求在 express middleware 之前 → `request.cookies` 永遠 undefined。偵測:`hasCookieHeader=true hasCookieJar=false`。修法:手動 `cookie.parse(socket.request.headers.cookie)`。
+2. **post-commit emit 的 client race:** service `publish` 在 `transactions.run` 返回後同步 fire,bus listener 同步 emit 到 room——事件在 REST response 返回前已送到 client。若 test 在 `await` REST 之後才 `nextEvent(event)` 註冊 listener,事件已過 → timeout。偵測:`roomSize=1 sockCount=1`(socket 在 room、emit 到對的 room),但 client 收不到。修法:test 在 mutation **之前** pre-register listener promise,mutation 後 await。適用所有 signal-driven event test(open/submit/close/cancel)。
+3. **DomainError code 偵測:** 初版用 `error.message === 'SESSION_NOT_JOINABLE'` 判定,但 `DomainError.message` 是人類描述('LiveSession cannot be joined.'),非 code。修法:`error instanceof DomainError && error.code === 'SESSION_NOT_JOINABLE'`。
+
+#### Results
+
+- `/live` Socket.IO namespace 上線,handshake auth 重用 Web session cookie(teacher)/ participant token+code(participant)。
+- 生命週期事件 push(`session.snapshot`[join/reconnect/snapshot.fetch]、`question.opened`/`question.closed`、`session.state_changed`/`session.closed`、teacher-only `counts.updated`/`result.updated`)。
+- PostgreSQL 為唯一權威,socket 通知層;raw token 不入 event/log;teacher aggregate 匿名;非 owner 拒連;closed/cancelled session 拒 reconnect。
+- 無 schema/migration;既有 REST/e2e/integration 全綠(98 e2e + 104 unit + 10 integration,無回歸)。
+
+#### Risk & rollback
+
+- **風險:中高**。新 transport + 新依賴 + handshake auth(安全敏感)+ broadcast visibility + service post-commit emit。
+- **Rollback:** revert 依賴、`configureApplication` websocket adapter line、`RealtimeModule`、service `publish`+constructor param、redaction、tests。**無 DB/migration** — 無 PostgreSQL rollback。不 replay/restore 任何 socket state。
+- **不變量維持:** PostgreSQL 為權威、socket 通知層、raw participant token 不入 event/log、vote-to-reveal 仍由 REST S-3 守、非 owner 拒連、closed/cancelled session 拒 reconnect、既有 REST/CSRF/auth 行為不變。
+
+#### Follow-up(Slice 7 deferred)
+
+- **R-1 完整:** outbox table + `eventSeq`/`aggregateVersion`、replay / `sync.required`、coalescing、Redis adapter、durable publisher;reconcile lite 的 eventSeq envelope divergence。
+- per-participant vote-to-reveal socket projection(目前 participant 收 lifecycle ping 後 refetch REST)。
+- Session-level `GET /live-sessions/:id/results`(M2 API catalog)— 仍 deferred。
+- Auto-close scheduler + submit/close race matrix(R-4)。
+- `ArchivedResult` + 90 天保留(S-5)。
+- 既有非阻擋警告:Nest `LegacyRouteConverter`(`health/(.*)`、`/api/*`)、`pg@9 client.query()` deprecation — 列為 E-4 清理。
+
+#### Non-goals(本 slice)
+
+- 無 outbox/aggregate table、無 eventSeq、無 replay、無 Redis、無 auto-close。
+- 無 activation/submission cardinality 變更(multiple/open_text/quiz)。
+- 無新 REST endpoint(S-2 polling endpoint 已覆蓋 REST read)。
+- 無前端工作(依既定 B 策略:後端先)。
+
+### 2026-08-17 — Slice 7: S-4 / R-1 lite Socket.IO 即時通道基礎(完成)
+
+#### Context
+
+P2 課堂老師端第三個缺口:joined/voted 即時人數的 **push** 交付。S-2 已交付 polling stopgap(`GET /api/v1/live-sessions/:id` 回 `joinedCount`/`votedCount`),本 slice 補 Socket.IO 即時通道(R-1 lite),把題目生命週期 + 即時人數 + 答題聚合用 push 交付。完整設計見 `/home/user/.claude/plans/snoopy-toasting-wreath.md`。
+
+**Scope 決策(使用者確認):** 交付 R-1 lite — `/live` namespace + handshake auth + session/teacher rooms + in-process event bus + 生命週期事件 push;**defer** outbox table / `eventSeq` / `aggregateVersion` / replay / `sync.required` / coalescing / Redis adapter / per-participant vote-to-reveal socket projection 至完整 R-1。reconnect = 新連線 = fresh `session.snapshot`(lite 無 eventSeq,reconnect 不重播)。
+
+**Authority(《即時同步與結果治理設計》):** PostgreSQL 為唯一權威;socket 為通知層,不授權結果。每個 mutation **先 commit 再 publish**(§1);publish 失敗只記 log,不讓 mutation 失敗(fire-and-forget)。raw participant token 永不入 event payload/log;teacher aggregate 永遠匿名(無 display-name→answer mapping);非 owner 先 404/拒連再說狀態;closed/cancelled session 拒 reconnect。
+
+#### Checklist
+
+- [x] 新依賴:`@nestjs/websockets@^11`、`@nestjs/platform-socket.io@^11`、`socket.io@^4.8`、dev `socket.io-client@^4.8`、`@types/socket.io`;`npm audit` 0 vulnerabilities。
+- [x] `src/modules/realtime/live-session-event-bus.ts`:leaf in-memory bus,`publish`(fan-out、listener error 隔離、不 reject)+ `subscribe`(回 unsubscribe)。Signal union: `participant.joined`/`question.opened`/`question.closed`/`session.state_changed`/`submission.committed`。
+- [x] `src/modules/realtime/live-session-event-bus.spec.ts`:5 unit tests(fan-out、throwing listener 隔離、async rejecting listener 隔離、unsubscribe、多 signal)。
+- [x] `src/modules/realtime/live-gateway.ts`:`@WebSocketGateway({ namespace: 'live' })`。handshake auth — teacher:手動 `cookie.parse(socket.request.headers.cookie)`(`cookie` 模組,因 socket.io handshake 不走 express middleware,cookie-parser 不 populate `request.cookies`)→ `SessionService.loadActiveSession` → `getTeacherDetail` 驗 owner/admin;participant:`handshake.auth.{participantToken,sessionCode}` → `findByCode` + `ParticipantService.authenticate`。成功 join `session:<id>`(+ teacher 再 join `teacher:<id>`)→ emit `session.snapshot`(teacher: getTeacherDetail+counts;participant: getParticipantSnapshot learner 投影,無答案)。失敗 emit `error {code}` + disconnect(`DomainError.code === 'SESSION_NOT_JOINABLE'` 保留,其餘 fail-closed `UNAUTHORIZED`)。`@SubscribeMessage('snapshot.fetch')` 供 client 主動重取。
+- [x] gateway `onModuleInit` subscribe bus → `handleSignal` per signal 重算投影並 emit(`participant.joined`→teacher `counts.updated`;`question.opened`→`session:<id>` `question.opened` + teacher `counts.updated`;`question.closed`→`session:<id>` `question.closed` + teacher `counts.updated` + `result.updated`;`session.state_changed`→`session:<id>`(+ `session.closed` 當 closed);`submission.committed`→teacher `counts.updated` + `result.updated`)。events envelope `{schemaVersion, serverTimestamp, liveSessionId, visibility, data}`(**無** `eventSeq`/`aggregateVersion`,lite 不可重播)。per-signal catch+log,下游失敗不影響 bus。
+- [x] `src/bootstrap/configure-websocket.ts`:`CorsIoAdapter extends IoAdapter` 覆寫 `createIOServer` 注入 env-derived CORS allowlist(`ConfigService` runtime 讀,非 decorator 靜態期)+ `configureWebSocket(app)`;`configureApplication` 呼叫(production + e2e 共用)。
+- [x] `src/modules/realtime/realtime.module.ts`:`@Global` 匯出 `LiveSessionEventBus`(leaf,無 service dep → 無 cycle),import `LiveSessionsModule`/`ParticipantsModule`(gateway → read services),services 只注入 bus(單向依賴)。
+- [x] mutation services 注入 bus + post-commit `publish`(fire-and-forget、try/catch log+swallow):`LiveSessionService`(startSession/openQuestion/closeQuestion/closeSession[bulk-close open questions emit `question.closed` per + `session.state_changed`]/cancelSession)、`ParticipantService`(join)、`SubmissionService`(submit,只有 accepted 路徑[新建立或 idempotent replay],conflict throw 不 publish)。
+- [x] `src/app.module.ts` import `RealtimeModule`。
+- [x] `src/common/observability/pino-redaction.ts`:加 `req.body.participantToken`、`req.body.sessionCode`(socket `auth` payload 防洩)。
+- [x] `test/live-session-realtime.e2e-spec.ts`:9 e2e(teacher snapshot、open→`question.opened`+`counts.updated`、participant learner snapshot 無 isCorrect/答案、submit→teacher `counts.updated`+`result.updated`[participant 無 result push]、close→`question.closed`+`result.updated`、invalid token 拒、unknown code 拒 `SESSION_NOT_JOINABLE`、non-owner teacher 拒、cancel→`session.state_changed`+reconnect 拒)。
+
+#### 設計要點
+
+- **commit-then-publish:** `publish` 只在 `await this.transactions.run(...)` 返回(已 commit)後呼叫;`void this.eventBus.publish(signal).catch(...)` 確保 bus 失敗不讓 mutation 失敗。
+- **socket.io handshake cookie:** socket.io 的 handshake 請求(`/socket.io/...`)在 express middleware 之前被 socket.io engine 攔截,cookie-parser 不會 populate `request.cookies`。gateway 手動 `cookie.parse(socket.request.headers.cookie)` 讀 `__Host-session`(opaque/unsigned,不需 secret)。
+- **reconnect = fresh snapshot:** lite 無 outbox/eventSeq,reconnect 等同新連線,server 重發 `session.snapshot`。`eventSeq`/`aggregateVersion` 故意省略(非 durable,標了會誤導 client);完整 R-1 加 outbox 時 reconcile 此 divergence。
+- **vote-to-reveal 仍由 REST S-3 守:** lite 不 push per-participant result projection;participant 收到 lifecycle ping 後自行 refetch `GET .../results`(S-3 服務端守 reveal gate)。
+- **teacher room recompute:** `emitTeacherCounts`/`emitTeacherResults` 用 `role:'admin'` internal recompute(teacher-room 成員已在 connect 時驗過 owner/admin);非 owner 從不進 teacher room。
+- **無 schema/migration:** 純 additive runtime,aggregate 從既有 indexed rows 即時計算。
+
+#### Verification
+
+| 命令 | 結果 |
+| --- | --- |
+| `npm install` + `npm audit` | ✅ 0 vulnerabilities |
+| `npm run typecheck` | ✅ PASS |
+| `npm run lint:check` | ✅ 0 errors |
+| `npm run format:check` | ✅ All matched files use Prettier |
+| `npm run build` | ✅ nest build PASS |
+| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts` | ✅ 1 suite / 5 tests |
+| `npm test -- --runInBand`(全 unit) | ✅ 20 suites / 104 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped) |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e) | ✅ 14 suites / 98 tests(無回歸) |
+| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
+| `NODE_ENV=test npm run prisma:migrate:status` | ✅ 8 migrations, schema up to date(無新 migration) |
+| `git diff --check` | ✅ PASS |
+
+#### Debugging lessons(關鍵根因)
+
+1. **cookie-parser 不作用於 socket.io handshake:** 初版用 `socket.request.cookies`(`cookie-parser` populate 的),但 socket.io engine 攔截 handshake 請求在 express middleware 之前 → `request.cookies` 永遠 undefined。偵測:`hasCookieHeader=true hasCookieJar=false`。修法:手動 `cookie.parse(socket.request.headers.cookie)`(用 `cookie` 模組,cookie-parser 的 transitive dep)。
+2. **post-commit emit 的 client race(關鍵):** service `publish` 在 `transactions.run` 返回後同步 fire,bus listener 同步 emit 到 room — 事件可能在 REST response 返回 client 前已送到。若 test 在 `await` REST 之後才 `nextEvent(event)` 註冊 listener,事件已過 → timeout。偵測:`roomHas=true roomSize=1 sockCount=1`(socket 在 room、emit 到對的 room),但 client 收不到。修法:test 在 mutation **之前** pre-register listener promise,mutation 後 await。適用所有 signal-driven event test(open/submit/close/cancel)。
+3. **DomainError code 偵測:** 初版用 `error.message === 'SESSION_NOT_JOINABLE'` 判定,但 `DomainError.message` 是人類描述('LiveSession cannot be joined.'),非 code → unknown code 拒連誤判為 `UNAUTHORIZED`。修法:`error instanceof DomainError && error.code === 'SESSION_NOT_JOINABLE'`(讀 `DomainError.code` 屬性)。
+
+#### Results
+
+- `/live` Socket.IO namespace 上線,handshake auth 重用 Web session cookie(teacher)/ participant token+code(participant)。
+- 生命週期事件 push(`session.snapshot`[join/reconnect/snapshot.fetch]、`question.opened`/`question.closed`、`session.state_changed`/`session.closed`、teacher-only `counts.updated`/`result.updated`)。
+- PostgreSQL 為唯一權威,socket 通知層;raw token 不入 event/log;teacher aggregate 匿名;非 owner 拒連;closed/cancelled session 拒 reconnect。
+- 無 schema/migration;既有 REST/e2e/integration 全綠(98 e2e + 104 unit + 10 integration,無回歸)。
+
+#### Risk & rollback
+
+- **風險:中高**。新 transport + 新依賴 + handshake auth(安全敏感)+ broadcast visibility + service post-commit emit。
+- **Rollback:** revert 依賴、`configureApplication` websocket adapter line、`RealtimeModule`、service `publish`+constructor param、redaction、tests。**無 DB/migration** — 無 PostgreSQL rollback。不 replay/restore 任何 socket state。
+- **不變量維持:** PostgreSQL 為權威、socket 通知層、raw participant token 不入 event/log、vote-to-reveal 仍由 REST S-3 守、非 owner 拒連、closed/cancelled session 拒 reconnect、既有 REST/CSRF/auth 行為不變。
+
+#### Follow-up(Slice 7 deferred)
+
+- **R-1 完整:** outbox table + `eventSeq`/`aggregateVersion`、replay / `sync.required`、coalescing、Redis adapter、durable publisher;reconcile lite 的 eventSeq envelope divergence。
+- per-participant vote-to-reveal socket projection(目前 participant 收 lifecycle ping 後 refetch REST)。
+- Session-level `GET /live-sessions/:id/results`(M2 API catalog)— 仍 deferred。
+- Auto-close scheduler + submit/close race matrix(R-4)。
+- `ArchivedResult` + 90 天保留(S-5)。
+- 既有非阻擋警告:Nest `LegacyRouteConverter`(`health/(.*)`、`/api/*`)、`pg@9 client.query()` deprecation — 列為 E-4 清理。
+
+#### Non-goals(本 slice)
+
+- 無 outbox/aggregate table、無 eventSeq、無 replay、無 Redis、無 auto-close。
+- 無 activation/submission cardinality 變更(multiple/open_text/quiz)。
+- 無新 REST endpoint(S-2 polling endpoint 已覆蓋 REST read)。
+- 無前端工作(依既定 B 策略:後端先)。

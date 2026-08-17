@@ -20,6 +20,9 @@ export const PINO_REDACT_PATHS: string[] = [
   'req.body.selectedOptionRefs',
   'req.body.textAnswer',
   'req.body.payloadHash',
+  // realtime handshake auth (Socket.IO `auth` payload) — raw tokens never logged
+  'req.body.participantToken',
+  'req.body.sessionCode',
   // response
   'res.headers["set-cookie"]',
   'res.body.token',
