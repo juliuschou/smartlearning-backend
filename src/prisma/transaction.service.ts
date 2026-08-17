@@ -69,6 +69,18 @@ export class TransactionService {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`;
   }
 
+  /**
+   * Generic transaction-scoped advisory lock keyed by an arbitrary string.
+   * Used to serialize idempotency-key processing for batch confirm so that
+   * two concurrent confirms with the same key cannot both write.
+   */
+  async lockAdvisoryKey(
+    tx: Prisma.TransactionClient,
+    key: string,
+  ): Promise<void> {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`;
+  }
+
   /** Lock a Course row so archive/session/question writes re-check one state. */
   async lockCourseForUpdate(
     tx: Prisma.TransactionClient,

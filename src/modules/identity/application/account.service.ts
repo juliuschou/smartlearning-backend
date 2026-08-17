@@ -16,6 +16,7 @@ import {
   validatePassword,
   PasswordPolicyError,
 } from '../domain/password-policy';
+import { CliCredentialService } from './cli-credential.service';
 
 /**
  * Account write operations. Application layer is the single write entry point
@@ -27,6 +28,7 @@ export class AccountService {
     private readonly prismaService: PrismaService,
     private readonly tx: TransactionService,
     private readonly sessions: SessionService,
+    private readonly cliCredentials: CliCredentialService,
   ) {}
 
   private get db() {
@@ -145,6 +147,14 @@ export class AccountService {
           txClient,
           targetAccountId,
         );
+        await this.cliCredentials.revokeAllForAccountInTransaction(
+          txClient,
+          targetAccountId,
+        );
+        await this.invalidateTokensForAccountInTransaction(
+          txClient,
+          targetAccountId,
+        );
         return target;
       }
 
@@ -159,7 +169,33 @@ export class AccountService {
         txClient,
         targetAccountId,
       );
+      await this.cliCredentials.revokeAllForAccountInTransaction(
+        txClient,
+        targetAccountId,
+      );
+      await this.invalidateTokensForAccountInTransaction(
+        txClient,
+        targetAccountId,
+      );
       return updated;
+    });
+  }
+
+  /**
+   * Invalidate unconsumed validation tokens for an account (used during
+   * disable). Sets consumedAt so they cannot be confirmed; M2 requires
+   * account disable to invalidate unused tokens.
+   */
+  private async invalidateTokensForAccountInTransaction(
+    tx: import('../../../../generated/prisma/client').Prisma.TransactionClient,
+    accountId: string,
+  ): Promise<void> {
+    await tx.questionValidationToken.updateMany({
+      where: {
+        accountId,
+        consumedAt: null,
+      },
+      data: { consumedAt: new Date() },
     });
   }
 

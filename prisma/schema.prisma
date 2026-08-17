@@ -63,6 +63,8 @@ model Account {
 
   sessions   WebSession[]
   courses    Course[]     @relation("CourseOwner")
+  cliCredentials CliCredential[]
+  validationTokens QuestionValidationToken[]
   createdByAccount Account? @relation("AccountCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
   createdAccounts Account[] @relation("AccountCreatedBy")
 
@@ -274,4 +276,79 @@ model Submission {
   @@index([sessionQuestionId], map: "idx_submission_session_question")
   @@index([liveSessionId], map: "idx_submission_live_session")
   @@map("submission")
+}
+
+/// CLI 憑證 — 與 Web Session 分離的獨立認證路徑。raw key 只在簽發時回傳一次，
+/// DB 只存 SHA-256 hash + 非機密 metadata。MVP scope=all_courses；停用帳號立即撤銷所有 key。
+/// M2 紅卡 #8：can_create_course=false 不撤銷 CLI key；CLI 撤銷是獨立 admin 流程。
+model CliCredential {
+  /// UUID v7（app 層產生）
+  id          String    @id @db.Uuid
+  accountId   String    @map("account_id") @db.Uuid
+  /// 每帳號內唯一的名稱
+  name        String
+  /// raw key 的 SHA-256 hash，全域唯一
+  keyHash     String    @unique @map("key_hash")
+  /// 授權範圍：all_courses | single_course（CHECK 由 migration 補；MVP 只用 all_courses）
+  scope       String    @default("all_courses")
+  /// 狀態：active | revoked（CHECK 由 migration 補）
+  status      String    @default("active")
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz
+
+  account          Account                  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  validationTokens QuestionValidationToken[]
+
+  @@unique([accountId, name], map: "uq_cli_credential_account_name")
+  @@index([accountId], map: "idx_cli_credential_account")
+  @@map("cli_credential")
+}
+
+/// 批次驗證 token — DB-backed opaque（非 signed），存 hash only。
+/// 綁 actor/account + optional CLI key + course + payload hash + schemaVersion + 15m 過期。
+/// confirm 重驗 hash/auth/state；失敗不消耗、成功消耗（consumedAt）。M2 紅卡 L83-94。
+model QuestionValidationToken {
+  /// UUID v7（app 層產生）
+  id              String    @id @db.Uuid
+  /// raw token 的 SHA-256 hash，唯一
+  tokenHash       String    @unique @map("token_hash")
+  accountId       String    @map("account_id") @db.Uuid
+  /// optional CLI 綁定；Web validate 為 null
+  cliCredentialId String?   @map("cli_credential_id") @db.Uuid
+  courseId        String    @map("course_id") @db.Uuid
+  /// canonical payload 的 SHA-256 hash（sha256:<hex>）
+  payloadHash     String    @map("payload_hash")
+  schemaVersion   Int       @default(1) @map("schema_version")
+  /// now + 15m
+  expiresAt       DateTime  @map("expires_at") @db.Timestamptz
+  /// 成功 confirm 後設；未消耗前為 null
+  consumedAt      DateTime? @map("consumed_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  account       Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  cliCredential CliCredential? @relation(fields: [cliCredentialId], references: [id], onDelete: SetNull)
+
+  @@index([accountId, courseId], map: "idx_validation_token_account_course")
+  @@map("question_validation_token")
+}
+
+/// 批次 confirm 冪等紀錄 — (actorScope, operation, idempotencyKey) 唯一。
+/// same key+same hash replay responseJson；same key+different hash → 409 CONFLICT。M2 紅卡 L83-94。
+model QuestionBatchIdempotency {
+  /// UUID v7（app 層產生）
+  id             String   @id @db.Uuid
+  /// "web:<accountId>" | "cli:<credentialId>"
+  actorScope     String   @map("actor_scope")
+  operation      String   @default("question-batch-confirm")
+  idempotencyKey String   @map("idempotency_key")
+  /// canonical payload 的 SHA-256 hash
+  payloadHash    String   @map("payload_hash")
+  /// committed response（QuestionDto[] + payloadHash）
+  responseJson   Json     @map("response_json")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([actorScope, operation, idempotencyKey], map: "uq_batch_idempotency_actor_op_key")
+  @@index([actorScope, idempotencyKey], map: "idx_batch_idempotency_actor_key")
+  @@map("question_batch_idempotency")
 }

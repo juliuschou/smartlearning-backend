@@ -388,3 +388,418 @@ Review verification after hardening: focused HTTP tests 3 suites / 18 tests, ful
 | `git diff --check` | PASS |
 
 Targeted verification is complete against real PostgreSQL; the full repository unit/integration/e2e suites were not run. The migration setup applies all seven migrations idempotently, and the poll suites fail loudly rather than treating an unavailable or stale database as a skip.
+
+### 2026-08-16 — Frontend baseline assessment + backend follow-up backlog
+
+#### 背景
+
+使用者目標:以目前後端為基準,推進前端三個產品流程 —(A)老師出題、(B)課堂中使用(老師端)、(C)學員課堂中使用。本節記錄可立即對接的部分、前端整合陷阱,以及需後端補強才能完成三流程的 follow-up backlog 與優先序。來源證據:現有 controller/DTO/e2e 程式碼 + `tasks/todo.md` 既有 deferred scope 註記 + sibling `docs/智學互動平台/` M2 設計文件(target contract,非已實作)。
+
+#### 前端可立即對接的能力(基準部分,已由 e2e 驗證)
+
+| 前端功能 | 可用 API | 備註 |
+| --- | --- | --- |
+| 登入/登出/改密/身分 | `POST /auth/login`、`POST /auth/logout`、`POST /auth/change-password`、`GET /auth/session` | cookie session + CSRF double-submit |
+| 課程管理 | `POST/GET/GET/:id /courses`、`POST /courses/:id/archive` | 分頁回傳 `Page<CourseDto>` |
+| 老師出題(單選) | `POST /courses/:courseId/questions` | 只支援 `poll`+`single`,2–10 選項,僅 draft 課程可加 |
+| 開課堂 | `POST /live-sessions`、`POST /:id/start` | start 產生不可變 snapshot |
+| 課堂中控制收/開題 | `POST .../questions/:qid/open`、`.../close` | 同一時間只能一題 open |
+| 學員加入 | `POST /live-sessions/:sessionCode/join` | 公開;participant token 只回傳一次 |
+| 學員看題 | `GET /live-sessions/:id/snapshot` | participant 只看到 open 題 + `hasSubmitted` |
+| 學員答題 | `POST /live-sessions/:id/submissions` | 需 `X-Participant-Token` + `Idempotency-Key`(UUID) |
+
+這條 happy path 在 `test/poll-single-choice.e2e-spec.ts` 已端對端驗證,前端可放心對接。
+
+#### 前端整合陷阱(已由程式碼確認,開發前必知)
+
+1. **CSRF token 取得**:無獨立 `/csrf` endpoint;token 只能從 login 回應的 `Set-Cookie: __Host-csrf`(非 HttpOnly)讀取,之後所有 mutation 需帶 `X-CSRF-Token` + `Origin`。
+2. **CORS_ORIGIN 不可用 `*`**:CSRF Origin 檢查 fail-closed,`*` 會讓所有 authenticated mutation 回 403 `AUTH_CSRF_INVALID`。需設明確 origin。
+3. **回應永遠包在 envelope**:資料在 `response.body.data`;課程分頁是 `data.data` + `data.meta`;logout 為 `data: null`。
+4. **submission 回傳值正規化**:`selectedOptionRefs` 可能被正規化成 formal option UUID,而非送出的 optionRef → 前端比對答案需用 ID。
+5. **`GET /auth/session` 回傳 `expiresAt: ""`**(空字串):不要用來判 session 過期;過期目前一律映射成 `UNAUTHORIZED`(`AUTH_SESSION_EXPIRED` 宣告但未使用)。
+6. **無 OpenAPI/Swagger**:型別需手寫,直接對齊 `src/modules/*/api/dto/*.ts`;文件與後端現況不同步,以程式碼/e2e 為準。
+7. **無 GET session detail 給老師**:老師端 session projection 靠 snapshot route(cookie 身分),非獨立 endpoint。
+8. **健康檢查不在 envelope**:`/health/*` 為原始回應,前端不可套用 envelope 解析。
+
+#### 三流程缺口 + 後端 follow-up backlog(按優先序)
+
+優先序原則:先補「讓前端縱切可走通」的端點,再補「即時/結果/封存」。每項附前端 mock 占位策略,讓兩軌平行推進。
+
+##### P1 — 老師出題流程補完
+
+- [ ] **Q-1** 題目列表/詳情:`GET /courses/:courseId/questions`、`GET /courses/:courseId/questions/:id` → 回 `QuestionDto`/分頁。前端現況:只能記住建立時回傳的 DTO,重新整理即遺失。
+- [ ] **Q-2** 題目更新/刪除/排序:`PATCH /questions/:id`、`DELETE /questions/:id`、`PATCH /courses/:courseId/questions/order`(position 陣列);僅 draft 課程可改。前端占位:編輯/刪除按鈕先 disable + tooltip「待後端」。
+- [ ] **Q-3** 題型擴充:`open_text`、`quiz`、poll `multiple`;擴充 `CreateQuestionDto` 與 domain validator。前端占位:出題表單只開單選,其他題型選項 disabled。
+- [ ] **Q-4** 批次驗證/預覽/確認:`POST /courses/:courseId/questions/batch-validate`、`/batch-preview`、`/batch-confirm`(all-or-nothing + validation token + payload hash + idempotency),對齊《題目領域契約》。前端占位:批次匯入 UI 先做前端本地驗證,送出時提示「批次 API 待後端」。
+
+##### P2 — 課堂中(老師端)流程補完
+
+- [ ] **S-1** LiveSession close/cancel:`POST /live-sessions/:id/close`、`POST /live-sessions/:id/cancel`;補 `closed`/`cancelled` 狀態轉移(目前只有 `waiting→active`)。解除 todo 行 370 的封存阻斷。
+- [ ] **S-2** 老師端 session detail:獨立 `GET /live-sessions/:id`(目前靠 snapshot)→ 回完整 projection 含 joined/voted 人數。
+- [ ] **S-3** 結果/聚合 endpoint:`GET /live-sessions/:id/questions/:qid/results` → 選項計數 + vote-to-reveal 投影 + 匿名聚合(US-F17);quiz 正確率 / open_text 投影隨 Q-3 一起。前端占位:結果頁先 mock 靜態資料 + 介面抽象成 `ResultsProvider`,後端就緒後切換。
+- [ ] **S-4** joined/voted 即時人數:見 P3 即時通道;無 Socket 前先用 snapshot 輪詢頂著。
+- [ ] **S-5** 封存/保留:`POST /live-sessions/:id/archive` → ArchivedResult + 90 天保留 + 早刪/tombstone(依《即時同步與結果治理設計》)。需 S-1 先完成。
+
+##### P3 — 學員課堂流程補完
+
+- [ ] **R-1** reconnect/replay 協定:Socket.IO `/live` namespace + session room + snapshot/replay + reconnect;前端占位:以 snapshot 輪詢 adapter 抽象化 `LiveSessionChannel`,日後切 Socket。
+- [ ] **R-2** vote-to-reveal 結果投影:學員端 `GET .../results` 或 Socket 事件;依 S-3 結果 API。前端占位:結果顯示先 mock。
+- [ ] **R-3** 結束後行為/封存:closed session 學員 snapshot 行為 + 封存結果可見性;依 S-1/S-5。
+- [ ] **R-4** submit/close 競態與 auto-close scheduler:完整 race matrix + 自動收題;todo 既有 deferred scope。
+
+##### P4 — 工程基準補強(非流程阻擋,但影響前端開發體驗)
+
+- [ ] **E-1** OpenAPI/Swagger 重新引入(鎖安全版本,避 js-yaml 漏洞):產出前端可消費的型別/客戶端。
+- [ ] **E-2** `GET /auth/session` 回傳真實 `expiresAt`(目前空字串);或前端改用 401 觸發重登。
+- [ ] **E-3** `AUTH_SESSION_EXPIRED` 與 `UNAUTHORIZED` 區分,前端可分辨「需重登」vs「無權」。
+- [ ] **E-4** 既有非阻擋項:`@Get('ready')` 重複 decorator 清理、Nest legacy wildcard route 警告。
+- [ ] **E-5** 帳號管理:list/detail/update(目前只有 create/reset/disable/restore)。
+
+#### 兩軌推進建議
+
+- **前端軌(現在啟動)**:先做 auth + 課程 + 單選出題 + 開課堂 + 學員答題這條可連通路徑;型別手寫對齊 DTO;即時/結果用 adapter(P3 R-1 的 `LiveSessionChannel`)+ mock 占位,介面抽象化以便後端就緒後切換。
+- **後端軌(並行補)**:依 P1→P2→P3→P4 順序,每個 slice 維持既有 thin vertical slice + targeted verification 慣例;前端 mock 占位介面即為後端實作合約。
+
+#### Risk & rollback
+
+- **風險等級:低**(本節僅為評估與規劃紀錄,不修改 runtime/schema/migration)。
+- **Rollback**:無需 rollback;本節為規劃文件,實作 slice 各自有自己的 risk/rollback 區塊。
+- **監控信號**(實作時):各新 endpoint 的 error code 使用率、`SUBMISSION_CONFLICT`、Socket reconnect 次數、aggregate 一致性檢查。
+
+#### 待確認決策
+
+- [x] 確認 P1–P4 優先序採用:出題擴充(P1)→ 課堂老師端(P2)→ 學員課堂(P3)→ 工程基準(P4)。使用者 2026-08-16 確認。
+- [x] 確認前端策略採用選項 B:等後端齊再開前端 — 每個流程的後端端點做完才開對應前端,不做前端 mock 占位。使用者 2026-08-16 確認。後端依 P1→P4 順序逐 slice 補完,前端待後端對應端點完成再啟動。
+
+#### 2026-08-16 — P1 出題擴充實作決策(M2 文件未定案點拍板)
+
+來源:M2 文件探索(題目領域契約 / API 與共用 Schema 設計 / M2 關鍵技術決策 / M2 跨文件 Contract Review)+ questions 模組程式碼探索。使用者拍板四項決策:
+
+- [x] **Route 慣例**:巢狀於課程 — `PATCH/DELETE /courses/:courseId/questions/:id`、reorder `PATCH /courses/:courseId/questions/order`(對齊 M2 API catalog,捨棄 backlog 扁平寫法 `PATCH /questions/:id`)。修正 backlog Q-2/Q-4 route 名稱。
+- [x] **isCorrect 暴露**:出題投影含正解 — authoring projection DTO 含 `isCorrect`/`correctOptionRefs`(teacher list/detail);學員 snapshot/participant 維持不暴露。`toQuestionDto` 將分裂為 `toAuthoringQuestionDto`(含正解)/ `toLearnerQuestionDto`(不含)。既有 snapshot mapping 改用 learner 投影。
+- [x] **Swagger 形態**:UI + JSON — `/api/docs` + `/api/docs-json`(`useGlobalPrefix:true`)。`@nestjs/swagger` exact pin + `overrides.js-yaml>=5.3.0`,驗 `npm audit` 乾淨。修正歷史「js-yaml 4.1.0+ 安全」(已過時):`@nestjs/swagger@11.4.6` 帶 `js-yaml@5.2.1`(GHSA-pm4m-ph32-ghv5,fix 5.3.0);`11.4.5` 帶 `4.3.0`(GHSA-5p4m-2wfm-xmqj,fix 4.3.1),兩者皆有漏洞。
+- [x] **Slice 順序**:E-1 先 → Q-1 → Q-2 → Q-3 → Q-4。先建 Swagger 基礎,後續新增端點自動產出 spec。
+
+**Stale 衝突修正(以 M2 權威來源為準)**:
+- 實作規劃文件提到 batch token 為「signed token」 → 修正為 **DB-backed opaque token**(M2 決策/API/review 一致,《M2 關鍵技術決策》L83-94)。
+- backlog 的 `/questions/batch-validate`、`/batch-preview`、`/batch-confirm` route → 修正為 `/question-batches/validate` + `/question-batches/confirm`(M2 API catalog L190-192);**無獨立 batch-preview endpoint**,preview 為 validate 成功回應欄位。
+- 領域文件範例用 snake_case → v1 wire 一律 camelCase(M2 review L119-123 已閉環)。
+
+**M2 文件未定案、本計畫以實作決策補齊(各 slice 實作時落地)**:
+- list 分頁 query 形狀:`page`/`pageSize` query string(鏡射 courses)。
+- validation-token 傳遞:建議 header `X-Validation-Token`(confirm 重送 payload + token)。
+- explicit confirmation 欄位:confirm body 加 `confirmed: true`。
+- confirm response DTO:`{ schemaVersion, questions: QuestionDto[], payloadHash }`。
+- warning object schema:`{ code, field, message }`(非 blocking,無 nextStep)。
+- courseId 同時在 path 與 body:path 為準,body 的 `courseId` 必須相符否則 `CONFLICT`/`VALIDATION_FAILED`。
+- token 過期/hash 不符/已消耗的精確 error code 未定案 → 用 `CONFLICT` 類別 + 明確 code(實作時定案並記錄)。
+- Unicode 正規化形式:現況 NFC(非紅卡明文),沿用。
+
+完整實作計畫見 `/home/user/.claude/plans/linear-wibbling-shore.md`。
+
+### 2026-08-16 — Slice 0: E-1 OpenAPI/Swagger 基礎(完成)
+
+#### Context
+
+P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 新增端點自動產出前端可消費的 OpenAPI spec。Phase 1 曾因 transitive js-yaml DoS 移除 swagger;本 slice 以安全 pin + override 重引入。
+
+#### Checklist
+
+- [x] `@nestjs/swagger@11.4.6` exact pin + `overrides.js-yaml=5.3.0`(修正過時的「js-yaml 4.1.0+ 安全」;11.4.6 帶 5.2.1 有 GHSA-pm4m-ph32-ghv5,fix 5.3.0)。
+- [x] `npm install` + `npm audit` → 0 vulnerabilities;所有 js-yaml 解析為 5.3.0(overridden/deduped)。
+- [x] 新 `src/bootstrap/configure-swagger.ts`:`configureSwagger(app)` 掛 `/api/docs`(UI)+ `/api/docs-json`(JSON),`useGlobalPrefix:true`、`raw:['json']`(JSON-only,避免叫用 YAML dump)。`DocumentBuilder` 不加 `/api/v1` server URL(scanner 已套 global prefix,避免雙前綴)。
+- [x] `src/main.ts` 與 `test/setup/app-factory.ts` 皆呼叫 `configureSwagger(app)`(在 `configureApplication` 後)。
+- [x] `nest-cli.json` 加 Swagger compiler plugin(`classValidatorShim:true` + `introspectComments:true`)→ request DTO 自動從 class-validator 推斷。
+- [x] response DTO 補 `@ApiProperty`/`@ApiPropertyOptional`(最小集:question/course/auth account+session;nullable `optionRef`/`selectionMode`/`description`/`disabledAt` 標 `nullable:true`)。
+- [x] controller 補 `@ApiTags`:`auth`、`courses`、`questions`。
+- [x] 新 `test/openapi.e2e-spec.ts`:斷言 `/api/docs-json` 回 OpenAPI JSON(不被 envelope 包)、含 `/api/v1/courses` + `/health/live` + `/health/ready`、無 `/api/api/` 雙前綴、`/api/docs` 回 HTML。
+
+#### 設計決策(Envelope 表示:選項 A 最小可用)
+
+- controller 回傳型別為內層 DTO,實際 HTTP 為 `{data,meta,error}` envelope,OpenAPI 不會自動包。
+- **採選項 A**:spec 顯示內層型別 + DocumentBuilder description 說明 envelope 全域套用。前端 client 生成後手動解 `body.data`。
+- 選項 B(document postprocess 包 envelope wrapper 或每 controller `@ApiResponse`)列為 follow-up;若前端強烈需 envelope 型別再升級。
+
+#### Verification
+
+| 命令 | 結果 |
+| --- | --- |
+| `npm install` + `npm audit` | ✅ 0 vulnerabilities;js-yaml 全 5.3.0 |
+| `npm run typecheck` | ✅ 通過 |
+| `npm run lint:check` | ✅ 0 errors |
+| `npm run format:check` | ✅ All matched files use Prettier code style |
+| `npm run build` | ✅ nest build 通過 |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/app.e2e-spec.ts test/api-envelope.e2e-spec.ts` | ✅ 2 suites / 6 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 2 suites / 15 tests(DB-backed,無回歸) |
+
+#### Results
+
+- 重新引入 OpenAPI/Swagger,UI `/api/docs` + JSON `/api/docs-json`,既有端點(auth/course/question/session/participant/submission)產出 spec;路徑為 `/api/v1/*`、health 為 `/health/*`,無雙前綴。
+- 安全 pin + override 讓 `npm audit` 乾淨,供應鏈安全。待 upstream 修補版 swagger 出現可移除 override。
+- compiler plugin 自動推斷 request DTO;response DTO 補 `@ApiProperty`(最小集,其餘隨各 slice 補)。
+- docs route 為 raw OpenAPI,不被 `ApiResponseInterceptor` envelope 包覆(正確,因 interceptor 只包 `/api/v1`)。
+
+#### Risk & rollback
+
+- **風險:中**。新依賴 + compiler plugin + DTO decorator;envelope 表示方式影響前端。
+- **Rollback**:revert package.json/nest-cli.json/bootstrap/main/app-factory/DTO/controller 變更;`npm install` 回原 lockfile。無 DB/migration。
+- **不變量維持**:envelope 仍由 interceptor 套用、health 不在 `/api/v1`、CSRF/auth 行為不變、既有 e2e 全綠(24 tests 無回歸)。
+
+#### Follow-up(非本 slice 阻擋)
+
+- Envelope 表示升級為選項 B(postprocess / `@ApiResponse`),若前端需 envelope 型別。
+- 其餘 controller(live-sessions/participants/submissions/admin)補 `@ApiTags` + response DTO `@ApiProperty`,隨 P2/P3 各 slice 補。
+- 既有非阻擋警告:Nest `LegacyRouteConverter`(`health/(.*)`、`/api/*`)、`pg@9 client.query()` deprecation — 列為 E-4 清理。
+
+### 2026-08-16 — Slice 1: Q-1 題目列表/詳情(完成)
+
+#### Checklist
+
+- [x] `GET /api/v1/courses/:courseId/questions`(分頁,position 升序)
+- [x] `GET /api/v1/courses/:courseId/questions/:id`(單題含 options,不含 `isCorrect`)
+- [x] `QuestionService` 注入 `PrismaService`;加 `listQuestions`/`getQuestion`/`assertCourseReadable`(owner/admin,不拒 archived,非 owner → `NOT_FOUND` 不洩漏存在性)
+- [x] 重用 `normalizePageRequest`/`toPage`(src/common/pagination)、`toQuestionDto`;detail 用 `(id, courseId)` compound unique
+- [x] 補 `@ApiTags('questions')`
+
+#### Verification
+
+| 命令 | 結果 |
+| --- | --- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts` | ✅ 1 suite / 9 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | ✅ 1 suite / 1 test(無回歸) |
+| typecheck/lint/format/build | ✅ 全綠 |
+
+#### Results
+
+- 新增兩個唯讀端點,鏡射 courses list/detail 模式;存取控制用 course detail 語義(owner/admin,archived 可讀)。
+- 新 e2e 覆蓋:list 升序 + 分頁 meta、`?page&pageSize`、detail options 升序無 `isCorrect`、非 owner 404、admin read-across、GET 不需 CSRF、缺失/跨課程 questionId 404、archived 可讀。
+- 無 schema/migration 變更。
+
+#### Risk & rollback
+
+- **風險:低**。純唯讀 + 新測試。Revert commit 即可;無 DB/migration rollback。
+
+### 2026-08-16 — Slice 2: Q-2 更新/刪除/排序(完成)
+
+#### Checklist
+
+- [x] `PATCH /api/v1/courses/:courseId/questions/:id`(full-replace prompt/options,poll/single 同 create,position 保留)
+- [x] `DELETE /api/v1/courses/:courseId/questions/:id`(刪除 + compact 剩餘位置為連續 1..N)
+- [x] `PATCH /api/v1/courses/:courseId/questions/order`(reorder,body `{ questionIds: string[] }` 完整順序,兩階段重排)
+- [x] `UpdateQuestionDto`、`ReorderQuestionsDto`(`@IsArray` + `@IsString({ each: true })`,移除 `@ValidateNested` 避免 primitive 陣列驗證失敗)
+- [x] `assertNotLockedBySession`(查 `LiveSessionQuestionSelection` join `liveSession.status in [waiting, active]`,命中 throw `QUESTION_LOCKED_BY_SESSION` 409) — 程式碼先前已宣告未使用,本 slice 首次落地
+- [x] `compactPositions`(兩階段重排避 `(courseId, position)` immediate unique 中途違反)
+- [x] reorder route 宣告於 `:id` route 之前(避免 Nest 把 `order` 匹配為 `:id` 參數)
+
+#### 設計要點
+
+- **locked-by-session guard**:在 `assertCourseWritable`(draft-only)後、mutation 前,用 `liveSessionQuestionSelection.findFirst({ where: { courseId, questionDefinitionId: { in: ids }, liveSession: { is: { status: { in: [waiting, active] } } } } })`。reorder 用 `in: ids`。
+- **兩階段重排**:因 `(courseId, position)` 為 immediate unique,直接交換會中途違反;先指派臨時高位 position(`temporaryBase = max(existingMax, N) + N + 1`)再落定 `1..N`。delete 後 compact 用同手法。
+- **update full-replace**:prompt + options 全部重送,option 全刪全重建(避 optionRef/position partial 衝突);拒絕 type/selectionMode 變更(`ConflictError`)。`isCorrect` 仍 `false`(Q-3 開放 quiz 正解)。
+- **snapshot 不受影響**:SessionQuestion 為不可變副本,source edit/delete 不影響已啟動 session。
+- 本 slice 仍限 poll/single;題型擴充隨 Q-3。
+
+#### Verification
+
+| 命令 | 結果 |
+| --- | --- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-mutation.e2e-spec.ts` | ✅ 1 suite / 9 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts` | ✅ 1 suite / 9 tests(無回歸) |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | ✅ 1 suite / 1 test(無回歸) |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新端點進 spec) |
+| typecheck/lint/format/build | ✅ 全綠 |
+
+#### Debugging note(lesson)
+
+- 初次 reorder e2e 全 400:根因是 `ReorderQuestionsDto` 用 `@ValidateNested({ each: true })` + `@Type(() => String)` 驗證 primitive `string[]` 失敗 → 改用 `@IsString({ each: true })`。
+- 修 DTO 後仍 400:根因是 **路由衝突** — `@Patch(':courseId/questions/:id')` 宣告於 `@Patch(':courseId/questions/order')` 之前,Nest 把 `order` 匹配為 `:id` → `UpdateQuestionDto` 驗證 `options`/`prompt`/`type`/`selectionMode` 失敗,`questionIds` 被當未知欄位。修法:reorder route 宣告於 `:id` route 之前。
+- 偵測:回應 body 顯示 `VALIDATION_FAILED` 且 `field: options`(非 reorder DTO 欄位)+ `questionIds: property questionIds should not exist` → 確認路由到錯 controller method。
+- 防止規則:Nest 同一 path segment 有 static 與 param route 時,static route 必須宣告在前;或用更明確 path(如 `/reorder` 子路徑)。
+
+#### Results
+
+- 新增三個 mutation 端點 + locked-by-session guard + 兩階段重排;`QUESTION_LOCKED_BY_SESSION` 首次落地。
+- 新 e2e 覆蓋:update 保留位置、同型 update 接受、delete + compact、reorder 完整順序、reorder 缺/多/重複 409、非 owner 404、locked 409(waiting session 選取)、archived 409 `COURSE_NOT_EDITABLE`、CSRF 必要 403。
+- 無 schema/migration 變更(swap 位置用既有 `(courseId, position)` unique)。
+
+#### Risk & rollback
+
+- **風險:中高**。mutation + locked guard + 兩階段重排 + position unique 競態。
+- **Rollback**:revert application/dto/test;無 schema 變更。
+- **監控**:`QUESTION_LOCKED_BY_SESSION`、`COURSE_NOT_EDITABLE`、position P2002 計數。
+- **不變量**:snapshot 不受 source 變更影響、draft-only、owner/admin、不洩漏存在性、envelope/auth/CSRF 不變。
+
+### 2026-08-16 — Slice 3: Q-3 題型擴充(完成)
+
+#### Checklist
+
+- [x] 新 `src/modules/questions/domain/question-text.ts`:抽出共用 text helper(readText/characterLength/containsUnsafeText/duplicateKeyFor/isRecord)。
+- [x] 新 `src/modules/questions/domain/question-contract.ts`:`validateQuestion`/`normalizeQuestion` 統一 dispatch 所有題型(poll single/multiple、open_text、quiz),回傳 `NormalizedQuestion` 含 `correctOptionRefs`。
+- [x] 新 `src/modules/questions/domain/question-contract.spec.ts`:16 unit tests(poll single/multiple、open_text、quiz 正解/缺失/不存在/重複/forbidden、shared bounds/duplicate/unsafe)。
+- [x] `CreateQuestionDto`/`UpdateQuestionDto` 放寬為接受所有題型欄位(可選),domain validator 做完整 per-type 判定;`QuestionDto`/`QuestionOptionDto` 加 `isCorrect`/`correctOptionRefs`。
+- [x] `QuestionService.createQuestion`/`updateQuestion` 改用 `normalizeQuestion`;quiz `correctOptionRefs` 映射到 option `isCorrect`(`isCorrectOption` helper)。
+- [x] `toQuestionDto` 分裂為 **authoring 投影**(含 `isCorrect`/`correctOptionRefs`,給 teacher list/detail/create/update/reorder);learner snapshot(live-session/participant)投影維持不暴露正解(既有 mapping 未動)。
+- [x] 加 `CORRECT_OPTION_INVALID` error code。
+- [x] `findForActivation` 維持 poll/single 限制(本 slice 只擴充 authoring,activation/submission 邊界未動)。
+- [x] 更新既有 Q-1 e2e 斷言:poll authoring options 含 `isCorrect: false` + `correctOptionRefs: []`(反映新投影)。
+- [x] 新 `test/questions-types.e2e-spec.ts`:8 tests(poll multiple、open_text、quiz 正解暴露、quiz 缺正解 400、quiz 不存在 ref 400、open_text forbidden options 400、quiz update 保留正解、learner snapshot 不含 isCorrect/correctOptionRefs)。
+
+#### 設計要點(題型規則,來自《題目領域契約》)
+
+- **poll**:`selectionMode` 必填 `single`|`multiple`;options 2–10;`correctOptionRefs` 禁止。
+- **open_text**:僅 `type`+`prompt`;`selectionMode`/`options`/`correctOptionRefs` 禁止;options 空、selectionMode null。
+- **quiz**:options 2–10;`selectionMode` 禁止;`correctOptionRefs` 必填 >=1、每個 ref 需存在於 options 的 optionRef;1 個正解=單答、多個=多答;option `isCorrect` 依 `correctOptionRefs` 設定。
+- **isCorrect 暴露決策**:authoring 投影含;learner/snapshot 不含(已驗證 e2e)。
+- DB 既有 CHECK 已支援三題型 + selection mode 規則,無 schema 變更;quiz 正解數量由應用層守護(>=1、refs 存在)。
+
+#### Verification
+
+| 命令 | 結果 |
+| --- | --- |
+| `npm test -- --runInBand src/modules/questions/domain/question-contract.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts` | ✅ 2 suites / 21 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-types.e2e-spec.ts test/questions-read.e2e-spec.ts test/questions-mutation.e2e-spec.ts test/poll-single-choice.e2e-spec.ts test/openapi.e2e-spec.ts` | ✅ 5 suites / 30 tests |
+| typecheck/lint/format/build | ✅ 全綠 |
+
+#### Results
+
+- 出題端支援 poll(single/multiple)、open_text、quiz;quiz 正解透過 `correctOptionRefs` 設定並暴露於 authoring 投影。
+- authoring/learner 投影分裂:teacher 可見正解、學員 snapshot 不暴露。
+- 無 schema/migration 變更(既有 CHECK 已支援)。
+- `findForActivation` 與 submission 維持 poll/single 限制 — open_text/quiz 的 activation+submission 邊界列為 P3/R follow-up。
+
+#### Risk & rollback
+
+- **風險:中**。DTO 放寬 + 投影分裂 + 影響既有 poll 路徑。
+- **Rollback**:revert domain/dto/service/test;無 schema 變更。
+- **不變量**:learner 永不見正解(已驗證 e2e)、NFC/unsafe/duplicate 規則一致、envelope/auth/CSRF 不變、poll single 路徑無回歸(30 e2e 全綠)。
+
+#### Follow-up(非本 slice 阻擋)
+
+- open_text/quiz 的 activation + submission cardinality(屬 P3/R 課堂/學員流程)。
+- poll-multiple 的 submission 邊界(>=1、<= option count、無重複)。
+- `validateQuestion` 的 `OPTION_REF_INVALID` 與 `CORRECT_OPTION_INVALID` 於 Q-4 批次彙整復用。
+
+### 2026-08-17 — Slice 4: Q-4 批次驗證/確認 + CLI credential 子系統(完成)
+
+#### Context
+
+P1 出題擴充最後一塊:批次題目 validate/confirm(1–50 題、全錯誤+預覽+token、重驗+all-or-nothing+冪等),供 Web teacher 與 CLI actor 共用。CLI actor 需全新 CLI credential 子系統(M2 文件明列 deferred,本 slice 落地)。完整設計見 `/home/user/.claude/plans/linear-wibbling-shore.md`(Slice 4 計畫)。
+
+#### 已拍板決策(2026-08-16/17)
+
+- CLI key header:`X-CLI-Key`(自訂;已加 pino redaction)。
+- CLI key scope:`all_courses`(MVP)。
+- CLI key 簽發:admin 端點 + step-up — `POST /api/v1/admin/accounts/:id/cli-credentials`(raw key 回傳一次)。
+- 範圍:完整 Q-4(含 CLI credential 子系統)。
+- 既有合約決策:token header `X-Validation-Token`;confirm body `confirmed: true` + 重送 `questions` + `payloadHash`;confirm response `{ schemaVersion, questions: QuestionDto[], payloadHash }`;warning `{ code, field, message }`;courseId path 為準;token 過期/hash 不符/消耗 → `CONFLICT` 類別 + 明確 code(`VALIDATION_TOKEN_INVALID`/`EXPIRED`/`CONSUMED`/`PAYLOAD_HASH_MISMATCH`)。
+- stale 修正:`can_create_course=false` **不**撤銷 CLI key(M2 紅卡 #8);account disable 立即撤銷 CLI key + 未用 token。
+
+#### Part A — CLI credential 子系統(完成,已驗證)
+
+##### Checklist
+
+- [x] 新 Prisma model `CliCredential`(UUID PK、`key_hash` unique、`UNIQUE(account_id,name)`、scope/status CHECK、FK CASCADE)+ additive migration。
+- [x] `src/modules/identity/domain/cli-credential-status.ts`(active/revoked + all_courses/single_course)。
+- [x] `src/modules/identity/application/cli-credential.service.ts`:`createCredential`(`generateToken`+`hashToken`,raw 回傳一次)、`listCredentials`(metadata,無 hash)、`revokeCredential`(冪等)、`revokeAllForAccountInTransaction`(disable 連動)、`authenticate`(hash → findUnique → 查 account.status active + credential.status active → `CliAuthContext`;best-effort `lastUsedAt`)。鏡射 participant token 模式。
+- [x] `src/modules/identity/api/dto/cli-credential.dto.ts`:`CreateCliCredentialDto`、`CliCredentialDto`、`CreateCliCredentialResponseDto`。
+- [x] `src/common/auth/cli-auth-context.ts`:`CliAuthContext`(account + credentialId + scope,無 sessionId)+ express Request 擴充。
+- [x] `src/modules/identity/api/cli-auth.guard.ts`:`CliAuthGuard`(X-CLI-Key header → authenticate,401 on fail,不套 CSRF)。
+- [x] `src/common/auth/current-cli-account.decorator.ts`:`@CurrentCliAccount()`。
+- [x] `src/modules/identity/api/admin.controller.ts`:`POST /admin/accounts/:id/cli-credentials`(step-up)、`GET .../cli-credentials`、`POST .../cli-credentials/:credentialId/revoke`(step-up,`@HttpCode(200)`)。
+- [x] `src/modules/identity/application/account.service.ts`:`disableAccount` 連動撤銷 CLI credentials + 失效未用 `QuestionValidationToken`(`invalidateTokensForAccountInTransaction`)。
+- [x] `src/modules/identity/identity.module.ts`:providers/exports `CliCredentialService` + `CliAuthGuard`。
+- [x] `src/common/observability/pino-redaction.ts`:加 `X-CLI-Key`、`X-Validation-Token`、`rawKey`、`validationToken`、`payloadHash`。
+- [x] `test/cli-credential.e2e-spec.ts`:6 tests 全綠(admin step-up 發 key raw 一次、無 step-up 拒、X-CLI-Key 認證、revoked 拒、disabled account 拒[回 `CLI_CREDENTIAL_REVOKED`,因 disable 撤銷 key]、missing key 401)。
+
+##### Verification(Part A)
+
+| 命令 | 結果 |
+| --- | --- |
+| `NODE_ENV=test npm run prisma:migrate:deploy`(20260816160000,授權套用至 `smartlearning_test`) | ✅ 8 migrations,新表建成 |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/cli-credential.e2e-spec.ts` | ✅ 1 suite / 6 tests |
+| 既有回歸(auth-courses/poll/openapi/questions-read/mutation/types) | ✅ 6 suites / 44 tests |
+| canonical-hash unit | ✅ 7 tests |
+
+#### Part B — 批次 validate/confirm(程式碼完成,驗證卡點中)
+
+##### Checklist(程式碼)
+
+- [x] 新 Prisma model `QuestionValidationToken`(token hash unique、綁 account/optional CLI/course/payloadHash/schemaVersion/expiresAt/consumedAt)+ `QuestionBatchIdempotency`(`UNIQUE(actorScope,operation,idempotencyKey)` + `responseJson`)。同 migration。
+- [x] `src/common/crypto/canonical-hash.ts`:`canonicalJsonStringify`(排序 key、保留 array order、略過 undefined、無 whitespace)+ `hashPayload`(`sha256:<hex>`)+ 7 unit tests。
+- [x] `src/modules/questions/domain/question-batch.ts`:`validateBatch`(1–50、`clientRef` payload 內唯一、彙整所有 issues[呼叫 `validateQuestion` 前剔除 `clientRef`]+ warnings、`BATCH_SIZE_INVALID`/`CLIENT_REF_DUPLICATE`)。
+- [x] `src/modules/questions/application/question-batch.service.ts`:`validateBatch`(course 存取檢查 owner/admin + draft、payloadHash、domain validate、valid→產 token[15m]回 preview+token、invalid→回 errors token=null);`confirmBatch`(idempotency replay/conflict、token 重驗[invalid/expired/consumed/hash mismatch/account/course/CLI 綁定]、all-or-nothing append via `QuestionService.appendBatchInTransaction`、成功消耗 token + 寫 idempotency record、失敗不消耗)。
+- [x] `src/modules/questions/application/question.service.ts`:加 `appendBatchInTransaction`(在 caller tx 內重用 lock 序列 + assertCourseWritable + 逐題 append 連續 position)。
+- [x] `src/prisma/transaction.service.ts`:加 `lockAdvisoryKey(tx, key)` generic helper(idempotency 序列化,key `qbatch:${actorScope}:${idempotencyKey}`)。
+- [x] `src/modules/questions/api/dto/question-batch.dto.ts`:`ValidateQuestionBatchDto`/`ConfirmQuestionBatchDto`/`BatchQuestionInputDto`/`BatchQuestionOptionDto` + response DTOs。
+- [x] `src/common/auth/batch-actor.guard.ts`:`BatchActorGuard`(X-CLI-Key → CliAuthGuard,否則 SessionGuard;attach `req.batchActor {kind, accountId, role, cliCredentialId?}`)+ `@CurrentBatchActor()`。
+- [x] `src/common/auth/batch-csrf.guard.ts`:`BatchCsrfGuard`(Web actor 強制 CSRF,CLI actor 跳過)。
+- [x] `src/modules/questions/api/question-batches.controller.ts`:`POST /courses/:courseId/question-batches/validate` + `/confirm`(`Idempotency-Key` + `X-Validation-Token` header)。
+- [x] `src/modules/questions/questions.module.ts`:import IdentityModule、加 controller/service/guard providers。
+- [x] error codes:加 `BATCH_SIZE_INVALID`、`CLIENT_REF_DUPLICATE`、`VALIDATION_TOKEN_INVALID/EXPIRED/CONSUMED`、`PAYLOAD_HASH_MISMATCH`、`IDEMPOTENCY_KEY_CONFLICT`、`CLI_CREDENTIAL_INVALID/REVOKED`。
+- [x] `test/question-batches.e2e-spec.ts`:7 tests(happy path append in order、idempotency replay、idempotency conflict、missing token、payloadHash mismatch、all-or-nothing、CSRF required)。
+
+##### 卡點根因(已解決)— 兩層 `FIELD_FORBIDDEN`,非單一 pipe 問題
+
+原卡點記錄的「Nest 全域 pipe 巢狀 `forbidNonWhitelisted` 擋 `clientRef`」**只是表徵之一**。實際有兩層獨立的 `clientRef` 拒絕,修法需同時處理:
+
+1. **Nest 全域 pipe 層**:全域 `ValidationPipe`(`transform: true` + `forbidNonWhitelisted: true`)對 `questions` 巢狀 `@ValidateNested` + `@Type` 轉換時,在 e2e 把元素轉成空物件、`clientRef` 被判 `FIELD_FORBIDDEN`(field 無 `questions[i]` 前綴)。
+   - 修法:controller `@Body(new ValidationPipe({ transform: true, whitelist: false, forbidNonWhitelisted: false }))` 覆蓋全域 pipe;`ValidateQuestionBatchDto`/`ConfirmQuestionBatchDto` 的 `questions` 改 `unknown[]` + `@IsArray()` + `@ApiProperty({ type: () => BatchQuestionInputDto, isArray: true })`(保留元素 schema 給 OpenAPI,不參與 pipe)。
+2. **Domain `normalizeQuestion` 層**(真正根因):service `validateBatch` 雖先呼叫 domain `validateBatch`(已 strip `clientRef`)得到 `valid=true`,但隨後 `(questions).map(q => normalizeQuestion(q))` 直接把**含 `clientRef` 的原始 payload** 餵給 `normalizeQuestion` → `validateQuestion` L66-76 對未知 top-level key 回 `FIELD_FORBIDDEN field=clientRef`(無前綴),`normalizeQuestion` throw → 400。`confirmBatch` 內同樣呼叫亦有此問題。
+   - 修法:新增 domain `stripClientRef(question)` helper(`question-batch.ts`),`validateBatch` 與 service 兩處 `normalizeQuestion` 呼叫皆先 strip。strip 邏輯集中為單一 helper,避免兩處各寫一份。
+
+兩層都修後,`question-batches.e2e-spec.ts` 7 tests 全綠。
+
+##### 已清理
+
+- 移除 `question-batches.controller.ts` 的 `CTRL questions[0] keys` debug log。
+- 移除 `src/modules/questions/api/dto/batch-dto.spec.ts`(臨時隔離 debug unit test,含 `console.log`;其前提「`questions` 為 `BatchQuestionInputDto[]` + `@ValidateNested`」已因修法改變,不再代表 controller 行為,改由 e2e 覆蓋)。
+- 移除 e2e 內 `VALIDATE DEBUG` 臨時 log。
+- `BatchQuestionInputDto`/`BatchQuestionOptionDto` 保留 class-validator 裝飾器,類別上方加註釋說明「僅供 Swagger plugin 推斷 enum/schema,不參與 request 驗證」(`@IsIn` 讓 plugin 產出 enum;實際驗證由 domain `validateBatch`/`validateQuestion` 守)。
+
+##### Verification(Part B,完成)
+
+| 命令 | 結果 |
+| --- | --- |
+| `npm run typecheck` | ✅ 通過 |
+| `npm run lint:check` | ✅ 0 errors |
+| `npm run format:check` | ✅ All matched files use Prettier code style |
+| `npm run build` | ✅ nest build 通過 |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/question-batches.e2e-spec.ts` | ✅ 1 suite / 7 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(auth-courses/poll/openapi/questions-read/mutation/types/cli-credential/question-batches) | ✅ 8 suites / 57 tests |
+| `npm test -- --runInBand` | ✅ 18 suites / 86 tests |
+| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
+| `git diff --check` | ✅ PASS |
+
+##### Results(Part B)
+
+- 批次 validate/confirm 端點上線:`POST /api/v1/courses/:courseId/question-batches/validate` + `/confirm`(Idempotency-Key + X-Validation-Token header)。
+- 兩層 `clientRef` `FIELD_FORBIDDEN` 根因解決:controller 層 pipe 覆蓋 + domain `stripClientRef` helper(集中 strip 邏輯,validate/normalize 共用)。
+- 契約驗證由 domain `validateBatch` → `validateQuestion` 統一守(題型、選項數、clientRef 唯一、正解 refs 存在、unsafe/empty/length),涵蓋範圍比 pipe whitelist 更廣;pipe 退場不弱化驗證。
+- DB-backed opaque validation token(hash 存、raw 回一次、15m 過期、消耗語意)+ idempotency(`UNIQUE(actorScope,operation,key)` + advisory lock 序列化)+ all-or-nothing append + replay/conflict 語意,全綠。
+- 安全:raw key/token 不入 log(pino redaction 已含 `X-CLI-Key`/`X-Validation-Token`/`rawKey`/`validationToken`/`payloadHash`);confirm response 不回顯 raw token(已 e2e 斷言)。
+
+#### Slice 4 整體狀態
+
+- **Part A(CLI credential)**:完成並驗證(6 e2e)。
+- **Part B(批次 validate/confirm)**:完成並驗證(7 e2e + 57 e2e 回歸 + 86 unit + 10 integration 全綠)。
+- **schema/migration**:3 新表已套用 `smartlearning_test`,prisma generate/validate/typecheck/build 綠。
+- **未 commit**:所有變更在工作樹(未 git commit);待使用者指示 commit。
+
+#### 接續步驟
+
+1. P1 出題擴充(E-1 + Q-1~Q-4)全部完成 — 待使用者指示 commit(或分 slice commit)。
+2. 進入 P2 課堂老師端(S-1 LiveSession close/cancel 等)。
+
+#### Risk & rollback(Slice 4)
+
+- **風險:高**。新 schema(additive ×3)、CLI credential 新認證子系統、token/hash/冪等新狀態、all-or-nothing transaction、安全敏感(raw key/token 不入 log)。Part B 修法本身:controller 覆蓋全域 pipe(`whitelist:false, forbidNonWhitelisted:false`)僅限批次兩端點,全域 pipe 對其他 controller 不變;契約驗證移至 domain 層(涵蓋更廣),非弱化。
+- **Rollback**:revert application/dto/controller/guard/test/domain helper;additive migration 可 forward-drop 三表;不還原已 commit batch 寫入、已消耗 token、已撤銷 CLI key。
+- **不變量**:raw CLI key/token 只回傳一次、不入 log;token DB-backed opaque 存 hash;all-or-nothing;draft-only confirm;owner/admin;account disable 立即撤銷 CLI key + 未用 token;`can_create_course=false` 不撤銷 CLI key;envelope/auth/CSRF(Web)不變;既有 Q-1~Q-3 + poll 路徑無回歸(57 e2e + 86 unit + 10 integration 全綠)。
+
+#### Follow-up(Slice 4 deferred)
+
+- CLI key rotation(successor 語意)、pending_verification、key prefix/suffix、max active key、7/30/90/365 expiry。
+- CLI `courses list`/`courses create` 端點。
+- CLI/batch rate limit。
+- 更新 stale BDD 文字(文件維護)。
