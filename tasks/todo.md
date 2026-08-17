@@ -803,3 +803,61 @@ P1 出題擴充最後一塊:批次題目 validate/confirm(1–50 題、全錯誤
 - CLI `courses list`/`courses create` 端點。
 - CLI/batch rate limit。
 - 更新 stale BDD 文字(文件維護)。
+
+### 2026-08-17 — Slice 5: S-3 課堂題目結果聚合 endpoint(完成)
+
+#### Context
+
+P2 課堂老師端第一個前端阻擋缺口:老師開題收答案後無 endpoint 讀答題分布,「開題→看分布→收題」loop 無法完成。本 slice 補 `GET /api/v1/live-sessions/:liveSessionId/questions/:sessionQuestionId/results`(per-question),為 backlog S-3(`tasks/todo.md:437`)。
+
+**Scope 決策(使用者確認):** 先 ship per-question endpoint;session-level `GET /live-sessions/:id/results`(M2 API catalog L193)延後到 Socket.IO snapshot/replay slice(R-1)。本 slice 為與 M2 API catalog 的**暫時 divergence**,日後 session-level endpoint 落地時需 reconcile,列為 follow-up。
+
+**Authority(M2):** aggregate 即時從已 commit 的 `Submission` 列計算 — 無 Aggregate/VoteCount 表、不讀 outbox、Redis 非權威(即時同步與結果治理設計 L25-31)。REST 為權威 read/reconciliation path;Socket 為後續 notification 層。
+
+**Runtime 限制:** 目前只有 `poll/single` 可 activation+submission(`question.service.ts:432` 拒其他型;`CreateSubmissionDto` 無 `textAnswer`、`ArrayMaxSize(1)`)。endpoint structurally 處理四種 snapshot type(`poll` single/multiple、`open_text`、`quiz`)以免日後 break,但 e2e 只 exercise `poll/single`。擴充 activation/submission cardinality 為**獨立 follow-up**,非本 slice。
+
+#### Checklist
+
+- [x] 新 error codes:`RESULTS_NOT_REVEALED`、`SESSION_QUESTION_NOT_OPEN`(`error-codes.ts`,409 via `DomainError`)。
+- [x] 新 DTO `src/modules/live-sessions/api/dto/results.dto.ts`:`OptionCountDto`、`PollResultsDto`、`QuizResultsDto`、`OpenTextResultsDto`、discriminated union `SessionQuestionResultsDto`,全 `@ApiProperty`;export via dto/index.ts。
+- [x] 純聚合 `src/modules/live-sessions/domain/question-results.ts`:`aggregateResults(input)` 無 Prisma/I/O;poll 計每選項 count(totalResponses=submission 數,multiple 可 sum>totalResponses)、quiz exact-set correctness + `isCorrect` 僅 `revealCorrectness` 時暴露、open_text 匿名 text list 過濾 null、空 submissions 零計數、未知 option UUID 防禦忽略。export via domain/index.ts。
+- [x] `LiveSessionService.getResults(liveSessionId, sessionQuestionId, actor)`:compound `(id, liveSessionId)` 載入 question+options+submissions(new include,`sessionForProjection` 未動不洩漏答案);**ordering:ownership/participant verify → not_open 檢查 → vote-to-reveal**(非 owner 不洩漏存在性,先 404 再 409);teacher `assertCourseAccess` owner/admin else 404、`revealCorrectness=true`;participant 防禦性驗 session 綁定、open 且未提交 → 409 `RESULTS_NOT_REVEALED`、`revealCorrectness=(status===closed)`。
+- [x] Route 放 `ParticipantsController`(非 `LiveSessionsController`)—已注入 `LiveSessionService`、已用 `ParticipantOrSessionGuard`、已有 actor-branch pattern;避免 `LiveSessionsModule`↔`ParticipantsModule` circular(`LiveSessionsModule` 不 import `ParticipantsModule`)。`@Get(':liveSessionId/questions/:sessionQuestionId/results')` + `@UseGuards(ParticipantOrSessionGuard)`,param 名必須 `:liveSessionId`/`:sessionQuestionId`(guard 讀 `request.params.liveSessionId`)。GET 無 CSRF。
+- [x] `@ApiTags('live-sessions')` 加 `ParticipantsController`。
+
+#### 設計要點
+
+- **Vote-to-reveal(US-F17 / 即時同步 L83-88):** teacher 任何時候見匿名 aggregate;participant open 期間須先提交才見 aggregate,question close 後全班可見(R-F17-2,reveal gate 為 question `open→closed` 非 session close)。`isCorrect`(quiz)participant 僅 close 後見;teacher 恆見。teacher aggregate 永不洩漏 display-name→answer mapping。
+- **Participant authenticate 拒 closed/cancelled session**:故「participant 見 closed 結果」意指 `SessionQuestion.status===closed` 而 session 仍 active;session-level close 後 participant token 拒絕為獨立政策,不併入 S-3。
+- **未動 `sessionForProjection`**:避免 snapshot 路徑洩漏答案;results 用獨立 include。
+- **無 schema/migration**:純 read-only additive,aggregate 從既有 indexed `Submission.sessionQuestionId` 即時計算。
+
+#### Verification
+
+| 命令 | 結果 |
+| --- | --- |
+| `npm test -- --runInBand src/modules/live-sessions/domain/question-results.spec.ts` | ✅ 1 suite / 12 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts` | ✅ 1 suite / 11 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` | ✅ 2 suites / 7 tests(無回歸) |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新 route 進 spec) |
+| `npm test -- --runInBand`(全 unit) | ✅ 19 suites / 99 tests |
+| `npm run typecheck` / `lint:check` / `format:check` / `build` / `git diff --check` | ✅ 全綠(format 修 6 檔 Prettier) |
+
+#### e2e 覆蓋(11 cases)
+
+teacher open 見 per-option count(2A/1B/0C,totalResponses=3,poll 無 isCorrect,匿名無 participantId/displayName)、teacher close 後見 count、participant 已提交 open 見 aggregate、participant 未提交 open → 409 `RESULTS_NOT_REVEALED`、participant close 後未提交亦見 aggregate、non-owner teacher → 404、missing/cross-session questionId → 404、not_open question → 409 `SESSION_QUESTION_NOT_OPEN`、**non-owner 對 not_open question → 404(非 409,ordering 不洩漏存在性,regression case)**、GET 無 CSRF、無 auth → 401。
+
+#### Risk & rollback
+
+- **風險:低-中**。read-only additive endpoint、新 DTO、2 新 error codes、新純聚合 fn、新測試。**無 schema/migration**。未動 submission/snapshot/activation 路徑。
+- **Rollback**:revert commit;無 DB rollback。stable error codes 已發布後保留常數以維 wire 相容。
+- **不變量維持**:teacher aggregate 匿名(無 display-name→answer)、learner 僅 closed-question results 見 `isCorrect`、non-owner → 404 不洩漏存在性、envelope/auth/CSRF 不變、僅 poll/single runtime exercisable。
+
+#### Follow-up(Slice 5 deferred)
+
+- Session-level `GET /live-sessions/:id/results`(M2 API catalog)+ reconcile per-question divergence — 隨 R-1 Socket.IO snapshot/replay。
+- Socket.IO `result.updated` / `question.closed` broadcast(R-1/R-2)。
+- `ArchivedResult` + 90 天 retention + early deletion/tombstone(Phase 8 / S-5)。
+- Activation + submission cardinality for multiple/open_text/quiz — endpoint structurally 已支援,但尚無法 activation。
+- 即時 joined/voted 人數(S-4)— 本 endpoint 給 submitted counts;joined 需 participant count(獨立)。
+- Open-text list cardinality(MVP full list;sampling/top-N TBD — M2 未定案)。

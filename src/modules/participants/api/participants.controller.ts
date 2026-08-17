@@ -8,9 +8,13 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { UnauthorizedError } from '../../../common/errors';
 import { JoinLiveSessionDto, JoinLiveSessionResponseDto } from './dto';
-import type { LiveSessionDto } from '../../live-sessions/api/dto';
+import type {
+  LiveSessionDto,
+  SessionQuestionResultsDto,
+} from '../../live-sessions/api/dto';
 import { SessionQuestionStatus } from '../../live-sessions/domain';
 import { ParticipantService } from '../application/participant.service';
 import {
@@ -24,6 +28,7 @@ import {
   toLiveSessionDto,
 } from '../../live-sessions/application/live-session.service';
 
+@ApiTags('live-sessions')
 @Controller({ path: 'live-sessions', version: '1' })
 export class ParticipantsController {
   constructor(
@@ -89,5 +94,36 @@ export class ParticipantsController {
           hasSubmitted: participantView.submittedQuestionIds.has(question.id),
         })),
     };
+  }
+
+  /**
+   * Results/aggregate for a single SessionQuestion (S-3).
+   *
+   * Teacher (Web session cookie) sees the anonymous aggregate at any time.
+   * Participant (X-Participant-Token) sees it only after they have submitted
+   * (while the question is open) or after the question is closed (vote-to-reveal,
+   * US-F17). Aggregation is derived on-the-fly from committed Submission rows.
+   */
+  @Get(':liveSessionId/questions/:sessionQuestionId/results')
+  @UseGuards(ParticipantOrSessionGuard)
+  async results(
+    @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
+    @Param('sessionQuestionId', new ParseUUIDPipe())
+    sessionQuestionId: string,
+    @CurrentParticipant() participant: ParticipantContext | undefined,
+    @Req() request: ParticipantRequest,
+  ): Promise<SessionQuestionResultsDto> {
+    if (!participant && !request.authContext) throw new UnauthorizedError();
+    const actor = participant
+      ? ({
+          kind: 'participant',
+          participantId: participant.participantId,
+        } as const)
+      : ({
+          kind: 'teacher',
+          accountId: request.authContext!.account.id,
+          role: request.authContext!.account.role,
+        } as const);
+    return this.sessions.getResults(liveSessionId, sessionQuestionId, actor);
   }
 }

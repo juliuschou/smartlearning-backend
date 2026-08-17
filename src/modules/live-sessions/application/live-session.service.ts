@@ -11,6 +11,7 @@ import { TransactionService } from '../../../prisma/transaction.service';
 import { QuestionService } from '../../questions/application/question.service';
 import { CourseStatus } from '../../courses/domain/course-status';
 import {
+  aggregateResults,
   canCancelLiveSession,
   canCloseLiveSession,
   canCloseSessionQuestion,
@@ -23,7 +24,10 @@ import {
   normalizeSessionCode,
   SessionQuestionStatus,
 } from '../domain';
-import type { CreateLiveSessionDto } from '../api/dto';
+import type {
+  CreateLiveSessionDto,
+  SessionQuestionResultsDto,
+} from '../api/dto';
 
 const sessionForProjection = {
   course: true,
@@ -445,6 +449,118 @@ export class LiveSessionService {
         isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
       },
     );
+  }
+
+  /**
+   * Results projection for a single SessionQuestion (S-3).
+   *
+   * Aggregation is derived on-the-fly from committed Submission rows — no
+   * Aggregate/VoteCount authority. Teacher (owner/admin) sees the anonymous
+   * aggregate at any time; participant sees it only after they have submitted
+   * (while the question is open) or after the question is closed (vote-to-reveal,
+   * US-F17). `isCorrect` for quiz is revealed to participants only when the
+   * question is closed.
+   */
+  async getResults(
+    liveSessionId: string,
+    sessionQuestionId: string,
+    actor:
+      | { kind: 'teacher'; accountId: string; role: string }
+      | { kind: 'participant'; participantId: string },
+  ): Promise<SessionQuestionResultsDto> {
+    const canonicalSessionId = normalizeUuid(liveSessionId);
+    const canonicalQuestionId = normalizeUuid(sessionQuestionId);
+
+    const question = await this.db.sessionQuestion.findUnique({
+      where: {
+        id_liveSessionId: {
+          id: canonicalQuestionId,
+          liveSessionId: canonicalSessionId,
+        },
+      },
+      include: {
+        liveSession: { include: { course: true } },
+        options: { orderBy: { position: 'asc' } },
+        submissions: {
+          select: {
+            selectedOptionRefs: true,
+            textAnswer: true,
+            participantId: true,
+          },
+        },
+      },
+    });
+    if (!question) {
+      throw new NotFoundError('SessionQuestion not found', 'sessionQuestionId');
+    }
+
+    let revealCorrectness: boolean;
+    let canonicalParticipantId: string | undefined;
+    if (actor.kind === 'teacher') {
+      // Owner/admin check via the loaded course; non-owner → 404 (no existence
+      // leak). This runs before the status check so a non-owner cannot learn
+      // that a question exists via a state-specific 409.
+      this.assertCourseAccess(question.liveSession.course, {
+        id: actor.accountId,
+        role: actor.role,
+      });
+      revealCorrectness = true;
+    } else {
+      canonicalParticipantId = normalizeUuid(actor.participantId);
+      // Defense in depth: confirm the participant belongs to this session.
+      // (The guard already bound the token to the session via hash lookup.)
+      const participant = await this.db.participant.findUnique({
+        where: { id: canonicalParticipantId },
+        select: { liveSessionId: true },
+      });
+      if (!participant || participant.liveSessionId !== canonicalSessionId) {
+        throw new NotFoundError('Participant not found', 'participantId');
+      }
+      // Participants see correct answers only after the question is closed.
+      revealCorrectness = question.status === SessionQuestionStatus.CLOSED;
+    }
+
+    if (question.status === SessionQuestionStatus.NOT_OPEN) {
+      throw new DomainError(
+        'SESSION_QUESTION_NOT_OPEN',
+        'Results are not available for a question that has not been opened.',
+        409,
+        'sessionQuestionId',
+      );
+    }
+
+    if (canonicalParticipantId !== undefined) {
+      const hasSubmitted = question.submissions.some(
+        (submission) => submission.participantId === canonicalParticipantId,
+      );
+      if (question.status === SessionQuestionStatus.OPEN && !hasSubmitted) {
+        throw new DomainError(
+          'RESULTS_NOT_REVEALED',
+          'Submit your own answer before viewing live results for this question.',
+          409,
+          undefined,
+          'Submit an answer to reveal the aggregate.',
+        );
+      }
+    }
+
+    return aggregateResults({
+      snapshotType: question.snapshotType,
+      selectionMode: question.snapshotSelectionMode,
+      status: question.status,
+      options: question.options.map((option) => ({
+        id: option.id,
+        optionRef: option.optionRef,
+        text: option.text,
+        isCorrect: option.isCorrect,
+      })),
+      submissions: question.submissions.map((submission) => ({
+        selectedOptionRefs:
+          (submission.selectedOptionRefs as string[] | null) ?? null,
+        textAnswer: submission.textAnswer,
+      })),
+      revealCorrectness,
+    });
   }
 
   private async transitionQuestion(
