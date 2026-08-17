@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsOptional,
   IsString,
   IsUUID,
   Validate,
@@ -12,6 +13,12 @@ import {
 } from 'class-validator';
 
 function normalizeSubmissionRef(value: unknown): unknown {
+  return typeof value === 'string'
+    ? value.normalize('NFC').replace(/\s+/gu, ' ').trim()
+    : value;
+}
+
+function normalizeTextAnswer(value: unknown): unknown {
   return typeof value === 'string'
     ? value.normalize('NFC').replace(/\s+/gu, ' ').trim()
     : value;
@@ -33,9 +40,14 @@ export class CreateSubmissionDto {
   @IsUUID()
   sessionQuestionId!: string;
 
+  // Shape-only validation. The selectedOptionRefs/textAnswer mutual exclusion
+  // and type-specific cardinality are enforced by the application layer against
+  // the SessionQuestion snapshot type (the DTO cannot know the question type
+  // from the request body alone).
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(1)
+  @ArrayMinSize(0)
+  @ArrayMaxSize(10)
   @Transform(({ value }) =>
     Array.isArray(value) ? value.map(normalizeSubmissionRef) : value,
   )
@@ -43,7 +55,13 @@ export class CreateSubmissionDto {
   @Validate(SubmissionRefCodePointMaxLengthConstraint, [250], {
     each: true,
   })
-  selectedOptionRefs!: string[];
+  selectedOptionRefs?: string[];
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => normalizeTextAnswer(value))
+  @Validate(SubmissionRefCodePointMaxLengthConstraint, [2_000])
+  textAnswer?: string;
 }
 
 export class SubmissionDto {
@@ -51,6 +69,7 @@ export class SubmissionDto {
   liveSessionId!: string;
   sessionQuestionId!: string;
   participantId!: string;
-  selectedOptionRefs!: string[];
+  selectedOptionRefs!: string[] | null;
+  textAnswer!: string | null;
   submittedAt!: string;
 }

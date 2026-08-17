@@ -9,7 +9,6 @@ import {
   ValidationError,
 } from '../../../common/errors';
 import { TransactionService } from '../../../prisma/transaction.service';
-import { validateSingleChoiceAnswer } from '../../questions/domain/poll-single-choice';
 import {
   LiveSessionStatus,
   SessionQuestionStatus,
@@ -17,13 +16,20 @@ import {
 import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
 import type { ParticipantContext } from '../../participants/application/participant.service';
 import type { CreateSubmissionDto } from '../api/dto';
+import {
+  canonicalRefFingerprint,
+  normalizeTextAnswer,
+  throwOnAnswerIssues,
+  validateAnswer,
+} from '../domain/answer-contract';
 
 export interface SubmissionProjection {
   id: string;
   liveSessionId: string;
   sessionQuestionId: string;
   participantId: string;
-  selectedOptionRefs: string[];
+  selectedOptionRefs: string[] | null;
+  textAnswer: string | null;
   submittedAt: Date;
 }
 
@@ -75,9 +81,14 @@ export class SubmissionService {
       );
     }
     const canonicalIdempotencyKey = normalizeUuid(idempotencyKey);
-    const selectedOptionRefs = dto.selectedOptionRefs.map(
+    const rawSelectedOptionRefs = dto.selectedOptionRefs ?? [];
+    const selectedOptionRefs = rawSelectedOptionRefs.map(
       normalizeSubmissionRef,
     );
+    const textAnswer =
+      dto.textAnswer !== undefined && dto.textAnswer !== null
+        ? normalizeTextAnswer(dto.textAnswer)
+        : null;
 
     const submission = await this.transactions.run(async (tx) => {
       await this.transactions.lockSessionQuestionForUpdate(
@@ -134,6 +145,7 @@ export class SubmissionService {
             canonicalParticipantId,
             question.id,
             canonicalSelectedOptionRefs,
+            textAnswer,
           )
         ) {
           return toSubmissionProjection(existingByKey);
@@ -157,14 +169,21 @@ export class SubmissionService {
         );
       }
 
-      const answerIssues = validateSingleChoiceAnswer(
-        canonicalSelectedOptionRefs,
-        [...optionIdsByFormalId.values()],
-      );
-      if (answerIssues.length > 0) {
-        const first = answerIssues[0];
-        throw new DomainError(first.code, first.message, 400, first.field);
-      }
+      const answerIssues = validateAnswer({
+        snapshotType: question.snapshotType as 'poll' | 'open_text' | 'quiz',
+        snapshotSelectionMode: question.snapshotSelectionMode as
+          'single' | 'multiple' | null,
+        options: question.options.map((option) => ({
+          id: option.id,
+          isCorrect: option.isCorrect,
+        })),
+        selectedOptionRefs:
+          canonicalSelectedOptionRefs.length > 0
+            ? canonicalSelectedOptionRefs
+            : null,
+        textAnswer,
+      });
+      throwOnAnswerIssues(answerIssues);
 
       const existingByParticipant = await tx.submission.findUnique({
         where: {
@@ -184,6 +203,9 @@ export class SubmissionService {
         );
       }
 
+      // Persist the option refs OR the text answer, mutually exclusive by
+      // question snapshot type (guarded above by validateAnswer).
+      const isOptionAnswer = question.snapshotType !== 'open_text';
       try {
         const created = await tx.submission.create({
           data: {
@@ -192,8 +214,10 @@ export class SubmissionService {
             sessionQuestionId: question.id,
             participantId: canonicalParticipantId,
             idempotencyKey: canonicalIdempotencyKey,
-            selectedOptionRefs: canonicalSelectedOptionRefs,
-            textAnswer: null,
+            selectedOptionRefs: isOptionAnswer
+              ? canonicalSelectedOptionRefs
+              : Prisma.DbNull,
+            textAnswer: isOptionAnswer ? null : textAnswer,
           },
         });
         return toSubmissionProjection(created);
@@ -234,17 +258,38 @@ function sameSubmissionPayload(
     participantId: string;
     sessionQuestionId: string;
     selectedOptionRefs: Prisma.JsonValue | null;
+    textAnswer: string | null;
   },
   participantId: string,
   sessionQuestionId: string,
   selectedOptionRefs: readonly string[],
+  textAnswer: string | null,
 ): boolean {
-  return (
-    existing.participantId === participantId &&
-    existing.sessionQuestionId === sessionQuestionId &&
-    JSON.stringify(existing.selectedOptionRefs) ===
-      JSON.stringify(selectedOptionRefs)
-  );
+  if (
+    existing.participantId !== participantId ||
+    existing.sessionQuestionId !== sessionQuestionId
+  ) {
+    return false;
+  }
+  // Option answers: compare the canonical (sorted) ref set so a different input
+  // order for the same answer still hits idempotent replay (poll multiple / quiz
+  // exact-set are order-independent).
+  const existingRefs = asStringArray(existing.selectedOptionRefs);
+  if (existingRefs !== null) {
+    return (
+      JSON.stringify(canonicalRefFingerprint(existingRefs)) ===
+      JSON.stringify(canonicalRefFingerprint(selectedOptionRefs))
+    );
+  }
+  // Text answers: compare normalized text.
+  return existing.textAnswer === textAnswer;
+}
+
+function asStringArray(value: Prisma.JsonValue | null): string[] | null {
+  if (!Array.isArray(value) || !value.every((v) => typeof v === 'string')) {
+    return null;
+  }
+  return value;
 }
 
 function toSubmissionProjection(row: {
@@ -253,23 +298,17 @@ function toSubmissionProjection(row: {
   sessionQuestionId: string;
   participantId: string;
   selectedOptionRefs: Prisma.JsonValue | null;
+  textAnswer: string | null;
   submittedAt: Date;
 }): SubmissionProjection {
-  const selectedOptionRefs = row.selectedOptionRefs;
-  if (
-    !Array.isArray(selectedOptionRefs) ||
-    !selectedOptionRefs.every((value) => typeof value === 'string')
-  ) {
-    throw new Error(
-      'Persisted poll submission has an invalid option projection.',
-    );
-  }
+  const optionRefs = asStringArray(row.selectedOptionRefs);
   return {
     id: row.id,
     liveSessionId: row.liveSessionId,
     sessionQuestionId: row.sessionQuestionId,
     participantId: row.participantId,
-    selectedOptionRefs,
+    selectedOptionRefs: optionRefs,
+    textAnswer: row.textAnswer,
     submittedAt: row.submittedAt,
   };
 }

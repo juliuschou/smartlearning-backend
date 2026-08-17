@@ -20,9 +20,9 @@ import {
   normalizePageRequest,
   toPage,
 } from '../../../common/pagination';
-import { validatePollSingleChoice } from '../domain/poll-single-choice';
 import {
   normalizeQuestion,
+  validateQuestion,
   type NormalizedQuestion,
 } from '../domain/question-contract';
 import type { CreateQuestionDto, UpdateQuestionDto } from '../api/dto';
@@ -429,31 +429,12 @@ export class QuestionService {
       const question = byId.get(id);
       if (!question)
         throw new NotFoundError('Question not found', 'questionIds');
-      if (question.type !== 'poll' || question.selectionMode !== 'single') {
-        throw new ConflictError(
-          'Only poll single-choice questions are supported.',
-          'questionIds',
-        );
-      }
-      if (question.options.length < 2 || question.options.length > 10) {
-        throw new ConflictError(
-          'Poll source question must contain 2 to 10 options.',
-          'questionIds',
-        );
-      }
-      const issues = validatePollSingleChoice({
-        type: question.type,
-        prompt: question.prompt,
-        selectionMode: question.selectionMode,
-        options: question.options.map((option) => ({
-          optionRef: option.optionRef ?? undefined,
-          text: option.text,
-        })),
-      });
+      const issues = validateQuestion(toActivatableContract(question));
       if (issues.length > 0) {
         throw new ConflictError(
-          'Poll source question no longer satisfies the poll contract.',
+          'Source question no longer satisfies its question contract.',
           'questionIds',
+          'Update or replace the question before activating a LiveSession.',
         );
       }
       ordered.push(question);
@@ -609,4 +590,42 @@ function isCorrectOption(
 ): boolean {
   if (normalized.type !== 'quiz' || optionRef === null) return false;
   return normalized.correctOptionRefs.includes(optionRef);
+}
+
+/**
+ * Project a persisted `QuestionDefinition` (with options) back into the
+ * transport-independent question contract shape accepted by `validateQuestion`.
+ *
+ * Activation reuses the same contract as authoring/CLI/batch so a question
+ * that was writable is guaranteed activatable. `open_text` omits
+ * options/selectionMode/correctOptionRefs (the contract forbids them); `quiz`
+ * derives correctOptionRefs from the persisted `isCorrect` flags.
+ */
+function toActivatableContract(
+  question: QuestionWithOptions,
+): Record<string, unknown> {
+  if (question.type === 'open_text') {
+    return { type: question.type, prompt: question.prompt };
+  }
+  const options = question.options.map((option) => ({
+    optionRef: option.optionRef ?? undefined,
+    text: option.text,
+  }));
+  if (question.type === 'poll') {
+    return {
+      type: question.type,
+      prompt: question.prompt,
+      selectionMode: question.selectionMode ?? undefined,
+      options,
+    };
+  }
+  const correctOptionRefs = question.options
+    .filter((o) => o.isCorrect && o.optionRef)
+    .map((o) => o.optionRef as string);
+  return {
+    type: question.type,
+    prompt: question.prompt,
+    options,
+    correctOptionRefs,
+  };
 }

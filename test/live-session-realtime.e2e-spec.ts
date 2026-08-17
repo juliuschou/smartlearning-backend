@@ -369,7 +369,7 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     }
   });
 
-  it('participant submitting emits teacher counts.updated + result.updated; participant gets no result push', async () => {
+  it('participant submitting emits teacher + submitting-participant result.updated (vote-to-reveal)', async () => {
     requireDatabase();
     const ctx = await setupActiveSession();
     const teacherSocket = connectTeacher(
@@ -414,13 +414,24 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     };
     expect(counts.data.votedCount).toBe(1);
     const result = (await submitResult) as {
-      data: { results: { totalResponses: number } };
+      data: { sessionQuestionId: string; results: { totalResponses: number } };
     };
+    expect(result.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
     expect(result.data.results.totalResponses).toBe(1);
 
-    // Lite: participants do NOT receive result.updated.
+    // The submitting participant receives a vote-to-reveal participant-safe
+    // result.updated (poll single has no correctness metrics to leak).
     await new Promise((resolve) => setTimeout(resolve, 200));
-    expect(participantCollector.events.get('result.updated')).toBeUndefined();
+    const participantResults =
+      participantCollector.events.get('result.updated');
+    expect(participantResults).toBeDefined();
+    const participantResult = participantResults![0] as {
+      data: { sessionQuestionId: string; results: { totalResponses: number } };
+    };
+    expect(participantResult.data.sessionQuestionId).toBe(
+      ctx.sessionQuestionId,
+    );
+    expect(participantResult.data.results.totalResponses).toBe(1);
 
     teacherSocket.close();
     participantSocket.close();
@@ -462,8 +473,9 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     };
     expect(closed.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
     const result = (await closeResult) as {
-      data: { results: { status: string } };
+      data: { sessionQuestionId: string; results: { status: string } };
     };
+    expect(result.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
     expect(result.data.results.status).toBe('closed');
     teacherSocket.close();
   });

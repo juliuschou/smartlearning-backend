@@ -120,7 +120,8 @@ model Course {
   @@map("course")
 }
 
-/// Reusable, course-owned question definition. This slice writes poll/single only.
+/// Reusable, course-owned question definition. Supports poll (single/multiple),
+/// open_text, and quiz; all three types are activatable into a LiveSession.
 model QuestionDefinition {
   id            String   @id @db.Uuid
   courseId      String   @map("course_id") @db.Uuid
@@ -257,7 +258,9 @@ model Participant {
   @@map("participant")
 }
 
-/// First accepted answer; no update path. Answer refs are JSONB for future parity.
+/// First accepted answer; no update path. `selectedOptionRefs` (option answers)
+/// and `textAnswer` (open_text answers) are mutually exclusive; the non-null
+/// one is set by the application layer based on `SessionQuestion.snapshotType`.
 model Submission {
   id                 String   @id @db.Uuid
   liveSessionId      String   @map("live_session_id") @db.Uuid

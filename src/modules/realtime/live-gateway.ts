@@ -298,6 +298,14 @@ export class LiveGateway
         );
         await this.emitTeacherCounts(liveSessionId);
         await this.emitTeacherResults(liveSessionId, signal.sessionQuestionId);
+        // After close, results are revealed to every connected participant
+        // (vote-to-reveal passes once the question is closed). Push a
+        // participant-safe projection per client so quiz correctness is not
+        // leaked before close and teacher-only fields stay teacher-only.
+        await this.emitParticipantResults(
+          liveSessionId,
+          signal.sessionQuestionId,
+        );
         break;
       case 'session.state_changed':
         this.server
@@ -315,6 +323,15 @@ export class LiveGateway
       case 'submission.committed':
         await this.emitTeacherCounts(liveSessionId);
         await this.emitTeacherResults(liveSessionId, signal.sessionQuestionId);
+        // Push a participant-safe result to the submitting participant only.
+        // While the question is open, vote-to-reveal gates everyone else out;
+        // only the submitter may view the aggregate (US-F17). Other
+        // participants will receive their result on `question.closed`.
+        await this.emitParticipantResults(
+          liveSessionId,
+          signal.sessionQuestionId,
+          signal.participantId,
+        );
         break;
     }
   }
@@ -365,12 +382,13 @@ export class LiveGateway
           role: 'admin',
         },
       );
-      this.server
-        .to(teacherRoom(liveSessionId))
-        .emit(
-          'result.updated',
-          this.envelope('teacher', liveSessionId, { results }),
-        );
+      this.server.to(teacherRoom(liveSessionId)).emit(
+        'result.updated',
+        this.envelope('teacher', liveSessionId, {
+          sessionQuestionId,
+          results,
+        }),
+      );
     } catch (error) {
       this.logger.debug(
         {
@@ -395,5 +413,88 @@ export class LiveGateway
       visibility,
       data,
     };
+  }
+
+  /**
+   * Push a participant-safe `result.updated` to connected participants. Each
+   * participant receives its own vote-to-reveal projection computed via
+   * `getResults({ kind: 'participant', participantId })` — never the teacher
+   * projection. A participant whose reveal gate fails (open + not yet
+   * submitted, or not_open) is silently skipped (no event), which is the same
+   * contract as the REST results endpoint.
+   *
+   * When `onlyParticipantId` is given (submission.committed path), only that
+   * participant is targeted; otherwise (question.closed path) every connected
+   * participant in the session room is targeted.
+   */
+  private async emitParticipantResults(
+    liveSessionId: string,
+    sessionQuestionId: string,
+    onlyParticipantId?: string,
+  ): Promise<void> {
+    let remoteSockets;
+    try {
+      remoteSockets = await this.server
+        .in(sessionRoom(liveSessionId))
+        .fetchSockets();
+    } catch (error) {
+      this.logger.debug(
+        {
+          liveSessionId,
+          sessionQuestionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Skipped participant result.updated (fetchSockets failed)',
+      );
+      return;
+    }
+    const targets = remoteSockets
+      .map((socket) => {
+        const auth = socket.data?.auth as AuthenticatedClient | undefined;
+        if (auth?.kind !== 'participant') return null;
+        if (auth.liveSessionId !== liveSessionId) return null;
+        if (
+          onlyParticipantId !== undefined &&
+          auth.participantId !== onlyParticipantId
+        ) {
+          return null;
+        }
+        return { socketId: socket.id, participantId: auth.participantId };
+      })
+      .filter(
+        (value): value is { socketId: string; participantId: string } =>
+          value !== null,
+      );
+    await Promise.all(
+      targets.map(async ({ socketId, participantId }) => {
+        try {
+          const results = await this.liveSessions.getResults(
+            liveSessionId,
+            sessionQuestionId,
+            { kind: 'participant', participantId },
+          );
+          this.server.to(socketId).emit(
+            'result.updated',
+            this.envelope('participant', liveSessionId, {
+              sessionQuestionId,
+              results,
+            }),
+          );
+        } catch (error) {
+          // RESULTS_NOT_REVEALED / SESSION_QUESTION_NOT_OPEN: this participant
+          // is not eligible to see results yet — no event. Any other DomainError
+          // is also non-fatal; we never block the signal pipeline.
+          this.logger.debug(
+            {
+              liveSessionId,
+              sessionQuestionId,
+              participantId,
+              err: error instanceof Error ? error.message : String(error),
+            },
+            'Skipped participant result.updated (reveal gate)',
+          );
+        }
+      }),
+    );
   }
 }

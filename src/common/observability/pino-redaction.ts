@@ -33,6 +33,9 @@ export const PINO_REDACT_PATHS: string[] = [
   'res.body.data.selectedOptionRefs',
   'res.body.textAnswer',
   'res.body.data.textAnswer',
+  // open_text results — anonymous answer texts must not appear in logs
+  'res.body.responses',
+  'res.body.data.responses',
   'res.body.rawKey',
   'res.body.data.rawKey',
   'res.body.validationToken',

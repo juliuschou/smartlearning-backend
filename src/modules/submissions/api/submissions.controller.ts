@@ -37,6 +37,7 @@ export class SubmissionsController {
       sessionQuestionId: submission.sessionQuestionId,
       participantId: submission.participantId,
       selectedOptionRefs: submission.selectedOptionRefs,
+      textAnswer: submission.textAnswer,
       submittedAt: submission.submittedAt.toISOString(),
     };
   }

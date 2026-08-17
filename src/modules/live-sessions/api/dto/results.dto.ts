@@ -65,20 +65,20 @@ export class QuizResultsDto {
   @ApiProperty()
   totalResponses!: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
-      'Submissions whose selectedOptionRefs set equals the set of isCorrect options (exact-set match; no partial/weighted scoring).',
+      'Submissions whose selectedOptionRefs set equals the set of isCorrect options (exact-set match; no partial/weighted scoring). Omitted unless correctness is revealed (teacher always; participant only after close).',
   })
-  correctCount!: number;
+  correctCount?: number;
 
-  @ApiProperty()
-  incorrectCount!: number;
+  @ApiPropertyOptional()
+  incorrectCount?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
-      'correctCount / totalResponses, in [0,1]. 0 when no responses.',
+      'correctCount / totalResponses, in [0,1]. 0 when no responses. Omitted unless correctness is revealed.',
   })
-  correctnessRate!: number;
+  correctnessRate?: number;
 }
 
 /** Anonymized open-text answer. No display name, token, or identity. */

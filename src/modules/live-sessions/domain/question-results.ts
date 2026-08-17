@@ -91,6 +91,19 @@ function aggregatePoll(input: AggregateResultsInput): PollResultsDto {
 
 function aggregateQuiz(input: AggregateResultsInput): QuizResultsDto {
   const counts = countOptionSelections(input.options, input.submissions);
+  const totalResponses = input.submissions.length;
+  const base: QuizResultsDto = {
+    snapshotType: 'quiz',
+    status: input.status as 'open' | 'closed',
+    options: buildOptionCounts(input.options, counts, input.revealCorrectness),
+    totalResponses,
+  };
+  // Correctness metrics (counts + rate) are hidden until correctness is
+  // revealed (teacher always; participant only after close). This prevents a
+  // participant who has already submitted from inferring the answer during the
+  // open window — option-level isCorrect is already gated, the aggregate
+  // correctCount/rate must be gated too.
+  if (!input.revealCorrectness) return base;
   const correctOptionIds = new Set(
     input.options.filter((o) => o.isCorrect).map((o) => o.id),
   );
@@ -109,12 +122,8 @@ function aggregateQuiz(input: AggregateResultsInput): QuizResultsDto {
     }
     if (matches) correctCount += 1;
   }
-  const totalResponses = input.submissions.length;
   return {
-    snapshotType: 'quiz',
-    status: input.status as 'open' | 'closed',
-    options: buildOptionCounts(input.options, counts, input.revealCorrectness),
-    totalResponses,
+    ...base,
     correctCount,
     incorrectCount: totalResponses - correctCount,
     correctnessRate: totalResponses === 0 ? 0 : correctCount / totalResponses,
