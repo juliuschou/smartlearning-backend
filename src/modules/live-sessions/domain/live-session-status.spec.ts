@@ -1,4 +1,5 @@
 import {
+  canCancelLiveSession,
   canCloseLiveSession,
   canStartLiveSession,
   LiveSessionStatus,
@@ -20,6 +21,13 @@ describe('live-session state contract', () => {
     expect(canStartLiveSession(LiveSessionStatus.ACTIVE)).toBe(false);
     expect(canCloseLiveSession(LiveSessionStatus.ACTIVE)).toBe(true);
     expect(canCloseLiveSession(LiveSessionStatus.CLOSED)).toBe(false);
+  });
+
+  it('allows cancel only from waiting or active, not from terminal states', () => {
+    expect(canCancelLiveSession(LiveSessionStatus.WAITING)).toBe(true);
+    expect(canCancelLiveSession(LiveSessionStatus.ACTIVE)).toBe(true);
+    expect(canCancelLiveSession(LiveSessionStatus.CLOSED)).toBe(false);
+    expect(canCancelLiveSession(LiveSessionStatus.CANCELLED)).toBe(false);
   });
 
   it('allows only not_open → open → closed for session questions', () => {

@@ -80,4 +80,32 @@ export class LiveSessionsController {
       }),
     );
   }
+
+  @Post(':liveSessionId/close')
+  @UseGuards(SessionGuard, CsrfGuard)
+  async closeSession(
+    @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
+    @CurrentAccount() auth: AuthContext,
+  ): Promise<LiveSessionDto> {
+    return toLiveSessionDto(
+      await this.sessions.closeSession(liveSessionId, {
+        id: auth.account.id,
+        role: auth.account.role,
+      }),
+    );
+  }
+
+  @Post(':liveSessionId/cancel')
+  @UseGuards(SessionGuard, CsrfGuard)
+  async cancelSession(
+    @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
+    @CurrentAccount() auth: AuthContext,
+  ): Promise<LiveSessionDto> {
+    return toLiveSessionDto(
+      await this.sessions.cancelSession(liveSessionId, {
+        id: auth.account.id,
+        role: auth.account.role,
+      }),
+    );
+  }
 }

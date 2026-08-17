@@ -11,6 +11,8 @@ import { TransactionService } from '../../../prisma/transaction.service';
 import { QuestionService } from '../../questions/application/question.service';
 import { CourseStatus } from '../../courses/domain/course-status';
 import {
+  canCancelLiveSession,
+  canCloseLiveSession,
   canCloseSessionQuestion,
   canOpenSessionQuestion,
   canStartLiveSession,
@@ -260,6 +262,86 @@ export class LiveSessionService {
       caller,
       'open',
     );
+  }
+
+  async closeSession(
+    sessionId: string,
+    caller: { id: string; role: string },
+  ): Promise<SessionProjection> {
+    const canonicalSessionId = normalizeUuid(sessionId);
+    return this.transactions.run(async (tx) => {
+      await this.transactions.lockLiveSessionForUpdate(tx, canonicalSessionId);
+      const session = await tx.liveSession.findUnique({
+        where: { id: canonicalSessionId },
+        include: { course: true },
+      });
+      if (!session)
+        throw new NotFoundError('LiveSession not found', 'liveSessionId');
+      this.assertCourseAccess(session.course, caller);
+      if (!canCloseLiveSession(session.status as LiveSessionStatus)) {
+        throw new ConflictError(
+          'LiveSession cannot be closed from its current state.',
+          'status',
+        );
+      }
+
+      const closedAt = new Date();
+      // Close the currently open SessionQuestion(s) under the same transaction.
+      // The session row is already FOR UPDATE; the commit of this transaction is
+      // the linearization point shared with the question-close path (design §5.2).
+      await tx.sessionQuestion.updateMany({
+        where: {
+          liveSessionId: session.id,
+          status: SessionQuestionStatus.OPEN,
+        },
+        data: { status: SessionQuestionStatus.CLOSED, closedAt },
+      });
+      await tx.liveSession.update({
+        where: { id: session.id },
+        data: {
+          status: LiveSessionStatus.CLOSED,
+          closedAt,
+          autoClosed: false,
+        },
+      });
+      return tx.liveSession.findUniqueOrThrow({
+        where: { id: session.id },
+        include: sessionForProjection,
+      });
+    });
+  }
+
+  async cancelSession(
+    sessionId: string,
+    caller: { id: string; role: string },
+  ): Promise<SessionProjection> {
+    const canonicalSessionId = normalizeUuid(sessionId);
+    return this.transactions.run(async (tx) => {
+      await this.transactions.lockLiveSessionForUpdate(tx, canonicalSessionId);
+      const session = await tx.liveSession.findUnique({
+        where: { id: canonicalSessionId },
+        include: { course: true },
+      });
+      if (!session)
+        throw new NotFoundError('LiveSession not found', 'liveSessionId');
+      this.assertCourseAccess(session.course, caller);
+      if (!canCancelLiveSession(session.status as LiveSessionStatus)) {
+        throw new ConflictError(
+          'LiveSession cannot be cancelled from its current state.',
+          'status',
+        );
+      }
+      // Cancel is the discard path: no ArchivedResult, no closedAt (design §6.1).
+      // Existing SessionQuestion/Submission rows are retained for later retention.
+      await tx.liveSession.update({
+        where: { id: session.id },
+        data: { status: LiveSessionStatus.CANCELLED },
+      });
+      return tx.liveSession.findUniqueOrThrow({
+        where: { id: session.id },
+        include: sessionForProjection,
+      });
+    });
   }
 
   async closeQuestion(
