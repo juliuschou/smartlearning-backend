@@ -1082,3 +1082,81 @@ P2 課堂老師端第三個缺口:joined/voted 即時人數的 **push** 交付�
 - 無 activation/submission cardinality 變更(multiple/open_text/quiz)。
 - 無新 REST endpoint(S-2 polling endpoint 已覆蓋 REST read)。
 - 無前端工作(依既定 B 策略:後端先)。
+
+---
+
+# Phase A — 題型擴充（quiz / open_text / poll-multiple）— 完成
+
+日期：2026-08-17（commit 594e9d3）
+範圍：解除 activation/submission 對 poll/single 的限制，讓三種題型可上課與作答。
+
+## 結果
+
+- A1 activation gate 解除：`question.service.ts` `findForActivation` 改用共用 `validateQuestion` + `toActivatableContract`。
+- A2 migration `20260817100000_relax_submission_answer_cardinality`：放寬 `selected_option_refs` CHECK（`jsonb_path_exists`，非 subquery）、新增 `text_answer` 長度 CHECK。
+- A3 新 `submissions/domain/answer-contract.ts` + DTO 改 optional/nullable、加 `textAnswer`。
+- A4 service 依 snapshotType 驗證、互斥寫入（`Prisma.DbNull`）、idempotency fingerprint 排序 refs + canonical text。
+- A5 quiz correctness metrics 受 `revealCorrectness` 管制；open_text `responses` redaction。
+- A6 realtime：`result.updated` 加 `sessionQuestionId`；per-client participant-safe result push（submit→sender、close→all）。
+- A7 新 3 個 lifecycle e2e + 更新 realtime e2e。
+
+驗證：typecheck / lint:check / prisma:validate 綠；e2e 17/101、integration 3/10、unit 20/104 全綠。
+Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbNull` vs `JsonNull`。
+
+## Phase A 遺留（小，可隨時補）
+
+- [ ] batch validate preview 回應缺 `clientRef`（DTO 宣告但 `toPreview()` 沒填）— `question-batch.service.ts`。
+- [ ] gateway participant snapshot 與 REST participant snapshot 可見範圍不一致（gateway 用 `toLiveSessionDto` 未過濾 open question / hasSubmitted）— 建議 Phase B participant 改動時一起統一。
+- [ ] `GET /auth/session` 的 `expiresAt` 是空字串 — 既有問題，非 Phase A 引入。
+
+---
+
+# Phase B — 學生帳號 + 加選名冊 — 待執行
+
+範圍：新增 student role + CourseEnrollment + 登入學生綁定 Participant（保留匿名 session code fallback）。屬需求升級（既有設計明列「無學員帳號」為 MVP 限制，需同步更新設計文件 authorization matrix）。
+計畫檔：`/home/user/.claude/plans/expressive-hopping-kitten.md`。
+
+風險：高（auth/權限/realtime handshake）。分小切片、每切片獨立 e2e、可逐一切 rollback。
+
+## Checklist（建議順序）
+
+### B1 — student role + 帳號 + 登入（不可建課）
+- [ ] schema/migration：`Account.role` CHECK 加 `student`（DROP/ADD `account_role_check`，範例 `20260815174233:32-34`）；`roles.ts` 加 `STUDENT`。
+- [ ] `CreateAccountDto`/`AdminController`/`AccountService` 接受 student；`canCreateCourse` 對 student 強制 false（service invariant + `CanCreateCourseGuard`）。
+- [ ] student 沿用同一 cookie session 登入；`SessionDto` role 回 student；`mustChangePassword`/disabled lifecycle 沿用。
+- [ ] 明確 role policy：student 不可存取 courses/questions/live-sessions owner 路徑（現有 service 只比 owner/admin，需加 student 拒絕）。
+- [ ] 測試：`identity.integration-spec.ts` role CHECK、`student-account.e2e-spec.ts` 登入/建課被拒/disabled。
+
+### B2 — CourseEnrollment + 名冊 API（新 bounded context `enrollments`）
+- [ ] schema/migration：新 `CourseEnrollment` model（`uq_course_enrollment_course_student`、`idx_*`、`status` CHECK active/removed）。
+- [ ] 新 module `src/modules/enrollments`（api/application/domain），加入 `app.module.ts`，依賴方向 identity→courses→enrollments。
+- [ ] API（teacher owner/admin）：`POST /courses/:courseId/enrollments`、`DELETE /courses/:courseId/enrollments/:studentAccountId`、`GET /courses/:courseId/enrollments`（分頁）。
+- [ ] API（student）：`GET /me/courses`。
+- [ ] target account 必須是 student；Course archived 禁止新加選。
+- [ ] 測試：teacher 加選/移除/列表、跨 owner 不洩、student 跨非 enrolled course 403/404。
+
+### B3 — student cookie 綁定 Participant（HTTP）
+- [ ] schema/migration：`Participant` 加 optional `accountId` + FK Account `onDelete SetNull` + `idx_participant_account` + `uq_participant_session_account`。
+- [ ] `ParticipantOrSessionGuard` / `ParticipantsController` 新增 student cookie actor 分支（視為 participant；找/建該 session 的 account-bound Participant）；`assertCourseAccess` 不套用 student。
+- [ ] join：student 可 cookie 認證加入（省略 displayName，以 account identity）；匿名 session code fallback 保留。兩者產 Participant；student 路徑寫 `accountId`。
+- [ ] submission：student cookie 認證時由 cookie→Participant 取代 `X-Participant-Token`；token 路徑不變。
+- [ ] 測試：student cookie join/submit/results；匿名 fallback 仍可用；disabled student 不可重用。
+
+### B4 — realtime student handshake
+- [ ] `live-gateway.ts`：cookie 不再一律走 teacher path；role=student 走 participant binding path（join `session:<id>` room，不進 teacher room）；`AuthenticatedClient` 加 student/participant-account 表達。
+- [ ] snapshot 分支對應調整；學生收 `result.updated`、不收 `counts.updated`。
+- [ ] 順便統一 gateway participant snapshot 與 REST participant snapshot（只保留 open + hasSubmitted）。
+- [ ] 測試：student cookie handshake 進 participant room、收 result、不收 counts。
+
+### B5 — 隱私 / redaction / 設計文件
+- [ ] `pino-redaction.ts` 評估補 student profile/credential 欄位。
+- [ ] open_text results 維持匿名（不回 displayName/token）。
+- [ ] close 後 results 投影匿名；CourseEnrollment 關係保留（本期不做歷史查詢）。
+- [ ] 更新設計文件「無學員帳號」限制與 authorization matrix（`docs/.../Web Auth...`、`Backend NestJS 實作規劃.md:188-193`、`P0 核心需求基線.md`、`SPEC.md R-F5-5`、`BDD 場景.md`）。
+
+## Phase B 驗證（DoD）
+- student 可登入、加選、看名冊/我的課、cookie 加入 session 並作答；匿名 session code fallback 保留（e2e 通過）。
+- realtime：student 進 participant room、收 `result.updated`、不收 `counts.updated`（e2e 通過）。
+- 權限 regression：student 存取 owner 路徑被拒。
+- `prisma:validate`、相關 unit/integration/e2e、`openapi.e2e-spec.ts` 通過。
+- 設計文件同步更新。
