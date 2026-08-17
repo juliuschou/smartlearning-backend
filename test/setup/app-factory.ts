@@ -3,6 +3,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '../../src/app.module';
 import { configureApplication } from '../../src/bootstrap/configure-app';
+import { configureSwagger } from '../../src/bootstrap/configure-swagger';
 
 /**
  * Build a configured Nest application for e2e/integration tests, reusing the
@@ -14,6 +15,7 @@ export async function createTestApp(): Promise<INestApplication> {
     logger: ['error', 'warn'],
   });
   configureApplication(app);
+  configureSwagger(app);
   return app;
 }
 

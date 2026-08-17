@@ -29,12 +29,14 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { SessionDto } from './dto/account.dto';
 import { StepUpDto } from './dto/step-up.dto';
+import { ApiTags } from '@nestjs/swagger';
 
 /**
  * Auth endpoints under /api/v1/auth.
  *
  * Slice scope: login, current session, step-up, password change, and logout.
  */
+@ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
   constructor(

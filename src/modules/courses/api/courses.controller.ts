@@ -18,6 +18,7 @@ import {
 import type { AuthContext } from '../../../common/auth';
 import { CreateCourseDto, CourseDto } from './dto/course.dto';
 import { type Page } from '../../../common/pagination';
+import { ApiTags } from '@nestjs/swagger';
 
 /**
  * Course endpoints under /api/v1/courses.
@@ -25,6 +26,7 @@ import { type Page } from '../../../common/pagination';
  * Slice scope: create (requires can_create_course), list owned, detail,
  * archive. Question/live-session endpoints are later phases.
  */
+@ApiTags('courses')
 @Controller({ path: 'courses', version: '1' })
 export class CoursesController {
   constructor(private readonly courses: CourseService) {}
