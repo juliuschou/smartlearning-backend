@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CsrfGuard, CurrentAccount, SessionGuard } from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
 import {
@@ -19,6 +21,7 @@ import {
   type SessionQuestionDto,
 } from './dto';
 
+@ApiTags('live-sessions')
 @Controller({ path: 'live-sessions', version: '1' })
 export class LiveSessionsController {
   constructor(private readonly sessions: LiveSessionService) {}
@@ -107,5 +110,19 @@ export class LiveSessionsController {
         role: auth.account.role,
       }),
     );
+  }
+
+  @Get(':liveSessionId')
+  @UseGuards(SessionGuard)
+  async detail(
+    @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
+    @CurrentAccount() auth: AuthContext,
+  ): Promise<LiveSessionDto> {
+    const { session, joinedCount, votedCount } =
+      await this.sessions.getTeacherDetail(liveSessionId, {
+        id: auth.account.id,
+        role: auth.account.role,
+      });
+    return toLiveSessionDto(session, { joinedCount, votedCount });
   }
 }

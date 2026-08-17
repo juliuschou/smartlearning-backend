@@ -1,4 +1,5 @@
 import { normalizeUuid } from '../../../../common/crypto';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -48,6 +49,17 @@ export class LiveSessionDto {
   autoClosed!: boolean;
   createdAt!: string;
   updatedAt!: string;
+  @ApiProperty({
+    example: 12,
+    description: 'Number of participants who joined the session.',
+  })
+  joinedCount?: number;
+  @ApiProperty({
+    example: 7,
+    description:
+      'Number of submissions for the currently open question (0 when no question is open).',
+  })
+  votedCount?: number;
   questionSelections?: Array<{
     questionDefinitionId: string;
     position: number;

@@ -400,6 +400,55 @@ export class LiveSessionService {
     return session;
   }
 
+  /**
+   * Teacher session detail (S-2): full projection plus live joined/voted
+   * counts. `joined` = Participant rows for the session; `voted` = Submission
+   * rows for the currently open SessionQuestion (0 when no question is open).
+   * Owner/admin check runs before counts so a non-owner gets 404 (no existence
+   * leak), matching S-1/S-3 ordering. Counts are derived on-the-fly from
+   * committed rows — no Aggregate/VoteCount authority (design §5.2 / S-3).
+   */
+  async getTeacherDetail(
+    sessionId: string,
+    caller: { id: string; role: string },
+  ): Promise<{
+    session: SessionProjection;
+    joinedCount: number;
+    votedCount: number;
+  }> {
+    const canonicalSessionId = normalizeUuid(sessionId);
+    const session = await this.db.liveSession.findUnique({
+      where: { id: canonicalSessionId },
+      include: sessionForProjection,
+    });
+    if (!session)
+      throw new NotFoundError('LiveSession not found', 'liveSessionId');
+    this.assertCourseAccess(session.course, caller);
+
+    // At most one SessionQuestion may be open at a time (P2002 guard in
+    // transitionQuestion), so find() yields the single current question or null.
+    const current =
+      session.questions.find(
+        (question) => question.status === SessionQuestionStatus.OPEN,
+      ) ?? null;
+
+    const [joinedCount, votedCount] = await Promise.all([
+      this.db.participant.count({
+        where: { liveSessionId: canonicalSessionId },
+      }),
+      current
+        ? this.db.submission.count({
+            where: {
+              liveSessionId: canonicalSessionId,
+              sessionQuestionId: current.id,
+            },
+          })
+        : Promise.resolve(0),
+    ]);
+
+    return { session, joinedCount, votedCount };
+  }
+
   async getParticipantSnapshot(
     sessionId: string,
     participantId: string,
@@ -667,7 +716,10 @@ export function toSessionQuestionDto(question: SessionQuestionProjection) {
   };
 }
 
-export function toLiveSessionDto(session: SessionProjection) {
+export function toLiveSessionDto(
+  session: SessionProjection,
+  counts?: { joinedCount: number; votedCount: number },
+) {
   return {
     id: session.id,
     courseId: session.courseId,
@@ -678,6 +730,7 @@ export function toLiveSessionDto(session: SessionProjection) {
     autoClosed: session.autoClosed,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
+    ...(counts ?? {}),
     questionSelections: session.questionSelections.map((selection) => ({
       questionDefinitionId: selection.questionDefinitionId,
       position: selection.position,

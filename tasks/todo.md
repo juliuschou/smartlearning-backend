@@ -435,7 +435,7 @@ Targeted verification is complete against real PostgreSQL; the full repository u
 ##### P2 — 課堂中(老師端)流程補完
 
 - [ ] **S-1** LiveSession close/cancel:`POST /live-sessions/:id/close`、`POST /live-sessions/:id/cancel`;補 `closed`/`cancelled` 狀態轉移(目前只有 `waiting→active`)。解除 todo 行 370 的封存阻斷。
-- [ ] **S-2** 老師端 session detail:獨立 `GET /live-sessions/:id`(目前靠 snapshot)→ 回完整 projection 含 joined/voted 人數。
+- [x] **S-2** 老師端 session detail:獨立 `GET /live-sessions/:id`(目前靠 snapshot)→ 回完整 projection 含 joined/voted 人數。
 - [ ] **S-3** 結果/聚合 endpoint:`GET /live-sessions/:id/questions/:qid/results` → 選項計數 + vote-to-reveal 投影 + 匿名聚合(US-F17);quiz 正確率 / open_text 投影隨 Q-3 一起。前端占位:結果頁先 mock 靜態資料 + 介面抽象成 `ResultsProvider`,後端就緒後切換。
 - [ ] **S-4** joined/voted 即時人數:見 P3 即時通道;無 Socket 前先用 snapshot 輪詢頂著。
 - [ ] **S-5** 封存/保留:`POST /live-sessions/:id/archive` → ArchivedResult + 90 天保留 + 早刪/tombstone(依《即時同步與結果治理設計》)。需 S-1 先完成。
@@ -861,3 +861,54 @@ teacher open 見 per-option count(2A/1B/0C,totalResponses=3,poll 無 isCorrect,�
 - Activation + submission cardinality for multiple/open_text/quiz — endpoint structurally 已支援,但尚無法 activation。
 - 即時 joined/voted 人數(S-4)— 本 endpoint 給 submitted counts;joined 需 participant count(獨立)。
 - Open-text list cardinality(MVP full list;sampling/top-N TBD — M2 未定案)。
+
+### 2026-08-17 — Slice 6: S-2 老師端 session detail endpoint(完成)
+
+#### Context
+
+P2 課堂老師端第二個缺口:老師 dashboard 需「加入 / 已投」即時人數,目前只能靠 `GET /live-sessions/:id/snapshot`(掛在 `ParticipantsController`、teacher/participant 共用 guard)讀完整 projection,但無 joined/voted 計數,且該路由定位為 participant/teacher 共用而非 teacher 專屬。本 slice 補 teacher 專屬 `GET /api/v1/live-sessions/:liveSessionId`(`LiveSessionsController`、`SessionGuard` only),回完整 projection + `joinedCount`/`votedCount`,為 backlog S-2(`tasks/todo.md:438`)。完整計畫見 `/home/user/.claude/plans/s-2-teacher-toasty-sloth.md`。
+
+**Scope 決策(使用者確認):** `voted` = 當前 open 中 SessionQuestion 的 Submission 數(無 open 題則 0),比照 prototype `voted = current ? current.aggregate.total : 0` 與 S-3 follow-up note(`tasks/todo.md:862`);因 `uq_submission_participant_question` unique,即當前題已投 distinct 學生數。`joined` = `Participant` 列數(one row per join)。不採全 session 累計 submission(跨題累計、同生重複計)語意。
+
+#### Checklist
+
+- [x] DTO `src/modules/live-sessions/api/dto/live-session.dto.ts`:`LiveSessionDto` 加 optional `joinedCount`/`votedCount`(`@ApiProperty`),optional 維持既有 caller wire 相容。
+- [x] `LiveSessionService.getTeacherDetail(sessionId, caller)`:以既有 `sessionForProjection` 載入 → `assertCourseAccess`(非 owner → 404,先 404 再計數,不洩漏存在性,對齊 S-1/S-3 ordering)→ `find(q => q.status===OPEN)` 取當前題(至多一題,P2002 guard 保證)→ `Promise.all` 平行 `participant.count` / `submission.count`(無 open 題 → voted 0)→ 回 `{ session, joinedCount, votedCount }`。無 Prisma `_count`/groupBy;reuse `Promise.all + count` pattern(course/question pagination)。
+- [x] `toLiveSessionDto(session, counts?)`:加 optional 第二參,`...(counts ?? {})` 注入;既有 6 個 call site 全未動。
+- [x] Controller `src/modules/live-sessions/api/live-sessions.controller.ts`:加 `Get` import + `@ApiTags('live-sessions')`(OpenAPI grouping 與 `ParticipantsController` 一致)+ `detail()` route `@Get(':liveSessionId') @UseGuards(SessionGuard)`(GET 無 CSRF)、`ParseUUIDPipe`、`@CurrentAccount`,回 `toLiveSessionDto(session, { joinedCount, votedCount })`。無路由衝突(`:liveSessionId` bare vs `:liveSessionId/snapshot` vs `:liveSessionId/questions/.../results` 路徑形狀不同)。
+- [x] E2E `test/live-session-detail.e2e-spec.ts`(新,9 cases),model on `test/live-session-results.e2e-spec.ts`(DB setup / `requireDatabase()` / truncate / admin bootstrap / teacher temp-password flow / cookie helpers)。
+
+#### 設計要點
+
+- **voted 語意:** 當前 open 題的 Submission 數;waiting/題間/closed/cancelled session → 0(無 open 題)。prototype 與 S-3 follow-up note 一致;不採全 session 累計(避免跨題重複計同一學生)。
+- **joined 語意:** `Participant` 列數(`participant.service.ts:68-75` 每次 join 一列)。
+- **不洩漏存在性 / 不洩漏身分:** owner check 在計數前(非 owner → 404);teacher projection 永不暴露 `participants`/`tokenHash`/`displayName`/答案 mapping。
+- **無 schema/migration:** 純 read-only additive,aggregate 從既有 indexed `Submission.sessionQuestionId`/`Participant.liveSessionId` 即時計算。
+- **未動 `sessionForProjection`:** 與 S-3 同,不洩漏答案;counts 用獨立 `count` query。
+- **既有 `snapshot` 路由保留:** participant 仍需它;本 S-2 為 teacher 專屬。兩條 teacher read path 並存,reconcile 列為 follow-up。
+
+#### Verification
+
+| 命令 | 結果 |
+| --- | --- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-detail.e2e-spec.ts` | ✅ 1 suite / 9 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 3 suites / 18 tests(無回歸) |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新 route 進 spec) |
+| `npm run build` | ✅ nest build 成功 |
+| `npm run typecheck` / `lint:check` / `format:check` | ✅ 全綠 |
+
+#### e2e 覆蓋(9 cases)
+
+waiting session(joined 0/voted 0,無 sessionQuestion)、active + open 題(4 joined / 2 voted,完整 projection,無身分洩漏)、active 無 open 題(關題後 voted 0)、closed session(voted 0、joined 保留)、non-owner teacher → 404、unknown liveSessionId → 404、missing auth → 401、GET 無 CSRF → 200、invalid UUID → 400。
+
+#### Risk & rollback
+
+- **風險:低**。read-only additive endpoint、2 optional DTO 欄位(backward-compatible)、新 service method、新 e2e。無 schema/migration,未動 submission/snapshot/activation 路徑。既有 `toLiveSessionDto` call site 未動(counts 參 optional)。
+- **Rollback:** revert commit;無 DB rollback。
+- **不變量維持:** teacher projection 匿名(無身分/答案 mapping)、非 owner → 404 不洩漏存在性、envelope/auth/CSRF 不變、至多一 open 題(P2002 guard)。
+
+#### Follow-up(Slice 6 deferred)
+
+- 即時 joined/voted 推送(S-4)— 無 Socket 前可輪詢本 endpoint 頂著。
+- Reconcile `snapshot`(teacher path)與本 S-2 路由 — 日後 teacher read path 統一。
+- Session-level `GET /live-sessions/:id/results`(M2 API catalog)— 隨 R-1。
