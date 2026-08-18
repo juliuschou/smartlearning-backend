@@ -51,6 +51,7 @@ export class SessionGuard implements CanActivate {
         mustChangePassword: account.mustChangePassword,
       },
       sessionId: session.id,
+      sessionExpiresAt: session.expiresAt.toISOString(),
     };
     return true;
   }

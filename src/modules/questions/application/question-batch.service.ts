@@ -123,7 +123,9 @@ export class QuestionBatchService {
     const normalized = (input.questions as unknown[]).map((q) =>
       normalizeQuestion(stripClientRef(q)),
     );
-    const preview = normalized.map((q) => this.toPreview(q));
+    const preview = (input.questions as unknown[]).map((q, i) =>
+      this.toPreview(normalized[i], readClientRef(q)),
+    );
 
     const rawToken = generateToken();
     const tokenHash = hashToken(rawToken);
@@ -349,9 +351,13 @@ export class QuestionBatchService {
     });
   }
 
-  /** Build the preview projection for a normalized question. */
-  private toPreview(q: NormalizedQuestion): unknown {
+  /** Build the preview projection for a normalized question, echoing back
+   * the caller-supplied `clientRef` locator so the client can correlate the
+   * preview with its input order (clientRef is the only batch-only field
+   * that is otherwise stripped before normalization). */
+  private toPreview(q: NormalizedQuestion, clientRef: string): unknown {
     return {
+      clientRef,
       type: q.type,
       prompt: q.prompt,
       selectionMode: q.selectionMode,
@@ -363,4 +369,15 @@ export class QuestionBatchService {
       correctOptionRefs: q.correctOptionRefs,
     };
   }
+}
+
+/** Read the batch-only `clientRef` locator from a raw input question. */
+function readClientRef(question: unknown): string {
+  if (question && typeof question === 'object') {
+    const ref = (question as { clientRef?: unknown }).clientRef;
+    if (typeof ref === 'string' && ref.trim().length > 0) {
+      return ref;
+    }
+  }
+  return '';
 }

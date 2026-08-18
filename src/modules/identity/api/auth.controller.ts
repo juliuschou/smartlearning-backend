@@ -120,9 +120,7 @@ export class AuthController {
       canCreateCourse: auth.account.canCreateCourse,
       mustChangePassword: auth.account.mustChangePassword,
       sessionId: auth.sessionId,
-      // Absolute expiry is not carried on AuthContext to avoid a per-request
-      // DB read; clients rely on the login response for the absolute deadline.
-      expiresAt: '',
+      expiresAt: auth.sessionExpiresAt,
     };
   }
 

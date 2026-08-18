@@ -16,4 +16,8 @@ export interface AuthContext {
     | 'mustChangePassword'
   >;
   sessionId: string;
+  /** Absolute session expiry (ISO string). Carried from the loaded WebSession
+   * so `GET /auth/session` can return the real deadline without a second DB
+   * read. Matches the `expiresAt` value returned by login/password-change. */
+  sessionExpiresAt: string;
 }
