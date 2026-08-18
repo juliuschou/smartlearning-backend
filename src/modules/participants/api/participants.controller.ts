@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { AccountRole } from '../../identity/domain/roles';
 import { UnauthorizedError } from '../../../common/errors';
 import { JoinLiveSessionDto, JoinLiveSessionResponseDto } from './dto';
 import type {
@@ -21,7 +22,10 @@ import {
   CurrentParticipant,
   type ParticipantRequest,
 } from './participant-context';
-import { ParticipantOrSessionGuard } from './participant-token.guard';
+import {
+  OptionalStudentSessionGuard,
+  ParticipantOrSessionGuard,
+} from './participant-token.guard';
 import type { ParticipantContext } from '../application/participant.service';
 import {
   LiveSessionService,
@@ -37,11 +41,19 @@ export class ParticipantsController {
   ) {}
 
   @Post(':sessionCode/join')
+  @UseGuards(OptionalStudentSessionGuard)
   async join(
     @Param('sessionCode') sessionCode: string,
     @Body() dto: JoinLiveSessionDto,
+    @Req() request: ParticipantRequest,
   ): Promise<JoinLiveSessionResponseDto> {
-    const result = await this.participants.join(sessionCode, dto.displayName);
+    const result =
+      request.authContext?.account.role === AccountRole.STUDENT
+        ? await this.participants.joinForAccount(
+            sessionCode,
+            request.authContext.account.id,
+          )
+        : await this.participants.join(sessionCode, dto.displayName);
     const currentQuestion =
       result.liveSession.sessionQuestions?.find(
         (question) => question.status === SessionQuestionStatus.OPEN,
@@ -78,6 +90,7 @@ export class ParticipantsController {
     const participantView = await this.sessions.getParticipantSnapshot(
       liveSessionId,
       participant.participantId,
+      participant.accountId,
     );
     const snapshot = toLiveSessionDto(participantView.session);
     const {
@@ -100,9 +113,8 @@ export class ParticipantsController {
    * Results/aggregate for a single SessionQuestion (S-3).
    *
    * Teacher (Web session cookie) sees the anonymous aggregate at any time.
-   * Participant (X-Participant-Token) sees it only after they have submitted
-   * (while the question is open) or after the question is closed (vote-to-reveal,
-   * US-F17). Aggregation is derived on-the-fly from committed Submission rows.
+   * Anonymous token participants and enrolled student cookie participants see
+   * it only after submission while open, or after question close.
    */
   @Get(':liveSessionId/questions/:sessionQuestionId/results')
   @UseGuards(ParticipantOrSessionGuard)
@@ -118,6 +130,7 @@ export class ParticipantsController {
       ? ({
           kind: 'participant',
           participantId: participant.participantId,
+          accountId: participant.accountId,
         } as const)
       : ({
           kind: 'teacher',

@@ -10,6 +10,7 @@ import {
 } from '../../../common/crypto';
 import {
   DomainError,
+  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from '../../../common/errors';
@@ -62,6 +63,12 @@ export class QuestionBatchService {
     return this.prismaService.prisma;
   }
 
+  private assertTeacherOrAdmin(role: string): void {
+    if (role !== 'admin' && role !== 'teacher') {
+      throw new ForbiddenError('Teacher or admin role required');
+    }
+  }
+
   /**
    * Validate a batch payload. On success, issue an opaque DB-backed validation
    * token (hash only) bound to actor/course/payload hash, 15m expiry, and
@@ -73,6 +80,7 @@ export class QuestionBatchService {
     caller: BatchCaller,
     input: { schemaVersion: number; questions: unknown[] },
   ): Promise<ValidateBatchResult> {
+    this.assertTeacherOrAdmin(caller.role);
     const canonicalCourseId = normalizeUuid(courseId);
     const course = await this.db.course.findUnique({
       where: { id: canonicalCourseId },
@@ -162,6 +170,7 @@ export class QuestionBatchService {
     rawToken: string | undefined,
     idempotencyKey: string | undefined,
   ): Promise<ConfirmBatchResult> {
+    this.assertTeacherOrAdmin(caller.role);
     const canonicalCourseId = normalizeUuid(courseId);
     if (!idempotencyKey || !isUuid(idempotencyKey)) {
       throw new ValidationError(

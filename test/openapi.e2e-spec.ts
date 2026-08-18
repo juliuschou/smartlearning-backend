@@ -27,6 +27,11 @@ describe('OpenAPI document (e2e)', () => {
     const res = await request(app.getHttpServer()).get('/api/docs-json');
     const paths = Object.keys(res.body.paths);
     expect(paths).toContain('/api/v1/courses');
+    expect(paths).toContain('/api/v1/courses/{courseId}/enrollments');
+    expect(paths).toContain(
+      '/api/v1/courses/{courseId}/enrollments/{studentAccountId}',
+    );
+    expect(paths).toContain('/api/v1/me/courses');
     // Health routes stay outside /api/v1 per the global-prefix exclusion.
     expect(paths).toContain('/health/live');
     expect(paths).toContain('/health/ready');

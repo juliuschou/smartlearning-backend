@@ -5,7 +5,7 @@ with configuration validation, structured logging (Pino), Prisma/PostgreSQL,
 security headers, request ID, error envelope, health probes, and a shared
 bootstrap for production and tests.
 
-Design premise: see `docs/智學互動平台/30_系統設計/M2 關鍵技術決策.md`.
+Design premise: follow the project design documentation for the M2 technical decisions when that documentation is available in the checkout.
 
 ## Prerequisites
 
@@ -44,6 +44,15 @@ Health probes (outside the `/api/v1` prefix):
 curl http://localhost:3000/health/live   # liveness (no DB dependency)
 curl http://localhost:3000/health/ready  # readiness (DB SELECT 1)
 ```
+
+## Current feature slices
+
+- **B1 identity:** admins can provision `admin`, `teacher`, or `student` accounts. Students use the existing Web Session/password lifecycle but cannot create Courses or author teacher-owned resources; `canCreateCourse` is always false.
+- **B2 enrollment:** teacher owners/admins manage persistent CourseEnrollment roster rows (`active`/`removed`), and students can list active courses through `GET /api/v1/me/courses`.
+- **B3 HTTP participants:** enrolled students can use their Web Session cookie as an account-bound Participant. Anonymous session-code join plus `X-Participant-Token` remains supported.
+- **B4 realtime:** student Socket.IO clients join participant scope only and receive participant-safe snapshots/results; teacher-only counts remain in the teacher room.
+
+The B1–B4 migrations are additive and must be applied before database-backed verification. The isolated test setup refuses databases other than `smartlearning_test`; migration deployment is intentionally separate from code-only checks.
 
 ## Configuration
 
@@ -110,8 +119,14 @@ src/
   prisma/                       # PrismaService + TransactionService (lock/error helpers)
   modules/
     health/                     # /health/live + /health/ready
+    identity/                   # Web accounts, sessions, admin lifecycle
+    courses/                    # Course ownership and lifecycle
+    enrollments/                # CourseEnrollment roster and /me/courses
+    participants/               # Anonymous and account-bound live identities
+    submissions/                # Idempotent answer writes
+    realtime/                   # /live Socket.IO notification gateway
 prisma/
-  schema.prisma                 # Prisma schema (Phase 1: SystemSetting only)
+  schema.prisma                 # Current identity, course, live, enrollment, and submission models
   migrations/                   # additive migrations (hand-written CHECK/raw SQL allowed)
   seed.ts                       # seed script
 test/
@@ -144,7 +159,7 @@ NODE_ENV=test npm run prisma:migrate:deploy   # applies to smartlearning_test
 npm run test:integration
 ```
 
-## Architecture notes (Phase 1 baseline)
+## Architecture notes
 
 - **Shared bootstrap**: `configureApplication(app)` is used by both `main.ts`
   and the e2e app factory, so production and tests configure identically.
@@ -155,4 +170,4 @@ npm run test:integration
 - **State columns**: `TEXT + CHECK` via hand-written migration SQL.
 - **Locks**: `TransactionService` provides `FOR UPDATE` and advisory-lock helpers
   (consumed in Phase 3/6; submit/close linearization).
-- Phase 2+ feature modules (identity/auth/courses/…) are not yet implemented.
+- Database-backed integration/e2e verification is intentionally separate from code changes: apply additive migrations to the isolated test database only when authorized, then run the targeted Phase B suites.

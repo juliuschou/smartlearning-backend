@@ -4,6 +4,7 @@ import { isUuid, newId, normalizeUuid } from '../../../common/crypto';
 import {
   ConflictError,
   DomainError,
+  ForbiddenError,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
@@ -13,6 +14,9 @@ import {
   LiveSessionStatus,
   SessionQuestionStatus,
 } from '../../live-sessions/domain';
+import { AccountRole } from '../../identity/domain/roles';
+import { AccountStatus } from '../../identity/domain/account-status';
+import { EnrollmentStatus } from '../../enrollments/domain';
 import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
 import type { ParticipantContext } from '../../participants/application/participant.service';
 import type { CreateSubmissionDto } from '../api/dto';
@@ -113,6 +117,46 @@ export class SubmissionService {
       });
       if (!owner || owner.liveSessionId !== canonicalLiveSessionId) {
         throw new UnauthorizedError();
+      }
+      const ownerAccountId = owner.accountId
+        ? normalizeUuid(owner.accountId)
+        : undefined;
+      const contextAccountId = participant.accountId
+        ? normalizeUuid(participant.accountId)
+        : undefined;
+      if (ownerAccountId !== contextAccountId) {
+        throw new UnauthorizedError();
+      }
+      if (ownerAccountId !== undefined) {
+        // Revalidate cookie-bound identity inside the submission transaction.
+        // The guard may have run before a roster removal/account disable, so
+        // lock the same Course and Account rows before the final check.
+        await this.transactions.lockCourseForUpdate(
+          tx,
+          question.liveSession.courseId,
+        );
+        await this.transactions.lockAccountForUpdate(tx, ownerAccountId);
+        const account = await tx.account.findUnique({
+          where: { id: ownerAccountId },
+          select: { role: true, status: true },
+        });
+        const enrollment = await tx.courseEnrollment.findUnique({
+          where: {
+            courseId_studentAccountId: {
+              courseId: question.liveSession.courseId,
+              studentAccountId: ownerAccountId,
+            },
+          },
+          select: { status: true },
+        });
+        if (
+          !account ||
+          account.role !== AccountRole.STUDENT ||
+          account.status !== AccountStatus.ACTIVE ||
+          enrollment?.status !== EnrollmentStatus.ACTIVE
+        ) {
+          throw new ForbiddenError('Active course enrollment required');
+        }
       }
 
       const optionIdsByFormalId = new Map<string, string>();

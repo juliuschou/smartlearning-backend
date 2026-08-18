@@ -87,3 +87,15 @@
 - **Detection signal:** Debug log in the service catch showed `prismaCode: 'P2039'` on the open_text submission path; option-answer path (array value) worked.
 - **Root cause:** `Prisma.JsonNull` writes a JSON `null` *value* (not SQL NULL), so the CHECK `IS NULL` branch is false and the array branch evaluates `jsonb_typeof(null::jsonb)`. `Prisma.DbNull` writes an actual SQL NULL, which satisfies `IS NULL`. The two are not interchangeable.
 - **Prevention rule:** For a `Json?` column that must read as SQL NULL (e.g. to satisfy a `IS NULL OR ...` CHECK), write `Prisma.DbNull`, not `Prisma.JsonNull`. Use `Prisma.JsonNull` only when you want the JSON value `null` stored. When a Prisma write fails opaquely, add a temporary `PrismaClientKnownRequestError` log (code + message) in the service catch to surface the exact code, then remove it.
+
+## 2026-08-18 — Account-bound authorization must share lock order
+
+- **Failure mode:** Participant creation or submission could pass an active-enrollment/account check and commit after a concurrent enrollment removal or account disable committed.
+- **Detection signal:** The authorization read and the revocation mutation locked different rows, so a check-then-create/submit interleaving remained possible.
+- **Prevention rule:** For account-bound live-session operations, lock the shared rows before the final authorization read in one documented order (`liveSession → course → account`), and revalidate role, status, and enrollment inside the same transaction.
+
+## 2026-08-18 — Socket.IO `fetchSockets()` uses `RemoteSocket`
+
+- **Failure mode:** Casting `RemoteSocket[]` to `Socket[]`, or typing a helper as `Pick<Socket, ...>`, caused TypeScript errors because `RemoteSocket.disconnect()` returns its own `this` type.
+- **Detection signal:** `TS2352`/`TS2345` during typecheck/build at the gateway's `fetchSockets()` paths.
+- **Prevention rule:** Keep the inferred remote-socket collection, describe only the members the helper uses (`id` and `disconnect(close?)`), and isolate any Socket-specific cast to the narrow call site that genuinely requires it.

@@ -79,7 +79,8 @@ export class AccountService {
           displayName: input.displayName,
           role: input.role,
           status: AccountStatus.ACTIVE,
-          canCreateCourse: input.canCreateCourse,
+          canCreateCourse:
+            input.role === AccountRole.STUDENT ? false : input.canCreateCourse,
           passwordHash,
           mustChangePassword: true,
           passwordChangedAt: new Date(),

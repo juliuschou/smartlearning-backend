@@ -8,7 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CurrentParticipant } from '../../participants/api/participant-context';
-import { ParticipantTokenGuard } from '../../participants/api/participant-token.guard';
+import { ParticipantOrSessionGuard } from '../../participants/api/participant-token.guard';
 import type { ParticipantContext } from '../../participants/application/participant.service';
 import { SubmissionService } from '../application/submission.service';
 import { CreateSubmissionDto, type SubmissionDto } from './dto';
@@ -18,7 +18,7 @@ export class SubmissionsController {
   constructor(private readonly submissions: SubmissionService) {}
 
   @Post(':liveSessionId/submissions')
-  @UseGuards(ParticipantTokenGuard)
+  @UseGuards(ParticipantOrSessionGuard)
   async create(
     @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
     @Headers('idempotency-key') idempotencyKey: string | undefined,

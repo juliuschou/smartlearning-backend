@@ -13,6 +13,7 @@ import {
   SessionGuard,
   CsrfGuard,
   CanCreateCourseGuard,
+  TeacherOrAdminGuard,
   CurrentAccount,
 } from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
@@ -32,13 +33,14 @@ export class CoursesController {
   constructor(private readonly courses: CourseService) {}
 
   @Post()
-  @UseGuards(SessionGuard, CsrfGuard, CanCreateCourseGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard, CanCreateCourseGuard)
   async create(
     @Body() dto: CreateCourseDto,
     @CurrentAccount() auth: AuthContext,
   ): Promise<CourseDto> {
     const course = await this.courses.createCourse({
       ownerAccountId: auth.account.id,
+      role: auth.account.role,
       name: dto.name,
       description: dto.description,
     });
@@ -46,16 +48,19 @@ export class CoursesController {
   }
 
   @Get()
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, TeacherOrAdminGuard)
   async list(
     @CurrentAccount() auth: AuthContext,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ): Promise<Page<CourseDto>> {
-    const result = await this.courses.listOwnedCourses(auth.account.id, {
-      page: page ? Number(page) : undefined,
-      pageSize: pageSize ? Number(pageSize) : undefined,
-    });
+    const result = await this.courses.listOwnedCourses(
+      { id: auth.account.id, role: auth.account.role },
+      {
+        page: page ? Number(page) : undefined,
+        pageSize: pageSize ? Number(pageSize) : undefined,
+      },
+    );
     return {
       data: result.data.map(toDto),
       meta: result.meta,
@@ -63,7 +68,7 @@ export class CoursesController {
   }
 
   @Get(':id')
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, TeacherOrAdminGuard)
   async detail(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAccount() auth: AuthContext,
@@ -76,7 +81,7 @@ export class CoursesController {
   }
 
   @Post(':id/archive')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async archive(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAccount() auth: AuthContext,

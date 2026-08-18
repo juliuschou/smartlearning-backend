@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 import { SessionGuard } from './session.guard';
+import { ForbiddenError } from '../errors';
 import {
   CliAuthGuard,
   CLI_KEY_HEADER,
@@ -56,6 +57,11 @@ export class BatchActorGuard implements CanActivate {
       await this.cliAuth.canActivate(context);
       const cli = request[CLI_AUTH_CONTEXT_KEY];
       if (!cli) return false;
+      if (cli.account.role === 'student') {
+        throw new ForbiddenError(
+          'Student accounts cannot use question batch authoring',
+        );
+      }
       request[BATCH_ACTOR_KEY] = {
         kind: 'cli',
         accountId: cli.account.id,
@@ -67,6 +73,11 @@ export class BatchActorGuard implements CanActivate {
     await this.sessions.canActivate(context);
     const auth = request.authContext;
     if (!auth) return false;
+    if (auth.account.role === 'student') {
+      throw new ForbiddenError(
+        'Student accounts cannot use question batch authoring',
+      );
+    }
     request[BATCH_ACTOR_KEY] = {
       kind: 'web',
       accountId: auth.account.id,

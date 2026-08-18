@@ -2,7 +2,12 @@ import { Global, Module } from '@nestjs/common';
 import { SessionService } from './session.service';
 import { SessionGuard } from './session.guard';
 import { CsrfGuard } from './csrf.guard';
-import { AdminGuard, CanCreateCourseGuard } from './authorization.guards';
+import {
+  AdminGuard,
+  CanCreateCourseGuard,
+  StudentGuard,
+  TeacherOrAdminGuard,
+} from './authorization.guards';
 import { StepUpGuard } from './step-up.guard';
 
 /**
@@ -18,6 +23,8 @@ import { StepUpGuard } from './step-up.guard';
     CsrfGuard,
     AdminGuard,
     CanCreateCourseGuard,
+    StudentGuard,
+    TeacherOrAdminGuard,
     StepUpGuard,
   ],
   exports: [
@@ -26,6 +33,8 @@ import { StepUpGuard } from './step-up.guard';
     CsrfGuard,
     AdminGuard,
     CanCreateCourseGuard,
+    StudentGuard,
+    TeacherOrAdminGuard,
     StepUpGuard,
   ],
 })

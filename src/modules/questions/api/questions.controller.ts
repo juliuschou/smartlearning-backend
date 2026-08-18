@@ -11,7 +11,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CsrfGuard, CurrentAccount, SessionGuard } from '../../../common/auth';
+import {
+  CsrfGuard,
+  CurrentAccount,
+  SessionGuard,
+  TeacherOrAdminGuard,
+} from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
 import { type Page } from '../../../common/pagination';
 import {
@@ -31,7 +36,7 @@ export class QuestionsController {
   constructor(private readonly questions: QuestionService) {}
 
   @Post(':courseId/questions')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async create(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
     @Body() dto: CreateQuestionDto,
@@ -46,7 +51,7 @@ export class QuestionsController {
   }
 
   @Get(':courseId/questions')
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, TeacherOrAdminGuard)
   async list(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
     @CurrentAccount() auth: AuthContext,
@@ -68,7 +73,7 @@ export class QuestionsController {
   }
 
   @Get(':courseId/questions/:id')
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, TeacherOrAdminGuard)
   async detail(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -82,7 +87,7 @@ export class QuestionsController {
   }
 
   @Patch(':courseId/questions/order')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async reorder(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
     @Body() dto: ReorderQuestionsDto,
@@ -105,7 +110,7 @@ export class QuestionsController {
   }
 
   @Patch(':courseId/questions/:id')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async update(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -122,7 +127,7 @@ export class QuestionsController {
   }
 
   @Delete(':courseId/questions/:id')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async remove(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
     @Param('id', new ParseUUIDPipe()) id: string,

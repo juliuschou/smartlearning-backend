@@ -112,6 +112,68 @@ describe('Identity (integration)', () => {
     await expect(verifyPassword(hash, 'wrong')).resolves.toBe(false);
   });
 
+  it('accepts student accounts but enforces the role database checks', async () => {
+    if (!dbReachable) {
+      console.warn('Skipping: test DB not reachable.');
+      return;
+    }
+    const admin = await bootstrap.createFirstAdmin({
+      username: 'admin-student-role',
+      displayName: 'Admin',
+      password: 'admin-password-123',
+    });
+
+    const student = await accounts.createAccount({
+      username: 'student-role',
+      displayName: 'Student',
+      role: AccountRole.STUDENT,
+      // The application invariant normalizes a contradictory input.
+      canCreateCourse: true,
+      tempPassword: 'student-password-123',
+      createdBy: admin.id,
+    });
+    expect(student.role).toBe(AccountRole.STUDENT);
+    expect(student.canCreateCourse).toBe(false);
+
+    const stored = await prisma.prisma.account.findUnique({
+      where: { id: student.id },
+    });
+    expect(stored?.canCreateCourse).toBe(false);
+
+    const passwordHash = await hashPassword('direct-db-password-123');
+    await expect(
+      prisma.prisma.account.create({
+        data: {
+          id: newId(),
+          username: 'invalid-role',
+          displayName: 'Invalid Role',
+          role: 'observer',
+          canCreateCourse: false,
+          passwordHash,
+          mustChangePassword: false,
+          passwordChangedAt: new Date(),
+          createdBy: admin.id,
+        },
+      }),
+    ).rejects.toBeDefined();
+
+    await expect(
+      prisma.prisma.account.create({
+        data: {
+          id: newId(),
+          username: 'invalid-student-permission',
+          displayName: 'Invalid Student',
+          role: AccountRole.STUDENT,
+          canCreateCourse: true,
+          passwordHash,
+          mustChangePassword: false,
+          passwordChangedAt: new Date(),
+          createdBy: admin.id,
+        },
+      }),
+    ).rejects.toBeDefined();
+  });
+
   it('course owner is immutable (update never changes owner_account_id)', async () => {
     if (!dbReachable) {
       console.warn('Skipping: test DB not reachable.');

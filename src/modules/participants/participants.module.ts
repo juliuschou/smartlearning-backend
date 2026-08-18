@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EnrollmentsModule } from '../enrollments/enrollments.module';
 import { LiveSessionsModule } from '../live-sessions/live-sessions.module';
 import { ParticipantService } from './application/participant.service';
 import { ParticipantsController } from './api/participants.controller';
@@ -8,7 +9,7 @@ import {
 } from './api/participant-token.guard';
 
 @Module({
-  imports: [LiveSessionsModule],
+  imports: [LiveSessionsModule, EnrollmentsModule],
   controllers: [ParticipantsController],
   providers: [
     ParticipantService,

@@ -4,11 +4,15 @@ import { newId, normalizeUuid } from '../../../common/crypto';
 import {
   ConflictError,
   DomainError,
+  ForbiddenError,
   NotFoundError,
 } from '../../../common/errors';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { QuestionService } from '../../questions/application/question.service';
+import { AccountRole, isTeacherOrAdmin } from '../../identity/domain/roles';
+import { AccountStatus } from '../../identity/domain/account-status';
+import { EnrollmentStatus } from '../../enrollments/domain';
 import { CourseStatus } from '../../courses/domain/course-status';
 import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
 import {
@@ -513,6 +517,7 @@ export class LiveSessionService {
   async getParticipantSnapshot(
     sessionId: string,
     participantId: string,
+    accountId?: string,
   ): Promise<{
     session: SessionProjection;
     submittedQuestionIds: Set<string>;
@@ -523,7 +528,7 @@ export class LiveSessionService {
       async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { id: canonicalParticipantId },
-          select: { liveSessionId: true },
+          select: { liveSessionId: true, accountId: true },
         });
         if (!participant || participant.liveSessionId !== canonicalSessionId) {
           throw new NotFoundError('Participant not found', 'participantId');
@@ -540,6 +545,36 @@ export class LiveSessionService {
             'LiveSession cannot be joined.',
             409,
           );
+        }
+        if (accountId !== undefined) {
+          const canonicalAccountId = normalizeUuid(accountId);
+          if (
+            participant.accountId === null ||
+            normalizeUuid(participant.accountId) !== canonicalAccountId
+          ) {
+            throw new ForbiddenError('Active student participant required');
+          }
+          const account = await tx.account.findUnique({
+            where: { id: canonicalAccountId },
+            select: { role: true, status: true },
+          });
+          const enrollment = await tx.courseEnrollment.findUnique({
+            where: {
+              courseId_studentAccountId: {
+                courseId: session.courseId,
+                studentAccountId: canonicalAccountId,
+              },
+            },
+            select: { status: true },
+          });
+          if (
+            !account ||
+            account.role !== AccountRole.STUDENT ||
+            account.status !== AccountStatus.ACTIVE ||
+            enrollment?.status !== EnrollmentStatus.ACTIVE
+          ) {
+            throw new ForbiddenError('Active course enrollment required');
+          }
         }
         const submissions = await tx.submission.findMany({
           where: {
@@ -576,7 +611,7 @@ export class LiveSessionService {
     sessionQuestionId: string,
     actor:
       | { kind: 'teacher'; accountId: string; role: string }
-      | { kind: 'participant'; participantId: string },
+      | { kind: 'participant'; participantId: string; accountId?: string },
   ): Promise<SessionQuestionResultsDto> {
     const canonicalSessionId = normalizeUuid(liveSessionId);
     const canonicalQuestionId = normalizeUuid(sessionQuestionId);
@@ -621,10 +656,40 @@ export class LiveSessionService {
       // (The guard already bound the token to the session via hash lookup.)
       const participant = await this.db.participant.findUnique({
         where: { id: canonicalParticipantId },
-        select: { liveSessionId: true },
+        select: { liveSessionId: true, accountId: true },
       });
       if (!participant || participant.liveSessionId !== canonicalSessionId) {
         throw new NotFoundError('Participant not found', 'participantId');
+      }
+      if (actor.accountId !== undefined) {
+        const canonicalAccountId = normalizeUuid(actor.accountId);
+        if (
+          participant.accountId === null ||
+          normalizeUuid(participant.accountId) !== canonicalAccountId
+        ) {
+          throw new ForbiddenError('Active student participant required');
+        }
+        const account = await this.db.account.findUnique({
+          where: { id: canonicalAccountId },
+          select: { role: true, status: true },
+        });
+        const enrollment = await this.db.courseEnrollment.findUnique({
+          where: {
+            courseId_studentAccountId: {
+              courseId: question.liveSession.courseId,
+              studentAccountId: canonicalAccountId,
+            },
+          },
+          select: { status: true },
+        });
+        if (
+          !account ||
+          account.role !== AccountRole.STUDENT ||
+          account.status !== AccountStatus.ACTIVE ||
+          enrollment?.status !== EnrollmentStatus.ACTIVE
+        ) {
+          throw new ForbiddenError('Active course enrollment required');
+        }
       }
       // Participants see correct answers only after the question is closed.
       revealCorrectness = question.status === SessionQuestionStatus.CLOSED;
@@ -754,6 +819,9 @@ export class LiveSessionService {
     course: { ownerAccountId: string } | null,
     caller: { id: string; role: string },
   ): asserts course is { ownerAccountId: string } {
+    if (!isTeacherOrAdmin(caller.role)) {
+      throw new ForbiddenError('Teacher or admin role required');
+    }
     if (
       !course ||
       (course.ownerAccountId !== caller.id && caller.role !== 'admin')

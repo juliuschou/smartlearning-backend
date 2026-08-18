@@ -8,10 +8,12 @@ import { newId, normalizeUuid } from '../../../common/crypto';
 import {
   ConflictError,
   DomainError,
+  ForbiddenError,
   NotFoundError,
 } from '../../../common/errors';
 import { CourseStatus } from '../../courses/domain/course-status';
 import { LiveSessionStatus } from '../../live-sessions/domain';
+import { isTeacherOrAdmin } from '../../identity/domain/roles';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import {
@@ -524,6 +526,7 @@ export class QuestionService {
     course: { ownerAccountId: string } | null,
     caller: { id: string; role: string },
   ): asserts course is { ownerAccountId: string } {
+    this.assertTeacherOrAdmin(caller.role);
     if (
       !course ||
       (course.ownerAccountId !== caller.id && caller.role !== 'admin')
@@ -536,6 +539,7 @@ export class QuestionService {
     course: { ownerAccountId: string; status: string } | null,
     caller: { id: string; role: string },
   ): asserts course is { ownerAccountId: string; status: string } {
+    this.assertTeacherOrAdmin(caller.role);
     if (
       !course ||
       (course.ownerAccountId !== caller.id && caller.role !== 'admin')
@@ -550,6 +554,12 @@ export class QuestionService {
         'courseId',
         'Use a draft Course before changing its questions.',
       );
+    }
+  }
+
+  private assertTeacherOrAdmin(role: string): void {
+    if (!isTeacherOrAdmin(role)) {
+      throw new ForbiddenError('Teacher or admin role required');
     }
   }
 }

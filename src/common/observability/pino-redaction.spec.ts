@@ -15,6 +15,9 @@ describe('Pino auth redaction', () => {
         'res.headers["set-cookie"]',
         'res.body.data.selectedOptionRefs',
         'res.body.data.textAnswer',
+        'req.handshake.auth.participantToken',
+        'req.handshake.auth.sessionCode',
+        'req.handshake.headers.cookie',
       ]),
     );
     expect(PINO_REDACT_REMOVE).toBe(true);
@@ -51,6 +54,13 @@ describe('Pino auth redaction', () => {
             cookie: '__Host-session=session-secret',
             'x-csrf-token': 'csrf-secret',
           },
+          handshake: {
+            auth: {
+              participantToken: 'handshake-participant-secret',
+              sessionCode: 'handshake-session-secret',
+            },
+            headers: { cookie: 'handshake-cookie-secret' },
+          },
         },
         res: {
           headers: {
@@ -83,5 +93,8 @@ describe('Pino auth redaction', () => {
     expect(output).not.toContain('text-answer-secret');
     expect(output).not.toContain('top-level-option-secret');
     expect(output).not.toContain('top-level-answer-secret');
+    expect(output).not.toContain('handshake-participant-secret');
+    expect(output).not.toContain('handshake-session-secret');
+    expect(output).not.toContain('handshake-cookie-secret');
   });
 });

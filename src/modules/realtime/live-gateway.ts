@@ -17,7 +17,11 @@ import {
   LiveSessionService,
   toLiveSessionDto,
 } from '../live-sessions/application/live-session.service';
-import { LiveSessionStatus } from '../live-sessions/domain';
+import {
+  LiveSessionStatus,
+  SessionQuestionStatus,
+} from '../live-sessions/domain';
+import { AccountRole } from '../identity/domain/roles';
 import { ParticipantService } from '../participants/application/participant.service';
 import {
   LiveSessionEventBus,
@@ -50,6 +54,26 @@ function teacherRoom(liveSessionId: string): string {
   return `teacher:${liveSessionId}`;
 }
 
+function toParticipantLiveSessionDto(
+  view: Awaited<ReturnType<LiveSessionService['getParticipantSnapshot']>>,
+) {
+  const snapshot = toLiveSessionDto(view.session);
+  const {
+    questionSelections: _questionSelections,
+    sessionQuestions,
+    ...participantSnapshot
+  } = snapshot;
+  return {
+    ...participantSnapshot,
+    sessionQuestions: (sessionQuestions ?? [])
+      .filter((question) => question.status === SessionQuestionStatus.OPEN)
+      .map((question) => ({
+        ...question,
+        hasSubmitted: view.submittedQuestionIds.has(question.id),
+      })),
+  };
+}
+
 type AuthenticatedClient =
   | {
       kind: 'teacher';
@@ -61,7 +85,13 @@ type AuthenticatedClient =
       kind: 'participant';
       participantId: string;
       liveSessionId: string;
+      accountId?: string;
     };
+
+type DisconnectableSocket = {
+  id: string;
+  disconnect(close?: boolean): unknown;
+};
 
 @WebSocketGateway({ namespace: LIVE_NAMESPACE })
 export class LiveGateway
@@ -174,17 +204,30 @@ export class LiveGateway
       : undefined;
     const cookieToken = cookieJar?.[SESSION_COOKIE_NAME] as string | undefined;
     if (cookieToken) {
-      return this.authenticateTeacher(socket, cookieToken);
+      return this.authenticateCookie(socket, cookieToken);
     }
     return this.authenticateParticipant(socket);
   }
 
-  private async authenticateTeacher(
+  private async authenticateCookie(
     socket: Socket,
     cookieToken: string,
   ): Promise<AuthenticatedClient> {
     const { account } = await this.sessions.loadActiveSession(cookieToken);
     const liveSessionId = this.readLiveSessionIdParam(socket);
+    if (account.role === AccountRole.STUDENT) {
+      const participant = await this.participants.resolveAccountParticipant(
+        liveSessionId,
+        account.id,
+      );
+      return {
+        kind: 'participant',
+        participantId: participant.participantId,
+        accountId: account.id,
+        liveSessionId: participant.liveSessionId,
+      };
+    }
+
     // Verify course ownership/admin via the teacher detail read (non-owner →
     // 404 path). Reusing getTeacherDetail keeps "no existence leak" ordering
     // consistent with the REST S-2 endpoint.
@@ -258,16 +301,86 @@ export class LiveGateway
         }),
       );
     } else {
+      if (!(await this.reauthorizeParticipant(socket, client))) return;
       const view = await this.liveSessions.getParticipantSnapshot(
         client.liveSessionId,
         client.participantId,
+        client.accountId,
       );
       socket.emit(
         'session.snapshot',
         this.envelope('participant', client.liveSessionId, {
-          liveSession: toLiveSessionDto(view.session),
+          liveSession: toParticipantLiveSessionDto(view),
           submittedQuestionIds: [...view.submittedQuestionIds],
         }),
+      );
+    }
+  }
+
+  /**
+   * WebSocket authorization is established at handshake time, but enrollment
+   * and account status can change while the socket remains connected. Reuse the
+   * account-bound resolver before every student projection/event path so a
+   * removed or disabled student is disconnected instead of retaining room
+   * access.
+   */
+  private async reauthorizeParticipant(
+    socket: DisconnectableSocket,
+    client: Extract<AuthenticatedClient, { kind: 'participant' }>,
+  ): Promise<boolean> {
+    if (!client.accountId) return true;
+    try {
+      const current = await this.participants.resolveAccountParticipant(
+        client.liveSessionId,
+        client.accountId,
+      );
+      if (current.participantId !== client.participantId) {
+        socket.disconnect(true);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      this.logger.debug(
+        {
+          sid: socket.id,
+          liveSessionId: client.liveSessionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Disconnected unauthorized participant socket',
+      );
+      socket.disconnect(true);
+      return false;
+    }
+  }
+
+  /** Remove account-bound sockets that lost enrollment or account status. */
+  private async pruneUnauthorizedParticipantSockets(
+    liveSessionId: string,
+  ): Promise<void> {
+    try {
+      const sockets = await this.server
+        .in(sessionRoom(liveSessionId))
+        .fetchSockets();
+      await Promise.all(
+        sockets.map(async (socket) => {
+          const client = socket.data?.auth as AuthenticatedClient | undefined;
+          if (
+            !client ||
+            client.kind !== 'participant' ||
+            client.liveSessionId !== liveSessionId
+          ) {
+            return;
+          }
+          await this.reauthorizeParticipant(socket, client);
+        }),
+      );
+    } catch (error) {
+      this.logger.debug(
+        {
+          liveSessionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Skipped participant socket reauthorization (fetchSockets failed)',
       );
     }
   }
@@ -275,6 +388,7 @@ export class LiveGateway
   // --- signal handling ----------------------------------------------------
 
   private async handleSignal(signal: LiveSessionSignal): Promise<void> {
+    await this.pruneUnauthorizedParticipantSockets(signal.liveSessionId);
     const liveSessionId = signal.liveSessionId;
     switch (signal.type) {
       case 'participant.joined':
@@ -459,19 +573,32 @@ export class LiveGateway
         ) {
           return null;
         }
-        return { socketId: socket.id, participantId: auth.participantId };
+        return { socketId: socket.id, socket, client: auth };
       })
       .filter(
-        (value): value is { socketId: string; participantId: string } =>
-          value !== null,
+        (
+          value,
+        ): value is {
+          socketId: string;
+          socket: (typeof remoteSockets)[number];
+          client: Extract<AuthenticatedClient, { kind: 'participant' }>;
+        } => value !== null,
       );
     await Promise.all(
-      targets.map(async ({ socketId, participantId }) => {
+      targets.map(async ({ socketId, socket: remoteSocket, client }) => {
         try {
+          const socket = remoteSocket as unknown as Socket;
+          if (!(await this.reauthorizeParticipant(socket, client))) {
+            return;
+          }
           const results = await this.liveSessions.getResults(
             liveSessionId,
             sessionQuestionId,
-            { kind: 'participant', participantId },
+            {
+              kind: 'participant',
+              participantId: client.participantId,
+              accountId: client.accountId,
+            },
           );
           this.server.to(socketId).emit(
             'result.updated',
@@ -488,7 +615,7 @@ export class LiveGateway
             {
               liveSessionId,
               sessionQuestionId,
-              participantId,
+              participantId: client.participantId,
               err: error instanceof Error ? error.message : String(error),
             },
             'Skipped participant result.updated (reveal gate)',

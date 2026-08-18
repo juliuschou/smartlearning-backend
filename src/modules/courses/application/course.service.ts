@@ -3,13 +3,18 @@ import { Course } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { newId } from '../../../common/crypto';
-import { NotFoundError, ConflictError } from '../../../common/errors';
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../../common/errors';
 import {
   CourseStatus,
   canArchive,
   isCourseStatus,
 } from '../domain/course-status';
 import { LiveSessionStatus } from '../../live-sessions/domain';
+import { isTeacherOrAdmin } from '../../identity/domain/roles';
 import {
   type PageRequest,
   type Page,
@@ -43,9 +48,11 @@ export class CourseService {
 
   async createCourse(input: {
     ownerAccountId: string;
+    role: string;
     name: string;
     description?: string;
   }): Promise<Course> {
+    this.assertTeacherOrAdmin(input.role);
     return this.db.course.create({
       data: {
         id: newId(),
@@ -59,11 +66,12 @@ export class CourseService {
 
   /** List courses the caller owns (teachers). Admin listing is a later phase. */
   async listOwnedCourses(
-    ownerAccountId: string,
+    caller: { id: string; role: string },
     raw: { page?: number; pageSize?: number },
   ): Promise<Page<Course>> {
+    this.assertTeacherOrAdmin(caller.role);
     const req: PageRequest = normalizePageRequest(raw);
-    const where = { ownerAccountId };
+    const where = { ownerAccountId: caller.id };
     const [data, total] = await Promise.all([
       this.db.course.findMany({
         where,
@@ -84,6 +92,7 @@ export class CourseService {
     courseId: string,
     caller: { id: string; role: string },
   ): Promise<Course> {
+    this.assertTeacherOrAdmin(caller.role);
     const course = await this.db.course.findUnique({
       where: { id: courseId },
     });
@@ -102,6 +111,7 @@ export class CourseService {
     courseId: string,
     caller: { id: string; role: string },
   ): Promise<Course> {
+    this.assertTeacherOrAdmin(caller.role);
     return this.transactions.run(async (tx) => {
       await this.transactions.lockCourseForUpdate(tx, courseId);
       const course = await tx.course.findUnique({ where: { id: courseId } });
@@ -137,5 +147,11 @@ export class CourseService {
         data: { status: CourseStatus.ARCHIVED },
       });
     });
+  }
+
+  private assertTeacherOrAdmin(role: string): void {
+    if (!isTeacherOrAdmin(role)) {
+      throw new ForbiddenError('Teacher or admin role required');
+    }
   }
 }

@@ -1160,3 +1160,84 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - 權限 regression：student 存取 owner 路徑被拒。
 - `prisma:validate`、相關 unit/integration/e2e、`openapi.e2e-spec.ts` 通過。
 - 設計文件同步更新。
+
+---
+
+# Phase B — Execution Log
+
+日期：2026-08-18
+計畫：`/home/user/.claude/plans/streamed-toasting-panda.md`
+
+## Acceptance criteria
+
+- [ ] Student role/login/session lifecycle is supported; student `canCreateCourse` is always false and teacher/admin owner paths reject students.
+- [ ] CourseEnrollment roster APIs support owner/admin add/remove/list, student active-course listing, archived-course protection, and cross-owner privacy.
+- [ ] Enrolled students can cookie-join/read/submit/results through an account-bound Participant; anonymous session-code/token behavior remains unchanged.
+- [ ] Student Socket.IO clients are participant-only, receive safe `result.updated`, and never receive `counts.updated`.
+- [ ] Privacy/redaction and all authoritative design/authorization documents are synchronized.
+
+## Checklist
+
+- [ ] Checkpoint A: capture baseline, implement B1 migration/identity/authorization, add regression tests, verify targeted gates.
+- [ ] Checkpoint B: implement B2 CourseEnrollment bounded context and roster APIs, migrate/test isolated DB, verify OpenAPI.
+- [ ] Checkpoint C: implement B3 account-bound Participant HTTP flow, preserve anonymous flow, test concurrency and disabled accounts.
+- [ ] Checkpoint D: implement B4 realtime handshake/projection parity, complete B5 privacy/docs, run full regression gates.
+- [ ] Record final results, operational notes, and any new lesson in `tasks/lessons.md`.
+
+## Risk & rollback
+
+- **Risk:** high — authentication/authorization, enrollment tenancy, participant identity, and Socket.IO visibility.
+- **Rollback:** revert application slice-by-slice; retain additive migrations and committed student/enrollment/participant rows; use forward fixes instead of editing applied migrations or restoring revoked sessions/submissions.
+- **DB safety:** only mutate `smartlearning_test` through the guarded test setup and obtain explicit authorization before migration deployment to test/development databases.
+
+## Working notes
+
+- Existing role/status constraints are hand-written PostgreSQL `TEXT + CHECK`; UUIDs are app-generated UUID v7.
+- Existing test bootstrap must continue using `test/setup/db.ts`; it refuses databases other than `smartlearning_test`.
+- PostgreSQL remains the identity/enrollment/participant authority; realtime publishes only post-commit notifications.
+- B1 code-only verification (2026-08-18): unit 20 suites/104 tests, typecheck, lint, format, build, and diff check PASS; test migration/integration/e2e intentionally deferred by user, so B1 remains unverified against PostgreSQL.
+
+## B2 progress (2026-08-18)
+
+- Added `CourseEnrollment` schema model and additive migration `20260818110000_add_course_enrollment`; migration is not applied.
+- Added enrollment status domain, application service, controller, DTO projections, module wiring, and `/api/v1/me/courses`.
+- Add/reactivate is draft-only and course-row locked; remove is idempotent and allowed for authorized archived-course owners/admins; active-course listing is student-only.
+- Added enrollment e2e coverage and OpenAPI path assertions; PostgreSQL-backed tests remain deferred with migration authorization.
+
+## B3/B4 progress (2026-08-18)
+
+- Added nullable `Participant.accountId`, account/session uniqueness and index migration `20260818120000_bind_participant_account`; migration is not applied.
+- Student cookie joins/resolution require an active student account and active CourseEnrollment, create one participant idempotently under the LiveSession row lock, and never return the internal participant token.
+- Anonymous session-code/token joins and submissions remain available; cookie-backed mutations use CSRF/Origin validation while bearer-token paths remain unchanged.
+- Socket.IO cookie handshakes now branch student accounts into participant scope, keep teacher/admin scope unchanged, project only open participant questions, and never send teacher counts to student sockets.
+- B3/B4 DB-backed e2e/realtime verification remains deferred with migration authorization; static checks are rerun after the final code changes.
+
+## B5 discovery note (2026-08-18)
+
+- The design-document paths listed in the Phase B plan are not present in this checkout (only README/SKILL/task markdown is tracked); no authoritative design document was edited. Existing Pino redaction already covers cookies, participant/session tokens, idempotency keys, and answer fields.
+- Added Socket.IO handshake redaction for participant tokens, session codes, and handshake cookies; no password, password hash, cookie, raw session/participant token, or open-text content is exposed in responses or logs.
+
+## Final code-only verification (2026-08-18)
+
+- `src/modules/realtime/live-gateway.ts`: account-bound participant sockets are reauthorized before snapshots, participant result projections, and every signal; revoked enrollment/account status disconnects the socket before later broadcasts. `counts.updated` remains teacher-room-only.
+- Account-bound Participant creation and cookie-bound submission revalidation now lock rows in the order `liveSession → course → account` before the final enrollment/account checks, closing enrollment-removal and account-disable TOCTOU windows.
+- Replaced the Socket.IO `RemoteSocket[] as Socket[]` assertion with a narrow structural `DisconnectableSocket` shape (`id` + `disconnect`) and retained only the local helper cast needed by the Socket-oriented result path.
+
+| Command | Result |
+| --- | --- |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `git diff --check` | PASS |
+| `npm test -- --runInBand` | PASS — 20 suites / 104 tests |
+| `npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | PASS — 1 suite / 3 tests |
+
+The verification agent confirmed the working tree was unchanged by these checks. Expected LiveSessionEventBus simulated-error logs and existing Nest legacy wildcard-route warnings were non-blocking.
+
+## Intentional migration-backed verification block
+
+- The user explicitly chose `Defer migration`; no Phase B migration was deployed or applied, and no `setupTestDb` was run.
+- The following additive migrations remain unapplied: `20260818100000_add_student_role`, `20260818110000_add_course_enrollment`, and `20260818120000_bind_participant_account`.
+- Consequently, identity integration plus enrollment, student-account, account-bound participant, and realtime DB-backed e2e suites remain unexecuted. Phase B acceptance criteria and DoD stay unchecked until explicit migration authorization is provided.
+- When authorized, apply only to the isolated `smartlearning_test` database, verify migration status, then run the targeted B1–B4 integration/e2e suites before broader regression. Do not edit already-applied migrations or commit without explicit user instruction.
