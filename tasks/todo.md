@@ -305,19 +305,19 @@ Review verification after hardening: focused HTTP tests 3 suites / 18 tests, ful
 
 #### Verification results
 
-| Command | Result |
-| --- | --- |
-| `NODE_ENV=test npm run prisma:migrate:deploy` | PASS — applied `20260816100000_add_step_up_at` to `smartlearning_test` |
-| `NODE_ENV=test npm run prisma:migrate:status` | PASS — database schema up to date |
-| `npm run prisma:generate && npm run prisma:validate` | PASS — Prisma Client 7.9.1 generated; schema valid |
-| `npm test -- --runInBand` | PASS — 12 suites / 47 tests |
-| `npm run test:integration -- --runInBand test/identity.integration-spec.ts` | PASS — 1 suite / 5 tests |
-| `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts` | PASS — 1 suite / 14 tests |
-| `npm run typecheck` | PASS |
-| `npm run format:check` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
+| Command                                                                     | Result                                                                 |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `NODE_ENV=test npm run prisma:migrate:deploy`                               | PASS — applied `20260816100000_add_step_up_at` to `smartlearning_test` |
+| `NODE_ENV=test npm run prisma:migrate:status`                               | PASS — database schema up to date                                      |
+| `npm run prisma:generate && npm run prisma:validate`                        | PASS — Prisma Client 7.9.1 generated; schema valid                     |
+| `npm test -- --runInBand`                                                   | PASS — 12 suites / 47 tests                                            |
+| `npm run test:integration -- --runInBand test/identity.integration-spec.ts` | PASS — 1 suite / 5 tests                                               |
+| `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts`             | PASS — 1 suite / 14 tests                                              |
+| `npm run typecheck`                                                         | PASS                                                                   |
+| `npm run format:check`                                                      | PASS                                                                   |
+| `npm run lint:check`                                                        | PASS                                                                   |
+| `npm run build`                                                             | PASS                                                                   |
+| `git diff --check`                                                          | PASS                                                                   |
 
 #### Results
 
@@ -372,20 +372,20 @@ Review verification after hardening: focused HTTP tests 3 suites / 18 tests, ful
 
 #### Verification
 
-| Command | Result |
-| --- | --- |
-| `npm run prisma:generate` | PASS — Prisma Client 7.9.1 generated |
-| `npm run prisma:validate` | PASS — schema valid |
-| `NODE_ENV=test npm run prisma:migrate:status` | PASS — PostgreSQL `smartlearning_test`, 7 migrations, schema up to date |
-| `npm test -- --runInBand src/common/crypto/uuid.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts src/modules/participants/domain/display-name.spec.ts src/common/observability/pino-redaction.spec.ts` | PASS — 4 suites / 15 tests |
-| `npm test -- --runInBand` | PASS — 16 suites / 63 tests |
-| `npm run test:integration -- --runInBand test/poll-submission.integration-spec.ts` | PASS — PostgreSQL-backed, 1 suite / 4 tests, 0 skipped |
-| `npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | PASS — PostgreSQL-backed, 1 suite / 1 test, 0 skipped |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
+| Command                                                                                                                                                                                                               | Result                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `npm run prisma:generate`                                                                                                                                                                                             | PASS — Prisma Client 7.9.1 generated                                    |
+| `npm run prisma:validate`                                                                                                                                                                                             | PASS — schema valid                                                     |
+| `NODE_ENV=test npm run prisma:migrate:status`                                                                                                                                                                         | PASS — PostgreSQL `smartlearning_test`, 7 migrations, schema up to date |
+| `npm test -- --runInBand src/common/crypto/uuid.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts src/modules/participants/domain/display-name.spec.ts src/common/observability/pino-redaction.spec.ts` | PASS — 4 suites / 15 tests                                              |
+| `npm test -- --runInBand`                                                                                                                                                                                             | PASS — 16 suites / 63 tests                                             |
+| `npm run test:integration -- --runInBand test/poll-submission.integration-spec.ts`                                                                                                                                    | PASS — PostgreSQL-backed, 1 suite / 4 tests, 0 skipped                  |
+| `npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts`                                                                                                                                                 | PASS — PostgreSQL-backed, 1 suite / 1 test, 0 skipped                   |
+| `npm run typecheck`                                                                                                                                                                                                   | PASS                                                                    |
+| `npm run lint:check`                                                                                                                                                                                                  | PASS                                                                    |
+| `npm run format:check`                                                                                                                                                                                                | PASS                                                                    |
+| `npm run build`                                                                                                                                                                                                       | PASS                                                                    |
+| `git diff --check`                                                                                                                                                                                                    | PASS                                                                    |
 
 Targeted verification is complete against real PostgreSQL; the full repository unit/integration/e2e suites were not run. The migration setup applies all seven migrations idempotently, and the poll suites fail loudly rather than treating an unavailable or stale database as a skip.
 
@@ -397,16 +397,16 @@ Targeted verification is complete against real PostgreSQL; the full repository u
 
 #### 前端可立即對接的能力(基準部分,已由 e2e 驗證)
 
-| 前端功能 | 可用 API | 備註 |
-| --- | --- | --- |
-| 登入/登出/改密/身分 | `POST /auth/login`、`POST /auth/logout`、`POST /auth/change-password`、`GET /auth/session` | cookie session + CSRF double-submit |
-| 課程管理 | `POST/GET/GET/:id /courses`、`POST /courses/:id/archive` | 分頁回傳 `Page<CourseDto>` |
-| 老師出題(單選) | `POST /courses/:courseId/questions` | 只支援 `poll`+`single`,2–10 選項,僅 draft 課程可加 |
-| 開課堂 | `POST /live-sessions`、`POST /:id/start` | start 產生不可變 snapshot |
-| 課堂中控制收/開題 | `POST .../questions/:qid/open`、`.../close` | 同一時間只能一題 open |
-| 學員加入 | `POST /live-sessions/:sessionCode/join` | 公開;participant token 只回傳一次 |
-| 學員看題 | `GET /live-sessions/:id/snapshot` | participant 只看到 open 題 + `hasSubmitted` |
-| 學員答題 | `POST /live-sessions/:id/submissions` | 需 `X-Participant-Token` + `Idempotency-Key`(UUID) |
+| 前端功能            | 可用 API                                                                                   | 備註                                               |
+| ------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| 登入/登出/改密/身分 | `POST /auth/login`、`POST /auth/logout`、`POST /auth/change-password`、`GET /auth/session` | cookie session + CSRF double-submit                |
+| 課程管理            | `POST/GET/GET/:id /courses`、`POST /courses/:id/archive`                                   | 分頁回傳 `Page<CourseDto>`                         |
+| 老師出題(單選)      | `POST /courses/:courseId/questions`                                                        | 只支援 `poll`+`single`,2–10 選項,僅 draft 課程可加 |
+| 開課堂              | `POST /live-sessions`、`POST /:id/start`                                                   | start 產生不可變 snapshot                          |
+| 課堂中控制收/開題   | `POST .../questions/:qid/open`、`.../close`                                                | 同一時間只能一題 open                              |
+| 學員加入            | `POST /live-sessions/:sessionCode/join`                                                    | 公開;participant token 只回傳一次                  |
+| 學員看題            | `GET /live-sessions/:id/snapshot`                                                          | participant 只看到 open 題 + `hasSubmitted`        |
+| 學員答題            | `POST /live-sessions/:id/submissions`                                                      | 需 `X-Participant-Token` + `Idempotency-Key`(UUID) |
 
 這條 happy path 在 `test/poll-single-choice.e2e-spec.ts` 已端對端驗證,前端可放心對接。
 
@@ -481,11 +481,13 @@ Targeted verification is complete against real PostgreSQL; the full repository u
 - [x] **Slice 順序**:E-1 先 → Q-1 → Q-2 → Q-3 → Q-4。先建 Swagger 基礎,後續新增端點自動產出 spec。
 
 **Stale 衝突修正(以 M2 權威來源為準)**:
+
 - 實作規劃文件提到 batch token 為「signed token」 → 修正為 **DB-backed opaque token**(M2 決策/API/review 一致,《M2 關鍵技術決策》L83-94)。
 - backlog 的 `/questions/batch-validate`、`/batch-preview`、`/batch-confirm` route → 修正為 `/question-batches/validate` + `/question-batches/confirm`(M2 API catalog L190-192);**無獨立 batch-preview endpoint**,preview 為 validate 成功回應欄位。
 - 領域文件範例用 snake_case → v1 wire 一律 camelCase(M2 review L119-123 已閉環)。
 
 **M2 文件未定案、本計畫以實作決策補齊(各 slice 實作時落地)**:
+
 - list 分頁 query 形狀:`page`/`pageSize` query string(鏡射 courses)。
 - validation-token 傳遞:建議 header `X-Validation-Token`(confirm 重送 payload + token)。
 - explicit confirmation 欄位:confirm body 加 `confirmed: true`。
@@ -522,16 +524,16 @@ P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm install` + `npm audit` | ✅ 0 vulnerabilities;js-yaml 全 5.3.0 |
-| `npm run typecheck` | ✅ 通過 |
-| `npm run lint:check` | ✅ 0 errors |
-| `npm run format:check` | ✅ All matched files use Prettier code style |
-| `npm run build` | ✅ nest build 通過 |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/app.e2e-spec.ts test/api-envelope.e2e-spec.ts` | ✅ 2 suites / 6 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 2 suites / 15 tests(DB-backed,無回歸) |
+| 命令                                                                                                              | 結果                                         |
+| ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `npm install` + `npm audit`                                                                                       | ✅ 0 vulnerabilities;js-yaml 全 5.3.0        |
+| `npm run typecheck`                                                                                               | ✅ 通過                                      |
+| `npm run lint:check`                                                                                              | ✅ 0 errors                                  |
+| `npm run format:check`                                                                                            | ✅ All matched files use Prettier code style |
+| `npm run build`                                                                                                   | ✅ nest build 通過                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`                                          | ✅ 1 suite / 3 tests                         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/app.e2e-spec.ts test/api-envelope.e2e-spec.ts`                | ✅ 2 suites / 6 tests                        |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 2 suites / 15 tests(DB-backed,無回歸)     |
 
 #### Results
 
@@ -564,11 +566,11 @@ P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts` | ✅ 1 suite / 9 tests |
+| 命令                                                                                | 結果                        |
+| ----------------------------------------------------------------------------------- | --------------------------- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts`     | ✅ 1 suite / 9 tests        |
 | `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | ✅ 1 suite / 1 test(無回歸) |
-| typecheck/lint/format/build | ✅ 全綠 |
+| typecheck/lint/format/build                                                         | ✅ 全綠                     |
 
 #### Results
 
@@ -602,13 +604,13 @@ P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-mutation.e2e-spec.ts` | ✅ 1 suite / 9 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts` | ✅ 1 suite / 9 tests(無回歸) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | ✅ 1 suite / 1 test(無回歸) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新端點進 spec) |
-| typecheck/lint/format/build | ✅ 全綠 |
+| 命令                                                                                | 結果                                |
+| ----------------------------------------------------------------------------------- | ----------------------------------- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-mutation.e2e-spec.ts` | ✅ 1 suite / 9 tests                |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts`     | ✅ 1 suite / 9 tests(無回歸)        |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | ✅ 1 suite / 1 test(無回歸)         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`            | ✅ 1 suite / 3 tests(新端點進 spec) |
+| typecheck/lint/format/build                                                         | ✅ 全綠                             |
 
 #### Debugging note(lesson)
 
@@ -655,11 +657,11 @@ P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm test -- --runInBand src/modules/questions/domain/question-contract.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts` | ✅ 2 suites / 21 tests |
+| 命令                                                                                                                                                                                                              | 結果                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `npm test -- --runInBand src/modules/questions/domain/question-contract.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts`                                                                          | ✅ 2 suites / 21 tests |
 | `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-types.e2e-spec.ts test/questions-read.e2e-spec.ts test/questions-mutation.e2e-spec.ts test/poll-single-choice.e2e-spec.ts test/openapi.e2e-spec.ts` | ✅ 5 suites / 30 tests |
-| typecheck/lint/format/build | ✅ 全綠 |
+| typecheck/lint/format/build                                                                                                                                                                                       | ✅ 全綠                |
 
 #### Results
 
@@ -714,12 +716,12 @@ P1 出題擴充最後一塊:批次題目 validate/confirm(1–50 題、全錯誤
 
 ##### Verification(Part A)
 
-| 命令 | 結果 |
-| --- | --- |
+| 命令                                                                                          | 結果                     |
+| --------------------------------------------------------------------------------------------- | ------------------------ |
 | `NODE_ENV=test npm run prisma:migrate:deploy`(20260816160000,授權套用至 `smartlearning_test`) | ✅ 8 migrations,新表建成 |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/cli-credential.e2e-spec.ts` | ✅ 1 suite / 6 tests |
-| 既有回歸(auth-courses/poll/openapi/questions-read/mutation/types) | ✅ 6 suites / 44 tests |
-| canonical-hash unit | ✅ 7 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/cli-credential.e2e-spec.ts`               | ✅ 1 suite / 6 tests     |
+| 既有回歸(auth-courses/poll/openapi/questions-read/mutation/types)                             | ✅ 6 suites / 44 tests   |
+| canonical-hash unit                                                                           | ✅ 7 tests               |
 
 #### Part B — 批次 validate/confirm(程式碼完成,驗證卡點中)
 
@@ -759,17 +761,17 @@ P1 出題擴充最後一塊:批次題目 validate/confirm(1–50 題、全錯誤
 
 ##### Verification(Part B,完成)
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm run typecheck` | ✅ 通過 |
-| `npm run lint:check` | ✅ 0 errors |
-| `npm run format:check` | ✅ All matched files use Prettier code style |
-| `npm run build` | ✅ nest build 通過 |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/question-batches.e2e-spec.ts` | ✅ 1 suite / 7 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand`(auth-courses/poll/openapi/questions-read/mutation/types/cli-credential/question-batches) | ✅ 8 suites / 57 tests |
-| `npm test -- --runInBand` | ✅ 18 suites / 86 tests |
-| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
-| `git diff --check` | ✅ PASS |
+| 命令                                                                                                                                     | 結果                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `npm run typecheck`                                                                                                                      | ✅ 通過                                      |
+| `npm run lint:check`                                                                                                                     | ✅ 0 errors                                  |
+| `npm run format:check`                                                                                                                   | ✅ All matched files use Prettier code style |
+| `npm run build`                                                                                                                          | ✅ nest build 通過                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/question-batches.e2e-spec.ts`                                                        | ✅ 1 suite / 7 tests                         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(auth-courses/poll/openapi/questions-read/mutation/types/cli-credential/question-batches) | ✅ 8 suites / 57 tests                       |
+| `npm test -- --runInBand`                                                                                                                | ✅ 18 suites / 86 tests                      |
+| `NODE_ENV=test npm run test:integration -- --runInBand`                                                                                  | ✅ 3 suites / 10 tests                       |
+| `git diff --check`                                                                                                                       | ✅ PASS                                      |
 
 ##### Results(Part B)
 
@@ -834,14 +836,14 @@ P2 課堂老師端第一個前端阻擋缺口:老師開題收答案後無 endpoi
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm test -- --runInBand src/modules/live-sessions/domain/question-results.spec.ts` | ✅ 1 suite / 12 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts` | ✅ 1 suite / 11 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` | ✅ 2 suites / 7 tests(無回歸) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新 route 進 spec) |
-| `npm test -- --runInBand`(全 unit) | ✅ 19 suites / 99 tests |
-| `npm run typecheck` / `lint:check` / `format:check` / `build` / `git diff --check` | ✅ 全綠(format 修 6 檔 Prettier) |
+| 命令                                                                                                                           | 結果                                   |
+| ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| `npm test -- --runInBand src/modules/live-sessions/domain/question-results.spec.ts`                                            | ✅ 1 suite / 12 tests                  |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts`                                          | ✅ 1 suite / 11 tests                  |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` | ✅ 2 suites / 7 tests(無回歸)          |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`                                                       | ✅ 1 suite / 3 tests(新 route 進 spec) |
+| `npm test -- --runInBand`(全 unit)                                                                                             | ✅ 19 suites / 99 tests                |
+| `npm run typecheck` / `lint:check` / `format:check` / `build` / `git diff --check`                                             | ✅ 全綠(format 修 6 檔 Prettier)       |
 
 #### e2e 覆蓋(11 cases)
 
@@ -889,13 +891,13 @@ P2 課堂老師端第二個缺口:老師 dashboard 需「加入 / 已投」即�
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-detail.e2e-spec.ts` | ✅ 1 suite / 9 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 3 suites / 18 tests(無回歸) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新 route 進 spec) |
-| `npm run build` | ✅ nest build 成功 |
-| `npm run typecheck` / `lint:check` / `format:check` | ✅ 全綠 |
+| 命令                                                                                                                                                                 | 結果                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-detail.e2e-spec.ts`                                                                                 | ✅ 1 suite / 9 tests                   |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 3 suites / 18 tests(無回歸)         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`                                                                                             | ✅ 1 suite / 3 tests(新 route 進 spec) |
+| `npm run build`                                                                                                                                                      | ✅ nest build 成功                     |
+| `npm run typecheck` / `lint:check` / `format:check`                                                                                                                  | ✅ 全綠                                |
 
 #### e2e 覆蓋(9 cases)
 
@@ -948,20 +950,20 @@ P2 課堂老師端第三個缺口:joined/voted 即時人數的 **push** 交付�
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm install` + `npm audit` | ✅ 0 vulnerabilities |
-| `npm run typecheck` | ✅ PASS |
-| `npm run lint:check` | ✅ 0 errors |
-| `npm run format:check` | ✅ All matched files use Prettier |
-| `npm run build` | ✅ nest build PASS |
-| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts` | ✅ 1 suite / 5 tests |
-| `npm test -- --runInBand`(全 unit) | ✅ 20 suites / 104 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e) | ✅ 14 suites / 98 tests(無回歸) |
-| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
-| `NODE_ENV=test npm run prisma:migrate:status` | ✅ 8 migrations, schema up to date(無新 migration) |
-| `git diff --check` | ✅ PASS |
+| 命令                                                                                   | 結果                                               |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `npm install` + `npm audit`                                                            | ✅ 0 vulnerabilities                               |
+| `npm run typecheck`                                                                    | ✅ PASS                                            |
+| `npm run lint:check`                                                                   | ✅ 0 errors                                        |
+| `npm run format:check`                                                                 | ✅ All matched files use Prettier                  |
+| `npm run build`                                                                        | ✅ nest build PASS                                 |
+| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts`          | ✅ 1 suite / 5 tests                               |
+| `npm test -- --runInBand`(全 unit)                                                     | ✅ 20 suites / 104 tests                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped)         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e)                                | ✅ 14 suites / 98 tests(無回歸)                    |
+| `NODE_ENV=test npm run test:integration -- --runInBand`                                | ✅ 3 suites / 10 tests                             |
+| `NODE_ENV=test npm run prisma:migrate:status`                                          | ✅ 8 migrations, schema up to date(無新 migration) |
+| `git diff --check`                                                                     | ✅ PASS                                            |
 
 #### Debugging lesson(關鍵根因)
 
@@ -1033,20 +1035,20 @@ P2 課堂老師端第三個缺口:joined/voted 即時人數的 **push** 交付�
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm install` + `npm audit` | ✅ 0 vulnerabilities |
-| `npm run typecheck` | ✅ PASS |
-| `npm run lint:check` | ✅ 0 errors |
-| `npm run format:check` | ✅ All matched files use Prettier |
-| `npm run build` | ✅ nest build PASS |
-| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts` | ✅ 1 suite / 5 tests |
-| `npm test -- --runInBand`(全 unit) | ✅ 20 suites / 104 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e) | ✅ 14 suites / 98 tests(無回歸) |
-| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
-| `NODE_ENV=test npm run prisma:migrate:status` | ✅ 8 migrations, schema up to date(無新 migration) |
-| `git diff --check` | ✅ PASS |
+| 命令                                                                                   | 結果                                               |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `npm install` + `npm audit`                                                            | ✅ 0 vulnerabilities                               |
+| `npm run typecheck`                                                                    | ✅ PASS                                            |
+| `npm run lint:check`                                                                   | ✅ 0 errors                                        |
+| `npm run format:check`                                                                 | ✅ All matched files use Prettier                  |
+| `npm run build`                                                                        | ✅ nest build PASS                                 |
+| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts`          | ✅ 1 suite / 5 tests                               |
+| `npm test -- --runInBand`(全 unit)                                                     | ✅ 20 suites / 104 tests                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped)         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e)                                | ✅ 14 suites / 98 tests(無回歸)                    |
+| `NODE_ENV=test npm run test:integration -- --runInBand`                                | ✅ 3 suites / 10 tests                             |
+| `NODE_ENV=test npm run prisma:migrate:status`                                          | ✅ 8 migrations, schema up to date(無新 migration) |
+| `git diff --check`                                                                     | ✅ PASS                                            |
 
 #### Debugging lessons(關鍵根因)
 
@@ -1121,6 +1123,7 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 ## Checklist（建議順序）
 
 ### B1 — student role + 帳號 + 登入（不可建課）
+
 - [ ] schema/migration：`Account.role` CHECK 加 `student`（DROP/ADD `account_role_check`，範例 `20260815174233:32-34`）；`roles.ts` 加 `STUDENT`。
 - [ ] `CreateAccountDto`/`AdminController`/`AccountService` 接受 student；`canCreateCourse` 對 student 強制 false（service invariant + `CanCreateCourseGuard`）。
 - [ ] student 沿用同一 cookie session 登入；`SessionDto` role 回 student；`mustChangePassword`/disabled lifecycle 沿用。
@@ -1128,6 +1131,7 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - [ ] 測試：`identity.integration-spec.ts` role CHECK、`student-account.e2e-spec.ts` 登入/建課被拒/disabled。
 
 ### B2 — CourseEnrollment + 名冊 API（新 bounded context `enrollments`）
+
 - [ ] schema/migration：新 `CourseEnrollment` model（`uq_course_enrollment_course_student`、`idx_*`、`status` CHECK active/removed）。
 - [ ] 新 module `src/modules/enrollments`（api/application/domain），加入 `app.module.ts`，依賴方向 identity→courses→enrollments。
 - [ ] API（teacher owner/admin）：`POST /courses/:courseId/enrollments`、`DELETE /courses/:courseId/enrollments/:studentAccountId`、`GET /courses/:courseId/enrollments`（分頁）。
@@ -1136,6 +1140,7 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - [ ] 測試：teacher 加選/移除/列表、跨 owner 不洩、student 跨非 enrolled course 403/404。
 
 ### B3 — student cookie 綁定 Participant（HTTP）
+
 - [ ] schema/migration：`Participant` 加 optional `accountId` + FK Account `onDelete SetNull` + `idx_participant_account` + `uq_participant_session_account`。
 - [ ] `ParticipantOrSessionGuard` / `ParticipantsController` 新增 student cookie actor 分支（視為 participant；找/建該 session 的 account-bound Participant）；`assertCourseAccess` 不套用 student。
 - [ ] join：student 可 cookie 認證加入（省略 displayName，以 account identity）；匿名 session code fallback 保留。兩者產 Participant；student 路徑寫 `accountId`。
@@ -1143,18 +1148,21 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - [ ] 測試：student cookie join/submit/results；匿名 fallback 仍可用；disabled student 不可重用。
 
 ### B4 — realtime student handshake
+
 - [ ] `live-gateway.ts`：cookie 不再一律走 teacher path；role=student 走 participant binding path（join `session:<id>` room，不進 teacher room）；`AuthenticatedClient` 加 student/participant-account 表達。
 - [ ] snapshot 分支對應調整；學生收 `result.updated`、不收 `counts.updated`。
 - [ ] 順便統一 gateway participant snapshot 與 REST participant snapshot（只保留 open + hasSubmitted）。
 - [ ] 測試：student cookie handshake 進 participant room、收 result、不收 counts。
 
 ### B5 — 隱私 / redaction / 設計文件
+
 - [ ] `pino-redaction.ts` 評估補 student profile/credential 欄位。
 - [ ] open_text results 維持匿名（不回 displayName/token）。
 - [ ] close 後 results 投影匿名；CourseEnrollment 關係保留（本期不做歷史查詢）。
 - [ ] 更新設計文件「無學員帳號」限制與 authorization matrix（`docs/.../Web Auth...`、`Backend NestJS 實作規劃.md:188-193`、`P0 核心需求基線.md`、`SPEC.md R-F5-5`、`BDD 場景.md`）。
 
 ## Phase B 驗證（DoD）
+
 - student 可登入、加選、看名冊/我的課、cookie 加入 session 並作答；匿名 session code fallback 保留（e2e 通過）。
 - realtime：student 進 participant room、收 `result.updated`、不收 `counts.updated`（e2e 通過）。
 - 權限 regression：student 存取 owner 路徑被拒。
@@ -1223,15 +1231,15 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - Account-bound Participant creation and cookie-bound submission revalidation now lock rows in the order `liveSession → course → account` before the final enrollment/account checks, closing enrollment-removal and account-disable TOCTOU windows.
 - Replaced the Socket.IO `RemoteSocket[] as Socket[]` assertion with a narrow structural `DisconnectableSocket` shape (`id` + `disconnect`) and retained only the local helper cast needed by the Socket-oriented result path.
 
-| Command | Result |
-| --- | --- |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
-| `npm test -- --runInBand` | PASS — 20 suites / 104 tests |
-| `npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | PASS — 1 suite / 3 tests |
+| Command                                                    | Result                       |
+| ---------------------------------------------------------- | ---------------------------- |
+| `npm run typecheck`                                        | PASS                         |
+| `npm run lint:check`                                       | PASS                         |
+| `npm run format:check`                                     | PASS                         |
+| `npm run build`                                            | PASS                         |
+| `git diff --check`                                         | PASS                         |
+| `npm test -- --runInBand`                                  | PASS — 20 suites / 104 tests |
+| `npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | PASS — 1 suite / 3 tests     |
 
 The verification agent confirmed the working tree was unchanged by these checks. Expected LiveSessionEventBus simulated-error logs and existing Nest legacy wildcard-route warnings were non-blocking.
 
@@ -1241,3 +1249,40 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - The following additive migrations remain unapplied: `20260818100000_add_student_role`, `20260818110000_add_course_enrollment`, and `20260818120000_bind_participant_account`.
 - Consequently, identity integration plus enrollment, student-account, account-bound participant, and realtime DB-backed e2e suites remain unexecuted. Phase B acceptance criteria and DoD stay unchecked until explicit migration authorization is provided.
 - When authorized, apply only to the isolated `smartlearning_test` database, verify migration status, then run the targeted B1–B4 integration/e2e suites before broader regression. Do not edit already-applied migrations or commit without explicit user instruction.
+
+## 2026-08-20 — US-F7 password policy and login rate limit (complete; DB verification blocked)
+
+### Context and acceptance criteria
+
+- [x] Enforce the 12–128 Unicode password policy plus deterministic normalized common-password rejection for account creation, admin reset, bootstrap, and self-service change.
+- [x] Enforce account + source fixed-window login limits with safe defaults, numeric env coercion, TTL expiry, generic 429 `RATE_LIMITED`, retry hint, anti-enumeration behavior, and account-scope clearing on success.
+- [x] Preserve no-schema/no-Redis MVP boundary and document the static-list and single-instance limitations.
+- [x] Complete frontend F7 regression coverage in the separate UI repository after backend contract verification.
+
+### Checkpoints
+
+- [x] A — audit/harden existing uncommitted backend F7 files and add policy/rate-limit tests.
+- [x] B — run targeted backend gates, then frontend F7 fixes/tests.
+- [x] C — attempt backend DB regression/status checks and record the block; PostgreSQL at `localhost:5432` was unavailable, so DB-backed verification remains blocked.
+
+### Risk & rollback
+
+- Risk: high — authentication, password state, session rotation, and abuse controls.
+- Rollback: revert/remove only F7 policy/limiter wiring and new files; no migration rollback. Preserve unrelated README, live-session DTO, lesson, and Phase B changes.
+
+### Dependencies & environment
+
+- Node 24+, migrated `smartlearning_test` for DB-backed e2e, and guarded test DB setup. Redis and real breached-password source remain deferred.
+
+### Working notes
+
+- Backend working tree was already dirty before this slice; unrelated changes must not be reset or overwritten.
+- RateLimiterService must coerce ConfigService env strings at read time; this is a required permanent-lockout tripwire.
+- Frontend StepUpDialog/useStepUp remain deferred to F8; self-service change-password is Session + CSRF only.
+
+### Results (2026-08-20)
+
+- **What changed**: retained and hardened the static common-password policy, applied it to account creation/reset/bootstrap/self-change, added normalized account limiter keys and string-env TTL coverage, corrected the disabled-account rate-limit e2e fixture, added source-scope and retry-envelope regression assertions, and preserved the in-memory single-instance MVP boundary.
+- **Static verification**: typecheck, lint, format, build, and targeted policy/limiter/filter tests passed (3 suites / 33 tests). A prior full backend static/unit pass also passed (21 suites / 120 tests before the final targeted additions).
+- **DB verification blocked**: `prisma:migrate:status` failed with PostgreSQL `P1001` at `localhost:5432`; auth-rate-limit/auth-courses e2e and identity integration were guarded/blocked and did not exercise DB assertions.
+- **Unrelated work preserved**: existing README, live-session DTO, lesson, Docker, and Phase B changes remain untouched by this F7 slice; no schema/migration or commit was created.

@@ -99,3 +99,10 @@
 - **Failure mode:** Casting `RemoteSocket[]` to `Socket[]`, or typing a helper as `Pick<Socket, ...>`, caused TypeScript errors because `RemoteSocket.disconnect()` returns its own `this` type.
 - **Detection signal:** `TS2352`/`TS2345` during typecheck/build at the gateway's `fetchSockets()` paths.
 - **Prevention rule:** Keep the inferred remote-socket collection, describe only the members the helper uses (`id` and `disconnect(close?)`), and isolate any Socket-specific cast to the narrow call site that genuinely requires it.
+
+## 2026-08-20 — Password policy must cover bootstrap writes
+
+- **Failure mode:** Adding common-password rejection to `AccountService` left the first-admin bootstrap path able to hash a common password directly in `BootstrapService.createFirstAdmin`.
+- **Detection signal:** A review of every `hashPassword` call found `bootstrap.service.ts` validated length in `bootstrapFromEnv` but hashed directly in the transaction method; the normal account/reset paths already called the shared policy.
+- **Prevention rule:** Treat every password-to-hash sink, including bootstrap and test-only provisioning paths, as a policy boundary. Centralize the full validation helper and call it immediately before hashing.
+- **Tripwire:** `grep -R "hashPassword" src/modules/identity` and verify each call site is preceded by length + common-password validation; retain an integration assertion for bootstrap and account temp-password rejection.

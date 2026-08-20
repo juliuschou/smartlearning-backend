@@ -15,6 +15,7 @@ import { RealtimeModule } from './modules/realtime';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from './common/observability';
 import { PrismaModule } from './prisma/prisma.module';
+import { RateLimitModule } from './modules/rate-limit/rate-limit.module';
 
 /**
  * Resolve env file by NODE_ENV so application runtime and the Prisma CLI
@@ -61,6 +62,7 @@ const isProduction = process.env.NODE_ENV === 'production';
     }),
     PrismaModule,
     AuthModule,
+    RateLimitModule,
     HealthModule,
     IdentityModule,
     CoursesModule,

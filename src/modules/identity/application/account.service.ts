@@ -14,6 +14,7 @@ import { ACCOUNT_ROLES, AccountRole, isAccountRole } from '../domain/roles';
 import { AccountStatus } from '../domain/account-status';
 import {
   validatePassword,
+  rejectCommonPassword,
   PasswordPolicyError,
 } from '../domain/password-policy';
 import { CliCredentialService } from './cli-credential.service';
@@ -54,6 +55,7 @@ export class AccountService {
     void ACCOUNT_ROLES;
     try {
       validatePassword(input.tempPassword);
+      rejectCommonPassword(input.tempPassword);
     } catch (e) {
       if (e instanceof PasswordPolicyError) {
         throw new ValidationError(e.message, 'tempPassword');
@@ -239,6 +241,7 @@ export class AccountService {
   private validatePasswordOrThrow(password: string, field: string): void {
     try {
       validatePassword(password);
+      rejectCommonPassword(password);
     } catch (e) {
       if (e instanceof PasswordPolicyError) {
         throw new ValidationError(e.message, field);

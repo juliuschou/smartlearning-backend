@@ -5,7 +5,12 @@ import {
   type ArgumentsHost,
 } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
-import { DomainError, ErrorCode, ValidationError } from '../errors';
+import {
+  DomainError,
+  ErrorCode,
+  RateLimitedError,
+  ValidationError,
+} from '../errors';
 import { GlobalExceptionFilter } from './global-exception-filter';
 import { validationExceptionFactory } from './validation-exception';
 
@@ -61,6 +66,24 @@ describe('GlobalExceptionFilter', () => {
         blocking: true,
         nextStep: 'Fix it',
         retryAfterSeconds: null,
+      },
+    });
+  });
+
+  it('preserves the rate-limit status and retry hint in the envelope', () => {
+    const { host, response } = hostFor('req-rate-limit');
+
+    filter.catch(new RateLimitedError(17), host);
+
+    expect(response.status).toHaveBeenCalledWith(HttpStatus.TOO_MANY_REQUESTS);
+    expect(response.json).toHaveBeenCalledWith({
+      data: null,
+      meta: { schemaVersion: 1, requestId: 'req-rate-limit' },
+      error: {
+        code: ErrorCode.RATE_LIMITED,
+        message: 'Too many attempts. Please try again later.',
+        blocking: true,
+        retryAfterSeconds: 17,
       },
     });
   });

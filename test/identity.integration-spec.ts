@@ -58,6 +58,40 @@ describe('Identity (integration)', () => {
     await expect(bootstrap.isPermitted()).resolves.toBe(true);
   });
 
+  it('rejects common passwords before bootstrap or account writes', async () => {
+    if (!dbReachable) {
+      console.warn('Skipping: test DB not reachable.');
+      return;
+    }
+
+    await expect(
+      bootstrap.createFirstAdmin({
+        username: 'weak-bootstrap',
+        displayName: 'Weak Bootstrap',
+        password: 'password12345',
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED', field: 'password' });
+
+    const admin = await bootstrap.createFirstAdmin({
+      username: 'policy-admin',
+      displayName: 'Policy Admin',
+      password: 'policy-admin-password-1234',
+    });
+    await expect(
+      accounts.createAccount({
+        username: 'weak-teacher',
+        displayName: 'Weak Teacher',
+        role: AccountRole.TEACHER,
+        canCreateCourse: true,
+        tempPassword: 'password12345',
+        createdBy: admin.id,
+      }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      field: 'tempPassword',
+    });
+  });
+
   it('bootstrap only-one-wins under concurrency', async () => {
     if (!dbReachable) {
       console.warn('Skipping: test DB not reachable.');
