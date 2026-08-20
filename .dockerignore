@@ -1,0 +1,39 @@
+# Build context exclusions — keep image builds fast + secret-free.
+
+# Dependencies & build artifacts (regenerated inside the image)
+node_modules
+dist
+generated
+coverage
+
+# Environment files — never bake secrets into images. Runtime env comes via
+# compose env_file / container env.
+.env
+.env.*
+!.env.production.example
+
+# VCS & editor
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+
+# Tests & docs (not needed at runtime)
+test
+**/*.spec.ts
+**/*.spec.js
+README.md
+SKILL.md
+docs
+tasks
+docker-postgresql-setup.md
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Misc
+.prettierrc
+eslint.config.mjs

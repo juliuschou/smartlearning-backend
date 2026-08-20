@@ -1,0 +1,88 @@
+# SmartLearning backend — local Docker deployment stack.
+#
+# Brings up PostgreSQL + a one-shot Prisma migrate service + the NestJS API.
+# The API depends on `migrate` completing successfully before starting.
+#
+# Usage:
+#   docker compose build
+#   docker compose up            (foreground)
+#   docker compose up -d         (detached)
+#   docker compose logs -f backend
+#   docker compose down          (-v also drops the DB volume)
+#
+# Secrets: `.env.production` is gitignored. Copy `.env.production.example` to
+# `.env.production` and fill in real values (generate COOKIE_SECRET with
+# `openssl rand -base64 32`) before `docker compose up`.
+
+services:
+  db:
+    image: postgres:16
+    container_name: smartlearning-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-smartlearning}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:-smartlearning}
+    volumes:
+      - pgdata_smartlearning:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-smartlearning} -d ${DB_NAME:-smartlearning}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Exposed on host port 5433 so it coexists with the dev PG container that
+      # already binds 5432. The backend reaches the DB over the internal network.
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    networks:
+      - smartlearning
+
+  # One-shot: applies pending migrations, then exits. The backend waits on this.
+  # Uses the built `migrate` image stage so the container has only the Prisma CLI
+  # + schema + migrations (no app runtime).
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: smartlearning-backend-migrate:latest
+    container_name: smartlearning-migrate
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USERNAME:-smartlearning}:${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/${DB_NAME:-smartlearning}?schema=public
+    networks:
+      - smartlearning
+
+  backend:
+    build:
+      context: .
+      target: runtime
+    image: smartlearning-backend:latest
+    container_name: smartlearning-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      # Compose-internal hostname `db` overrides any DB_HOST from the env file.
+      DATABASE_URL: postgresql://${DB_USERNAME:-smartlearning}:${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/${DB_NAME:-smartlearning}?schema=public
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "${PORT:-3000}:3000"
+    networks:
+      - smartlearning
+
+volumes:
+  pgdata_smartlearning:
+
+networks:
+  smartlearning:
+    driver: bridge
