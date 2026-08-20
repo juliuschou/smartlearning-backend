@@ -16,6 +16,7 @@ import {
 } from '../../../common/errors';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
+import { AccountStatus } from '../../identity/domain/account-status';
 import {
   normalizeQuestion,
   type NormalizedQuestion,
@@ -99,6 +100,18 @@ export class QuestionBatchService {
         'courseId',
         'Use a draft Course before batch authoring.',
       );
+    }
+
+    // Re-check account status at the point of token issuance so a disabled
+    // actor cannot mint a token that a later restore could make usable
+    // (US-F8 R-F8-2). The caller's session/CLI guard already checked, but that
+    // check predates this write; this one is authoritative at issuance time.
+    const account = await this.db.account.findUnique({
+      where: { id: caller.accountId },
+      select: { status: true },
+    });
+    if (!account || account.status !== AccountStatus.ACTIVE) {
+      throw new ForbiddenError('Account is not active.');
     }
 
     const payloadHash = hashPayload(input.questions);
@@ -238,6 +251,21 @@ export class QuestionBatchService {
             (existing.responseJson as { questions?: unknown[] }).questions ??
             [],
         };
+      }
+
+      // Re-check account status inside the transaction so a concurrent
+      // disable (which serializes on the same account row / advisory lock)
+      // and this confirm have a well-defined commit order (US-F8 R-F8-2). The
+      // guard check happened before the transaction began; this one is the
+      // authoritative linearization point. Placed after the idempotency-replay
+      // block so a replay still returns its cached result even if the actor
+      // was subsequently disabled.
+      const actorAccount = await tx.account.findUnique({
+        where: { id: caller.accountId },
+        select: { status: true },
+      });
+      if (!actorAccount || actorAccount.status !== AccountStatus.ACTIVE) {
+        throw new ForbiddenError('Account is not active.');
       }
 
       // Token validation.

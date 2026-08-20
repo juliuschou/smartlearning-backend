@@ -1,3 +1,4 @@
+export * from './account-lifecycle.bus';
 export * from './auth-context';
 export * from './session.service';
 export * from './session.guard';

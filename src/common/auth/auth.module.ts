@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { AccountLifecycleBus } from './account-lifecycle.bus';
 import { SessionService } from './session.service';
 import { SessionGuard } from './session.guard';
 import { CsrfGuard } from './csrf.guard';
@@ -18,6 +19,7 @@ import { StepUpGuard } from './step-up.guard';
 @Global()
 @Module({
   providers: [
+    AccountLifecycleBus,
     SessionService,
     SessionGuard,
     CsrfGuard,
@@ -28,6 +30,7 @@ import { StepUpGuard } from './step-up.guard';
     StepUpGuard,
   ],
   exports: [
+    AccountLifecycleBus,
     SessionService,
     SessionGuard,
     CsrfGuard,

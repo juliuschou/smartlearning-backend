@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -17,6 +18,7 @@ import {
   StepUpGuard,
 } from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
+import { type Page } from '../../../common/pagination';
 import { AccountService } from '../application/account.service';
 import { CliCredentialService } from '../application/cli-credential.service';
 import { AccountDto } from './dto/account.dto';
@@ -43,6 +45,25 @@ export class AdminController {
     private readonly accounts: AccountService,
     private readonly cliCredentials: CliCredentialService,
   ) {}
+
+  @Get('accounts')
+  async listAccounts(
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ): Promise<Page<AccountDto>> {
+    const result = await this.accounts.listAccounts({
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
+    return { data: result.data.map(toAccountDto), meta: result.meta };
+  }
+
+  @Get('accounts/:id')
+  async getAccount(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<AccountDto> {
+    return toAccountDto(await this.accounts.getAccountById(id));
+  }
 
   @Post('accounts')
   async createAccount(

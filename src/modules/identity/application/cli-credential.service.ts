@@ -9,10 +9,12 @@ import {
 import {
   ConflictError,
   DomainError,
+  ForbiddenError,
   NotFoundError,
 } from '../../../common/errors';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
+import { AccountStatus } from '../domain/account-status';
 import {
   CliCredentialScope,
   CliCredentialStatus,
@@ -69,6 +71,12 @@ export class CliCredentialService {
       });
       if (!account) {
         throw new NotFoundError('Account not found', 'id');
+      }
+      // A disabled account must not receive a new active key that could be
+      // resurrected by a later restore (R-F8-2). The account row lock (taken
+      // above) serializes this against a concurrent disable.
+      if (account.status !== AccountStatus.ACTIVE) {
+        throw new ForbiddenError('Account is not active.');
       }
       // Pre-check name uniqueness for a stable field-scoped conflict; the DB
       // unique constraint remains the race authority.

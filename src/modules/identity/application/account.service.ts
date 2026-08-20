@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Account } from '../../../../generated/prisma/client';
-import { SessionService } from '../../../common/auth';
+import { AccountLifecycleBus, SessionService } from '../../../common/auth';
 import { isUuid, newId, hashPassword } from '../../../common/crypto';
 import {
   ConflictError,
@@ -8,6 +8,12 @@ import {
   NotFoundError,
   ValidationError,
 } from '../../../common/errors';
+import {
+  normalizePageRequest,
+  type Page,
+  type PageRequest,
+  toPage,
+} from '../../../common/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { ACCOUNT_ROLES, AccountRole, isAccountRole } from '../domain/roles';
@@ -25,11 +31,14 @@ import { CliCredentialService } from './cli-credential.service';
  */
 @Injectable()
 export class AccountService {
+  private readonly logger = new Logger(AccountService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly tx: TransactionService,
     private readonly sessions: SessionService,
     private readonly cliCredentials: CliCredentialService,
+    private readonly accountLifecycleBus: AccountLifecycleBus,
   ) {}
 
   private get db() {
@@ -101,6 +110,34 @@ export class AccountService {
     return this.db.account.findUnique({ where: { id } });
   }
 
+  /**
+   * Admin account list (metadata only — see `AccountDto` projection). Uses the
+   * shared `Page<T>`/`normalizePageRequest`/`toPage` pagination helpers so the
+   * wire shape matches the courses contract.
+   */
+  async listAccounts(raw: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<Page<Account>> {
+    const req: PageRequest = normalizePageRequest(raw);
+    const [data, total] = await Promise.all([
+      this.db.account.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip: (req.page - 1) * req.pageSize,
+        take: req.pageSize,
+      }),
+      this.db.account.count(),
+    ]);
+    return toPage(data, total, req);
+  }
+
+  /** Account detail (metadata only). */
+  async getAccountById(id: string): Promise<Account> {
+    const account = await this.db.account.findUnique({ where: { id } });
+    if (!account) throw new NotFoundError('Account not found');
+    return account;
+  }
+
   async resetPassword(
     targetAccountId: string,
     tempPassword: string,
@@ -139,7 +176,7 @@ export class AccountService {
   ): Promise<Account> {
     this.assertNotSelfTarget(targetAccountId, actorAccountId);
 
-    return this.tx.run(async (txClient) => {
+    const result = await this.tx.run(async (txClient) => {
       await this.tx.lockAccountForUpdate(txClient, targetAccountId);
       const target = await txClient.account.findUnique({
         where: { id: targetAccountId },
@@ -158,7 +195,7 @@ export class AccountService {
           txClient,
           targetAccountId,
         );
-        return target;
+        return { account: target, transitioned: false };
       }
 
       const updated = await txClient.account.update({
@@ -180,8 +217,36 @@ export class AccountService {
         txClient,
         targetAccountId,
       );
-      return updated;
+      return { account: updated, transitioned: true };
     });
+
+    // Commit-then-publish: only a true ACTIVE → DISABLED transition fans out
+    // the account lifecycle signal (re-disabling an already-disabled account
+    // is a no-op re-cleanup). Fire-and-forget — a bus failure is logged and
+    // must never fail an already-committed mutation.
+    if (result.transitioned) {
+      this.publishAccountDisabled(targetAccountId);
+    }
+    return result.account;
+  }
+
+  /** Post-commit, fire-and-forget lifecycle signal publish (US-F8). */
+  private publishAccountDisabled(accountId: string): void {
+    void this.accountLifecycleBus
+      .publish({
+        type: 'account.disabled',
+        accountId,
+        timestamp: new Date().toISOString(),
+      })
+      .catch((error) => {
+        this.logger.error(
+          {
+            accountId,
+            err: error instanceof Error ? error.message : String(error),
+          },
+          'Account lifecycle publish failed; mutation already committed',
+        );
+      });
   }
 
   /**
