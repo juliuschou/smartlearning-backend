@@ -1,4 +1,4 @@
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -10,6 +10,10 @@ import {
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 import cookie from 'cookie';
+import {
+  AccountLifecycleBus,
+  type AccountLifecycleSignal,
+} from '../../common/auth/account-lifecycle.bus';
 import { SessionService } from '../../common/auth/session.service';
 import { DomainError } from '../../common/errors';
 import { SESSION_COOKIE_NAME } from '../../common/security';
@@ -95,10 +99,15 @@ type DisconnectableSocket = {
 
 @WebSocketGateway({ namespace: LIVE_NAMESPACE })
 export class LiveGateway
-  implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect
+  implements
+    OnModuleInit,
+    OnModuleDestroy,
+    OnGatewayConnection,
+    OnGatewayDisconnect
 {
   private readonly logger = new Logger(LiveGateway.name);
   private unsubscribe?: () => void;
+  private accountLifecycleUnsubscribe?: () => void;
 
   @WebSocketServer()
   server!: Server;
@@ -108,6 +117,7 @@ export class LiveGateway
     private readonly liveSessions: LiveSessionService,
     private readonly participants: ParticipantService,
     private readonly bus: LiveSessionEventBus,
+    private readonly accountLifecycleBus: AccountLifecycleBus,
   ) {}
 
   onModuleInit(): void {
@@ -126,10 +136,30 @@ export class LiveGateway
         );
       });
     });
+
+    // US-F8: account-level lifecycle signals (e.g. a disabled account) are on
+    // a separate boundary. Disconnect the affected teacher/admin and
+    // account-bound participant sockets immediately; anonymous participant
+    // sockets are account-independent and survive.
+    this.accountLifecycleUnsubscribe = this.accountLifecycleBus.subscribe(
+      (signal: AccountLifecycleSignal) => {
+        if (signal.type !== 'account.disabled') return;
+        void this.handleAccountDisabled(signal.accountId).catch((error) => {
+          this.logger.error(
+            {
+              accountId: signal.accountId,
+              err: error instanceof Error ? error.message : String(error),
+            },
+            'Failed to handle account disabled signal',
+          );
+        });
+      },
+    );
   }
 
   onModuleDestroy(): void {
     this.unsubscribe?.();
+    this.accountLifecycleUnsubscribe?.();
   }
 
   async handleConnection(socket: Socket): Promise<void> {
@@ -387,8 +417,74 @@ export class LiveGateway
 
   // --- signal handling ----------------------------------------------------
 
+  /**
+   * Disconnect every socket whose principal is the disabled account (teacher/
+   * admin sockets and account-bound student participant sockets). Anonymous
+   * participant sockets carry no `accountId` and are account-independent — they
+   * are deliberately skipped. O(all sockets) is acceptable at single-instance
+   * scale; cross-instance revocation is deferred (in-process bus guarantee).
+   */
+  private async handleAccountDisabled(accountId: string): Promise<void> {
+    let sockets: Awaited<ReturnType<Server['fetchSockets']>>;
+    try {
+      sockets = await this.server.fetchSockets();
+    } catch (error) {
+      this.logger.debug(
+        {
+          accountId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Skipped account-disabled disconnect (fetchSockets failed)',
+      );
+      return;
+    }
+    await Promise.all(
+      sockets.map(async (socket) => {
+        const auth = socket.data?.auth as AuthenticatedClient | undefined;
+        if (!auth || auth.accountId !== accountId) return;
+        socket.disconnect(true);
+      }),
+    );
+  }
+
+  /**
+   * Server-side fallback: before acting on any session signal, drop teacher
+   * sockets whose account is no longer active, even if the account-disabled
+   * signal was missed. The account row is the authority; handshake-time
+   * ownership alone must not keep a disabled teacher connected.
+   */
+  private async pruneDisabledTeacherSockets(
+    liveSessionId: string,
+  ): Promise<void> {
+    try {
+      const sockets = await this.server
+        .in(teacherRoom(liveSessionId))
+        .fetchSockets();
+      await Promise.all(
+        sockets.map(async (socket) => {
+          const auth = socket.data?.auth as AuthenticatedClient | undefined;
+          if (!auth || auth.kind !== 'teacher') return;
+          try {
+            await this.sessions.assertAccountActive(auth.accountId);
+          } catch {
+            socket.disconnect(true);
+          }
+        }),
+      );
+    } catch (error) {
+      this.logger.debug(
+        {
+          liveSessionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Skipped teacher socket account re-check (fetchSockets failed)',
+      );
+    }
+  }
+
   private async handleSignal(signal: LiveSessionSignal): Promise<void> {
     await this.pruneUnauthorizedParticipantSockets(signal.liveSessionId);
+    await this.pruneDisabledTeacherSockets(signal.liveSessionId);
     const liveSessionId = signal.liveSessionId;
     switch (signal.type) {
       case 'participant.joined':

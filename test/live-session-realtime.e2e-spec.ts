@@ -158,6 +158,22 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     };
   }
 
+  async function adminStepUp(admin: AuthenticatedAgent): Promise<void> {
+    const res = await admin.agent
+      .post('/api/v1/auth/step-up')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ password: ADMIN.password });
+    expect(res.status).toBe(201);
+  }
+
+  /** Resolve the current session's accountId via GET /auth/session. */
+  async function currentAccountId(auth: AuthenticatedAgent): Promise<string> {
+    const res = await auth.agent.get('/api/v1/auth/session');
+    expect(res.status).toBe(200);
+    return res.body.data.accountId as string;
+  }
+
   async function createTeacher(
     username: string,
     displayName: string,
@@ -743,6 +759,124 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
       expect(error.code).toBe('SESSION_NOT_JOINABLE');
     } finally {
       reconnect.close();
+    }
+  });
+
+  it('disconnects a teacher socket when its account is disabled (US-F8)', async () => {
+    requireDatabase();
+    const ctx = await setupActiveSession();
+    const socket = connectTeacher(ctx.liveSessionId, ctx.teacher.sessionCookie);
+    try {
+      await nextEvent(socket, 'session.snapshot');
+      // Pre-register the disconnect promise BEFORE the disable mutation so the
+      // post-commit lifecycle signal is not missed.
+      const disconnected = new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error('timeout waiting for teacher disconnect')),
+          2000,
+        );
+        socket.once('disconnect', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+
+      const admin = await loginAs(ADMIN.username, ADMIN.password);
+      await adminStepUp(admin);
+      const teacherAccountId = await currentAccountId(ctx.teacher);
+      const disable = await admin.agent
+        .post(`/api/v1/admin/accounts/${teacherAccountId}/disable`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, admin.csrfToken);
+      expect(disable.status).toBe(201);
+
+      await disconnected;
+    } finally {
+      socket.close();
+    }
+  });
+
+  it('disconnects an account-bound student socket when the account is disabled (US-F8)', async () => {
+    requireDatabase();
+    const ctx = await setupActiveSession();
+    const student = await createStudent();
+    const enrollment = await ctx.teacher.agent
+      .post(`/api/v1/courses/${ctx.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, ctx.teacher.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrollment.status).toBe(201);
+
+    const socket = connectStudent(
+      ctx.liveSessionId,
+      student.auth.sessionCookie,
+    );
+    try {
+      await nextEvent(socket, 'session.snapshot');
+      const disconnected = new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error('timeout waiting for student disconnect')),
+          2000,
+        );
+        socket.once('disconnect', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+
+      const admin = await loginAs(ADMIN.username, ADMIN.password);
+      await adminStepUp(admin);
+      const disable = await admin.agent
+        .post(`/api/v1/admin/accounts/${student.accountId}/disable`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, admin.csrfToken);
+      expect(disable.status).toBe(201);
+
+      await disconnected;
+    } finally {
+      socket.close();
+    }
+  });
+
+  it('keeps an anonymous participant socket connected when an account is disabled (US-F8)', async () => {
+    requireDatabase();
+    const ctx = await setupActiveSession();
+    const otherTeacher = await createTeacher(
+      OTHER_TEACHER.username,
+      OTHER_TEACHER.displayName,
+      OTHER_TEACHER.tempPassword,
+      OTHER_TEACHER.password,
+    );
+
+    const p = await joinParticipant(ctx.sessionCode, 'anonymous');
+    const socket = connectParticipant(ctx.sessionCode, p.participantToken);
+    try {
+      await nextEvent(socket, 'session.snapshot');
+      // Disabling an unrelated teacher account must NOT affect the anonymous
+      // participant socket — its credential is account-independent.
+      const admin = await loginAs(ADMIN.username, ADMIN.password);
+      await adminStepUp(admin);
+      const otherTeacherAccountId = await currentAccountId(otherTeacher);
+      const disable = await admin.agent
+        .post(`/api/v1/admin/accounts/${otherTeacherAccountId}/disable`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, admin.csrfToken);
+      expect(disable.status).toBe(201);
+
+      // Still connected and still receiving session events.
+      const openedPromise = nextEvent(socket, 'question.opened');
+      await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      const opened = (await openedPromise) as {
+        data: { sessionQuestionId: string };
+      };
+      expect(opened.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
+    } finally {
+      socket.close();
     }
   });
 });
