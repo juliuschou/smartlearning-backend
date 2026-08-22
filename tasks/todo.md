@@ -1404,3 +1404,25 @@ The verification agent confirmed the working tree was unchanged by these checks.
 ### Implementation lesson (2026-08-23)
 
 - Host `npm run bootstrap:admin` under the available Node/tsx toolchain failed before application startup with `PrismaService` receiving an undefined `ConfigService`; the current-source compiled runtime image worked. For isolated Docker fixtures, use the compiled bootstrap artifact inside the exact runtime image and verify its exit code, rather than treating a host CLI failure as a database/runtime failure.
+
+### CP5 isolated-stack execution checklist — 2026-08-23
+
+- [x] A — repeat sanitized runtime/source/config/health/CORS/UI/migration preflight; no authenticated mutation.
+- [x] Manual A — user selected **Stop here** after the sanitized preflight; no lifecycle action or authenticated mutation was authorized.
+- [ ] B — provision a fresh isolated F0 admin/teacher fixture with compiled bootstrap and process-only credentials.
+- [ ] Manual B — obtain explicit confirmation before releasing the fixture marker for real Playwright Course/permission mutations.
+- [ ] C — run static gates and the existing Chromium 1-worker `us-f0-course-flow.spec.ts`; require non-skipped pass and scoped cleanup.
+- [ ] D — collect sanitized evidence, verify Compose scope/volume preservation, and append UI task-log results only after real acceptance.
+
+**Scope:** no backend/product source, schema, migration, env file, commit, broad teardown, volume deletion, truncate, or arbitrary row deletion. Existing CP5 and unrelated Compose projects/volumes remain protected.
+
+**Working notes:** current shell has no F0 variables; existing CP5 fixture credentials must not be recovered. If a fresh current-source migration image fails, stop as blocked and do not modify the Dockerfile in this CP5 run.
+
+### CP5 isolated-stack preflight attempt — 2026-08-23 (BLOCKED; paused at Manual A)
+
+- **PASS:** backend and UI repository scope was preserved; backend source remained clean before this execution attempt and the UI retained only its existing `tasks/todo.md` modification.
+- **PASS:** named `smartlearning-cp5-20260823` runtime reported backend healthy on `3000`, DB healthy on `55435`, migration exit `0`, network `smartlearning-cp5-20260823_default`, and volume `smartlearning-cp5-20260823_cp5f0_20260823_pgdata`.
+- **PASS:** `/health/live`, `/health/ready`, `/api/docs`, `/api/docs-json`, and UI `3001` returned HTTP `200`; allowed CORS returned `http://localhost:3001`, while a blocked origin returned no ACAO.
+- **PASS:** merged config safe projection contained only backend `3000:3000` and DB `55435:5432`; resource labels matched the named CP5 project. No F0 variable names were present in the current process environment.
+- **BLOCKED:** the user selected **Stop here** at Manual confirmation A. No existing CP5 container was stopped, no rerun project/volume was created, no fixture was provisioned, and no authenticated Course/permission/browser mutation was attempted.
+- **Decision:** CP5 real-browser acceptance remains `BLOCKED`/pending a later explicit confirmation; existing CP5 runtime, volume, unrelated Compose projects, and domain data were left untouched. UI `tasks/todo.md` was not appended because browser/cleanup evidence does not exist.
