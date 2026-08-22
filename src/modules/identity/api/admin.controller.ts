@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -24,6 +25,7 @@ import { CliCredentialService } from '../application/cli-credential.service';
 import { AccountDto } from './dto/account.dto';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateAccountPermissionsDto } from './dto/update-account-permissions.dto';
 import {
   CreateCliCredentialDto,
   CliCredentialDto,
@@ -63,6 +65,19 @@ export class AdminController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<AccountDto> {
     return toAccountDto(await this.accounts.getAccountById(id));
+  }
+
+  @Patch('accounts/:id/permissions')
+  async updateAccountPermissions(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateAccountPermissionsDto,
+  ): Promise<AccountDto> {
+    return toAccountDto(
+      await this.accounts.updateCourseCreationPermission(
+        id,
+        dto.canCreateCourse,
+      ),
+    );
   }
 
   @Post('accounts')

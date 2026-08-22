@@ -1286,3 +1286,121 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **Static verification**: typecheck, lint, format, build, and targeted policy/limiter/filter tests passed (3 suites / 33 tests). A prior full backend static/unit pass also passed (21 suites / 120 tests before the final targeted additions).
 - **DB verification blocked**: `prisma:migrate:status` failed with PostgreSQL `P1001` at `localhost:5432`; auth-rate-limit/auth-courses e2e and identity integration were guarded/blocked and did not exercise DB assertions.
 - **Unrelated work preserved**: existing README, live-session DTO, lesson, Docker, and Phase B changes remain untouched by this F7 slice; no schema/migration or commit was created.
+
+## 2026-08-21 — US-F16 account course-creation permission (backend + isolated browser acceptance verified)
+
+### Goal and acceptance criteria
+
+- [x] Add admin-only `PATCH /api/v1/admin/accounts/:id/permissions` with body `{ canCreateCourse: boolean }` and HTTP 200 `AccountDto` response.
+- [x] Keep permission changes separate from disable/restore, WebSession/CLI credential revocation, unused-token invalidation, and existing domain rows.
+- [x] Enforce the student invariant: a student target cannot be granted `canCreateCourse=true`.
+- [x] Add OpenAPI and targeted account-admin e2e coverage; record the real DB gate explicitly when unavailable.
+
+### Checkpoints
+
+- [x] A — Confirm the execution-plan contract and implement DTO/controller/service boundaries.
+- [x] B — Add row-locked single-field mutation, no-op behavior, OpenAPI assertion, and account-admin behavioral cases.
+- [x] C — Close the revoke/create TOCTOU by rechecking `canCreateCourse` under the owner row lock in `CourseService.createCourse`, with a unit regression test.
+- [x] D — Run DB-backed F16 e2e/side-effect matrix: targeted `account-admin.e2e-spec.ts` passed (1 suite / 10 tests) against migrated `smartlearning_test`.
+- [x] E — Real Playwright acceptance passed against the rebuilt dirty-source backend with an isolated fixture and exact `CORS_ORIGIN=http://localhost:3001`.
+
+### Risk & rollback
+
+- Risk: high — authorization boundary and preservation of sessions, credentials, and domain data.
+- Rollback: remove only the F16 DTO/route/service/tests/docs; preserve existing account list/detail/create and disable/restore/CLI flows. No schema migration or data rollback is required.
+
+### Dependencies & environment
+
+- Node 24+, migrated isolated `smartlearning_test`, backend on `localhost:3000`, frontend origin `http://localhost:3001` for browser integration.
+- No Prisma schema/migration change; the existing `Account.canCreateCourse` column is authoritative.
+
+### Working notes
+
+- Contract source: `/home/user/projects/smartLearning/docs/智學互動平台/50_實作與測試/US-F16 前端實作計畫-執行方案.md`.
+- `TransactionService.lockAccountForUpdate()` serializes permission changes; same-value updates return the locked row without side effects.
+- `CourseService.createCourse()` now takes the same account row lock and rechecks the authoritative permission before inserting, so a revoke/create race linearizes at the account lock.
+- Student `true` is rejected with `FORBIDDEN`; malformed/unknown IDs remain existence-safe; global validation rejects non-boolean/unknown body fields.
+
+### Results
+
+- **What changed**: added `UpdateAccountPermissionsDto`, admin controller PATCH route, `AccountService.updateCourseCreationPermission`, the transaction-locked course-create recheck plus regression tests, frontend API reference rows for existing list/detail and new PATCH, OpenAPI path assertion, and F16 account-admin e2e cases.
+- **Static verification**: targeted `npm test -- --runInBand src/modules/courses/application/course.service.spec.ts` passed (1 suite / 2 tests); `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` all passed after the race fix. No DB-mutating tests or migrations were run.
+- **Integration verification**: OpenAPI e2e passed (3 tests); `NODE_ENV=test npm run prisma:migrate:status` passed with 12 migrations up to date; targeted `NODE_ENV=test npm run test:e2e -- --runInBand test/account-admin.e2e-spec.ts` passed (1 suite / 10 tests), covering true/false course creation, student/non-admin/CSRF behavior, revoke/create serialization, and domain/credential preservation assertions.
+- **Historical before isolated fixture**: real browser acceptance was blocked because all five `F16_*` fixture variables were unset and UI port `3001` was not listening; the final acceptance evidence is recorded below.
+
+### Real F16 browser acceptance — 2026-08-22 (dirty source + isolated fixture)
+
+- **Runtime**: rebuilt the current uncommitted F16 source and launched an isolated `f16isolated` Compose stack. `f16-isolated-backend` runs on host `3000` with `CORS_ORIGIN=http://localhost:3001`; `f16-isolated-db` runs on host `55433` with a fresh named volume. The prior `smartlearning-backend` container was stopped only; its original container/database/volume were preserved.
+- **Fixture**: compiled bootstrap created a fresh admin in the isolated database; the real admin API created a unique teacher and the forced password change completed. Target account ID: `01a028b5-c31f-7410-83a5-7032e8e81acd`. Passwords and cookies stayed in-process and were not written to source, tasks, logs, or commits.
+- **Preflight**: `/health/live`, `/health/ready`, `/api/docs-json` all returned HTTP 200; isolated migration exited `0`; `prisma migrate status` found 12 migrations with no pending migrations; live OpenAPI exposed the F16 detail and permission PATCH routes; allowed CORS returned the exact UI origin and credentials, while an unapproved origin received no ACAO.
+- **Browser**: `node test/browser/run.mjs test/browser/us-f16-account-permission.spec.ts` passed Chromium **1/1** in 3.1 seconds, including real admin/teacher login, keyboard/ARIA switch behavior, revoke→403/no-new-course, re-enable→201, archive, restore, and logout cleanup.
+- **Scope**: no backend source, schema, existing domain row, or volume was reset/deleted. CP0 is now `PASS`; CP1–CP5 were not started.
+
+---
+
+# 2026-08-23 — US-F0 CP5 → US-F1 Backend Contract → F1 Frontend
+
+## Goal and acceptance criteria
+
+- [ ] Complete US-F0 CP5 real-backend Playwright acceptance with isolated runtime/fixtures, CSRF/Origin negatives, stale-session authorization, accessibility/responsive evidence, scoped cleanup, and no-new-row proof.
+- [ ] Freeze and obtain manual approval for the F1 history/result/governance contract before schema changes.
+- [ ] Implement F1 backend archive authority, retention/deletion/tombstone semantics, history/result APIs, privacy/race tests, OpenAPI and frontend reference.
+- [ ] Obtain manual approval of the backend gate before any F1 frontend route/hook/type/component.
+- [ ] Implement F1 frontend only from the confirmed backend contract and complete real-backend acceptance.
+
+## Checkpoint checklist
+
+- [ ] CP0 — non-mutating source/runtime/OpenAPI/CORS/migration/fixture preflight.
+- [ ] Manual confirmation 1 — authorize authenticated Course create/archive/permission mutations.
+- [ ] CP1 — run existing US-F0 real-browser spec and sanitized handoff.
+- [ ] Manual confirmation 2 — confirm CP5 acceptance matrix completed.
+- [ ] CP2 — present canonical F1 routes/DTOs/authorization/race/retention/deletion semantics.
+- [ ] Manual confirmation 3 — authorize schema/migration implementation.
+- [ ] CP3/4 — implement additive archive authority, governance APIs/worker, docs, and regression coverage.
+- [ ] CP5 — run backend contract verification bundle.
+- [ ] Manual confirmation 4 — authorize F1 frontend implementation.
+- [ ] CP6 — implement and verify F1 frontend; request Manual confirmation 5.
+
+## Risk & rollback
+
+- **Risk:** high — authentication/authorization, anonymous result governance, irreversible deletion, additive migration, and close/submit/archive races.
+- **Rollback:** preserve existing F8/Phase-B dirty work; use additive migration plus revert/forward-fix; never reset working trees, truncate, broad `down -v`, restore revoked sessions, or resurrect deleted/tombstoned result content.
+
+## Dependencies and environment
+
+- Node 24+, PostgreSQL, Prisma 7, backend `3000`, UI `3001`, Chromium/Playwright 1.62.1, exact runtime `CORS_ORIGIN=http://localhost:3001` for CP5.
+- CP5 uses process-only `F0_*` variables; secrets/raw cookies/CSRF/participant/CLI tokens and raw backend messages must not enter source, logs, task records, traces, or chat.
+- DB-backed verification is limited to protected `smartlearning_test` or an explicitly isolated database; do not mutate unknown databases.
+
+## Working notes
+
+- Current backend dirty scope is US-F16/F8/Phase-B; current UI dirty scope is task documentation. Keep these scopes separate.
+- Current backend has close/cancel and per-question result projections but no ArchivedResult/history/retention/tombstone authority.
+- P0 cancellation and current backend/wire behavior require an explicit CP2 decision; result route naming also requires explicit canonicalization before frontend work.
+
+## Results
+
+- Planning completed and approved; no product source, schema, migration, environment file, or runtime/domain data changed during planning.
+- CP0 execution is the next action. Stop at Manual confirmation 1 before authenticated CP5 mutations.
+
+### CP0 preflight — 2026-08-23 (BLOCKED; no authenticated CP5 mutation)
+
+- **PASS:** existing isolated backend on `3000` returned HTTP 200 for `/health/live`, `/health/ready`, `/api/docs`, and `/api/docs-json`; live OpenAPI had 37 paths including Course, F16 permission, Phase-B enrollment/participant, and current LiveSession routes.
+- **PASS:** runtime CORS was exactly `http://localhost:3001`; allowed-origin response exposed matching ACAO/credentials and an unapproved origin had no ACAO. Protected `smartlearning_test` migration status reported 12 migrations and schema up to date.
+- **PASS:** existing migrate container exited `0`; backend container was healthy. No source, product file, database row, or existing volume was changed by this preflight.
+- **BLOCKER:** the reachable backend was built from `/tmp/smartlearning-cp5-20260822` (Compose labels/config), not the current checkout; source/runtime parity therefore cannot be claimed. UI `3001` was unreachable, and all eight process-only `F0_*` variables were missing.
+- **Safety decision:** no Course create/archive, permission mutation, authenticated browser run, fixture mutation, teardown, or volume deletion was performed. CP5 remains `BLOCKED`; Manual confirmation 1 has not been requested as a PASS handoff.
+- **Next action requiring user decision:** rebuild a fresh isolated stack from the current checkout on backend `3000` (which requires stopping only the named stale isolated `smartlearning-cp5-20260822` stack while preserving its volume), start UI `3001`, and provision the eight F0 fixture variables before requesting Manual confirmation 1.
+
+### CP0 rerun — 2026-08-23 (PASS; awaiting Manual confirmation 1)
+
+- **Runtime/source:** stopped only the named stale isolated stack while preserving `smartlearning-cp5-20260822_cp5_pgdata`; built `smartlearning-cp5-20260823` from the current checkout context `/home/user/projects/smartLearning/smartLearning-backend` with a new volume `smartlearning-cp5-20260823_cp5f0_20260823_pgdata`.
+- **Services:** backend `3000` healthy, isolated DB `55435` healthy, migrate exited `0`, UI `3001` returned HTTP 200. No existing development DB/container/volume was touched.
+- **Contract/CORS:** `/health/live`, `/health/ready`, `/api/docs`, `/api/docs-json` returned HTTP 200; live OpenAPI exposed 37 paths including current F16/Phase-B routes; `CORS_ORIGIN` was exactly `http://localhost:3001`, allowed origin returned matching ACAO/credentials, blocked origin returned no ACAO.
+- **Fixture:** compiled bootstrap in the current-source runtime image created an isolated admin; real admin API created an isolated teacher with `canCreateCourse=false`; teacher completed forced password change; all eight F0 variables exist only in the waiting provisioning process. No credentials, cookies, CSRF values, or raw tokens were persisted or printed.
+- **Safety:** no Course create/archive, permission update, authenticated browser run, arbitrary delete, truncate, or volume deletion was performed. CP0 exit criteria are PASS; waiting for explicit Manual confirmation 1 before CP5 mutations.
+- **User decision:** Manual confirmation 1 was intentionally declined on 2026-08-23; execution is paused at CP0. The isolated runtime/fixture remains available; the credential-holding provisioning process was stopped and its control markers removed. CP1 remains pending.
+
+### Implementation lesson (2026-08-23)
+
+- Host `npm run bootstrap:admin` under the available Node/tsx toolchain failed before application startup with `PrismaService` receiving an undefined `ConfigService`; the current-source compiled runtime image worked. For isolated Docker fixtures, use the compiled bootstrap artifact inside the exact runtime image and verify its exit code, rather than treating a host CLI failure as a database/runtime failure.

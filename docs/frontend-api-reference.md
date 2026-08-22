@@ -354,7 +354,10 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 
 | Method | Path | 用途 | step-up |
 |---|---|---|---|
+| GET | `/admin/accounts?page&pageSize` | 分頁列出帳號 metadata | 無 |
+| GET | `/admin/accounts/:id` | 讀取單一帳號 metadata | 無 |
 | POST | `/admin/accounts` | 建帳號（admin/teacher/student） | 無 |
+| PATCH | `/admin/accounts/:id/permissions` | 更新 `canCreateCourse` 權限（只改此欄位） | 無 |
 | POST | `/admin/accounts/:id/reset-password` | 重設密碼 | 需 |
 | POST | `/admin/accounts/:id/disable` | 停用（撤 session/CLI/未用 token） | 需 |
 | POST | `/admin/accounts/:id/restore` | 復原 | 需 |
@@ -363,6 +366,8 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 | POST | `/admin/accounts/:id/cli-credentials/:credentialId/revoke` | 撤 CLI key | 需 |
 
 **建帳號 body**：`{ username, displayName, role, canCreateCourse, tempPassword }`。student 的 `canCreateCourse` 恆為 false。
+
+**更新開課授權 body**：`{ canCreateCourse: boolean }`。成功回 `200` 與最新 `AccountDto`；僅 admin 可操作，target 可為 admin/teacher，student 設為 `true` 時回 `403 FORBIDDEN`。此 mutation 不停用帳號、不撤銷 WebSession/CLI credential/unused token，也不修改既有 Course、Question、LiveSession 或結果；`POST /courses` 仍是 server 授權來源。
 **AccountDto**：`{ id, username, displayName, role, status, canCreateCourse, mustChangePassword, disabledAt, createdAt }`。
 
 ---
@@ -374,14 +379,15 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 | 無 `GET /live-sessions/:id/results`（整場彙整） | teacher 全班總覽 | 逐題呼叫 per-question results 聚合 |
 | Realtime 無 eventSeq / replay | 斷線復原 | 用 `snapshot.fetch` 重取 fresh snapshot，reset state |
 | 無 auto-close scheduler | abandoned session 不自動收尾 | teacher 手動 close/cancel |
-| admin account list/detail/update 尚無 | 帳號管理 UI | 暫不提供列表/編輯，僅建帳號與重設/停用/復原 |
+| admin account permission update 只支援 `canCreateCourse` | 帳號管理 UI | 使用 `PATCH /admin/accounts/:id/permissions`；disable/restore/CLI credential 仍走各自端點 |
 | OpenAPI 顯示內層 DTO（非 envelope） | 自動產 client 型別 | client 手動解 `data`，或自訂 transformer |
 
 ---
 
 ## 6. 驗證狀態
 
-- 老師出題、課堂 teacher、學員使用、帳號管理：**code + DB-backed e2e 已驗證**（`smartlearning_test` 全綠；dev DB 已套用全部 12 支 migration）。
+- 老師出題、課堂 teacher、學員使用、既有帳號管理：**code + DB-backed e2e 已驗證**（`smartlearning_test` 全綠；dev DB 已套用全部 12 支 migration）。
+- US-F16 permission mutation：static typecheck/lint/format/build、unit 與 OpenAPI e2e 已通過；account-admin DB-backed e2e **Blocked**（`smartlearning_test` 的 PostgreSQL `localhost:5432` 回 `P1001`）。
 - 兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）已套用並通過 typecheck/lint/unit/e2e。
 
 ---

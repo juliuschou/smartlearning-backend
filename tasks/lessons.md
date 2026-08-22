@@ -119,3 +119,17 @@
 - **Detection signal:** A review of every `hashPassword` call found `bootstrap.service.ts` validated length in `bootstrapFromEnv` but hashed directly in the transaction method; the normal account/reset paths already called the shared policy.
 - **Prevention rule:** Treat every password-to-hash sink, including bootstrap and test-only provisioning paths, as a policy boundary. Centralize the full validation helper and call it immediately before hashing.
 - **Tripwire:** `grep -R "hashPassword" src/modules/identity` and verify each call site is preceded by length + common-password validation; retain an integration assertion for bootstrap and account temp-password rejection.
+
+## 2026-08-22 — Compose commands and override ports need explicit working directory/merge checks
+
+- **Failure mode:** A background Compose command started from the UI repository because the shell directory change was omitted; a later isolated Compose override appended the base `5433:5432` port instead of replacing it, causing a port-allocation failure.
+- **Detection signal:** The first command reported `./.env.production` and Compose config missing; the isolated stack failed with `Bind for :::5433 failed`, and `docker compose config --format json` showed two DB port mappings.
+- **Prevention rule:** Put `cd /home/user/projects/smartLearning/smartLearning-backend` inside every background command, pass `--env-file .env.production` for Compose interpolation, and inspect the fully merged config before lifecycle actions. Use Compose `!override`/`!reset` tags when an override must replace a list such as `ports`.
+- **Tripwire:** Before `up`, assert the merged JSON contains exactly one backend `3000` mapping and one isolated DB mapping; after `up`, verify migration exit `0`, health `200`, and the runtime CORS value.
+
+## 2026-08-23 — Isolated bootstrap must use the runtime artifact
+
+- **Failure mode:** Running the host `npm run bootstrap:admin` through the available `tsx` toolchain failed before application startup because `PrismaService` received an undefined `ConfigService`; the Docker runtime itself was healthy.
+- **Detection signal:** Bootstrap log failed at `src/prisma/prisma.service.ts` constructor injection before any account write, while the compiled bootstrap artifact inside the current-source runtime image succeeded against the isolated database.
+- **Prevention rule:** For Docker-backed fixture provisioning, use the compiled bootstrap entrypoint from the exact image built from the checked-out source, pass secrets through process environment only, and verify the one-shot exit code before API fixture setup.
+- **Tripwire:** Run `docker compose run --rm --no-deps backend node dist/src/bootstrap/bootstrap-admin.js`, require exit `0`, then probe `/auth/login` and the resulting account projection before proceeding; do not infer runtime failure from the host `tsx` path.

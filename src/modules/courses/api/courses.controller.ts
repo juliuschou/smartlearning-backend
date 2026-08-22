@@ -40,7 +40,6 @@ export class CoursesController {
   ): Promise<CourseDto> {
     const course = await this.courses.createCourse({
       ownerAccountId: auth.account.id,
-      role: auth.account.role,
       name: dto.name,
       description: dto.description,
     });

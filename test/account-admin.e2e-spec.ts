@@ -217,6 +217,147 @@ describe('Account admin & disable/restore lifecycle (e2e)', () => {
     expect(nonUuid.status).toBe(400);
   });
 
+  it('updates teacher course permission and enforces the server-side gate', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacher, teacherId } = await createTeacher();
+
+    const disabled = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}/permissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: false });
+    expect(disabled.status).toBe(200);
+    expect(disabled.body.data.canCreateCourse).toBe(false);
+    expect(disabled.body.data.status).toBe('active');
+
+    const beforeReenable = await prisma.prisma.course.count({
+      where: { ownerAccountId: teacherId },
+    });
+    const blockedCourse = await teacher.agent
+      .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ name: 'F16 blocked course' });
+    expect(blockedCourse.status).toBe(403);
+    expect(blockedCourse.body.error.code).toBe('FORBIDDEN');
+    expect(
+      await prisma.prisma.course.count({
+        where: { ownerAccountId: teacherId },
+      }),
+    ).toBe(beforeReenable);
+
+    const enabled = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}/permissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: true });
+    expect(enabled.status).toBe(200);
+    expect(enabled.body.data.canCreateCourse).toBe(true);
+
+    const createdCourse = await teacher.agent
+      .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ name: 'F16 enabled course' });
+    expect(createdCourse.status).toBe(201);
+    expect(createdCourse.body.data.ownerAccountId).toBe(teacherId);
+  });
+
+  it('keeps permission updates separate from student authorization and validates the contract', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacher, teacherId } = await createTeacher();
+
+    const nonAdmin = await teacher.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}/permissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ canCreateCourse: false });
+    expect(nonAdmin.status).toBe(403);
+    expect(nonAdmin.body.error.code).toBe('FORBIDDEN');
+
+    const invalidBody = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}/permissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: 'true' });
+    expect(invalidBody.status).toBe(400);
+    expect(invalidBody.body.error.code).toBe('VALIDATION_FAILED');
+
+    const unknownField = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}/permissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: true, status: 'disabled' });
+    expect(unknownField.status).toBe(400);
+    expect(unknownField.body.error.code).toBe('VALIDATION_FAILED');
+
+    const missing = await admin.agent
+      .patch(
+        '/api/v1/admin/accounts/01900000-0000-7000-8000-000000000099/permissions',
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: false });
+    expect(missing.status).toBe(404);
+    expect(missing.body.error.code).toBe('NOT_FOUND');
+
+    const malformed = await admin.agent
+      .patch('/api/v1/admin/accounts/not-a-uuid/permissions')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: false });
+    expect(malformed.status).toBe(400);
+
+    const createdStudent = await admin.agent
+      .post('/api/v1/admin/accounts')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        username: 'account-admin-f16-student',
+        displayName: 'Account Admin F16 Student',
+        role: AccountRole.STUDENT,
+        canCreateCourse: true,
+        tempPassword: 'account-admin-f16-student-password-1234',
+      });
+    expect(createdStudent.status).toBe(201);
+    expect(createdStudent.body.data.canCreateCourse).toBe(false);
+
+    const studentGrant = await admin.agent
+      .patch(
+        `/api/v1/admin/accounts/${createdStudent.body.data.id}/permissions`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: true });
+    expect(studentGrant.status).toBe(403);
+    expect(studentGrant.body.error.code).toBe('FORBIDDEN');
+
+    const studentNoOp = await admin.agent
+      .patch(
+        `/api/v1/admin/accounts/${createdStudent.body.data.id}/permissions`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: false });
+    expect(studentNoOp.status).toBe(200);
+    expect(studentNoOp.body.data.canCreateCourse).toBe(false);
+  });
+
+  it('requires CSRF for permission updates', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacherId } = await createTeacher();
+
+    const res = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}/permissions`)
+      .set('Origin', TEST_ORIGIN)
+      .send({ canCreateCourse: false });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('AUTH_CSRF_INVALID');
+  });
+
   it('requires admin for the list route', async () => {
     requireDatabase();
     const { teacher } = await createTeacher();

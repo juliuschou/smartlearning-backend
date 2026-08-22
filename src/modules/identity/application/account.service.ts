@@ -138,6 +138,37 @@ export class AccountService {
     return account;
   }
 
+  /**
+   * Update only the course-creation permission. The account row is locked so
+   * competing permission changes serialize, while all lifecycle and CLI
+   * credential side effects remain on their dedicated operations.
+   */
+  async updateCourseCreationPermission(
+    targetAccountId: string,
+    canCreateCourse: boolean,
+  ): Promise<Account> {
+    if (!isUuid(targetAccountId)) {
+      throw new NotFoundError('Account not found');
+    }
+
+    return this.tx.run(async (txClient) => {
+      await this.tx.lockAccountForUpdate(txClient, targetAccountId);
+      const target = await txClient.account.findUnique({
+        where: { id: targetAccountId },
+      });
+      if (!target) throw new NotFoundError('Account not found');
+      if (target.role === AccountRole.STUDENT && canCreateCourse) {
+        throw new ForbiddenError('Student accounts cannot create courses');
+      }
+      if (target.canCreateCourse === canCreateCourse) return target;
+
+      return txClient.account.update({
+        where: { id: targetAccountId },
+        data: { canCreateCourse },
+      });
+    });
+  }
+
   async resetPassword(
     targetAccountId: string,
     tempPassword: string,

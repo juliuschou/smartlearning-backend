@@ -32,9 +32,10 @@ describe('OpenAPI document (e2e)', () => {
       '/api/v1/courses/{courseId}/enrollments/{studentAccountId}',
     );
     expect(paths).toContain('/api/v1/me/courses');
-    // US-F8 admin account list/detail contract.
+    // US-F8/F16 admin account list/detail/permission contract.
     expect(paths).toContain('/api/v1/admin/accounts');
     expect(paths).toContain('/api/v1/admin/accounts/{id}');
+    expect(paths).toContain('/api/v1/admin/accounts/{id}/permissions');
     // Health routes stay outside /api/v1 per the global-prefix exclusion.
     expect(paths).toContain('/health/live');
     expect(paths).toContain('/health/ready');
