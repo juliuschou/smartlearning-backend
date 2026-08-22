@@ -1426,3 +1426,12 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** merged config safe projection contained only backend `3000:3000` and DB `55435:5432`; resource labels matched the named CP5 project. No F0 variable names were present in the current process environment.
 - **BLOCKED:** the user selected **Stop here** at Manual confirmation A. No existing CP5 container was stopped, no rerun project/volume was created, no fixture was provisioned, and no authenticated Course/permission/browser mutation was attempted.
 - **Decision:** CP5 real-browser acceptance remains `BLOCKED`/pending a later explicit confirmation; existing CP5 runtime, volume, unrelated Compose projects, and domain data were left untouched. UI `tasks/todo.md` was not appended because browser/cleanup evidence does not exist.
+
+### CP5 fresh rerun — 2026-08-23 (PAUSED at Checkpoint A)
+
+- **PASS:** backend `HEAD` was `cc0b88146afa3cf7712d708aa850aaea20fd766c` with a clean working tree; the UI retained only its pre-existing task-log change at the start of the rerun.
+- **PASS:** existing Compose scope was inventoried without secrets: `smartlearning-cp5-20260823` owned `3000:3000`, `55435:5432`, network `smartlearning-cp5-20260823_default`, and volume `smartlearning-cp5-20260823_cp5f0_20260823_pgdata`; unrelated projects/resources were not targeted. All `F0_*` names were absent from the current process environment.
+- **PASS:** the run-scoped temporary Compose projection passed with project `smartlearning-cp5-20260823-rerun-20260822172242`, current-checkout build context, `migrate`/`runtime` targets, exact `3000:3000` and `55435:5432` mappings, isolated volume/network names, `service_completed_successfully` dependency, and `CORS_ORIGIN=http://localhost:3001`. The temporary file was `/tmp/smartlearning-cp5-20260823-rerun-20260822172242.yml`; its volume and network were not created.
+- **PASS:** the already-running UI endpoint at `http://localhost:3001` returned HTTP `200`.
+- **PAUSED:** the user selected **Stop here** at Checkpoint A. No old CP5 container was stopped; no image build, new stack startup, migration, bootstrap, fixture provisioning, F0 marker, authenticated mutation, or browser run was performed.
+- **Decision:** this fresh rerun remains pending Checkpoint B authorization. Existing CP5 runtime/volume/network and unrelated Compose resources remain protected; no backend product source, schema, migration, environment file, or database row was changed.
