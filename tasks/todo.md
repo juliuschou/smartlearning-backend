@@ -1149,10 +1149,10 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 
 ### B4 — realtime student handshake
 
-- [ ] `live-gateway.ts`：cookie 不再一律走 teacher path；role=student 走 participant binding path（join `session:<id>` room，不進 teacher room）；`AuthenticatedClient` 加 student/participant-account 表達。
-- [ ] snapshot 分支對應調整；學生收 `result.updated`、不收 `counts.updated`。
-- [ ] 順便統一 gateway participant snapshot 與 REST participant snapshot（只保留 open + hasSubmitted）。
-- [ ] 測試：student cookie handshake 進 participant room、收 result、不收 counts。
+- [x] `live-gateway.ts`：cookie 不再一律走 teacher path；role=student 走 participant binding path（join `session:<id>` room，不進 teacher room）；`AuthenticatedClient` 加 student/participant-account 表達。
+- [x] snapshot 分支對應調整；學生收 `result.updated`、不收 `counts.updated`。
+- [x] 順便統一 gateway participant snapshot 與 REST participant snapshot（只保留 open + hasSubmitted）。
+- [x] 測試：student cookie handshake 進 participant room、收 result、不收 counts — targeted realtime e2e 14/14 passed。
 
 ### B5 — 隱私 / redaction / 設計文件
 
@@ -1164,7 +1164,7 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 ## Phase B 驗證（DoD）
 
 - student 可登入、加選、看名冊/我的課、cookie 加入 session 並作答；匿名 session code fallback 保留（e2e 通過）。
-- realtime：student 進 participant room、收 `result.updated`、不收 `counts.updated`（e2e 通過）。
+- realtime：student 進 participant room、收 `result.updated`、不收 `counts.updated`（targeted e2e 14/14 通過；B4 verified）。
 - 權限 regression：student 存取 owner 路徑被拒。
 - `prisma:validate`、相關 unit/integration/e2e、`openapi.e2e-spec.ts` 通過。
 - 設計文件同步更新。
@@ -1181,7 +1181,7 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - [ ] Student role/login/session lifecycle is supported; student `canCreateCourse` is always false and teacher/admin owner paths reject students.
 - [ ] CourseEnrollment roster APIs support owner/admin add/remove/list, student active-course listing, archived-course protection, and cross-owner privacy.
 - [ ] Enrolled students can cookie-join/read/submit/results through an account-bound Participant; anonymous session-code/token behavior remains unchanged.
-- [ ] Student Socket.IO clients are participant-only, receive safe `result.updated`, and never receive `counts.updated`.
+- [x] Student Socket.IO clients are participant-only, receive safe `result.updated`, and never receive `counts.updated` — targeted B4 realtime e2e passed.
 - [ ] Privacy/redaction and all authoritative design/authorization documents are synchronized.
 
 ## Checklist
@@ -1478,11 +1478,21 @@ The verification agent confirmed the working tree was unchanged by these checks.
 
 ### Phase B current execution status — 2026-08-23
 
-- **Completed:** Checkpoint A DB preflight and the authorized B1/B2 targeted verification.
+- **Completed:** Checkpoint A DB preflight, authorized B1/B2 targeted verification, and authorized B4 realtime targeted verification.
 - **B1/B2 result:** 4 suites / 15 tests passed, 0 skipped, 0 failures against `smartlearning_test`; no `smartlearning_dev` access.
-- **Current state:** paused at **Checkpoint B**, awaiting manual confirmation before starting B3.
-- **Not started:** `test/participant-account.e2e-spec.ts` (B3), realtime verification (B4), B5 authoritative-document synchronization, and final regression gates.
-- **Next action after confirmation:** run only the B3 account-bound HTTP participant suite, then stop at Checkpoint C.
+- **B4 result:** `test/live-session-realtime.e2e-spec.ts` passed with 1 suite / 14 tests, 0 failures, 0 skips; realtime static gates also passed.
+- **Current state:** B4 targeted acceptance verified; B3 full HTTP suite, B5 authoritative-document synchronization, and final regression gates remain pending.
+- **Not started:** `test/participant-account.e2e-spec.ts` (B3 full suite), B5 authoritative-document synchronization, and broad/full regression gates.
+- **Next action:** decide whether to run the separate B3 account-bound HTTP suite, then complete B5 documentation/privacy synchronization before claiming the overall Phase B DoD.
 - **Safety status:** no runtime source, Prisma schema, migration, design document, commit, reset, down migration, or broad deletion was performed. Existing CP5/F8 work was preserved.
-- **Working-tree note:** `tasks/todo.md` was already dirty before this execution; this execution only appended status records and did not overwrite the prior notes.
-- **Boundary note:** DB-backed test setup internally runs idempotent `npx prisma migrate deploy`; migration status was already up to date and no schema change was observed. This remains an explicit process-boundary discrepancy for Checkpoint B acceptance.
+- **Working-tree note:** this execution appended the B4 result and updated the B4 checklist only; product source and schema remain unchanged.
+- **Boundary note:** DB-backed test setup internally runs idempotent `npx prisma migrate deploy`; migration status was already up to date and no schema change was observed. This remains an explicit process-boundary note.
+
+### B4 realtime targeted verification — 2026-08-23
+
+- **AUTHORIZED:** the user explicitly authorized the guarded B4 realtime fixture isolation limited to `smartlearning_test`; no `smartlearning_dev` or unknown database access was authorized.
+- **PASS:** read-only `NODE_ENV=test npm run prisma:migrate:status` resolved `smartlearning_test`; 12 migrations were found and the schema was up to date.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` — 1 suite / 14 tests passed, 0 failures, 0 skips. The suite used real TCP Socket.IO clients and PostgreSQL; all tests reached `requireDatabase()` rather than passing vacuously.
+- **PASS:** B4-focused static gates — realtime event-bus unit 1 suite / 5 tests, typecheck, lint:check, format:check, and `git diff --check` all passed.
+- **RESULT:** B4 realtime targeted acceptance is verified: student cookie participant scope, snapshot privacy, participant-safe result push, teacher-only counts, enrollment/account revocation disconnects, anonymous fallback, and existing teacher lifecycle paths passed. No product source, schema, migration, environment file, commit, or unrelated CP5/F8 change was edited.
+- **BOUNDARY:** B3 full `participant-account.e2e-spec.ts`, B5 authoritative-document synchronization, and broad/full regression remain unverified and are not claimed complete. Existing non-blocking Nest legacy route-converter warnings remained.
