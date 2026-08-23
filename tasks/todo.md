@@ -1435,3 +1435,54 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** the already-running UI endpoint at `http://localhost:3001` returned HTTP `200`.
 - **PAUSED:** the user selected **Stop here** at Checkpoint A. No old CP5 container was stopped; no image build, new stack startup, migration, bootstrap, fixture provisioning, F0 marker, authenticated mutation, or browser run was performed.
 - **Decision:** this fresh rerun remains pending Checkpoint B authorization. Existing CP5 runtime/volume/network and unrelated Compose resources remain protected; no backend product source, schema, migration, environment file, or database row was changed.
+
+### CP5 Checkpoint B attempt — 2026-08-23 (BLOCKED; environment unavailable)
+
+- **Manual authorization:** received for the limited Checkpoint B lifecycle/fixture step only; authenticated Course, permission, and browser mutations remain unauthorized pending Manual B.
+- **BLOCKED:** the reviewed `/tmp/cp5f0-provision-and-run.sh` provisioning flow is absent, and the Docker API is unavailable (`unix:///var/run/docker.sock: no such file or directory`). Therefore no CP5 container was stopped, no fresh project/volume/network was created, no image was built, no migration/bootstrap/fixture provisioning ran, and no F0 marker was released.
+- **Safety:** no backend/UI product source, schema, migration, environment file, database row, existing CP5 resource, unrelated Compose project, or volume was changed.
+- **Next step:** restore Docker daemon access and recreate/recover the explicitly reviewed CP5 provisioning flow without recovering credentials; then rerun the limited Checkpoint B preflight before requesting Manual B.
+
+### CP5 Checkpoint B retry — 2026-08-23 (BLOCKED; execution artifact absent)
+
+- **Docker:** the Docker socket is now present, and the named project inventory is readable. The existing `smartlearning-cp5-20260823` containers are exited (`backend`/`db` exit 255; `migrate` exit 0).
+- **BLOCKED:** the reviewed provisioning script and temporary Compose file are absent (`/tmp/cp5f0-provision-and-run.sh` and `/tmp/smartlearning-cp5-20260823.yml` cannot be read). The Compose project metadata points to the missing temporary file, so the exact isolated lifecycle/config cannot be safely reconstructed from the current filesystem without risking the wrong project or volume.
+- **Safety:** no container was stopped or started, no stack was rebuilt, no volume/network/database mutation was attempted, and no F0 credential or marker was recovered.
+- **Next step:** restore the exact CP5 execution artifact (or provide an explicitly reviewed replacement) before retrying; then re-run the scoped Checkpoint B preflight and fixture provisioning.
+
+### CP5 Checkpoint B preflight — 2026-08-23 (PASS; lifecycle intentionally not executed)
+
+- **Docker:** daemon available (`29.5.3`); named project inventory is readable. Existing `smartlearning-cp5-20260823` containers remain exited: backend/db `255`, migrate `0`.
+- **Artifacts:** reviewed `/tmp/cp5f0-provision-and-run.sh` and `/tmp/smartlearning-cp5-20260823.yml`; the script is gated on the fixture marker and Manual confirmation 1 before UI mutations. No marker files currently exist.
+- **Scope:** container labels match project `smartlearning-cp5-20260823`; the existing DB volume is `smartlearning-cp5-20260823_cp5f0_20260823_pgdata`, attached only at PostgreSQL data path; network is `smartlearning-cp5-20260823_default`.
+- **Compose projection:** sanitized merged config contains exactly `backend:3000:3000` and `db:55435:5432`; no lifecycle command was issued.
+- **Safety:** no container was stopped/started, no image was built, no migration/bootstrap/fixture provisioning ran, no marker was released, and no authenticated Course/permission/browser mutation was attempted.
+- **Next step:** the limited preflight is complete. Stop before the reviewed provisioning script's bootstrap or any fixture/authenticated mutation; request a separate explicit authorization before proceeding past Manual B.
+
+### Phase B Checkpoint A preflight — 2026-08-23 (BLOCKED; PostgreSQL unavailable)
+
+- **PASS:** current backend branch is `phase-b-student-enrollment`; the only pre-existing dirty file is `tasks/todo.md`, containing unrelated CP5 notes. No product source, schema, migration, or unrelated change was reset or overwritten.
+- **PASS:** Phase B migrations were inspected read-only: `20260818100000_add_student_role`, `20260818110000_add_course_enrollment`, and `20260818120000_bind_participant_account`. The guarded test configuration names `smartlearning_test`; development configuration names `smartlearning_dev`.
+- **BLOCKED:** read-only `NODE_ENV=test npm run prisma:migrate:status` resolved target `smartlearning_test` but PostgreSQL at `localhost:5432` was unreachable (`P1001`). Development status likewise resolved `smartlearning_dev` but was unreachable. Migration status is therefore unproven; no targeted tests, migration deploy, schema/data write, or manual authorization request was performed.
+- **Next step:** restore PostgreSQL connectivity, rerun the read-only Checkpoint A status preflight, then request manual authorization before any targeted Phase B test.
+
+### Phase B Checkpoint A rerun + B1/B2 targeted verification — 2026-08-23
+
+- **PASS:** after PostgreSQL recovery, read-only `NODE_ENV=test npm run prisma:migrate:status` resolved `smartlearning_test`; 12 migrations were found and the database schema was up to date. No migration file, schema, product source, or unrelated CP5/F8 change was edited.
+- **AUTHORIZED:** the user authorized targeted B1/B2 DB-backed tests and fixture-isolation truncation limited to `smartlearning_test`.
+- **PASS:** `NODE_ENV=test npm run test:integration -- --runInBand test/identity.integration-spec.ts` — 1 suite / 7 tests passed, 0 skipped.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/student-account.e2e-spec.ts test/enrollments.e2e-spec.ts test/openapi.e2e-spec.ts` — 3 suites / 8 tests passed, 0 skipped.
+- **PASS:** combined B1/B2 scope — 4 suites / 15 tests passed, 0 failures, 0 skips. Evidence covers student role and `canCreateCourse=false` normalization/persistence/session projection, owner roster add/list/remove/reactivate/idempotency, cross-owner privacy, archived-course rejection, `/api/v1/me/courses`, student owner-path denial, DB CHECK rejection, and OpenAPI enrollment/admin paths.
+- **NOTE:** `test/setup/db.ts` internally invokes idempotent `npx prisma migrate deploy` before DB-backed suites. The tests made no schema change because status was already up to date, but this implicit setup behavior differs from the Checkpoint A wording “不重套 migration”; it is recorded as a boundary discrepancy, not silently treated as a no-op.
+- **Checkpoint B decision required:** accept this B1/B2 report and authorize the next scoped step, B3 account-bound HTTP participant tests. No B3, realtime, documentation, or broad regression work has started.
+
+### Phase B current execution status — 2026-08-23
+
+- **Completed:** Checkpoint A DB preflight and the authorized B1/B2 targeted verification.
+- **B1/B2 result:** 4 suites / 15 tests passed, 0 skipped, 0 failures against `smartlearning_test`; no `smartlearning_dev` access.
+- **Current state:** paused at **Checkpoint B**, awaiting manual confirmation before starting B3.
+- **Not started:** `test/participant-account.e2e-spec.ts` (B3), realtime verification (B4), B5 authoritative-document synchronization, and final regression gates.
+- **Next action after confirmation:** run only the B3 account-bound HTTP participant suite, then stop at Checkpoint C.
+- **Safety status:** no runtime source, Prisma schema, migration, design document, commit, reset, down migration, or broad deletion was performed. Existing CP5/F8 work was preserved.
+- **Working-tree note:** `tasks/todo.md` was already dirty before this execution; this execution only appended status records and did not overwrite the prior notes.
+- **Boundary note:** DB-backed test setup internally runs idempotent `npx prisma migrate deploy`; migration status was already up to date and no schema change was observed. This remains an explicit process-boundary discrepancy for Checkpoint B acceptance.
