@@ -506,6 +506,47 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
       await new Promise((resolve) => setTimeout(resolve, 200));
       expect(collector.events.get('counts.updated')).toBeUndefined();
       expect(JSON.stringify(collector.events)).not.toContain('joinedCount');
+
+      // Pre-register before close so the post-commit participant projection is observed.
+      const closeResultPromise = nextEvent(socket, 'result.updated');
+      const closeResponse = await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/close`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(closeResponse.status).toBe(201);
+
+      const closeResult = (await closeResultPromise) as {
+        visibility: string;
+        data: {
+          sessionQuestionId: string;
+          results: { status: string; totalResponses: number };
+        };
+      };
+      expect(closeResult.visibility).toBe('participant');
+      expect(closeResult.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
+      expect(closeResult.data.results).toMatchObject({
+        status: 'closed',
+        totalResponses: 1,
+      });
+      const closeResultJson = JSON.stringify(closeResult);
+      for (const field of [
+        'participantId',
+        'accountId',
+        'displayName',
+        'participantToken',
+        'sessionCode',
+        'joinedCount',
+        'votedCount',
+      ]) {
+        expect(closeResultJson).not.toContain(field);
+      }
+      expect(closeResultJson).not.toContain(student.accountId);
+      expect(closeResultJson).not.toContain(STUDENT.displayName);
+      expect(closeResultJson).not.toContain(
+        submitted.body.data.participantId as string,
+      );
     } finally {
       socket.close();
     }

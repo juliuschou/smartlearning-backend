@@ -135,25 +135,25 @@ tasks/                          # todo.md、lessons.md（檔案式任務追蹤�
 | P3 | R-4 submit/close 競態 + auto-close | ⬜ 待執行 |
 | P4 | E-1~E-5 工程基準補強 | ⬜ 部分非阻擋 |
 | — | Phase A 三題型 activation+submission | ✅ `594e9d3` |
-| — | Phase B 學生帳號 + 加選名冊 | ⬜ 待執行（見下方專節） |
+| — | Phase B 學生帳號 + 加選名冊 | ✅ B1–B4 runtime；B5 privacy evidence／文件同步收尾中 |
 
 ---
 
-## 3.2 Phase B — 學生帳號 + 加選名冊（待執行）
+## 3.2 Phase B — 學生帳號 + 加選名冊（B1–B4 已落地，B5 收尾中）
 
-新增 `student` role + `CourseEnrollment` + 登入學生綁定 `Participant`（保留匿名 session code fallback）。
-屬**需求升級**：既有設計明列「無學員帳號」為 MVP 限制，需同步更新設計文件 authorization matrix。
-計畫檔：`/home/user/.claude/plans/expressive-hopping-kitten.md`。**風險：高**（auth/權限/realtime handshake），分小切片、每切片獨立 e2e、可逐一切 rollback。
+Phase B 是對早期「無學員帳號」MVP 前提的需求升級：新增 `student` role、`CourseEnrollment` 與登入學生綁定 `Participant`，並保留匿名 session-code + participant-token fallback。admin 建立 student account；不提供公開 self-registration。`canCreateCourse` 對 student 永遠為 false，student 不得進入 teacher/admin owner paths。
 
-| 切片 | 內容 |
-|---|---|
-| B1 | `Account.role` CHECK 加 `student` + `roles.ts` `STUDENT`；`canCreateCourse` 對 student 強制 false；student 不可存取 owner 路徑（現有 service 只比 owner/admin，需加 student 拒絕）；沿用同一 cookie session 登入 |
-| B2 | 新 `enrollments` bounded context：`CourseEnrollment` model（`uq_course_enrollment_course_student`、status CHECK）；teacher owner/admin 加選/移除/列表、student `GET /me/courses`；Course archived 禁止新加選 |
-| B3 | `Participant` 加 optional `accountId`（FK `onDelete: SetNull` + `uq_participant_session_account`）；`ParticipantOrSessionGuard` 加 student cookie actor 分支；student cookie join/submit 取代 `X-Participant-Token`；匿名 session code fallback 保留 |
-| B4 | realtime student handshake：cookie 不再一律走 teacher path，role=student 進 `session:<id>` room（不進 teacher room）、收 `result.updated` 不收 `counts.updated`；順便統一 gateway 與 REST participant snapshot |
-| B5 | 隱私/redaction/設計文件：open_text results 維持匿名；更新設計文件「無學員帳號」限制與 authorization matrix（`Web Auth...`、`Backend NestJS 實作規劃.md:188-193`、`P0 核心需求基線.md`、`SPEC.md R-F5-5`、`BDD 場景.md`） |
+計畫檔：`/home/user/.claude/plans/b5-privacy-rosy-tower.md`。**風險：高**（auth/權限/realtime handshake）；B1–B4 runtime 已在目前 branch，B5 補 privacy regression、redaction boundary 與權威文件同步。
 
-**DoD**：student 可登入/加選/看名冊/我的課/cookie 加入 session 並作答；匿名 fallback 保留；realtime student 進 participant room 收 `result.updated` 不收 `counts.updated`；權限 regression student 存取 owner 路徑被拒；設計文件同步。
+| 切片 | 內容 | 狀態 |
+|---|---|---|
+| B1 | `Account.role` 含 `student`；`canCreateCourse` 對 student 強制 false；沿用同一 cookie session 登入；student 不可存取 owner 路徑 | ✅ runtime + targeted evidence |
+| B2 | `CourseEnrollment` bounded context；teacher owner/admin 加選/移除/列表、student `GET /me/courses`；archived Course 禁止新加選 | ✅ runtime + targeted evidence |
+| B3 | `Participant.accountId` optional relation；student cookie join/submit；匿名 session-code/token fallback 保留 | ✅ runtime；full HTTP/concurrency verification pending |
+| B4 | student handshake 只進 `session:<id>`，不進 teacher room；participant-safe `result.updated`，不收 `counts.updated`；撤銷後 disconnect | ✅ runtime + 14 realtime e2e tests |
+| B5 | open_text results 維持匿名；raw credential/token/answer 不進 log；同步 current authorization/result-governance wording | 🔄 focused privacy tests pass；docs/full regression status tracked separately |
+
+**DoD**：student 可登入/加選/看名冊/我的課/cookie 加入 session 並作答；匿名 fallback 保留；realtime student 進 participant room 收 `result.updated` 不收 `counts.updated`；權限 regression student 存取 owner path 被拒；open_text open/closed projection 不含 identity linkage；設計文件同步。B3 full HTTP/concurrency、全 repo regression、P0-06 archive/retention runtime 不因 B1–B5 code presence 自動視為完成。
 
 ---
 
@@ -245,7 +245,8 @@ npm run start:dev           # http://localhost:3000
 ### Realtime
 - **PostgreSQL 為唯一權威**；socket 僅通知，vote-to-reveal 仍由 REST 強制。
 - **commit-then-publish**：post-commit fire-and-forget，bus 失敗不得導致 mutation 失敗；per-listener error isolation。
-- handshake auth：teacher 用 Web session cookie（socket.io bypass express middleware，手動以 `cookie` 解析）；participant 用 token + session code。
+- handshake auth：teacher 用 Web session cookie（socket.io bypass express middleware，手動以 `cookie` 解析）；student cookie 需 active enrollment 並解析為 account-bound participant；anonymous participant 用 token + session code。
+- student realtime privacy：student 只進 `session:<liveSessionId>`，不進 `teacher:<liveSessionId>`；`counts.updated` 僅 teacher room；`result.updated` 逐 client 計算 participant-safe projection。open_text results 僅 `{ text }`，不得帶 participant/account/display/token linkage；raw credential、token、answer/open-text payload 不進 log。
 
 ### 程式碼風格
 - 三層切片：`api`（controller/dto）→ `application`（service）→ `domain`（純邏輯 + spec）。純邏輯放 domain 並寫 unit spec，I/O 隔離在 application。

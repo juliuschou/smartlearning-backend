@@ -49,6 +49,8 @@ describe('Pino auth redaction', () => {
             currentPassword: 'current-secret',
             newPassword: 'new-secret',
             tempPassword: 'temp-secret',
+            username: 'student-username-safe',
+            displayName: 'Student Display Safe',
           },
           headers: {
             cookie: '__Host-session=session-secret',
@@ -71,6 +73,9 @@ describe('Pino auth redaction', () => {
               participantToken: 'participant-token-secret',
               selectedOptionRefs: ['selected-option-secret'],
               textAnswer: 'text-answer-secret',
+              accountId: 'account-id-safe',
+              username: 'student-username-safe',
+              displayName: 'Student Display Safe',
             },
             selectedOptionRefs: ['top-level-option-secret'],
             textAnswer: 'top-level-answer-secret',
@@ -96,5 +101,11 @@ describe('Pino auth redaction', () => {
     expect(output).not.toContain('handshake-participant-secret');
     expect(output).not.toContain('handshake-session-secret');
     expect(output).not.toContain('handshake-cookie-secret');
+
+    // Authorized profile metadata and opaque account IDs are not credentials;
+    // avoid blanket redaction that would damage roster/session projections.
+    expect(output).toContain('student-username-safe');
+    expect(output).toContain('Student Display Safe');
+    expect(output).toContain('account-id-safe');
   });
 });

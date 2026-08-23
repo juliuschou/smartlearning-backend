@@ -386,9 +386,14 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 
 ## 6. 驗證狀態
 
-- 老師出題、課堂 teacher、學員使用、既有帳號管理：**code + DB-backed e2e 已驗證**（`smartlearning_test` 全綠；dev DB 已套用全部 12 支 migration）。
+> **Evidence boundary（2026-08-23）：** wire contract、runtime code、targeted DB-backed evidence 與 full regression 必須分開描述；本節不把 code presence 當作全量驗證，也不把 B4 realtime PASS 當作 P0-06 archive/retention PASS。
+
+- Phase B B1/B2：既有 targeted DB-backed evidence 為 4 suites / 15 tests；student role、`canCreateCourse=false`、owner-path denial、enrollment roster、`/me/courses` 與 archived-course guard 已有測試覆蓋。
+- Phase B B4：realtime targeted evidence 為 1 suite / 14 tests；student handshake/scope、participant-safe result push、teacher-only counts、enrollment/account revocation disconnect 與 anonymous fallback 已驗證。
+- B5 focused privacy evidence（本次）：Pino/question-results unit 2 suites / 14 tests PASS；open-text REST + realtime e2e 2 suites / 15 tests PASS，使用 guarded `smartlearning_test`。open/closed open_text projection 均維持匿名 plain-text shape，student realtime close result 不含 identity linkage 或 teacher-only counts。
+- B3 full HTTP/concurrency regression、完整 Phase B rerun、full unit/e2e/integration regression 與 B5 canonical sibling-document sync **仍須以最新 task log/status 為準，未因上述 targeted PASS 自動宣稱完成**。
 - US-F16 permission mutation：static typecheck/lint/format/build、unit 與 OpenAPI e2e 已通過；account-admin DB-backed e2e **Blocked**（`smartlearning_test` 的 PostgreSQL `localhost:5432` 回 `P1001`）。
-- 兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）已套用並通過 typecheck/lint/unit/e2e。
+- 兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）已套用並通過既有 typecheck/lint/unit/e2e。
 
 ---
 

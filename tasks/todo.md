@@ -1156,10 +1156,19 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 
 ### B5 — 隱私 / redaction / 設計文件
 
-- [ ] `pino-redaction.ts` 評估補 student profile/credential 欄位。
-- [ ] open_text results 維持匿名（不回 displayName/token）。
-- [ ] close 後 results 投影匿名；CourseEnrollment 關係保留（本期不做歷史查詢）。
-- [ ] 更新設計文件「無學員帳號」限制與 authorization matrix（`docs/.../Web Auth...`、`Backend NestJS 實作規劃.md:188-193`、`P0 核心需求基線.md`、`SPEC.md R-F5-5`、`BDD 場景.md`）。
+> **Status (2026-08-23): IN PROGRESS / targeted runtime evidence PASS.** Runtime behavior is present and the focused privacy regressions pass; this slice still has a sibling-document permission boundary and broad verification pending. No schema/migration change is in scope.
+
+- [x] `pino-redaction.ts` call-site audit completed; no reachable raw `passwordHash` logger payload found, so no blanket redaction was added for authorized `username`/`displayName`/opaque `accountId` projections.
+- [x] `pino-redaction.spec.ts` verifies credentials, cookies, tokens, answer payloads and open-text content are removed while authorized profile metadata remains available to projections.
+- [x] open_text results remain anonymous in open and closed REST projections; response objects contain only `{ text }` and no identity/token linkage.
+- [x] realtime student close `result.updated` remains participant-safe with no identity linkage or teacher-only counts.
+- [ ] synchronize all sibling design documents that still contain historical "no student account" wording; current workspace permission blocked edits to at least Web Auth and Backend NestJS planning files, while other approved addenda were applied.
+
+### B5 working notes
+
+- Focused unit: 2 suites / 14 tests PASS.
+- Focused DB-backed e2e: 2 suites / 15 tests PASS against guarded `smartlearning_test`.
+- B3 full HTTP/concurrency, full regression, and P0-06 archive/retention runtime remain separate pending scope.
 
 ## Phase B 驗證（DoD）
 
@@ -1496,3 +1505,15 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** B4-focused static gates — realtime event-bus unit 1 suite / 5 tests, typecheck, lint:check, format:check, and `git diff --check` all passed.
 - **RESULT:** B4 realtime targeted acceptance is verified: student cookie participant scope, snapshot privacy, participant-safe result push, teacher-only counts, enrollment/account revocation disconnects, anonymous fallback, and existing teacher lifecycle paths passed. No product source, schema, migration, environment file, commit, or unrelated CP5/F8 change was edited.
 - **BOUNDARY:** B3 full `participant-account.e2e-spec.ts`, B5 authoritative-document synchronization, and broad/full regression remain unverified and are not claimed complete. Existing non-blocking Nest legacy route-converter warnings remained.
+
+### B5 privacy targeted verification — 2026-08-23
+
+- **PASS:** `NODE_ENV=test npm run prisma:validate` — Prisma schema/config valid; no schema or migration edits.
+- **PASS:** `NODE_ENV=test npm test -- --runInBand src/common/observability/pino-redaction.spec.ts src/modules/live-sessions/domain/question-results.spec.ts` — 2 suites / 14 tests passed.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/open-text-live-flow.e2e-spec.ts test/live-session-realtime.e2e-spec.ts` — 2 suites / 15 tests passed against guarded `smartlearning_test`; no skips/failures. Evidence covers open/closed open_text anonymity, account-bound student cookie submit/results, realtime close projection identity negatives, teacher-only counts isolation, and anonymous fallback.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — `smartlearning_test`, 12 migrations, schema up to date.
+- **PASS:** `git diff --check` — no whitespace errors.
+- **PASS:** current backend `SKILL.md` and `docs/frontend-api-reference.md` now distinguish B1/B2/B4/B5 targeted evidence from B3/full regression pending; P0/SPEC/BDD/result-governance/domain/API/contract-review/historical-DB sibling addenda were applied where workspace permissions allowed.
+- **BLOCKED:** edits to sibling `Web Auth 與安全設計.md`, `Backend NestJS 實作規劃.md`, canonical `資料模型與 ER 設計.md`, and `即時同步與結果治理設計.md` were denied by the current permission classifier; no workaround was attempted. B5 docs sync is therefore not claimed complete.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` all passed on the current working tree.
+- **BOUNDARY:** B3 full HTTP/concurrency and broad/full regression remain pending. P0-06 archive/retention runtime remains out of scope.
