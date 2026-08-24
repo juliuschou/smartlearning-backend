@@ -326,4 +326,187 @@ describe('Account-bound participants (B3 e2e)', () => {
       .set('X-Participant-Token', anonymousToken);
     expect(anonymousSnapshot.status).toBe(200);
   });
+
+  it('removes access after a concurrent enrollment removal (TOCTOU lock guard)', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await provisionAndLogin(admin, {
+      ...TEACHER,
+      role: AccountRole.TEACHER,
+    });
+    const student = await provisionAndLogin(admin, {
+      ...STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    const session = await setupActiveSession(teacher.auth);
+
+    const enrolled = await teacher.auth.agent
+      .post(`/api/v1/courses/${session.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrolled.status).toBe(201);
+
+    const opened = await teacher.auth.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(opened.status).toBe(201);
+
+    // Cookie-join creates the account-bound participant first.
+    const joined = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(joined.status).toBe(201);
+
+    // Remove the enrollment while the student holds a cookie session.
+    const removed = await teacher.auth.agent
+      .delete(
+        `/api/v1/courses/${session.courseId}/enrollments/${student.accountId}`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(removed.status).toBe(200);
+
+    // Snapshot and submission revalidate active enrollment under the row lock.
+    const snapshotAfterRemoval = await student.auth.agent.get(
+      `/api/v1/live-sessions/${session.liveSessionId}/snapshot`,
+    );
+    expect(snapshotAfterRemoval.status).toBe(403);
+
+    const submittedAfterRemoval = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expect(submittedAfterRemoval.status).toBe(403);
+  });
+
+  it('rejects a cookie submission after the account is disabled (account lock guard)', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await provisionAndLogin(admin, {
+      ...TEACHER,
+      role: AccountRole.TEACHER,
+    });
+    const student = await provisionAndLogin(admin, {
+      ...STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    const session = await setupActiveSession(teacher.auth);
+
+    const enrolled = await teacher.auth.agent
+      .post(`/api/v1/courses/${session.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrolled.status).toBe(201);
+
+    const opened = await teacher.auth.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(opened.status).toBe(201);
+
+    const joined = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(joined.status).toBe(201);
+
+    // Admin disables the student account (step-up protected). The student's
+    // cookie session is invalidated, and any in-flight submission revalidation
+    // that holds the Account row lock sees status=disabled.
+    const stepUp = await admin.agent
+      .post('/api/v1/auth/step-up')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ password: ADMIN.password });
+    expect(stepUp.status).toBe(201);
+
+    const disabled = await admin.agent
+      .post(`/api/v1/admin/accounts/${student.accountId}/disable`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(disabled.status).toBe(201);
+    expect(disabled.body.data.status).toBe('disabled');
+
+    // The disabled student's cookie session is revoked, so the SessionGuard
+    // no longer resolves the account and the guarded mutation is rejected with
+    // 401. (Unlike enrollment removal, disable revokes every WebSession, so
+    // the failure surfaces at the guard rather than at the enrollment recheck
+    // inside the submission transaction. The account-row lock ordering that
+    // linearizes an in-flight submission against a concurrent disable is
+    // exercised by the service-level TOCTOU guard and the enrollment-removal
+    // re-check test above.)
+    const submittedAfterDisable = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expect(submittedAfterDisable.status).toBe(401);
+  });
+
+  it('cookie-joins the same session twice without duplicating the participant', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await provisionAndLogin(admin, {
+      ...TEACHER,
+      role: AccountRole.TEACHER,
+    });
+    const student = await provisionAndLogin(admin, {
+      ...STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    const session = await setupActiveSession(teacher.auth);
+
+    const enrolled = await teacher.auth.agent
+      .post(`/api/v1/courses/${session.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrolled.status).toBe(201);
+
+    const firstJoin = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(firstJoin.status).toBe(201);
+    const firstParticipantId = firstJoin.body.data.participantId as string;
+
+    // A second cookie-join under the same account/session reuses the existing
+    // row (idempotent under the liveSession row lock) instead of inserting a
+    // duplicate.
+    const secondJoin = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(secondJoin.status).toBe(201);
+    expect(secondJoin.body.data.participantId).toBe(firstParticipantId);
+
+    const count = await prisma.prisma.participant.count({
+      where: {
+        liveSessionId: session.liveSessionId,
+        accountId: student.accountId,
+      },
+    });
+    expect(count).toBe(1);
+  });
 });
