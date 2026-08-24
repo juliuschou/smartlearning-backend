@@ -1517,3 +1517,11 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **BLOCKED:** edits to sibling `Web Auth 與安全設計.md`, `Backend NestJS 實作規劃.md`, canonical `資料模型與 ER 設計.md`, and `即時同步與結果治理設計.md` were denied by the current permission classifier; no workaround was attempted. B5 docs sync is therefore not claimed complete.
 - **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` all passed on the current working tree.
 - **BOUNDARY:** B3 full HTTP/concurrency and broad/full regression remain pending. P0-06 archive/retention runtime remains out of scope.
+
+### 2026-08-24 — Config: DB-backed test command permission rules (project-local)
+
+- **AUTHORIZED:** the user explicitly authorized adding project-local permission rules so `NODE_ENV=test npm run test:e2e` and `NODE_ENV=test npm run test:integration` run without a permission prompt, scoped to `smartlearning_test`.
+- **DONE:** `.claude/settings.local.json` → `permissions.allow` now includes `Bash(NODE_ENV=test npm run test:e2e *)` and `Bash(NODE_ENV=test npm run test:integration *)`. The pre-existing `Bash(npm run *)` rule does not match env-prefixed commands, hence the explicit rules.
+- **VERIFIED:** `jq` confirms valid JSON and both rules present. `.claude/` is gitignored (not committed).
+- **NOTE:** the initial `Edit` was denied by the auto-mode permission classifier as self-modification; it succeeded only after the user granted explicit authorization (1+2). No workaround of the classifier was attempted.
+- **BOUNDARY:** no product source, Prisma schema, migration, environment file, design document, or commit changed. Phase B feature work remains at the B5 status above; B3 full HTTP/concurrency and broad/full regression remain pending.
