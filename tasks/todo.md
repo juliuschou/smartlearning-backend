@@ -1588,3 +1588,21 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/student-account.e2e-spec.ts test/enrollments.e2e-spec.ts test/openapi.e2e-spec.ts` — 3 suites / 8 tests passed, 0 failed, 0 skipped; student account, enrollment roster, `/me/courses`, archived/duplicate/reactivation/privacy and OpenAPI checks passed.
 - **BOUNDARY:** no source/schema/migration/environment/document change and no commit. Existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` remained non-blocking.
 - **RESULT:** Checkpoint B smartlearning_test verification complete; further contract corrections, documentation freeze, broader regression, or next checkpoint requires a separate authorization decision.
+
+### 2026-08-27 — BE-2 Checkpoint C smartlearning_test 驗證
+
+- **AUTHORIZED:** user explicitly authorized Checkpoint C DB-backed validation limited to `smartlearning_test`; the test setup's implicit idempotent `migrate deploy` + `truncateAll` stayed within that boundary.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — target `smartlearning_test` at `localhost:5432`, 12 migrations found, database schema up to date; no pending or failed migration.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/enrollments.e2e-spec.ts` — 1 suite / 2 tests passed, 0 failed, 0 skipped; `/me/courses` active-only behavior, removed-enrollment omission, archived existing-enrollment behavior, pagination/metadata/ordering, non-student 403, roster add/list/remove/reactivation, and cross-owner rejection passed.
+- **BOUNDARY:** no source/schema/migration/environment/document change and no commit. Existing Nest `LegacyRouteConverter` wildcard-route warnings remained non-blocking.
+- **RESULT:** Checkpoint C targeted database-backed E2E verification complete. This does not constitute full Phase B regression/sign-off; broader regression and any remaining contract/documentation freeze require separate scope/authorization.
+
+### 2026-08-27 — BE-2 Checkpoint D smartlearning_test 回歸驗證
+
+- **AUTHORIZED:** user explicitly authorized Checkpoint D DB-backed validation limited to PostgreSQL `smartlearning_test`; existing test setup implicit idempotent `migrate deploy` + `truncateAll` stayed within this boundary.
+- **PASS:** `NODE_ENV=test npm run prisma:validate` and `NODE_ENV=test npm run prisma:migrate:status` — schema valid; `smartlearning_test` at `localhost:5432`, 12 migrations, schema up to date.
+- **PASS:** targeted BE-2/BE-1/live-flow verification — 9 suites / 36 tests passed, 0 failed, 0 skipped. Covered identity, student account, enrollment, OpenAPI, participant account/revocation, anonymous poll, poll-multiple, and open-text live flows.
+- **PASS:** full regression — unit 22 suites / 123 tests; integration 3 suites / 12 tests; E2E 23 suites / 146 tests; all passed with 0 failures and 0 skips.
+- **PASS:** quality gates — `typecheck`, `lint:check`, `format:check`, `build`, and `git diff --check` all passed.
+- **BOUNDARY:** no source/schema/migration/environment/document changes and no commit. Existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` remained non-blocking.
+- **RESULT:** Checkpoint D verification complete. Full runtime regression and quality gates pass, but BE-2 contract-freeze DoD is not claimed until any remaining artifact/document synchronization and explicit release sign-off are completed.
