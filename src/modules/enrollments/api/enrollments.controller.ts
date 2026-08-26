@@ -9,7 +9,17 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiExtraModels,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
+import { MAX_PAGE_SIZE } from '../../../common/pagination';
 import {
   CsrfGuard,
   CurrentAccount,
@@ -32,11 +42,39 @@ import type {
 } from '../application/enrollment.service';
 
 @ApiTags('enrollments')
+@ApiExtraModels(
+  CreateEnrollmentDto,
+  EnrollmentDto,
+  EnrollmentStudentDto,
+  MyCourseDto,
+)
 @Controller({ path: '', version: '1' })
 export class EnrollmentsController {
   constructor(private readonly enrollments: EnrollmentService) {}
 
   @Post('courses/:courseId/enrollments')
+  @ApiOperation({ summary: 'Add or reactivate a student enrollment' })
+  @ApiParam({ name: 'courseId', format: 'uuid' })
+  @ApiBody({ type: CreateEnrollmentDto })
+  @ApiResponse({ status: 201, type: EnrollmentDto })
+  @ApiResponse({
+    status: 409,
+    description: 'Archived course cannot change its enrollment roster',
+    schema: {
+      type: 'object',
+      properties: {
+        data: { nullable: true, type: 'object' },
+        meta: { type: 'object' },
+        error: {
+          type: 'object',
+          properties: {
+            code: { enum: ['COURSE_NOT_EDITABLE'] },
+            field: { type: 'string', example: 'courseId' },
+          },
+        },
+      },
+    },
+  })
   @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async add(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
@@ -68,6 +106,34 @@ export class EnrollmentsController {
   }
 
   @Get('courses/:courseId/enrollments')
+  @ApiOperation({ summary: 'List a course enrollment roster' })
+  @ApiParam({ name: 'courseId', format: 'uuid' })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1 })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: MAX_PAGE_SIZE,
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'object',
+      properties: {
+        data: { type: 'array', items: { $ref: getSchemaPath(EnrollmentDto) } },
+        meta: {
+          type: 'object',
+          properties: {
+            page: { type: 'integer' },
+            pageSize: { type: 'integer' },
+            total: { type: 'integer' },
+            totalPages: { type: 'integer' },
+          },
+        },
+      },
+    },
+  })
   @UseGuards(SessionGuard, TeacherOrAdminGuard)
   async list(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
@@ -90,6 +156,25 @@ export class EnrollmentsController {
   }
 
   @Get('me/courses')
+  @ApiOperation({ summary: 'List the authenticated student courses' })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1 })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: MAX_PAGE_SIZE,
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'object',
+      properties: {
+        data: { type: 'array', items: { $ref: getSchemaPath(MyCourseDto) } },
+        meta: { type: 'object' },
+      },
+    },
+  })
   @UseGuards(SessionGuard, StudentGuard)
   async myCourses(
     @CurrentAccount() auth: AuthContext,

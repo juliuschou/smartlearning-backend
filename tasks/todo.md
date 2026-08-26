@@ -1614,3 +1614,21 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - [x] 保留 archive/retention 與 durable realtime/replay deferred；明確記載尚未取得 final sign-off，需 sync/release approval。
 - [ ] Final sign-off：待文件同步與 release approval。
 - **SCOPE:** 僅上述文件與本 evidence log；未修改 source/schema/migration/env/test/config；未執行 DB command；未 commit。
+
+### 2026-08-27 — BE-2 final sign-off review（READ-ONLY）
+
+- **RESULT:** BLOCKED；contract artifacts 已同步，但 BE-2 DoD 尚不能宣稱 final sign-off。
+- **BLOCKER 1 — archived error code:** WBS 要求 archived add/reactivation 為 409 `COURSE_NOT_EDITABLE`；目前 runtime/e2e 僅證明 generic 409 `CONFLICT`，尚無 code assertion。
+- **BLOCKER 2 — concurrency authority proof:** WBS 要求 concurrent add/remove 的 transaction lock／unique-constraint proof；目前僅有 sequential duplicate、remove、reactivation evidence。
+- **BLOCKER 3 — archived list/remove evidence:** source 允許 archived roster list/remove，但缺少明確 DB-backed test/contract decision；需先凍結並驗證政策。
+- **PARTIAL:** OpenAPI e2e 已驗證 paths、`/api/v1` prefix 與無 double prefix，但尚未針對 enrollment DTO、query parameters 與 response schema 做明確 assertions。
+- **PASS:** BE-2.1、BE-2.2、BE-2.3、BE-2.6 的主要 runtime／targeted evidence 與文件已對齊；BE-2.7 artifact sync 與 Checkpoint D regression evidence 已記錄。
+- **BOUNDARY:** release approval 未授予，不能由測試或文件同步推定；archive/retention、durable realtime/replay 仍 deferred。此次未執行 DB/test，未修改 runtime/schema/migration/env。
+
+### 2026-08-27 — BE-2 Contract Gaps Forward-Fix Slice
+
+- [x] Archived enrollment add/reactivation now returns 409 `COURSE_NOT_EDITABLE` with `field: courseId`; generic conflicts remain unchanged.
+- [x] Enrollment controller OpenAPI metadata documents UUID/path/query constraints, inner DTO/page schemas, and archived 409 envelope shape.
+- [x] Extended enrollment/OpenAPI contract assertions for archived behavior, unchanged rows, roster/my-courses visibility, ordering/idempotency, and concurrency scenarios.
+- [ ] Verify static formatting, typecheck, lint, build, and diff check; DB-backed tests remain intentionally unauthorized.
+- **BOUNDARY:** no Prisma schema/migration/env/config changes; no migration, truncate, DB-backed test, or service startup.

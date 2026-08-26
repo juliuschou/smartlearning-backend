@@ -8,10 +8,13 @@ import type {
 import { isUuid, newId, normalizeUuid } from '../../../common/crypto';
 import {
   ConflictError,
+  DomainError,
+  ErrorCode,
   ForbiddenError,
   NotFoundError,
   ValidationError,
 } from '../../../common/errors';
+import { HttpStatus } from '@nestjs/common';
 import {
   type Page,
   type PageRequest,
@@ -79,8 +82,10 @@ export class EnrollmentService {
       });
       this.assertCourseAccess(course, caller);
       if (course.status !== CourseStatus.DRAFT) {
-        throw new ConflictError(
+        throw new DomainError(
+          ErrorCode.COURSE_NOT_EDITABLE,
           'Archived courses cannot change their enrollment roster',
+          HttpStatus.CONFLICT,
           'courseId',
         );
       }

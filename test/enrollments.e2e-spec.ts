@@ -207,13 +207,22 @@ describe('Course enrollments (B2 e2e)', () => {
     expect(added.body.data).not.toHaveProperty('passwordHash');
     expect(added.body.data).not.toHaveProperty('cookieHash');
 
-    const duplicate = await teacher.auth.agent
-      .post(`/api/v1/courses/${courseId}/enrollments`)
-      .set('Origin', TEST_ORIGIN)
-      .set(CSRF_HEADER, teacher.auth.csrfToken)
-      .send({ studentAccountId: student.accountId });
+    const [duplicate, concurrentAdd] = await Promise.all([
+      teacher.auth.agent
+        .post(`/api/v1/courses/${courseId}/enrollments`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.auth.csrfToken)
+        .send({ studentAccountId: student.accountId }),
+      teacher.auth.agent
+        .post(`/api/v1/courses/${courseId}/enrollments`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.auth.csrfToken)
+        .send({ studentAccountId: student.accountId }),
+    ]);
     expect(duplicate.status).toBe(201);
+    expect(concurrentAdd.status).toBe(201);
     expect(duplicate.body.data.id).toBe(added.body.data.id);
+    expect(concurrentAdd.body.data.id).toBe(added.body.data.id);
     expect(
       await prisma.prisma.courseEnrollment.count({
         where: { courseId, studentAccountId: student.accountId },
@@ -266,6 +275,29 @@ describe('Course enrollments (B2 e2e)', () => {
     expect(reactivated.status).toBe(201);
     expect(reactivated.body.data.id).toBe(added.body.data.id);
     expect(reactivated.body.data.status).toBe('active');
+
+    const [racedAdd, racedRemove] = await Promise.all([
+      teacher.auth.agent
+        .post(`/api/v1/courses/${courseId}/enrollments`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.auth.csrfToken)
+        .send({ studentAccountId: student.accountId }),
+      teacher.auth.agent
+        .delete(`/api/v1/courses/${courseId}/enrollments/${student.accountId}`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.auth.csrfToken),
+    ]);
+    expect(racedAdd.status).toBe(201);
+    expect(racedRemove.status).toBe(200);
+    const racedRow = await prisma.prisma.courseEnrollment.findUniqueOrThrow({
+      where: { id: added.body.data.id },
+    });
+    expect(['active', 'removed']).toContain(racedRow.status);
+    expect(
+      await prisma.prisma.courseEnrollment.count({
+        where: { courseId, studentAccountId: student.accountId },
+      }),
+    ).toBe(1);
   });
 
   it('hides cross-owner courses and rejects non-student or archived targets', async () => {
@@ -317,6 +349,22 @@ describe('Course enrollments (B2 e2e)', () => {
       .send({ studentAccountId: otherTeacherAccountId });
     expect(nonStudent.status).toBe(404);
 
+    const existingEnrollment = await teacher.auth.agent
+      .post(`/api/v1/courses/${ownCourseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(existingEnrollment.status).toBe(201);
+    const beforeArchivedMutation =
+      await prisma.prisma.courseEnrollment.findUniqueOrThrow({
+        where: {
+          courseId_studentAccountId: {
+            courseId: ownCourseId,
+            studentAccountId: student.accountId,
+          },
+        },
+      });
+
     const archived = await teacher.auth.agent
       .post(`/api/v1/courses/${ownCourseId}/archive`)
       .set('Origin', TEST_ORIGIN)
@@ -329,6 +377,39 @@ describe('Course enrollments (B2 e2e)', () => {
       .set(CSRF_HEADER, teacher.auth.csrfToken)
       .send({ studentAccountId: student.accountId });
     expect(archivedAdd.status).toBe(409);
+    expect(archivedAdd.body.error.code).toBe('COURSE_NOT_EDITABLE');
+    expect(archivedAdd.body.error.field).toBe('courseId');
+
+    const archivedReactivate = await teacher.auth.agent
+      .post(`/api/v1/courses/${ownCourseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(archivedReactivate.status).toBe(409);
+    expect(archivedReactivate.body.error.code).toBe('COURSE_NOT_EDITABLE');
+    expect(archivedReactivate.body.error.field).toBe('courseId');
+    const afterArchivedMutation =
+      await prisma.prisma.courseEnrollment.findUniqueOrThrow({
+        where: { id: beforeArchivedMutation.id },
+      });
+    expect(afterArchivedMutation).toEqual(beforeArchivedMutation);
+
+    const archivedRoster = await teacher.auth.agent.get(
+      `/api/v1/courses/${ownCourseId}/enrollments`,
+    );
+    expect(archivedRoster.status).toBe(200);
+    expect(archivedRoster.body.data.data).toHaveLength(1);
+    expect(archivedRoster.body.data.data[0].status).toBe('active');
+    const archivedRemove = await teacher.auth.agent
+      .delete(`/api/v1/courses/${ownCourseId}/enrollments/${student.accountId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(archivedRemove.status).toBe(200);
+    const archivedRemoveAgain = await teacher.auth.agent
+      .delete(`/api/v1/courses/${ownCourseId}/enrollments/${student.accountId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(archivedRemoveAgain.status).toBe(200);
 
     const studentRoster = await student.auth.agent.get(
       `/api/v1/courses/${ownCourseId}/enrollments`,

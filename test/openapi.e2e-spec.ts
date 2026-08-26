@@ -41,6 +41,46 @@ describe('OpenAPI document (e2e)', () => {
     expect(paths).toContain('/health/ready');
     // No accidental /api/api/v1 double prefix.
     expect(paths.some((p) => p.startsWith('/api/api/'))).toBe(false);
+
+    const roster = res.body.paths['/api/v1/courses/{courseId}/enrollments'];
+    expect(roster.get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'courseId',
+          in: 'path',
+          required: true,
+        }),
+        expect.objectContaining({
+          name: 'page',
+          in: 'query',
+          schema: expect.objectContaining({ minimum: 1 }),
+        }),
+        expect.objectContaining({
+          name: 'pageSize',
+          in: 'query',
+          schema: expect.objectContaining({ minimum: 1, maximum: 100 }),
+        }),
+      ]),
+    );
+    expect(
+      roster.post.requestBody.content['application/json'].schema.$ref,
+    ).toContain('CreateEnrollmentDto');
+    expect(
+      roster.post.responses['201'].content['application/json'].schema.$ref,
+    ).toContain('EnrollmentDto');
+    expect(roster.post.responses['409'].description).toMatch(/Archived course/);
+
+    const myCourses = res.body.paths['/api/v1/me/courses'].get;
+    expect(myCourses.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'page', in: 'query' }),
+        expect.objectContaining({ name: 'pageSize', in: 'query' }),
+      ]),
+    );
+    expect(res.body.components.schemas.CreateEnrollmentDto).toBeDefined();
+    expect(res.body.components.schemas.EnrollmentDto).toBeDefined();
+    expect(res.body.components.schemas.EnrollmentStudentDto).toBeDefined();
+    expect(res.body.components.schemas.MyCourseDto).toBeDefined();
   });
 
   it('GET /api/docs → 200 Swagger UI HTML', async () => {
