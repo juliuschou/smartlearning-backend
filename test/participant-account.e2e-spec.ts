@@ -327,6 +327,153 @@ describe('Account-bound participants (B3 e2e)', () => {
     expect(anonymousSnapshot.status).toBe(200);
   });
 
+  it('keeps anonymous and account-bound participants independent in one session (BE-1.3)', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await provisionAndLogin(admin, {
+      ...TEACHER,
+      role: AccountRole.TEACHER,
+    });
+    const student = await provisionAndLogin(admin, {
+      ...STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    const session = await setupActiveSession(teacher.auth);
+
+    const enrolled = await teacher.auth.agent
+      .post(`/api/v1/courses/${session.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrolled.status).toBe(201);
+
+    const opened = await teacher.auth.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(opened.status).toBe(201);
+
+    const accountJoin = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(accountJoin.status).toBe(201);
+    expect(accountJoin.body.data.participantToken).toBeNull();
+    const accountParticipantId = accountJoin.body.data.participantId as string;
+
+    const anonymousJoin = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Same visible name' });
+    expect(anonymousJoin.status).toBe(201);
+    expect(anonymousJoin.body.data.participantToken).toEqual(
+      expect.any(String),
+    );
+    const anonymousParticipantId = anonymousJoin.body.data
+      .participantId as string;
+    const anonymousToken = anonymousJoin.body.data.participantToken as string;
+    expect(anonymousParticipantId).not.toBe(accountParticipantId);
+
+    const participants = await prisma.prisma.participant.findMany({
+      where: { liveSessionId: session.liveSessionId },
+      orderBy: { joinedAt: 'asc' },
+    });
+    expect(participants).toHaveLength(2);
+    expect(
+      participants.filter(
+        (participant) => participant.accountId === student.accountId,
+      ),
+    ).toHaveLength(1);
+    expect(
+      participants.filter((participant) => participant.accountId === null),
+    ).toHaveLength(1);
+    expect(
+      new Set(participants.map((participant) => participant.tokenHash)).size,
+    ).toBe(2);
+
+    const accountSnapshot = await student.auth.agent.get(
+      `/api/v1/live-sessions/${session.liveSessionId}/snapshot`,
+    );
+    expect(accountSnapshot.status).toBe(200);
+    expect(accountSnapshot.body.data.sessionQuestions[0]).toMatchObject({
+      id: session.sessionQuestionId,
+      hasSubmitted: false,
+    });
+
+    const anonymousSnapshot = await request(app.getHttpServer())
+      .get(`/api/v1/live-sessions/${session.liveSessionId}/snapshot`)
+      .set('X-Participant-Token', anonymousToken);
+    expect(anonymousSnapshot.status).toBe(200);
+    expect(anonymousSnapshot.body.data.sessionQuestions[0]).toMatchObject({
+      id: session.sessionQuestionId,
+      hasSubmitted: false,
+    });
+
+    const accountSubmission = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expect(accountSubmission.status).toBe(201);
+    expect(accountSubmission.body.data.participantId).toBe(
+      accountParticipantId,
+    );
+
+    const anonymousSubmission = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('X-Participant-Token', anonymousToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['b'],
+      });
+    expect(anonymousSubmission.status).toBe(201);
+    expect(anonymousSubmission.body.data.participantId).toBe(
+      anonymousParticipantId,
+    );
+
+    const submissions = await prisma.prisma.submission.findMany({
+      where: {
+        liveSessionId: session.liveSessionId,
+        sessionQuestionId: session.sessionQuestionId,
+      },
+    });
+    expect(submissions).toHaveLength(2);
+    expect(
+      new Set(submissions.map((submission) => submission.participantId)).size,
+    ).toBe(2);
+
+    const accountResults = await student.auth.agent.get(
+      `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/results`,
+    );
+    expect(accountResults.status).toBe(200);
+    expect(
+      accountResults.body.data.options.map(
+        (option: { count: number }) => option.count,
+      ),
+    ).toEqual([1, 1]);
+
+    const anonymousResults = await request(app.getHttpServer())
+      .get(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/results`,
+      )
+      .set('X-Participant-Token', anonymousToken);
+    expect(anonymousResults.status).toBe(200);
+    expect(
+      anonymousResults.body.data.options.map(
+        (option: { count: number }) => option.count,
+      ),
+    ).toEqual([1, 1]);
+    expect(anonymousResults.body.data).not.toHaveProperty('participantToken');
+    expect(anonymousResults.body.data).not.toHaveProperty('displayName');
+  });
+
   it('removes access after a concurrent enrollment removal (TOCTOU lock guard)', async () => {
     if (!dbReachable) return;
     const admin = await loginAs(ADMIN.username, ADMIN.password);
