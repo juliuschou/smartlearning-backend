@@ -1525,3 +1525,17 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **VERIFIED:** `jq` confirms valid JSON and both rules present. `.claude/` is gitignored (not committed).
 - **NOTE:** the initial `Edit` was denied by the auto-mode permission classifier as self-modification; it succeeded only after the user granted explicit authorization (1+2). No workaround of the classifier was attempted.
 - **BOUNDARY:** no product source, Prisma schema, migration, environment file, design document, or commit changed. Phase B feature work remains at the B5 status above; B3 full HTTP/concurrency and broad/full regression remain pending.
+
+### 2026-08-26 — BE-1.1 Account-bound Participant HTTP 驗收（TEST-ONLY）
+
+- **AUTHORIZED:** the user confirmed the Checkpoint-1 scope and the 3 new tests, then authorized the DB-backed e2e (Checkpoint 3) and the broad regression (Checkpoint 4). DB-backed runs touch `smartlearning_test` only (implicit idempotent `migrate deploy` + `truncateAll`, existing isolation).
+- **EDIT (TEST-ONLY):** `test/participant-account.e2e-spec.ts` — added 3 `it` blocks (net +223 lines), reusing existing helpers (`loginAs`, `provisionAndLogin`, `setupActiveSession`, `cookieValue`, `TEST_ORIGIN`); no runtime/schema/migration/other-test edits.
+  - `rejects a cookie-join when the student has no active enrollment` (BE-1.1.1 negative): not-enrolled student cookie join → 403 + no participant row (count=0).
+  - `returns participant-safe results through the student cookie (vote-to-reveal)` (BE-1.1.6): submitted student reads OPEN poll aggregate 200 with `options[i].isCorrect === undefined`; teacher projection 200 same shape; non-submitting enrolled student → 409 `RESULTS_NOT_REVEALED`.
+  - `rejects a cookie submission without a valid CSRF token or exact Origin` (BE-1.1.8): missing token / wrong token / wrong Origin (`http://evil.test`) → 403 `AUTH_CSRF_INVALID`; then a valid token+Origin → 201.
+- **BE-1.1 coverage:** all 8 sub-items now have assertions (1.1.1 ✓/✓, 1.1.2–1.1.5/1.1.7 pre-existing, 1.1.6 new, 1.1.8 new).
+- **PASS:** targeted e2e — `NODE_ENV=test npm run test:e2e -- test/participant-account.e2e-spec.ts --runInBand` → 1 suite / **8 passed, 0 failed, 0 skipped**.
+- **PASS:** full regression — typecheck, lint:check, format:check, build, `git diff --check` all passed; unit 22 suites / 123 tests; full e2e 22 suites / 136 tests; integration 3 suites / 12 tests; `prisma:migrate:status` → `smartlearning_test` 12 migrations, schema up to date.
+- **ENV NOTE:** the e2e subagent brought up the local Docker engine (Rancher Desktop) because Postgres was not initially listening; the existing `smart-learning-pg-dev` container then served `smartlearning_test` on 5432. No test data or other DB was affected.
+- **RESULT:** BE-1.1 acceptance met (8/8 covered, 0 skipped, 0 failed). No implementation bug surfaced; all 3 risk flags verified against source before writing (403 join path, poll `isCorrect` omission, CSRF/Origin fail-closed).
+- **BOUNDARY:** no commit made (per plan, commit only if the user asks). BE-1.2+ sub-item verification and any docs authorization-matrix sync remain out of this task's scope. Pre-existing non-blocking Nest legacy route-converter warnings remained.

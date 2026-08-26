@@ -509,4 +509,227 @@ describe('Account-bound participants (B3 e2e)', () => {
     });
     expect(count).toBe(1);
   });
+
+  // BE-1.1.1 negative: a student cookie-join without an active enrollment is
+  // rejected at the enrollment recheck (participant.service.ts
+  // findOrCreateAccountParticipant -> assertActiveEnrollment) before any
+  // participant row can be created.
+  it('rejects a cookie-join when the student has no active enrollment', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await provisionAndLogin(admin, {
+      ...TEACHER,
+      role: AccountRole.TEACHER,
+    });
+    const student = await provisionAndLogin(admin, {
+      ...STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    // Create an active session but deliberately do NOT add the student to the
+    // course roster.
+    const session = await setupActiveSession(teacher.auth);
+
+    const opened = await teacher.auth.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(opened.status).toBe(201);
+
+    const joined = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(joined.status).toBe(403);
+
+    // The rejected join must not create a participant row.
+    const count = await prisma.prisma.participant.count({
+      where: {
+        liveSessionId: session.liveSessionId,
+        accountId: student.accountId,
+      },
+    });
+    expect(count).toBe(0);
+  });
+
+  // BE-1.1.6: the student cookie results projection is participant-safe. For a
+  // poll, correctness has no meaning, so the proof is that no teacher-only
+  // field (e.g. OptionCountDto.isCorrect, which is quiz-only) leaks, and that
+  // the reveal gate blocks a non-submitter from viewing the OPEN aggregate
+  // while an enrolled submitter can.
+  it('returns participant-safe results through the student cookie (vote-to-reveal)', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await provisionAndLogin(admin, {
+      ...TEACHER,
+      role: AccountRole.TEACHER,
+    });
+    const student = await provisionAndLogin(admin, {
+      ...STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    const nonVotingStudent = await provisionAndLogin(admin, {
+      ...OTHER_STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    const session = await setupActiveSession(teacher.auth);
+
+    // Enroll both students; only `student` will submit.
+    for (const target of [student, nonVotingStudent]) {
+      const enrolled = await teacher.auth.agent
+        .post(`/api/v1/courses/${session.courseId}/enrollments`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.auth.csrfToken)
+        .send({ studentAccountId: target.accountId });
+      expect(enrolled.status).toBe(201);
+    }
+
+    const opened = await teacher.auth.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(opened.status).toBe(201);
+
+    const joined = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(joined.status).toBe(201);
+
+    const submitted = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expect(submitted.status).toBe(201);
+
+    // Submitting student sees the OPEN aggregate as participant-safe poll:
+    // no teacher-only correctness fields, aggregate counts included.
+    const studentResults = await student.auth.agent.get(
+      `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/results`,
+    );
+    expect(studentResults.status).toBe(200);
+    expect(studentResults.body.data.snapshotType).toBe('poll');
+    expect(studentResults.body.data.status).toBe('open');
+    expect(studentResults.body.data.options[0].count).toBe(1);
+    expect(studentResults.body.data.options[0].isCorrect).toBeUndefined();
+
+    // Teacher projection returns 200 and the same shape (poll has no
+    // correctness concept, so participant-safe == teacher-safe for poll).
+    const teacherResults = await teacher.auth.agent.get(
+      `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/results`,
+    );
+    expect(teacherResults.status).toBe(200);
+    expect(teacherResults.body.data.snapshotType).toBe('poll');
+    expect(teacherResults.body.data.options[0].isCorrect).toBeUndefined();
+
+    // Reveal-gate negative: a non-submitting enrolled student cannot read the
+    // OPEN aggregate (RESULTS_NOT_REVEALED 409).
+    const nonVotingJoin = await nonVotingStudent.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, nonVotingStudent.auth.csrfToken)
+      .send({});
+    expect(nonVotingJoin.status).toBe(201);
+
+    const gated = await nonVotingStudent.auth.agent.get(
+      `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/results`,
+    );
+    expect(gated.status).toBe(409);
+    expect(gated.body.error.code).toBe('RESULTS_NOT_REVEALED');
+  });
+
+  // BE-1.1.8: cookie mutations require a valid CSRF token and an exact Origin.
+  // CsrfGuard is a no-op for GETs, so the negative cases must hit a mutation
+  // (the cookie submission path runs CSRF before participant resolution).
+  it('rejects a cookie submission without a valid CSRF token or exact Origin', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await provisionAndLogin(admin, {
+      ...TEACHER,
+      role: AccountRole.TEACHER,
+    });
+    const student = await provisionAndLogin(admin, {
+      ...STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    const session = await setupActiveSession(teacher.auth);
+
+    const enrolled = await teacher.auth.agent
+      .post(`/api/v1/courses/${session.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrolled.status).toBe(201);
+
+    const opened = await teacher.auth.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(opened.status).toBe(201);
+
+    const joined = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(joined.status).toBe(201);
+
+    const submissionPath = `/api/v1/live-sessions/${session.liveSessionId}/submissions`;
+    const payload = {
+      sessionQuestionId: session.sessionQuestionId,
+      selectedOptionRefs: ['a'],
+    };
+
+    // 1. Missing X-CSRF-Token (correct Origin) -> 403 AUTH_CSRF_INVALID.
+    const missingToken = await student.auth.agent
+      .post(submissionPath)
+      .set('Origin', TEST_ORIGIN)
+      .set('Idempotency-Key', newId())
+      .send(payload);
+    expect(missingToken.status).toBe(403);
+    expect(missingToken.body.error.code).toBe('AUTH_CSRF_INVALID');
+
+    // 2. Wrong X-CSRF-Token (correct Origin) -> 403 AUTH_CSRF_INVALID.
+    const wrongToken = await student.auth.agent
+      .post(submissionPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, 'not-the-csrf-token')
+      .set('Idempotency-Key', newId())
+      .send(payload);
+    expect(wrongToken.status).toBe(403);
+    expect(wrongToken.body.error.code).toBe('AUTH_CSRF_INVALID');
+
+    // 3. Valid token but an Origin outside the allowlist -> 403
+    // AUTH_CSRF_INVALID. .env.test allows only http://localhost:3000.
+    const wrongOrigin = await student.auth.agent
+      .post(submissionPath)
+      .set('Origin', 'http://evil.test')
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .set('Idempotency-Key', newId())
+      .send(payload);
+    expect(wrongOrigin.status).toBe(403);
+    expect(wrongOrigin.body.error.code).toBe('AUTH_CSRF_INVALID');
+
+    // The same cookie can still submit successfully with a valid token+Origin,
+    // confirming only the CSRF/Origin gate blocked the requests above.
+    const valid = await student.auth.agent
+      .post(submissionPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .set('Idempotency-Key', newId())
+      .send(payload);
+    expect(valid.status).toBe(201);
+  });
 });
