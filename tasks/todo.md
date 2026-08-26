@@ -1562,3 +1562,29 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** focused test — `NODE_ENV=test npm run test:e2e -- --runInBand test/participant-account.e2e-spec.ts -t "keeps anonymous and account-bound participants independent" --silent` → 1 passed, 0 failed, 0 skipped.
 - **PASS:** `NODE_ENV=test npm run prisma:migrate:status` → `smartlearning_test`, 12 migrations, schema up to date; `git diff --check` passed.
 - **BOUNDARY:** this is a Checkpoint B implementation slice. Existing anonymous poll/result suites and broader quality gates remain for Checkpoint C; no commit made.
+
+### 2026-08-26 — BE-1.4 Phase B 回歸驗證規劃
+
+- **EDIT (DOC-ONLY):** expanded `docs/智學互動平台/00_專案規劃/智學互動平台剩餘工作WBS.md` BE-1.4 from a flat command list into an executable regression plan.
+- **PLAN:** added schema/migration preflight, B1–B5 targeted sequencing, OpenAPI, full unit/integration/e2e, static quality gates, baseline/evidence format, DB authorization boundary, implicit test migration note, stop conditions, and explicit sign-off DoD.
+- **CURRENT EVIDENCE:** BE-1.1 (8/8), BE-1.2 (9/9), BE-1.3 coexistence regression, B1/B2 (4 suites / 15 tests), B4 (1 suite / 14 tests), and B5 focused privacy (2 suites / 14 tests plus 2 e2e suites / 15 tests) are recorded as passing in this file; B3 full HTTP/concurrency, B5 authoritative-document synchronization, and broad/full regression remain pending unless separately verified.
+- **RESULTS:** no runtime, schema, migration, environment, or test source changed by this planning update; no database command was run; no commit made.
+
+### 2026-08-26 — BE-2 Checkpoint A contract inventory（READ-ONLY）
+
+- **SCOPE:** completed the Checkpoint A static inventory for BE-2 Student／Enrollment API stabilization. No migration, truncate, test execution, service startup, database mutation, or product-source change was performed.
+- **BASELINE:** branch `phase-b-student-enrollment`; HEAD `82f6a4e01b77f298131b80ba8f6b679fc93348af`; pre-existing working tree remains `M tasks/todo.md`, `?? AGENTS.md`, `?? CLAUDE.md`. The WBS BE-2 contract-freeze plan is present in `docs/智學互動平台/00_專案規劃/智學互動平台剩餘工作WBS.md`.
+- **IMPLEMENTATION INVENTORY:** student role／session projection is implemented under `src/modules/identity`; `CourseEnrollment` and `EnrollmentsController` are wired under `src/modules/enrollments`; routes are `/api/v1/courses/:courseId/enrollments` (POST/GET), `/api/v1/courses/:courseId/enrollments/:studentAccountId` (DELETE), and `/api/v1/me/courses` (GET). Phase B migrations are additive: student role, enrollment table, and participant account binding.
+- **CURRENT EVIDENCE:** `test/student-account.e2e-spec.ts`, `test/enrollments.e2e-spec.ts`, and `test/openapi.e2e-spec.ts` cover student login／role and owner-path denial, roster add/list/remove/reactivation/idempotency, `/me/courses`, archived-course add rejection, cross-owner privacy, and enrollment OpenAPI paths. Existing task evidence records B1/B2 as 4 suites／15 tests, 0 failure／0 skipped, against `smartlearning_test`; BE-1.1～1.3 and B4/B5 evidence remains separately scoped.
+- **FROZEN SEMANTICS TO CARRY FORWARD:** student `canCreateCourse=false`; active duplicate add returns the existing row; removed row re-add reactivates it; remove is idempotent; archived course rejects new/reactivation; non-owner teacher is existence-hidden with 404; student cannot manage roster and receives 403; mutation requires CSRF + exact Origin; response projections exclude credentials/tokens/hashes.
+- **GAPS／DECISIONS FOR CHECKPOINT B:** verify the above semantics against current source and OpenAPI output; explicitly settle active／removed roster list visibility, archived-course list/remove behavior, invalid／disabled target-account status and error-code mapping, pagination ordering／bounds, and whether any current frontend reference wording diverges from runtime. No contract decision was silently changed during Checkpoint A.
+- **NEXT GATE:** Checkpoint A static inventory is complete. Before DB-backed verification or any implementation/contract correction in Checkpoint B, obtain explicit authorization for guarded operations limited to `smartlearning_test`; test setup implicitly runs idempotent `migrate deploy` and `truncateAll`.
+
+### 2026-08-27 — BE-2 Checkpoint B smartlearning_test 驗證
+
+- **AUTHORIZED:** user authorized Checkpoint B DB-backed validation limited to `smartlearning_test`; test setup's implicit idempotent `migrate deploy` + `truncateAll` was within the stated authorization boundary.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — target `smartlearning_test` at `localhost:5432`, 12 migrations found, database schema up to date; no pending or failed migration.
+- **PASS:** `NODE_ENV=test npm run test:integration -- --runInBand test/identity.integration-spec.ts` — 1 suite / 7 tests passed, 0 failed, 0 skipped; PostgreSQL-backed student role/identity checks passed.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/student-account.e2e-spec.ts test/enrollments.e2e-spec.ts test/openapi.e2e-spec.ts` — 3 suites / 8 tests passed, 0 failed, 0 skipped; student account, enrollment roster, `/me/courses`, archived/duplicate/reactivation/privacy and OpenAPI checks passed.
+- **BOUNDARY:** no source/schema/migration/environment/document change and no commit. Existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` remained non-blocking.
+- **RESULT:** Checkpoint B smartlearning_test verification complete; further contract corrections, documentation freeze, broader regression, or next checkpoint requires a separate authorization decision.
