@@ -94,21 +94,21 @@ tasks/                          # todo.md、lessons.md（檔案式任務追蹤�
 | Submissions | `594e9d3` | Phase A：quiz/open_text/poll-multiple 作答（activation gate、DB constraint 放寬、answer-contract、result reveal privacy、per-client participant-safe push） |
 
 ### 尚未實作 / 已延後
-- **Phase B — 學生帳號 + 加選名冊**（下一階段，見下方專節）
+- **Phase B — 學生帳號 + 加選名冊**（B1–B4 runtime 已落地；BE-2 contract freeze 文件同步與 release approval 收尾）
 - **R-1 full**：outbox table、eventSeq/aggregateVersion、replay/sync.required、coalescing、Redis adapter、durable publisher、per-participant vote-to-reveal socket projection（部分已於 `594e9d3` 落地）
 - **CLI key** rotation/successor、pending_verification、key prefix/suffix、max active key、7/30/90/365 expiry；CLI `courses list`/`courses create`；CLI/batch rate limit
 - **S-5** 封存/保留：`POST /live-sessions/:id/archive` → ArchivedResult + 90 天保留 + 早刪/tombstone（需 S-1 先完成）
 - **R-4** auto-close scheduler + submit/close 競態 matrix
-- **E-2/E-3** `GET /auth/session` 回真實 `expiresAt`（目前空字串）；區分 `AUTH_SESSION_EXPIRED` vs `UNAUTHORIZED`
+- **E-2/E-3** `GET /auth/session` 已回真實 `expiresAt`；`AUTH_SESSION_EXPIRED` 與 `UNAUTHORIZED` 的細分仍屬後續 contract enhancement
 - **E-4** 非阻擋清理：Nest `LegacyRouteConverter`(`health/(.*)`、`/api/*`) 警告、`pg@9 client.query()` deprecation、`@Get('ready')` 重複 decorator
 - **E-5** 帳號管理 list/detail/update（目前只有 create/reset/disable/restore）
 - **API envelope Option B**（postprocess wrapper）
 - session-level `GET /live-sessions/:id/results`（M2 API catalog，隨 R-1）
 
-### Phase A 遺留（小，可隨時補）
-- batch validate preview 回應缺 `clientRef`（DTO 宣告但 `toPreview()` 沒填）— `question-batch.service.ts`。
-- gateway participant snapshot 與 REST participant snapshot 可見範圍不一致（gateway 用 `toLiveSessionDto` 未過濾 open question / hasSubmitted）— 建議 Phase B participant 改動時一起統一。
-- `GET /auth/session` 的 `expiresAt` 是空字串（既有問題，非 Phase A 引入）。
+### Phase A 遺留與已解決契約修正
+- batch validate preview 已回映輸入 `clientRef`，並由批次 e2e／既有回歸覆蓋。
+- participant snapshot／realtime visibility 與 account-bound participant、anonymous fallback 的邊界已由 Phase B/B5 tests 覆蓋；durable replay/outbox 仍屬 R-1 full deferred。
+- `GET /auth/session` 已回傳真實 `expiresAt`；過期錯誤碼的細分仍屬後續 E-2/E-3 enhancement。
 
 ---
 
@@ -165,7 +165,7 @@ Phase B 是對早期「無學員帳號」MVP 前提的需求升級：新增 `stu
 2. **CORS_ORIGIN 不可用 `*`**：CSRF Origin 檢查 fail-closed，`*` 會讓所有 authenticated mutation 回 403 `AUTH_CSRF_INVALID`。需設明確 origin。
 3. **回應永遠包在 envelope**：資料在 `response.body.data`；課程分頁是 `data.data` + `data.meta`；logout 為 `data: null`。
 4. **submission 回傳值正規化**：`selectedOptionRefs` 可能被正規化成 formal option UUID，而非送出的 optionRef → 前端比對答案需用 ID。
-5. **`GET /auth/session` 回傳 `expiresAt: ""`**（空字串）：不要用來判 session 過期；過期目前一律映射成 `UNAUTHORIZED`（`AUTH_SESSION_EXPIRED` 宣告但未使用）。
+5. **`GET /auth/session` 回傳真實 `expiresAt`**：前端可使用 ISO timestamp 作為 absolute expiry 顯示；authentication failure 仍依現行 error contract 處理。
 6. **OpenAPI**：`/api/docs` UI + `/api/docs-json` JSON only（無 YAML）；envelope 採選項 A — spec 顯示內層型別，前端 client 生成後手動解 `body.data`。型別亦可直接對齊 `src/modules/*/api/dto/*.ts`。
 7. **無 GET session detail 給老師的獨立 participant 路由**：S-2 已補 teacher 專屬 `GET /live-sessions/:id`（含 joined/voted）；participant 用 `GET /live-sessions/:id/snapshot`。
 8. **健康檢查不在 envelope**：`/health/*` 為原始回應，前端不可套用 envelope 解析。

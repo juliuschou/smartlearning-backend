@@ -1606,3 +1606,11 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** quality gates — `typecheck`, `lint:check`, `format:check`, `build`, and `git diff --check` all passed.
 - **BOUNDARY:** no source/schema/migration/environment/document changes and no commit. Existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` remained non-blocking.
 - **RESULT:** Checkpoint D verification complete. Full runtime regression and quality gates pass, but BE-2 contract-freeze DoD is not claimed until any remaining artifact/document synchronization and explicit release sign-off are completed.
+
+### 2026-08-27 — BE-2 contract freeze 文件同步（DOC-ONLY）
+
+- [x] 同步 frontend API reference、SKILL、Web Auth、API Schema、M2 Contract Review：student Web Session + active enrollment account-bound Participant、anonymous fallback、CSRF/exact Origin、roster/my-courses ordering/idempotency、OpenAPI 與 per-question results route。
+- [x] Refresh Checkpoint D evidence：smartlearning_test 12 migrations up to date；targeted 9 suites/36 tests；full unit 22/123、integration 3/12、E2E 23/146；quality gates pass；0 failure/skip。
+- [x] 保留 archive/retention 與 durable realtime/replay deferred；明確記載尚未取得 final sign-off，需 sync/release approval。
+- [ ] Final sign-off：待文件同步與 release approval。
+- **SCOPE:** 僅上述文件與本 evidence log；未修改 source/schema/migration/env/test/config；未執行 DB command；未 commit。

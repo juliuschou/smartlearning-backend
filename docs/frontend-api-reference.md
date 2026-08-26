@@ -2,7 +2,7 @@
 
 後端 NestJS 11，所有 HTTP 端點在 `/api/v1` prefix 下（health probes 除外）。本文為前端開發基準，涵蓋老師出題、課堂使用（teacher）、學員課堂使用三大功能。
 
-> 生成日期：2026-08-18。對應後端 commit：Phase B（student/enrollment/account-bound participant）+ 兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）。
+> 生成日期：2026-08-27。對應後端 runtime：Phase B student/enrollment/account-bound participant、兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）及 Checkpoint D 回歸證據；archive/retention 與 durable realtime/replay 仍為 deferred。
 
 ---
 
@@ -294,7 +294,16 @@ teacher 加入 `session:<id>` 與 `teacher:<id>` 兩個房間。事件 envelope�
 
 **MyCourseDto**：`{ enrollmentId, courseId, name, description, status, ownerAccountId, enrolledAt, createdAt, updatedAt }`
 
-### 3.2 課堂加入
+### 3.2 我的課程與名冊
+
+| Method | Path | 用途 | 守護 | 排序/語意 |
+|---|---|---|---|---|
+| GET | `/me/courses?page&pageSize` | 學員有效課程 | Session + Student | active only；`enrolledAt DESC, id DESC` |
+| POST | `/courses/:courseId/enrollments` | owner/admin 加選 student | Session + CSRF + exact Origin + owner/admin | active duplicate 回同一 row；removed row reactivation；archived 拒絕 |
+| GET | `/courses/:courseId/enrollments?page&pageSize` | owner/admin 看 roster | Session + owner/admin | active + removed；`createdAt ASC, id ASC`；non-owner teacher 404 |
+| DELETE | `/courses/:courseId/enrollments/:studentAccountId` | owner/admin 移除 student | Session + CSRF + exact Origin + owner/admin | idempotent；student 403 |
+
+### 3.3 課堂加入
 
 ```
 POST /live-sessions/:sessionCode/join
@@ -305,7 +314,7 @@ POST /live-sessions/:sessionCode/join
 
 回應：`{ participantId, participantToken: string|null, liveSession: { id, status, sessionCode }, currentQuestion: SessionQuestion|null }`
 
-### 3.3 Snapshot（隱藏正解）
+### 3.4 Snapshot（隱藏正解）
 
 ```
 GET /live-sessions/:id/snapshot
@@ -315,7 +324,7 @@ GET /live-sessions/:id/snapshot
 - participant（匿名 token / student cookie）→ participant projection：**只含 open 的 sessionQuestions + `hasSubmitted`**，隱藏 questionSelections 與正解
 - teacher/admin cookie → teacher projection（完整 snapshot）
 
-### 3.4 作答
+### 3.5 作答
 
 ```
 POST /live-sessions/:id/submissions
@@ -331,14 +340,14 @@ POST /live-sessions/:id/submissions
 
 **回應**：`{ id, liveSessionId, sessionQuestionId, participantId, selectedOptionRefs: string[]|null, textAnswer: string|null, submittedAt }`。refs 會 canonicalize 成正式 option UUID。首筆不可更新；同 key+同 payload replay。
 
-### 3.5 看結果
+### 3.6 看結果
 
 學員用同一個 `GET /live-sessions/:id/questions/:sessionQuestionId/results`：
 - **open 題**：須本人已 submit 才 reveal aggregate，否則 `409 RESULTS_NOT_REVEALED`
 - **closed 題**：全班可看
 - quiz correctness 僅 closed 後顯示
 
-### 3.6 學員即時推送
+### 3.7 學員即時推送
 
 學員 Socket.IO `/live`，student cookie 走 account-bound participant resolver，匿名用 `auth:{ participantToken, sessionCode }`。只加入 `session:<id>`（不進 teacher room）。
 
@@ -391,7 +400,8 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 - Phase B B1/B2：既有 targeted DB-backed evidence 為 4 suites / 15 tests；student role、`canCreateCourse=false`、owner-path denial、enrollment roster、`/me/courses` 與 archived-course guard 已有測試覆蓋。
 - Phase B B4：realtime targeted evidence 為 1 suite / 14 tests；student handshake/scope、participant-safe result push、teacher-only counts、enrollment/account revocation disconnect 與 anonymous fallback 已驗證。
 - B5 focused privacy evidence（本次）：Pino/question-results unit 2 suites / 14 tests PASS；open-text REST + realtime e2e 2 suites / 15 tests PASS，使用 guarded `smartlearning_test`。open/closed open_text projection 均維持匿名 plain-text shape，student realtime close result 不含 identity linkage 或 teacher-only counts。
-- B3 full HTTP/concurrency regression、完整 Phase B rerun、full unit/e2e/integration regression 與 B5 canonical sibling-document sync **仍須以最新 task log/status 為準，未因上述 targeted PASS 自動宣稱完成**。
+- Checkpoint D（2026-08-27）：smartlearning_test 12 migrations up to date；targeted 9 suites/36 tests；full unit 22/123、integration 3/12、E2E 23/146；typecheck/lint/format/build/git diff --check 全 PASS，0 failure/skip。
+- 尚未 final sign-off：需完成本次 sibling-document sync 並取得 release approval；archive/retention 與 durable realtime/replay 仍 deferred。
 - US-F16 permission mutation：static typecheck/lint/format/build、unit 與 OpenAPI e2e 已通過；account-admin DB-backed e2e **Blocked**（`smartlearning_test` 的 PostgreSQL `localhost:5432` 回 `P1001`）。
 - 兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）已套用並通過既有 typecheck/lint/unit/e2e。
 
@@ -408,5 +418,5 @@ curl http://localhost:3000/health/live
 curl http://localhost:3000/health/ready
 
 # OpenAPI（已啟用）
-curl http://localhost:3000/docs-json       # Swagger UI: http://localhost:3000/docs
+curl http://localhost:3000/api/docs-json       # Swagger UI: http://localhost:3000/api/docs
 ```
