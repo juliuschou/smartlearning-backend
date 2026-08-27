@@ -246,12 +246,21 @@ describe('Open-text live flow (e2e)', () => {
       .set(CSRF_HEADER, teacher.csrfToken);
     expect(openResponse.status).toBe(201);
 
-    // option refs are forbidden for open_text answers.
+    // Option refs are forbidden for open_text answers, including refs-only
+    // payloads and mixed payloads.
     const p1 = await joinParticipant(sessionCode, 'p1');
-    const withRefs = await request(app.getHttpServer())
+    const refsOnly = await request(app.getHttpServer())
       .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
       .set('X-Participant-Token', p1.participantToken)
       .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000301')
+      .send({ sessionQuestionId, selectedOptionRefs: ['whatever'] });
+    expect(refsOnly.status).toBe(400);
+    expect(refsOnly.body.error.code).toBe('FIELD_FORBIDDEN');
+
+    const withRefs = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
+      .set('X-Participant-Token', p1.participantToken)
+      .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000302')
       .send({
         sessionQuestionId,
         selectedOptionRefs: ['whatever'],
@@ -269,6 +278,28 @@ describe('Open-text live flow (e2e)', () => {
     expect(submission.status).toBe(201);
     expect(submission.body.data.textAnswer).toBe('我 學到了因果關係');
     expect(submission.body.data.selectedOptionRefs).toBeNull();
+
+    const submissionId = submission.body.data.id as string;
+    const persistedSubmission =
+      await prisma.prisma.submission.findUniqueOrThrow({
+        where: { id: submissionId },
+        select: { selectedOptionRefs: true, textAnswer: true },
+      });
+    expect(persistedSubmission.textAnswer).toBe('我 學到了因果關係');
+    expect(persistedSubmission.selectedOptionRefs).toBeNull();
+
+    const sqlNullCheck = await prisma.prisma.$queryRaw<
+      Array<{ selectedOptionRefsIsNull: boolean; selectedOptionRefs: unknown }>
+    >`
+      SELECT
+        selected_option_refs IS NULL AS "selectedOptionRefsIsNull",
+        selected_option_refs AS "selectedOptionRefs"
+      FROM submission
+      WHERE id = ${submissionId}::uuid
+    `;
+    expect(sqlNullCheck).toHaveLength(1);
+    expect(sqlNullCheck[0].selectedOptionRefsIsNull).toBe(true);
+    expect(sqlNullCheck[0].selectedOptionRefs).toBeNull();
 
     const p2 = await joinParticipant(sessionCode, 'p2');
     const submission2 = await request(app.getHttpServer())

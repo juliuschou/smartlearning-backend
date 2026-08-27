@@ -1812,3 +1812,15 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
 - **WARNING:** Existing NestJS legacy wildcard-route warnings remain non-blocking.
 - **RESULT:** BE-4.3 acceptance evidence is complete for the current multi-correct quiz runtime; no production/schema/migration changes were needed.
+
+### 2026-08-28 — BE-4.4 open-text acceptance coverage
+
+- [x] BE-4.4.1: retained and verified the complete open-text lifecycle from authoring through close and participant-safe results.
+- [x] BE-4.4.2: added explicit refs-only rejection alongside the existing refs-plus-text rejection; both return `400 FIELD_FORBIDDEN`.
+- [x] BE-4.4.3: verified the accepted submission through Prisma and parameterized SQL; `selected_option_refs IS NULL` and the returned column are both SQL `NULL`, while normalized `textAnswer` persists.
+- [x] BE-4.4.4: verified open and closed teacher/student results contain exactly `{ text }` response objects and no participant, account, display-name, session-code, or token linkage.
+- **EDIT (TEST-ONLY):** `test/open-text-live-flow.e2e-spec.ts`; no production, schema, migration, environment, or configuration changes.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/open-text-live-flow.e2e-spec.ts` — 1 suite / 1 test passed, 0 failed, 0 skipped, against guarded `smartlearning_test`.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **WARNING:** Existing NestJS `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` remain non-blocking.
+- **RESULT:** BE-4.4 acceptance evidence is complete for the current open-text runtime; no runtime or database change was required.
