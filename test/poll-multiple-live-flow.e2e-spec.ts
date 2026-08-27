@@ -191,11 +191,9 @@ describe('Poll multiple-choice live flow (e2e)', () => {
     expect(startResponse.status).toBe(201);
     const sessionQuestionId = startResponse.body.data.sessionQuestions[0]
       .id as string;
-    const optionRefs = (
-      startResponse.body.data.sessionQuestions[0].options as Array<{
-        optionRef: string;
-      }>
-    ).map((o) => o.optionRef);
+    const snapshotOptions = startResponse.body.data.sessionQuestions[0]
+      .options as Array<{ id: string; optionRef: string }>;
+    const optionRefs = snapshotOptions.map((o) => o.optionRef);
     expect(optionRefs.sort()).toEqual(['a', 'b', 'c']);
 
     const openResponse = await teacher.agent
@@ -219,6 +217,30 @@ describe('Poll multiple-choice live flow (e2e)', () => {
     expect(submission.status).toBe(201);
     expect(submission.body.data.selectedOptionRefs).toHaveLength(2);
 
+    const persistedOptions = await prisma.prisma.sessionQuestionOption.findMany(
+      {
+        where: { sessionQuestionId },
+        orderBy: { position: 'asc' },
+        select: { id: true, optionRef: true },
+      },
+    );
+    const formalIdsByRef = new Map(
+      persistedOptions.map((option) => [option.optionRef, option.id]),
+    );
+    const persistedSubmission =
+      await prisma.prisma.submission.findUniqueOrThrow({
+        where: { id: submission.body.data.id as string },
+      });
+    expect(persistedSubmission.selectedOptionRefs).toEqual([
+      formalIdsByRef.get(optionRefs[0]),
+      formalIdsByRef.get(optionRefs[1]),
+    ]);
+    expect(
+      (persistedSubmission.selectedOptionRefs as string[]).every((value) =>
+        persistedOptions.some((option) => option.id === value),
+      ),
+    ).toBe(true);
+
     // Idempotent replay with permuted order → same submission.
     const replay = await request(app.getHttpServer())
       .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
@@ -230,8 +252,31 @@ describe('Poll multiple-choice live flow (e2e)', () => {
       });
     expect(replay.status).toBe(201);
     expect(replay.body.data.id).toBe(submission.body.data.id);
+    expect(
+      await prisma.prisma.submission.count({
+        where: { participantId: p1.participantId, sessionQuestionId },
+      }),
+    ).toBe(1);
 
     const p2 = await joinParticipant(sessionCode, 'p2');
+    for (const [index, [selectedOptionRefs, expectedCode]] of [
+      [[], 'FIELD_REQUIRED'],
+      [[optionRefs[0], optionRefs[0]], 'OPTION_REF_INVALID'],
+      [
+        [optionRefs[0], optionRefs[1], optionRefs[2], optionRefs[0]],
+        'OPTION_REF_INVALID',
+      ],
+    ].entries()) {
+      const invalid = await request(app.getHttpServer())
+        .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
+        .set('X-Participant-Token', p2.participantToken)
+        .set('Idempotency-Key', `0190c6b8-0000-7000-8000-00000000041${index}`)
+        .send({ sessionQuestionId, selectedOptionRefs });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.data).toBeNull();
+      expect(invalid.body.error.code).toBe(expectedCode);
+    }
+
     const submission2 = await request(app.getHttpServer())
       .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
       .set('X-Participant-Token', p2.participantToken)
@@ -260,5 +305,37 @@ describe('Poll multiple-choice live flow (e2e)', () => {
     expect(counts.c).toBe(0);
     // Poll has no correctness metrics.
     expect(results.body.data).not.toHaveProperty('correctCount');
+
+    const closeQuestion = await teacher.agent
+      .post(
+        `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/close`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    expect(closeQuestion.status).toBe(201);
+    expect(closeQuestion.body.data.status).toBe('closed');
+
+    const persistedQuestion =
+      await prisma.prisma.sessionQuestion.findUniqueOrThrow({
+        where: { id: sessionQuestionId },
+        select: { status: true, closedAt: true },
+      });
+    expect(persistedQuestion.status).toBe('closed');
+    expect(persistedQuestion.closedAt).not.toBeNull();
+
+    const closedResults = await request(app.getHttpServer())
+      .get(
+        `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/results`,
+      )
+      .set('X-Participant-Token', p1.participantToken);
+    expect(closedResults.status).toBe(200);
+    expect(closedResults.body.data.totalResponses).toBe(2);
+
+    const afterCloseSubmission = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
+      .set('X-Participant-Token', p1.participantToken)
+      .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000403')
+      .send({ sessionQuestionId, selectedOptionRefs: [optionRefs[2]] });
+    expect(afterCloseSubmission.status).toBe(409);
   });
 });

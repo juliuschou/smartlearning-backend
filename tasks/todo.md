@@ -1788,3 +1788,15 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **WARNING:** Existing non-blocking NestJS `LegacyRouteConverter` wildcard-route warnings remain.
 - **BOUNDARY:** Lite in-process event bus only; durable outbox, event sequence/replay, Redis adapter, and BE-3.1 CP7 auto-close remain deferred.
 - **RESULT:** BE-3.2.1 through BE-3.2.5 acceptance coverage is complete for the current runtime; no production/schema/migration changes were needed.
+
+### 2026-08-28 — BE-4.2 poll-multiple acceptance tests
+
+- [x] Extended `test/poll-multiple-live-flow.e2e-spec.ts` through question close and post-close result visibility.
+- [x] Asserted permuted same-key replay returns the same submission and leaves exactly one DB row.
+- [x] Asserted wire option refs are persisted as formal `SessionQuestionOption` UUIDs.
+- [x] Added empty, duplicate, and over-cardinality invalid submission assertions with no accepted mutation.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/poll-multiple-live-flow.e2e-spec.ts` — 1 suite / 1 test passed, 0 skipped, against `smartlearning_test`.
+- **PASS:** `NODE_ENV=test npm run test:integration -- --runInBand --silent test/poll-submission.integration-spec.ts` — 1 suite / 8 tests passed, 0 failures; Jest reported an existing open-handle warning after completion.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **WARNING:** Existing NestJS legacy wildcard-route and `pg@9 client.query()` deprecation warnings remained non-blocking.
+- **RESULT:** BE-4.2 acceptance evidence is complete for the current poll-multiple runtime; no production/schema/migration changes were needed.
