@@ -648,18 +648,36 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
       });
 
     const counts = (await submitCounts) as {
-      data: { votedCount: number };
+      data: { joinedCount: number; votedCount: number };
     };
+    expect(counts.data.joinedCount).toBe(1);
     expect(counts.data.votedCount).toBe(1);
     const result = (await submitResult) as {
-      data: { sessionQuestionId: string; results: { totalResponses: number } };
+      data: {
+        sessionQuestionId: string;
+        results: {
+          totalResponses: number;
+          options: Array<{ optionRef: string; count: number }>;
+        };
+      };
     };
     expect(result.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
     expect(result.data.results.totalResponses).toBe(1);
+    expect(result.data.results.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ optionRef: 'a', count: 1 }),
+        expect.objectContaining({ optionRef: 'b', count: 0 }),
+        expect.objectContaining({ optionRef: 'c', count: 0 }),
+      ]),
+    );
 
     // The submitting participant receives a vote-to-reveal participant-safe
     // result.updated (poll single has no correctness metrics to leak).
     await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(participantCollector.events.get('counts.updated')).toBeUndefined();
+    const participantEventJson = JSON.stringify(participantCollector.events);
+    expect(participantEventJson).not.toContain('joinedCount');
+    expect(participantEventJson).not.toContain('votedCount');
     const participantResults =
       participantCollector.events.get('result.updated');
     expect(participantResults).toBeDefined();
@@ -711,10 +729,27 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     };
     expect(closed.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
     const result = (await closeResult) as {
-      data: { sessionQuestionId: string; results: { status: string } };
+      data: {
+        sessionQuestionId: string;
+        results: {
+          status: string;
+          totalResponses: number;
+          options: Array<{ optionRef: string; count: number }>;
+        };
+      };
     };
     expect(result.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
-    expect(result.data.results.status).toBe('closed');
+    expect(result.data.results).toMatchObject({
+      status: 'closed',
+      totalResponses: 0,
+    });
+    expect(result.data.results.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ optionRef: 'a', count: 0 }),
+        expect.objectContaining({ optionRef: 'b', count: 0 }),
+        expect.objectContaining({ optionRef: 'c', count: 0 }),
+      ]),
+    );
     teacherSocket.close();
   });
 

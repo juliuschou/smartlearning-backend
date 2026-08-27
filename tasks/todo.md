@@ -1770,3 +1770,21 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **WARNINGS:** Existing non-blocking NestJS `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` route patterns.
 - **CLEAN:** No source, schema, migration, environment, configuration, or tracked-file changes; working tree clean and no commit created.
 - **MANUAL FINAL REGRESSION SIGN-OFF:** User requested **“record final regression sign-off in tasks/todo.md”** and subsequently authorized a clean integration rerun. BE-3.1 post-generation final regression is accepted as passing: unit 22/123, integration 3/16, E2E 25/170, Prisma/static/build gates all pass. This does not claim deferred CP7 auto-close, durable BE-7 outbox/replay/event sequencing, or Redis adapter work.
+
+### 2026-08-27 — BE-3.2 Teacher projections acceptance coverage
+
+- [x] BE-3.2.1/.2: teacher session detail joined/voted counts across waiting, active/open, no-open, and closed states.
+- [x] BE-3.2.3: teacher result projection includes authoritative option counts after submit and close, with anonymous projection privacy.
+- [x] BE-3.2.4: participant REST and Socket.IO projections omit teacher-only joined/voted counts; participant room receives no `counts.updated` or teacher-only fields.
+- [x] BE-3.2.5: representative join/open/submit signals observe committed PostgreSQL rows, and publisher rejection does not fail or roll back committed mutations.
+- [x] Strengthened realtime assertions for teacher counts and option distributions; paired anonymous participant privacy checks with teacher delivery.
+- [x] Added explicit participant snapshot REST no-count assertion.
+
+#### Verification
+
+- **AUTHORIZED:** User authorized focused DB-backed E2E verification against `smartlearning_test`, including the guarded setup's implicit idempotent migration check and `truncateAll` cleanup.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-detail.e2e-spec.ts test/live-session-results.e2e-spec.ts test/live-session-realtime.e2e-spec.ts` — 3 suites / 39 tests passed / 0 skipped.
+- **PASS:** `npm run typecheck`; `npm run lint:check`; `npm run format:check`; `npm run build`; `git diff --check`.
+- **WARNING:** Existing non-blocking NestJS `LegacyRouteConverter` wildcard-route warnings remain.
+- **BOUNDARY:** Lite in-process event bus only; durable outbox, event sequence/replay, Redis adapter, and BE-3.1 CP7 auto-close remain deferred.
+- **RESULT:** BE-3.2.1 through BE-3.2.5 acceptance coverage is complete for the current runtime; no production/schema/migration changes were needed.

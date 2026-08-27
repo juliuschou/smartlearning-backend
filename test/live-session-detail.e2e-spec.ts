@@ -403,6 +403,24 @@ describe('LiveSession teacher detail (S-2 e2e)', () => {
     expect(detail.status).toBe(200);
   });
 
+  it('participant snapshot omits teacher-only joined/voted counts', async () => {
+    requireDatabase();
+    const ctx = await setupOpenSession();
+    const participant = await joinParticipant(ctx.sessionCode, 'learner');
+
+    const snapshot = await request(app.getHttpServer())
+      .get(`/api/v1/live-sessions/${ctx.liveSessionId}/snapshot`)
+      .set('X-Participant-Token', participant.participantToken);
+
+    expect(snapshot.status).toBe(200);
+    expect(snapshot.body.data).not.toHaveProperty('joinedCount');
+    expect(snapshot.body.data).not.toHaveProperty('votedCount');
+    expect(snapshot.body.data.sessionQuestions).toHaveLength(1);
+    expect(snapshot.body.data.sessionQuestions[0]).not.toHaveProperty(
+      'isCorrect',
+    );
+  });
+
   it('invalid UUID returns 400', async () => {
     requireDatabase();
     const ctx = await setupOpenSession();
