@@ -6,6 +6,7 @@ import { AccountRole } from '../src/modules/identity/domain/roles';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { CSRF_HEADER } from '../src/common/security';
 import { SESSION_COOKIE_NAME } from '../src/common/security';
+import { LiveSessionEventBus } from '../src/modules/realtime/live-session-event-bus';
 import { createTestApp } from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
@@ -921,6 +922,129 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
       expect(opened.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
     } finally {
       socket.close();
+    }
+  });
+
+  it.each([
+    ['LiveSessionService open', 'open'],
+    ['ParticipantService join', 'join'],
+    ['SubmissionService submit', 'submit'],
+  ])('%s publishes only after its transaction commits', async (_name, path) => {
+    requireDatabase();
+    const bus = app.get(LiveSessionEventBus);
+    let publishObserved: Promise<void> | undefined;
+    const publish = jest
+      .spyOn(bus, 'publish')
+      .mockImplementation(async (signal) => {
+        publishObserved = (async () => {
+          if (signal.type === 'question.opened') {
+            const row = await prisma.prisma.sessionQuestion.findUnique({
+              where: { id: signal.sessionQuestionId },
+            });
+            expect(row?.status).toBe('open');
+          } else if (signal.type === 'participant.joined') {
+            const row = await prisma.prisma.participant.findUnique({
+              where: { id: signal.participantId },
+            });
+            expect(row).not.toBeNull();
+          } else if (signal.type === 'submission.committed') {
+            const row = await prisma.prisma.submission.findFirst({
+              where: {
+                participantId: signal.participantId,
+                sessionQuestionId: signal.sessionQuestionId,
+              },
+            });
+            expect(row).not.toBeNull();
+          }
+        })();
+        await publishObserved;
+      });
+    try {
+      if (path === 'open') {
+        const ctx = await setupActiveSession();
+        const response = await ctx.teacher.agent
+          .post(
+            `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+          )
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, ctx.teacher.csrfToken);
+        expect(response.status).toBe(201);
+      } else if (path === 'join') {
+        const ctx = await setupActiveSession(false);
+        const response = await request(app.getHttpServer())
+          .post(`/api/v1/live-sessions/${ctx.sessionCode}/join`)
+          .send({ displayName: 'p1' });
+        expect(response.status).toBe(201);
+      } else {
+        const ctx = await setupActiveSession();
+        await ctx.teacher.agent
+          .post(
+            `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+          )
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, ctx.teacher.csrfToken);
+        const participant = await joinParticipant(ctx.sessionCode, 'p1');
+        const response = await request(app.getHttpServer())
+          .post(`/api/v1/live-sessions/${ctx.liveSessionId}/submissions`)
+          .set('X-Participant-Token', participant.participantToken)
+          .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000601')
+          .send({
+            sessionQuestionId: ctx.sessionQuestionId,
+            selectedOptionRefs: [ctx.optionRefs.a],
+          });
+        expect(response.status).toBe(201);
+      }
+      await publishObserved;
+    } finally {
+      publish.mockRestore();
+    }
+  });
+
+  it('publisher rejection does not fail or roll back representative mutations', async () => {
+    requireDatabase();
+    const bus = app.get(LiveSessionEventBus);
+    const publish = jest
+      .spyOn(bus, 'publish')
+      .mockRejectedValue(new Error('publisher unavailable'));
+    try {
+      const ctx = await setupActiveSession();
+      const joined = await request(app.getHttpServer())
+        .post(`/api/v1/live-sessions/${ctx.sessionCode}/join`)
+        .send({ displayName: 'p1' });
+      expect(joined.status).toBe(201);
+      const participant = await prisma.prisma.participant.findUnique({
+        where: { id: joined.body.data.participantId },
+      });
+      expect(participant).not.toBeNull();
+      const opened = await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(opened.status).toBe(201);
+      const question = await prisma.prisma.sessionQuestion.findUnique({
+        where: { id: ctx.sessionQuestionId },
+      });
+      expect(question?.status).toBe('open');
+      const submitted = await request(app.getHttpServer())
+        .post(`/api/v1/live-sessions/${ctx.liveSessionId}/submissions`)
+        .set('X-Participant-Token', joined.body.data.participantToken)
+        .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000602')
+        .send({
+          sessionQuestionId: ctx.sessionQuestionId,
+          selectedOptionRefs: [ctx.optionRefs.a],
+        });
+      expect(submitted.status).toBe(201);
+      const submission = await prisma.prisma.submission.findFirst({
+        where: {
+          participantId: joined.body.data.participantId,
+          sessionQuestionId: ctx.sessionQuestionId,
+        },
+      });
+      expect(submission).not.toBeNull();
+    } finally {
+      publish.mockRestore();
     }
   });
 });

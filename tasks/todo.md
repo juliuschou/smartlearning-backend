@@ -1724,10 +1724,11 @@ The verification agent confirmed the working tree was unchanged by these checks.
 
 ### 2026-08-27 — BE-3.1 CP6 Post-commit realtime proof
 
-- [ ] Verify commit-before-publish ordering for lifecycle signals and preserve pre-mutation listener registration.
-- [ ] Verify event-bus/publisher failure cannot fail or roll back committed REST mutations.
-- [ ] Verify teacher, anonymous participant, and account-bound student projections remain visibility-safe.
-- [ ] Run focused realtime unit/E2E/integration verification against `smartlearning_test` only, then static gates.
+- [x] Add deterministic DB-backed commit-before-publish and publisher-rejection proof tests.
+- [x] Verify commit-before-publish ordering for lifecycle signals and preserve pre-mutation listener registration.
+- [x] Verify event-bus/publisher failure cannot fail or roll back committed REST mutations.
+- [x] Verify teacher, anonymous participant, and account-bound student projections remain visibility-safe.
+- [x] Run focused realtime unit/E2E/integration verification against `smartlearning_test` only, then static gates.
 - [ ] Record sanitized evidence and manual Checkpoint 6 review; do not claim CP7 auto-close or durable BE-7 replay.
 
 **Risk & rollback:** Medium; prefer additive test coverage and revert only the focused source/test changes if a verified runtime defect is found. No migration, reset, truncate outside guarded test setup, or destructive rollback.
@@ -1742,3 +1743,30 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` — 1 suite / 14 tests, 0 failures, 0 skips.
 - **COVERAGE:** existing focused realtime suite verifies pre-mutation listener registration, lifecycle signals, Socket.IO delivery, participant-safe projections, teacher-only counts/results, vote-to-reveal targeting, and account/enrollment revocation behavior.
 - **BOUNDARY:** no new CP6-specific deterministic publish-rejection/committed-state test or transaction-held commit-before-event proof was added in this preflight; adjacent regression and manual Checkpoint 6 review remain pending. Lite bus only; durable outbox/eventSeq/replay/Redis remain deferred.
+
+#### CP6 implementation results
+
+- [x] Added DB-backed deterministic commit-before-publish assertions for representative `LiveSessionService`, `ParticipantService`, and `SubmissionService` mutations. The mocked publisher queries PostgreSQL state from inside the publish call and verifies the mutation is already committed.
+- [x] Added publisher rejection isolation coverage across join, question open, and submission: REST mutations still return 201 and committed rows remain present when the event bus rejects.
+- [x] Preserved the existing pre-mutation Socket.IO listener registration coverage in `test/live-session-realtime.e2e-spec.ts`.
+- [x] No production, schema, migration, configuration, or durable realtime changes were required.
+
+#### CP6 verification
+
+- **PASS:** `npx prettier --write test/live-session-realtime.e2e-spec.ts`
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` — 1 suite / 18 tests, 0 failures, 0 skips.
+- **PASS:** `npm run typecheck`; `npm run lint:check`; `npm run format:check`; `npm run build`; `git diff --check`.
+- **MANUAL CHECKPOINT 6 SIGN-OFF:** User confirmed **“Checkpoint 6 verified”** on 2026-08-27. CP6 automated commit-before-publish, publisher-failure isolation, and visibility-safe realtime evidence is accepted; this sign-off does not approve CP7 or deferred BE-7 durable outbox/replay/event sequencing.
+
+### 2026-08-27 — BE-3.1 final regression sign-off
+
+- **AUTHORIZED:** User authorized the post-`prisma:generate` BE-3.1 regression against PostgreSQL `smartlearning_test`, including the guarded test setup's implicit idempotent migration check and `truncateAll` cleanup.
+- **PASS:** `npm run prisma:generate` — Prisma Client 7.9.1 generated successfully.
+- **PASS:** `npm test -- --runInBand` — 22 suites / 123 tests.
+- **PASS:** `NODE_ENV=test npm run test:integration -- --runInBand` — 3 suites / 16 tests, 0 failed, 0 skipped; clean serialized rerun after competing processes ended.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand` — 25 suites / 170 tests, 0 skipped; serialized after competing E2E processes completed.
+- **PASS:** `npm run prisma:validate`; `NODE_ENV=test npm run prisma:migrate:status` — schema valid and `smartlearning_test` up to date.
+- **PASS:** `npm run typecheck`; `npm run lint:check`; `npm run format:check`; `npm run build`; `git diff --check`.
+- **WARNINGS:** Existing non-blocking NestJS `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` route patterns.
+- **CLEAN:** No source, schema, migration, environment, configuration, or tracked-file changes; working tree clean and no commit created.
+- **MANUAL FINAL REGRESSION SIGN-OFF:** User requested **“record final regression sign-off in tasks/todo.md”** and subsequently authorized a clean integration rerun. BE-3.1 post-generation final regression is accepted as passing: unit 22/123, integration 3/16, E2E 25/170, Prisma/static/build gates all pass. This does not claim deferred CP7 auto-close, durable BE-7 outbox/replay/event sequencing, or Redis adapter work.
