@@ -1669,3 +1669,13 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
 - **WARNINGS:** existing non-blocking Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*`; no failures or flakes.
 - **RESULT:** CP4 full regression verification passed with full regression confidence. No runtime, schema, migration, environment, configuration, or test-source changes were made; only this evidence log was updated.
+
+### 2026-08-27 — BE-3.1 CP4 專項驗證（coverage review）
+
+- **AUTHORIZED:** user requested entry into BE-3.1 CP4 specialized verification; any DB-backed activity was limited to `smartlearning_test`. No development DB operation or source/test modification was performed.
+- **PASS／PARTIAL:** existing evidence covers owner success, unauthenticated `401`, missing CSRF `403`, non-owner teacher `404` existence hiding, common envelope/filter behavior, and selected redaction/privacy projections.
+- **GAPS:** no dedicated student wrong-role `403` control-route test; no admin control-route success; wrong-CSRF and non-exact-Origin cases are covered on submission but not directly on each control route; control-route E2E does not systematically assert the complete envelope; no close/cancel-specific log-capture assertion.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-close-cancel.e2e-spec.ts test/live-session-detail.e2e-spec.ts test/student-account.e2e-spec.ts test/api-envelope.e2e-spec.ts` — 4 suites / 24 tests passed, 0 skipped.
+- **PASS:** `NODE_ENV=test npm test -- --runInBand src/common/observability/pino-redaction.spec.ts src/modules/live-sessions/domain/live-session-status.spec.ts src/modules/live-sessions/domain/question-results.spec.ts` — 3 suites / 18 tests passed, 0 skipped.
+- **PRECHECK:** `smartlearning_test` is reachable with 12 migrations applied and schema up to date; no manual migration was run. Existing warnings include Nest legacy wildcard routes and a pg@9 `client.query()` deprecation warning.
+- **RESULT:** BE-3.1 CP4 remains **BLOCKED／PARTIAL** despite the targeted suites passing: wrong-CSRF and wrong-Origin control-route evidence, student wrong-role, admin success, systematic control-route envelope assertions, close/cancel log-capture, and manual Checkpoint 4 review remain outstanding. Do not advance to CP5 or infer release sign-off.
