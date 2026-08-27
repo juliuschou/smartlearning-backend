@@ -1800,3 +1800,15 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
 - **WARNING:** Existing NestJS legacy wildcard-route and `pg@9 client.query()` deprecation warnings remained non-blocking.
 - **RESULT:** BE-4.2 acceptance evidence is complete for the current poll-multiple runtime; no production/schema/migration changes were needed.
+
+### 2026-08-28 — BE-4.3 quiz acceptance tests
+
+- [x] Extended `test/quiz-live-flow.e2e-spec.ts` with formal snapshot-option UUID persistence assertions.
+- [x] Added invalid quiz submission coverage for empty, duplicate, unknown, and over-cardinality selections, with per-participant no-row assertions.
+- [x] Added immutable submission conflict coverage for a changed answer using an existing idempotency key.
+- [x] Strengthened teacher correctness projection assertions (`isCorrect` flags), close persistence (`closed`/`closedAt`), post-close visibility for an unsubmitted participant, and post-close submission rejection.
+- **INITIAL TEST DEFECT:** invalid cases reused the participant that had already submitted; the runtime correctly returned `409 SUBMISSION_CONFLICT` before answer validation. The test was corrected to use a fresh participant per invalid case.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/quiz-live-flow.e2e-spec.ts` — 1 suite / 1 test passed, 0 skipped, against guarded `smartlearning_test`.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **WARNING:** Existing NestJS legacy wildcard-route warnings remain non-blocking.
+- **RESULT:** BE-4.3 acceptance evidence is complete for the current multi-correct quiz runtime; no production/schema/migration changes were needed.

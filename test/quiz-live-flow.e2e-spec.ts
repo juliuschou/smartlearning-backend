@@ -236,6 +236,30 @@ describe('Quiz live flow (e2e)', () => {
     expect(correctSubmission.status).toBe(201);
     expect(correctSubmission.body.data.textAnswer).toBeNull();
 
+    const persistedOptions = await prisma.prisma.sessionQuestionOption.findMany(
+      {
+        where: { sessionQuestionId },
+        orderBy: { position: 'asc' },
+        select: { id: true, optionRef: true },
+      },
+    );
+    const formalIdsByRef = new Map(
+      persistedOptions.map((option) => [option.optionRef, option.id]),
+    );
+    const persistedSubmission =
+      await prisma.prisma.submission.findUniqueOrThrow({
+        where: { id: correctSubmission.body.data.id as string },
+      });
+    expect(persistedSubmission.selectedOptionRefs).toEqual([
+      formalIdsByRef.get('three'),
+      formalIdsByRef.get('two'),
+    ]);
+    expect(
+      (persistedSubmission.selectedOptionRefs as string[]).every((value) =>
+        persistedOptions.some((option) => option.id === value),
+      ),
+    ).toBe(true);
+
     // Idempotent replay: same key, permuted order → same submission (order-independent fingerprint).
     const replay = await request(app.getHttpServer())
       .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
@@ -253,6 +277,41 @@ describe('Quiz live flow (e2e)', () => {
       .send({ sessionQuestionId, selectedOptionRefs: ['two', 'two'] });
     expect(duplicate.status).toBe(400);
     expect(duplicate.body.error.code).toBe('OPTION_REF_INVALID');
+
+    for (const [index, [selectedOptionRefs, expectedCode]] of [
+      [[], 'FIELD_REQUIRED'],
+      [['two', 'three', 'four', 'extra'], 'OPTION_REF_INVALID'],
+      [['missing'], 'OPTION_REF_INVALID'],
+    ].entries()) {
+      const invalidParticipant = await joinParticipant(
+        sessionCode,
+        `invalid-${index}`,
+      );
+      const invalid = await request(app.getHttpServer())
+        .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
+        .set('X-Participant-Token', invalidParticipant.participantToken)
+        .set('Idempotency-Key', `0190c6b8-0000-7000-8000-00000000021${index}`)
+        .send({ sessionQuestionId, selectedOptionRefs });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.data).toBeNull();
+      expect(invalid.body.error.code).toBe(expectedCode);
+      expect(
+        await prisma.prisma.submission.count({
+          where: {
+            participantId: invalidParticipant.participantId,
+            sessionQuestionId,
+          },
+        }),
+      ).toBe(0);
+    }
+
+    const conflicting = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
+      .set('X-Participant-Token', correct.participantToken)
+      .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000202')
+      .send({ sessionQuestionId, selectedOptionRefs: ['two'] });
+    expect(conflicting.status).toBe(409);
+    expect(conflicting.body.error.code).toBe('SUBMISSION_CONFLICT');
 
     // Results while OPEN: participant who submitted sees counts but NOT correctness metrics.
     const openResults = await request(app.getHttpServer())
@@ -278,6 +337,11 @@ describe('Quiz live flow (e2e)', () => {
     expect(teacherOpenResults.body.data.correctCount).toBe(1);
     expect(teacherOpenResults.body.data.incorrectCount).toBe(1);
     expect(teacherOpenResults.body.data.correctnessRate).toBe(0.5);
+    expect(
+      (
+        teacherOpenResults.body.data.options as Array<{ isCorrect?: boolean }>
+      ).map((option) => option.isCorrect),
+    ).toEqual([true, true, false]);
 
     // Participant who has NOT submitted cannot see results while open.
     const unsubmitted = await joinParticipant(sessionCode, 'lurker');
@@ -297,6 +361,14 @@ describe('Quiz live flow (e2e)', () => {
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, teacher.csrfToken);
     expect(closeResponse.status).toBe(201);
+    expect(closeResponse.body.data.status).toBe('closed');
+    const persistedQuestion =
+      await prisma.prisma.sessionQuestion.findUniqueOrThrow({
+        where: { id: sessionQuestionId },
+        select: { status: true, closedAt: true },
+      });
+    expect(persistedQuestion.status).toBe('closed');
+    expect(persistedQuestion.closedAt).not.toBeNull();
 
     const closedResults = await request(app.getHttpServer())
       .get(
@@ -310,6 +382,25 @@ describe('Quiz live flow (e2e)', () => {
     const revealedOptions = closedResults.body.data.options as Array<{
       isCorrect?: boolean;
     }>;
-    expect(revealedOptions.some((o) => o.isCorrect === true)).toBe(true);
+    expect(revealedOptions.map((o) => o.isCorrect)).toEqual([
+      true,
+      true,
+      false,
+    ]);
+
+    const lurkerClosedResults = await request(app.getHttpServer())
+      .get(
+        `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/results`,
+      )
+      .set('X-Participant-Token', unsubmitted.participantToken);
+    expect(lurkerClosedResults.status).toBe(200);
+    expect(lurkerClosedResults.body.data.correctCount).toBe(1);
+
+    const afterCloseSubmission = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
+      .set('X-Participant-Token', unsubmitted.participantToken)
+      .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000204')
+      .send({ sessionQuestionId, selectedOptionRefs: ['two', 'three'] });
+    expect(afterCloseSubmission.status).toBe(409);
   });
 });
