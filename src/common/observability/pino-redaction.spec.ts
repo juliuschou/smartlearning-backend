@@ -15,6 +15,9 @@ describe('Pino auth redaction', () => {
         'res.headers["set-cookie"]',
         'res.body.data.selectedOptionRefs',
         'res.body.data.textAnswer',
+        'req.handshake.auth.participantToken',
+        'req.handshake.auth.sessionCode',
+        'req.handshake.headers.cookie',
       ]),
     );
     expect(PINO_REDACT_REMOVE).toBe(true);
@@ -46,10 +49,19 @@ describe('Pino auth redaction', () => {
             currentPassword: 'current-secret',
             newPassword: 'new-secret',
             tempPassword: 'temp-secret',
+            username: 'student-username-safe',
+            displayName: 'Student Display Safe',
           },
           headers: {
             cookie: '__Host-session=session-secret',
             'x-csrf-token': 'csrf-secret',
+          },
+          handshake: {
+            auth: {
+              participantToken: 'handshake-participant-secret',
+              sessionCode: 'handshake-session-secret',
+            },
+            headers: { cookie: 'handshake-cookie-secret' },
           },
         },
         res: {
@@ -61,6 +73,9 @@ describe('Pino auth redaction', () => {
               participantToken: 'participant-token-secret',
               selectedOptionRefs: ['selected-option-secret'],
               textAnswer: 'text-answer-secret',
+              accountId: 'account-id-safe',
+              username: 'student-username-safe',
+              displayName: 'Student Display Safe',
             },
             selectedOptionRefs: ['top-level-option-secret'],
             textAnswer: 'top-level-answer-secret',
@@ -83,5 +98,14 @@ describe('Pino auth redaction', () => {
     expect(output).not.toContain('text-answer-secret');
     expect(output).not.toContain('top-level-option-secret');
     expect(output).not.toContain('top-level-answer-secret');
+    expect(output).not.toContain('handshake-participant-secret');
+    expect(output).not.toContain('handshake-session-secret');
+    expect(output).not.toContain('handshake-cookie-secret');
+
+    // Authorized profile metadata and opaque account IDs are not credentials;
+    // avoid blanket redaction that would damage roster/session projections.
+    expect(output).toContain('student-username-safe');
+    expect(output).toContain('Student Display Safe');
+    expect(output).toContain('account-id-safe');
   });
 });

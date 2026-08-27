@@ -10,11 +10,13 @@ import {
 } from '../../../common/crypto';
 import {
   DomainError,
+  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from '../../../common/errors';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
+import { AccountStatus } from '../../identity/domain/account-status';
 import {
   normalizeQuestion,
   type NormalizedQuestion,
@@ -62,6 +64,12 @@ export class QuestionBatchService {
     return this.prismaService.prisma;
   }
 
+  private assertTeacherOrAdmin(role: string): void {
+    if (role !== 'admin' && role !== 'teacher') {
+      throw new ForbiddenError('Teacher or admin role required');
+    }
+  }
+
   /**
    * Validate a batch payload. On success, issue an opaque DB-backed validation
    * token (hash only) bound to actor/course/payload hash, 15m expiry, and
@@ -73,6 +81,7 @@ export class QuestionBatchService {
     caller: BatchCaller,
     input: { schemaVersion: number; questions: unknown[] },
   ): Promise<ValidateBatchResult> {
+    this.assertTeacherOrAdmin(caller.role);
     const canonicalCourseId = normalizeUuid(courseId);
     const course = await this.db.course.findUnique({
       where: { id: canonicalCourseId },
@@ -91,6 +100,18 @@ export class QuestionBatchService {
         'courseId',
         'Use a draft Course before batch authoring.',
       );
+    }
+
+    // Re-check account status at the point of token issuance so a disabled
+    // actor cannot mint a token that a later restore could make usable
+    // (US-F8 R-F8-2). The caller's session/CLI guard already checked, but that
+    // check predates this write; this one is authoritative at issuance time.
+    const account = await this.db.account.findUnique({
+      where: { id: caller.accountId },
+      select: { status: true },
+    });
+    if (!account || account.status !== AccountStatus.ACTIVE) {
+      throw new ForbiddenError('Account is not active.');
     }
 
     const payloadHash = hashPayload(input.questions);
@@ -115,7 +136,9 @@ export class QuestionBatchService {
     const normalized = (input.questions as unknown[]).map((q) =>
       normalizeQuestion(stripClientRef(q)),
     );
-    const preview = normalized.map((q) => this.toPreview(q));
+    const preview = (input.questions as unknown[]).map((q, i) =>
+      this.toPreview(normalized[i], readClientRef(q)),
+    );
 
     const rawToken = generateToken();
     const tokenHash = hashToken(rawToken);
@@ -162,6 +185,7 @@ export class QuestionBatchService {
     rawToken: string | undefined,
     idempotencyKey: string | undefined,
   ): Promise<ConfirmBatchResult> {
+    this.assertTeacherOrAdmin(caller.role);
     const canonicalCourseId = normalizeUuid(courseId);
     if (!idempotencyKey || !isUuid(idempotencyKey)) {
       throw new ValidationError(
@@ -227,6 +251,21 @@ export class QuestionBatchService {
             (existing.responseJson as { questions?: unknown[] }).questions ??
             [],
         };
+      }
+
+      // Re-check account status inside the transaction so a concurrent
+      // disable (which serializes on the same account row / advisory lock)
+      // and this confirm have a well-defined commit order (US-F8 R-F8-2). The
+      // guard check happened before the transaction began; this one is the
+      // authoritative linearization point. Placed after the idempotency-replay
+      // block so a replay still returns its cached result even if the actor
+      // was subsequently disabled.
+      const actorAccount = await tx.account.findUnique({
+        where: { id: caller.accountId },
+        select: { status: true },
+      });
+      if (!actorAccount || actorAccount.status !== AccountStatus.ACTIVE) {
+        throw new ForbiddenError('Account is not active.');
       }
 
       // Token validation.
@@ -340,9 +379,13 @@ export class QuestionBatchService {
     });
   }
 
-  /** Build the preview projection for a normalized question. */
-  private toPreview(q: NormalizedQuestion): unknown {
+  /** Build the preview projection for a normalized question, echoing back
+   * the caller-supplied `clientRef` locator so the client can correlate the
+   * preview with its input order (clientRef is the only batch-only field
+   * that is otherwise stripped before normalization). */
+  private toPreview(q: NormalizedQuestion, clientRef: string): unknown {
     return {
+      clientRef,
       type: q.type,
       prompt: q.prompt,
       selectionMode: q.selectionMode,
@@ -354,4 +397,15 @@ export class QuestionBatchService {
       correctOptionRefs: q.correctOptionRefs,
     };
   }
+}
+
+/** Read the batch-only `clientRef` locator from a raw input question. */
+function readClientRef(question: unknown): string {
+  if (question && typeof question === 'object') {
+    const ref = (question as { clientRef?: unknown }).clientRef;
+    if (typeof ref === 'string' && ref.trim().length > 0) {
+      return ref;
+    }
+  }
+  return '';
 }

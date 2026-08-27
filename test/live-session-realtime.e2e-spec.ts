@@ -34,6 +34,12 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     tempPassword: 'rt-e2e-temp-password-1234',
     password: 'rt-e2e-final-password-1234',
   };
+  const STUDENT = {
+    username: 'rt-e2e-student',
+    displayName: 'RT E2E Student',
+    tempPassword: 'rt-e2e-student-temp-password-1234',
+    password: 'rt-e2e-student-final-password-1234',
+  };
   const OTHER_TEACHER = {
     username: 'rt-e2e-other-teacher',
     displayName: 'RT E2E Other Teacher',
@@ -152,6 +158,22 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     };
   }
 
+  async function adminStepUp(admin: AuthenticatedAgent): Promise<void> {
+    const res = await admin.agent
+      .post('/api/v1/auth/step-up')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ password: ADMIN.password });
+    expect(res.status).toBe(201);
+  }
+
+  /** Resolve the current session's accountId via GET /auth/session. */
+  async function currentAccountId(auth: AuthenticatedAgent): Promise<string> {
+    const res = await auth.agent.get('/api/v1/auth/session');
+    expect(res.status).toBe(200);
+    return res.body.data.accountId as string;
+  }
+
   async function createTeacher(
     username: string,
     displayName: string,
@@ -184,6 +206,43 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     };
   }
 
+  async function createStudent(): Promise<{
+    accountId: string;
+    auth: AuthenticatedAgent & { sessionCookie: string };
+  }> {
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const created = await admin.agent
+      .post('/api/v1/admin/accounts')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        username: STUDENT.username,
+        displayName: STUDENT.displayName,
+        role: AccountRole.STUDENT,
+        canCreateCourse: true,
+        tempPassword: STUDENT.tempPassword,
+      });
+    expect(created.status).toBe(201);
+
+    const temporary = await loginAs(STUDENT.username, STUDENT.tempPassword);
+    const changed = await temporary.agent
+      .post('/api/v1/auth/change-password')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, temporary.csrfToken)
+      .send({
+        currentPassword: STUDENT.tempPassword,
+        newPassword: STUDENT.password,
+      });
+    expect(changed.status).toBe(201);
+    return {
+      accountId: created.body.data.id as string,
+      auth: (await loginAs(
+        STUDENT.username,
+        STUDENT.password,
+      )) as AuthenticatedAgent & { sessionCookie: string },
+    };
+  }
+
   function requireDatabase(): void {
     if (!dbReachable) {
       throw new Error(
@@ -192,7 +251,7 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     }
   }
 
-  async function setupActiveSession(): Promise<{
+  async function setupActiveSession(startSession = true): Promise<{
     teacher: AuthenticatedAgent & { sessionCookie: string };
     courseId: string;
     liveSessionId: string;
@@ -241,13 +300,16 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     const liveSessionId = waitingResponse.body.data.id as string;
     const sessionCode = waitingResponse.body.data.sessionCode as string;
 
-    const startResponse = await teacher.agent
-      .post(`/api/v1/live-sessions/${liveSessionId}/start`)
-      .set('Origin', TEST_ORIGIN)
-      .set(CSRF_HEADER, teacher.csrfToken);
-    expect(startResponse.status).toBe(201);
-    const sessionQuestionId = startResponse.body.data.sessionQuestions[0]
-      .id as string;
+    let sessionQuestionId = '';
+    if (startSession) {
+      const startResponse = await teacher.agent
+        .post(`/api/v1/live-sessions/${liveSessionId}/start`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.csrfToken);
+      expect(startResponse.status).toBe(201);
+      sessionQuestionId = startResponse.body.data.sessionQuestions[0]
+        .id as string;
+    }
 
     return {
       teacher,
@@ -294,6 +356,18 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     const socket = ioClient(`${baseUrl}/live`, {
       transports: ['websocket'],
       auth: { participantToken, sessionCode },
+    });
+    return socket;
+  }
+
+  function connectStudent(
+    liveSessionId: string,
+    sessionCookie: string,
+  ): ClientSocket {
+    const socket = ioClient(`${baseUrl}/live`, {
+      withCredentials: true,
+      extraHeaders: { Cookie: `${SESSION_COOKIE_NAME}=${sessionCookie}` },
+      auth: { liveSessionId },
     });
     return socket;
   }
@@ -364,6 +438,169 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
       const json = JSON.stringify(snapshot);
       expect(json).not.toContain('isCorrect');
       expect(json).not.toContain('participantToken');
+    } finally {
+      socket.close();
+    }
+  });
+
+  it('enrolled student cookie joins participant scope without counts.updated', async () => {
+    requireDatabase();
+    const ctx = await setupActiveSession();
+    const student = await createStudent();
+    const enrollment = await ctx.teacher.agent
+      .post(`/api/v1/courses/${ctx.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, ctx.teacher.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrollment.status).toBe(201);
+
+    const socket = connectStudent(
+      ctx.liveSessionId,
+      student.auth.sessionCookie,
+    );
+    const collector = collectEvents(socket);
+    try {
+      const snapshot = (await nextEvent(socket, 'session.snapshot')) as {
+        data: {
+          liveSession: {
+            sessionQuestions: unknown[];
+            joinedCount?: number;
+            votedCount?: number;
+          };
+        };
+      };
+      expect(snapshot.data.liveSession.sessionQuestions).toEqual([]);
+      expect(snapshot.data.liveSession.joinedCount).toBeUndefined();
+      expect(snapshot.data.liveSession.votedCount).toBeUndefined();
+
+      const openedPromise = nextEvent(socket, 'question.opened');
+      const openResponse = await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(openResponse.status).toBe(201);
+      await openedPromise;
+
+      const resultPromise = nextEvent(socket, 'result.updated');
+      const submitted = await student.auth.agent
+        .post(`/api/v1/live-sessions/${ctx.liveSessionId}/submissions`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, student.auth.csrfToken)
+        .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000599')
+        .send({
+          sessionQuestionId: ctx.sessionQuestionId,
+          selectedOptionRefs: [ctx.optionRefs.a],
+        });
+      expect(submitted.status).toBe(201);
+
+      const result = (await resultPromise) as {
+        visibility: string;
+        data: {
+          sessionQuestionId: string;
+          results: { totalResponses: number };
+        };
+      };
+      expect(result.visibility).toBe('participant');
+      expect(result.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
+      expect(result.data.results.totalResponses).toBe(1);
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(collector.events.get('counts.updated')).toBeUndefined();
+      expect(JSON.stringify(collector.events)).not.toContain('joinedCount');
+
+      // Pre-register before close so the post-commit participant projection is observed.
+      const closeResultPromise = nextEvent(socket, 'result.updated');
+      const closeResponse = await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/close`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(closeResponse.status).toBe(201);
+
+      const closeResult = (await closeResultPromise) as {
+        visibility: string;
+        data: {
+          sessionQuestionId: string;
+          results: { status: string; totalResponses: number };
+        };
+      };
+      expect(closeResult.visibility).toBe('participant');
+      expect(closeResult.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
+      expect(closeResult.data.results).toMatchObject({
+        status: 'closed',
+        totalResponses: 1,
+      });
+      const closeResultJson = JSON.stringify(closeResult);
+      for (const field of [
+        'participantId',
+        'accountId',
+        'displayName',
+        'participantToken',
+        'sessionCode',
+        'joinedCount',
+        'votedCount',
+      ]) {
+        expect(closeResultJson).not.toContain(field);
+      }
+      expect(closeResultJson).not.toContain(student.accountId);
+      expect(closeResultJson).not.toContain(STUDENT.displayName);
+      expect(closeResultJson).not.toContain(
+        submitted.body.data.participantId as string,
+      );
+    } finally {
+      socket.close();
+    }
+  });
+
+  it('disconnects a student socket after enrollment removal before later events', async () => {
+    requireDatabase();
+    const ctx = await setupActiveSession();
+    const student = await createStudent();
+    const enrollment = await ctx.teacher.agent
+      .post(`/api/v1/courses/${ctx.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, ctx.teacher.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrollment.status).toBe(201);
+
+    const socket = connectStudent(
+      ctx.liveSessionId,
+      student.auth.sessionCookie,
+    );
+    try {
+      await nextEvent(socket, 'session.snapshot');
+      const disconnected = new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error('timeout waiting for student disconnect')),
+          1500,
+        );
+        socket.once('disconnect', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+
+      const removed = await ctx.teacher.agent
+        .delete(
+          `/api/v1/courses/${ctx.courseId}/enrollments/${student.accountId}`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(removed.status).toBe(200);
+
+      // The next post-commit signal reauthorizes connected participant sockets
+      // before broadcasting the event and disconnects the removed student.
+      const opened = await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(opened.status).toBe(201);
+      await disconnected;
     } finally {
       socket.close();
     }
@@ -532,7 +769,7 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
 
   it('cancelling a session emits session.state_changed; reconnect with the now-cancelled token is rejected', async () => {
     requireDatabase();
-    const ctx = await setupActiveSession();
+    const ctx = await setupActiveSession(false);
     const p = await joinParticipant(ctx.sessionCode, 'p1');
     const participantSocket = connectParticipant(
       ctx.sessionCode,
@@ -566,6 +803,124 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
       expect(error.code).toBe('SESSION_NOT_JOINABLE');
     } finally {
       reconnect.close();
+    }
+  });
+
+  it('disconnects a teacher socket when its account is disabled (US-F8)', async () => {
+    requireDatabase();
+    const ctx = await setupActiveSession();
+    const socket = connectTeacher(ctx.liveSessionId, ctx.teacher.sessionCookie);
+    try {
+      await nextEvent(socket, 'session.snapshot');
+      // Pre-register the disconnect promise BEFORE the disable mutation so the
+      // post-commit lifecycle signal is not missed.
+      const disconnected = new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error('timeout waiting for teacher disconnect')),
+          2000,
+        );
+        socket.once('disconnect', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+
+      const admin = await loginAs(ADMIN.username, ADMIN.password);
+      await adminStepUp(admin);
+      const teacherAccountId = await currentAccountId(ctx.teacher);
+      const disable = await admin.agent
+        .post(`/api/v1/admin/accounts/${teacherAccountId}/disable`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, admin.csrfToken);
+      expect(disable.status).toBe(201);
+
+      await disconnected;
+    } finally {
+      socket.close();
+    }
+  });
+
+  it('disconnects an account-bound student socket when the account is disabled (US-F8)', async () => {
+    requireDatabase();
+    const ctx = await setupActiveSession();
+    const student = await createStudent();
+    const enrollment = await ctx.teacher.agent
+      .post(`/api/v1/courses/${ctx.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, ctx.teacher.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrollment.status).toBe(201);
+
+    const socket = connectStudent(
+      ctx.liveSessionId,
+      student.auth.sessionCookie,
+    );
+    try {
+      await nextEvent(socket, 'session.snapshot');
+      const disconnected = new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error('timeout waiting for student disconnect')),
+          2000,
+        );
+        socket.once('disconnect', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+
+      const admin = await loginAs(ADMIN.username, ADMIN.password);
+      await adminStepUp(admin);
+      const disable = await admin.agent
+        .post(`/api/v1/admin/accounts/${student.accountId}/disable`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, admin.csrfToken);
+      expect(disable.status).toBe(201);
+
+      await disconnected;
+    } finally {
+      socket.close();
+    }
+  });
+
+  it('keeps an anonymous participant socket connected when an account is disabled (US-F8)', async () => {
+    requireDatabase();
+    const ctx = await setupActiveSession();
+    const otherTeacher = await createTeacher(
+      OTHER_TEACHER.username,
+      OTHER_TEACHER.displayName,
+      OTHER_TEACHER.tempPassword,
+      OTHER_TEACHER.password,
+    );
+
+    const p = await joinParticipant(ctx.sessionCode, 'anonymous');
+    const socket = connectParticipant(ctx.sessionCode, p.participantToken);
+    try {
+      await nextEvent(socket, 'session.snapshot');
+      // Disabling an unrelated teacher account must NOT affect the anonymous
+      // participant socket — its credential is account-independent.
+      const admin = await loginAs(ADMIN.username, ADMIN.password);
+      await adminStepUp(admin);
+      const otherTeacherAccountId = await currentAccountId(otherTeacher);
+      const disable = await admin.agent
+        .post(`/api/v1/admin/accounts/${otherTeacherAccountId}/disable`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, admin.csrfToken);
+      expect(disable.status).toBe(201);
+
+      // Still connected and still receiving session events.
+      const openedPromise = nextEvent(socket, 'question.opened');
+      await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      const opened = (await openedPromise) as {
+        data: { sessionQuestionId: string };
+      };
+      expect(opened.data.sessionQuestionId).toBe(ctx.sessionQuestionId);
+    } finally {
+      socket.close();
     }
   });
 });

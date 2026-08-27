@@ -155,6 +155,24 @@ export class SessionService {
     return markedAt;
   }
 
+  /**
+   * Leaf account-status check for server-side socket re-authorization (US-F8).
+   * Unlike `loadActiveSession`, this does not resolve a session — it only
+   * verifies the account row is still `active`, so the gateway can drop
+   * teacher/admin sockets whose account was disabled even when the lifecycle
+   * signal is missed. Throws UnauthorizedError for a missing or disabled
+   * account.
+   */
+  async assertAccountActive(accountId: string): Promise<void> {
+    const account = await this.db.account.findUnique({
+      where: { id: accountId },
+      select: { status: true },
+    });
+    if (!account || account.status !== AccountStatus.ACTIVE) {
+      throw new UnauthorizedError();
+    }
+  }
+
   /** Require a non-expired step-up for this exact account/session pair. */
   async assertRecentStepUp(
     accountId: string,

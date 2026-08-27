@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Account } from '../../../../generated/prisma/client';
-import { SessionService } from '../../../common/auth';
+import { AccountLifecycleBus, SessionService } from '../../../common/auth';
 import { isUuid, newId, hashPassword } from '../../../common/crypto';
 import {
   ConflictError,
@@ -8,12 +8,19 @@ import {
   NotFoundError,
   ValidationError,
 } from '../../../common/errors';
+import {
+  normalizePageRequest,
+  type Page,
+  type PageRequest,
+  toPage,
+} from '../../../common/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { ACCOUNT_ROLES, AccountRole, isAccountRole } from '../domain/roles';
 import { AccountStatus } from '../domain/account-status';
 import {
   validatePassword,
+  rejectCommonPassword,
   PasswordPolicyError,
 } from '../domain/password-policy';
 import { CliCredentialService } from './cli-credential.service';
@@ -24,11 +31,14 @@ import { CliCredentialService } from './cli-credential.service';
  */
 @Injectable()
 export class AccountService {
+  private readonly logger = new Logger(AccountService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly tx: TransactionService,
     private readonly sessions: SessionService,
     private readonly cliCredentials: CliCredentialService,
+    private readonly accountLifecycleBus: AccountLifecycleBus,
   ) {}
 
   private get db() {
@@ -54,6 +64,7 @@ export class AccountService {
     void ACCOUNT_ROLES;
     try {
       validatePassword(input.tempPassword);
+      rejectCommonPassword(input.tempPassword);
     } catch (e) {
       if (e instanceof PasswordPolicyError) {
         throw new ValidationError(e.message, 'tempPassword');
@@ -79,7 +90,8 @@ export class AccountService {
           displayName: input.displayName,
           role: input.role,
           status: AccountStatus.ACTIVE,
-          canCreateCourse: input.canCreateCourse,
+          canCreateCourse:
+            input.role === AccountRole.STUDENT ? false : input.canCreateCourse,
           passwordHash,
           mustChangePassword: true,
           passwordChangedAt: new Date(),
@@ -96,6 +108,65 @@ export class AccountService {
 
   findById(id: string): Promise<Account | null> {
     return this.db.account.findUnique({ where: { id } });
+  }
+
+  /**
+   * Admin account list (metadata only — see `AccountDto` projection). Uses the
+   * shared `Page<T>`/`normalizePageRequest`/`toPage` pagination helpers so the
+   * wire shape matches the courses contract.
+   */
+  async listAccounts(raw: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<Page<Account>> {
+    const req: PageRequest = normalizePageRequest(raw);
+    const [data, total] = await Promise.all([
+      this.db.account.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip: (req.page - 1) * req.pageSize,
+        take: req.pageSize,
+      }),
+      this.db.account.count(),
+    ]);
+    return toPage(data, total, req);
+  }
+
+  /** Account detail (metadata only). */
+  async getAccountById(id: string): Promise<Account> {
+    const account = await this.db.account.findUnique({ where: { id } });
+    if (!account) throw new NotFoundError('Account not found');
+    return account;
+  }
+
+  /**
+   * Update only the course-creation permission. The account row is locked so
+   * competing permission changes serialize, while all lifecycle and CLI
+   * credential side effects remain on their dedicated operations.
+   */
+  async updateCourseCreationPermission(
+    targetAccountId: string,
+    canCreateCourse: boolean,
+  ): Promise<Account> {
+    if (!isUuid(targetAccountId)) {
+      throw new NotFoundError('Account not found');
+    }
+
+    return this.tx.run(async (txClient) => {
+      await this.tx.lockAccountForUpdate(txClient, targetAccountId);
+      const target = await txClient.account.findUnique({
+        where: { id: targetAccountId },
+      });
+      if (!target) throw new NotFoundError('Account not found');
+      if (target.role === AccountRole.STUDENT && canCreateCourse) {
+        throw new ForbiddenError('Student accounts cannot create courses');
+      }
+      if (target.canCreateCourse === canCreateCourse) return target;
+
+      return txClient.account.update({
+        where: { id: targetAccountId },
+        data: { canCreateCourse },
+      });
+    });
   }
 
   async resetPassword(
@@ -136,7 +207,7 @@ export class AccountService {
   ): Promise<Account> {
     this.assertNotSelfTarget(targetAccountId, actorAccountId);
 
-    return this.tx.run(async (txClient) => {
+    const result = await this.tx.run(async (txClient) => {
       await this.tx.lockAccountForUpdate(txClient, targetAccountId);
       const target = await txClient.account.findUnique({
         where: { id: targetAccountId },
@@ -155,7 +226,7 @@ export class AccountService {
           txClient,
           targetAccountId,
         );
-        return target;
+        return { account: target, transitioned: false };
       }
 
       const updated = await txClient.account.update({
@@ -177,8 +248,36 @@ export class AccountService {
         txClient,
         targetAccountId,
       );
-      return updated;
+      return { account: updated, transitioned: true };
     });
+
+    // Commit-then-publish: only a true ACTIVE → DISABLED transition fans out
+    // the account lifecycle signal (re-disabling an already-disabled account
+    // is a no-op re-cleanup). Fire-and-forget — a bus failure is logged and
+    // must never fail an already-committed mutation.
+    if (result.transitioned) {
+      this.publishAccountDisabled(targetAccountId);
+    }
+    return result.account;
+  }
+
+  /** Post-commit, fire-and-forget lifecycle signal publish (US-F8). */
+  private publishAccountDisabled(accountId: string): void {
+    void this.accountLifecycleBus
+      .publish({
+        type: 'account.disabled',
+        accountId,
+        timestamp: new Date().toISOString(),
+      })
+      .catch((error) => {
+        this.logger.error(
+          {
+            accountId,
+            err: error instanceof Error ? error.message : String(error),
+          },
+          'Account lifecycle publish failed; mutation already committed',
+        );
+      });
   }
 
   /**
@@ -238,6 +337,7 @@ export class AccountService {
   private validatePasswordOrThrow(password: string, field: string): void {
     try {
       validatePassword(password);
+      rejectCommonPassword(password);
     } catch (e) {
       if (e instanceof PasswordPolicyError) {
         throw new ValidationError(e.message, field);

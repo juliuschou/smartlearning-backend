@@ -110,6 +110,24 @@ export class InvalidCredentialsError extends DomainError {
   }
 }
 
+/**
+ * Login rate limit exceeded (R-F7-7). Stable `RATE_LIMITED` code, HTTP 429.
+ * `retryAfterSeconds` is surfaced to the envelope so the client can show a
+ * retry hint. The message is generic and MUST NOT reveal account existence.
+ */
+export class RateLimitedError extends DomainError {
+  constructor(retryAfterSeconds: number) {
+    super(
+      'RATE_LIMITED' as ErrorCode,
+      'Too many attempts. Please try again later.',
+      HttpStatus.TOO_MANY_REQUESTS,
+      undefined,
+      undefined,
+      retryAfterSeconds,
+    );
+  }
+}
+
 export class ForbiddenError extends DomainError {
   constructor(message = 'Forbidden') {
     super('FORBIDDEN' as ErrorCode, message, HttpStatus.FORBIDDEN);

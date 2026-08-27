@@ -5,7 +5,9 @@ import {
   HttpCode,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -17,11 +19,13 @@ import {
   StepUpGuard,
 } from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
+import { type Page } from '../../../common/pagination';
 import { AccountService } from '../application/account.service';
 import { CliCredentialService } from '../application/cli-credential.service';
 import { AccountDto } from './dto/account.dto';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateAccountPermissionsDto } from './dto/update-account-permissions.dto';
 import {
   CreateCliCredentialDto,
   CliCredentialDto,
@@ -43,6 +47,38 @@ export class AdminController {
     private readonly accounts: AccountService,
     private readonly cliCredentials: CliCredentialService,
   ) {}
+
+  @Get('accounts')
+  async listAccounts(
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ): Promise<Page<AccountDto>> {
+    const result = await this.accounts.listAccounts({
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
+    return { data: result.data.map(toAccountDto), meta: result.meta };
+  }
+
+  @Get('accounts/:id')
+  async getAccount(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<AccountDto> {
+    return toAccountDto(await this.accounts.getAccountById(id));
+  }
+
+  @Patch('accounts/:id/permissions')
+  async updateAccountPermissions(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateAccountPermissionsDto,
+  ): Promise<AccountDto> {
+    return toAccountDto(
+      await this.accounts.updateCourseCreationPermission(
+        id,
+        dto.canCreateCourse,
+      ),
+    );
+  }
 
   @Post('accounts')
   async createAccount(

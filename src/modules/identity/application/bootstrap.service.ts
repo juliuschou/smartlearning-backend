@@ -7,6 +7,7 @@ import { newId, hashPassword } from '../../../common/crypto';
 import { AccountRole } from '../domain/roles';
 import { AccountStatus } from '../domain/account-status';
 import {
+  rejectCommonPassword,
   validatePassword,
   PasswordPolicyError,
 } from '../domain/password-policy';
@@ -76,14 +77,7 @@ export class BootstrapService {
         'Bootstrap credentials not provided via env (BOOTSTRAP_ADMIN_USERNAME/PASSWORD)',
       );
     }
-    try {
-      validatePassword(password);
-    } catch (e) {
-      if (e instanceof PasswordPolicyError) {
-        throw new ValidationError(e.message, 'password');
-      }
-      throw e;
-    }
+    this.validateBootstrapPassword(password);
 
     return this.createFirstAdmin({ username, displayName, password });
   }
@@ -97,6 +91,7 @@ export class BootstrapService {
     displayName: string;
     password: string;
   }): Promise<Account> {
+    this.validateBootstrapPassword(input.password);
     const passwordHash = await hashPassword(input.password);
     const accountId = newId();
 
@@ -155,5 +150,17 @@ export class BootstrapService {
 
       return admin;
     });
+  }
+
+  private validateBootstrapPassword(password: string): void {
+    try {
+      validatePassword(password);
+      rejectCommonPassword(password);
+    } catch (e) {
+      if (e instanceof PasswordPolicyError) {
+        throw new ValidationError(e.message, 'password');
+      }
+      throw e;
+    }
   }
 }

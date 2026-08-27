@@ -305,19 +305,19 @@ Review verification after hardening: focused HTTP tests 3 suites / 18 tests, ful
 
 #### Verification results
 
-| Command | Result |
-| --- | --- |
-| `NODE_ENV=test npm run prisma:migrate:deploy` | PASS — applied `20260816100000_add_step_up_at` to `smartlearning_test` |
-| `NODE_ENV=test npm run prisma:migrate:status` | PASS — database schema up to date |
-| `npm run prisma:generate && npm run prisma:validate` | PASS — Prisma Client 7.9.1 generated; schema valid |
-| `npm test -- --runInBand` | PASS — 12 suites / 47 tests |
-| `npm run test:integration -- --runInBand test/identity.integration-spec.ts` | PASS — 1 suite / 5 tests |
-| `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts` | PASS — 1 suite / 14 tests |
-| `npm run typecheck` | PASS |
-| `npm run format:check` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
+| Command                                                                     | Result                                                                 |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `NODE_ENV=test npm run prisma:migrate:deploy`                               | PASS — applied `20260816100000_add_step_up_at` to `smartlearning_test` |
+| `NODE_ENV=test npm run prisma:migrate:status`                               | PASS — database schema up to date                                      |
+| `npm run prisma:generate && npm run prisma:validate`                        | PASS — Prisma Client 7.9.1 generated; schema valid                     |
+| `npm test -- --runInBand`                                                   | PASS — 12 suites / 47 tests                                            |
+| `npm run test:integration -- --runInBand test/identity.integration-spec.ts` | PASS — 1 suite / 5 tests                                               |
+| `npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts`             | PASS — 1 suite / 14 tests                                              |
+| `npm run typecheck`                                                         | PASS                                                                   |
+| `npm run format:check`                                                      | PASS                                                                   |
+| `npm run lint:check`                                                        | PASS                                                                   |
+| `npm run build`                                                             | PASS                                                                   |
+| `git diff --check`                                                          | PASS                                                                   |
 
 #### Results
 
@@ -372,20 +372,20 @@ Review verification after hardening: focused HTTP tests 3 suites / 18 tests, ful
 
 #### Verification
 
-| Command | Result |
-| --- | --- |
-| `npm run prisma:generate` | PASS — Prisma Client 7.9.1 generated |
-| `npm run prisma:validate` | PASS — schema valid |
-| `NODE_ENV=test npm run prisma:migrate:status` | PASS — PostgreSQL `smartlearning_test`, 7 migrations, schema up to date |
-| `npm test -- --runInBand src/common/crypto/uuid.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts src/modules/participants/domain/display-name.spec.ts src/common/observability/pino-redaction.spec.ts` | PASS — 4 suites / 15 tests |
-| `npm test -- --runInBand` | PASS — 16 suites / 63 tests |
-| `npm run test:integration -- --runInBand test/poll-submission.integration-spec.ts` | PASS — PostgreSQL-backed, 1 suite / 4 tests, 0 skipped |
-| `npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | PASS — PostgreSQL-backed, 1 suite / 1 test, 0 skipped |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
+| Command                                                                                                                                                                                                               | Result                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `npm run prisma:generate`                                                                                                                                                                                             | PASS — Prisma Client 7.9.1 generated                                    |
+| `npm run prisma:validate`                                                                                                                                                                                             | PASS — schema valid                                                     |
+| `NODE_ENV=test npm run prisma:migrate:status`                                                                                                                                                                         | PASS — PostgreSQL `smartlearning_test`, 7 migrations, schema up to date |
+| `npm test -- --runInBand src/common/crypto/uuid.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts src/modules/participants/domain/display-name.spec.ts src/common/observability/pino-redaction.spec.ts` | PASS — 4 suites / 15 tests                                              |
+| `npm test -- --runInBand`                                                                                                                                                                                             | PASS — 16 suites / 63 tests                                             |
+| `npm run test:integration -- --runInBand test/poll-submission.integration-spec.ts`                                                                                                                                    | PASS — PostgreSQL-backed, 1 suite / 4 tests, 0 skipped                  |
+| `npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts`                                                                                                                                                 | PASS — PostgreSQL-backed, 1 suite / 1 test, 0 skipped                   |
+| `npm run typecheck`                                                                                                                                                                                                   | PASS                                                                    |
+| `npm run lint:check`                                                                                                                                                                                                  | PASS                                                                    |
+| `npm run format:check`                                                                                                                                                                                                | PASS                                                                    |
+| `npm run build`                                                                                                                                                                                                       | PASS                                                                    |
+| `git diff --check`                                                                                                                                                                                                    | PASS                                                                    |
 
 Targeted verification is complete against real PostgreSQL; the full repository unit/integration/e2e suites were not run. The migration setup applies all seven migrations idempotently, and the poll suites fail loudly rather than treating an unavailable or stale database as a skip.
 
@@ -397,16 +397,16 @@ Targeted verification is complete against real PostgreSQL; the full repository u
 
 #### 前端可立即對接的能力(基準部分,已由 e2e 驗證)
 
-| 前端功能 | 可用 API | 備註 |
-| --- | --- | --- |
-| 登入/登出/改密/身分 | `POST /auth/login`、`POST /auth/logout`、`POST /auth/change-password`、`GET /auth/session` | cookie session + CSRF double-submit |
-| 課程管理 | `POST/GET/GET/:id /courses`、`POST /courses/:id/archive` | 分頁回傳 `Page<CourseDto>` |
-| 老師出題(單選) | `POST /courses/:courseId/questions` | 只支援 `poll`+`single`,2–10 選項,僅 draft 課程可加 |
-| 開課堂 | `POST /live-sessions`、`POST /:id/start` | start 產生不可變 snapshot |
-| 課堂中控制收/開題 | `POST .../questions/:qid/open`、`.../close` | 同一時間只能一題 open |
-| 學員加入 | `POST /live-sessions/:sessionCode/join` | 公開;participant token 只回傳一次 |
-| 學員看題 | `GET /live-sessions/:id/snapshot` | participant 只看到 open 題 + `hasSubmitted` |
-| 學員答題 | `POST /live-sessions/:id/submissions` | 需 `X-Participant-Token` + `Idempotency-Key`(UUID) |
+| 前端功能            | 可用 API                                                                                   | 備註                                               |
+| ------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| 登入/登出/改密/身分 | `POST /auth/login`、`POST /auth/logout`、`POST /auth/change-password`、`GET /auth/session` | cookie session + CSRF double-submit                |
+| 課程管理            | `POST/GET/GET/:id /courses`、`POST /courses/:id/archive`                                   | 分頁回傳 `Page<CourseDto>`                         |
+| 老師出題(單選)      | `POST /courses/:courseId/questions`                                                        | 只支援 `poll`+`single`,2–10 選項,僅 draft 課程可加 |
+| 開課堂              | `POST /live-sessions`、`POST /:id/start`                                                   | start 產生不可變 snapshot                          |
+| 課堂中控制收/開題   | `POST .../questions/:qid/open`、`.../close`                                                | 同一時間只能一題 open                              |
+| 學員加入            | `POST /live-sessions/:sessionCode/join`                                                    | 公開;participant token 只回傳一次                  |
+| 學員看題            | `GET /live-sessions/:id/snapshot`                                                          | participant 只看到 open 題 + `hasSubmitted`        |
+| 學員答題            | `POST /live-sessions/:id/submissions`                                                      | 需 `X-Participant-Token` + `Idempotency-Key`(UUID) |
 
 這條 happy path 在 `test/poll-single-choice.e2e-spec.ts` 已端對端驗證,前端可放心對接。
 
@@ -481,11 +481,13 @@ Targeted verification is complete against real PostgreSQL; the full repository u
 - [x] **Slice 順序**:E-1 先 → Q-1 → Q-2 → Q-3 → Q-4。先建 Swagger 基礎,後續新增端點自動產出 spec。
 
 **Stale 衝突修正(以 M2 權威來源為準)**:
+
 - 實作規劃文件提到 batch token 為「signed token」 → 修正為 **DB-backed opaque token**(M2 決策/API/review 一致,《M2 關鍵技術決策》L83-94)。
 - backlog 的 `/questions/batch-validate`、`/batch-preview`、`/batch-confirm` route → 修正為 `/question-batches/validate` + `/question-batches/confirm`(M2 API catalog L190-192);**無獨立 batch-preview endpoint**,preview 為 validate 成功回應欄位。
 - 領域文件範例用 snake_case → v1 wire 一律 camelCase(M2 review L119-123 已閉環)。
 
 **M2 文件未定案、本計畫以實作決策補齊(各 slice 實作時落地)**:
+
 - list 分頁 query 形狀:`page`/`pageSize` query string(鏡射 courses)。
 - validation-token 傳遞:建議 header `X-Validation-Token`(confirm 重送 payload + token)。
 - explicit confirmation 欄位:confirm body 加 `confirmed: true`。
@@ -522,16 +524,16 @@ P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm install` + `npm audit` | ✅ 0 vulnerabilities;js-yaml 全 5.3.0 |
-| `npm run typecheck` | ✅ 通過 |
-| `npm run lint:check` | ✅ 0 errors |
-| `npm run format:check` | ✅ All matched files use Prettier code style |
-| `npm run build` | ✅ nest build 通過 |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/app.e2e-spec.ts test/api-envelope.e2e-spec.ts` | ✅ 2 suites / 6 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 2 suites / 15 tests(DB-backed,無回歸) |
+| 命令                                                                                                              | 結果                                         |
+| ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `npm install` + `npm audit`                                                                                       | ✅ 0 vulnerabilities;js-yaml 全 5.3.0        |
+| `npm run typecheck`                                                                                               | ✅ 通過                                      |
+| `npm run lint:check`                                                                                              | ✅ 0 errors                                  |
+| `npm run format:check`                                                                                            | ✅ All matched files use Prettier code style |
+| `npm run build`                                                                                                   | ✅ nest build 通過                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`                                          | ✅ 1 suite / 3 tests                         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/app.e2e-spec.ts test/api-envelope.e2e-spec.ts`                | ✅ 2 suites / 6 tests                        |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/auth-courses.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 2 suites / 15 tests(DB-backed,無回歸)     |
 
 #### Results
 
@@ -564,11 +566,11 @@ P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts` | ✅ 1 suite / 9 tests |
+| 命令                                                                                | 結果                        |
+| ----------------------------------------------------------------------------------- | --------------------------- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts`     | ✅ 1 suite / 9 tests        |
 | `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | ✅ 1 suite / 1 test(無回歸) |
-| typecheck/lint/format/build | ✅ 全綠 |
+| typecheck/lint/format/build                                                         | ✅ 全綠                     |
 
 #### Results
 
@@ -602,13 +604,13 @@ P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-mutation.e2e-spec.ts` | ✅ 1 suite / 9 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts` | ✅ 1 suite / 9 tests(無回歸) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | ✅ 1 suite / 1 test(無回歸) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新端點進 spec) |
-| typecheck/lint/format/build | ✅ 全綠 |
+| 命令                                                                                | 結果                                |
+| ----------------------------------------------------------------------------------- | ----------------------------------- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-mutation.e2e-spec.ts` | ✅ 1 suite / 9 tests                |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-read.e2e-spec.ts`     | ✅ 1 suite / 9 tests(無回歸)        |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts` | ✅ 1 suite / 1 test(無回歸)         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`            | ✅ 1 suite / 3 tests(新端點進 spec) |
+| typecheck/lint/format/build                                                         | ✅ 全綠                             |
 
 #### Debugging note(lesson)
 
@@ -655,11 +657,11 @@ P1 出題擴充的前置基礎:重新引入 `@nestjs/swagger`,讓後續 Q-1~Q-4 
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm test -- --runInBand src/modules/questions/domain/question-contract.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts` | ✅ 2 suites / 21 tests |
+| 命令                                                                                                                                                                                                              | 結果                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `npm test -- --runInBand src/modules/questions/domain/question-contract.spec.ts src/modules/questions/domain/poll-single-choice.spec.ts`                                                                          | ✅ 2 suites / 21 tests |
 | `NODE_ENV=test npm run test:e2e -- --runInBand test/questions-types.e2e-spec.ts test/questions-read.e2e-spec.ts test/questions-mutation.e2e-spec.ts test/poll-single-choice.e2e-spec.ts test/openapi.e2e-spec.ts` | ✅ 5 suites / 30 tests |
-| typecheck/lint/format/build | ✅ 全綠 |
+| typecheck/lint/format/build                                                                                                                                                                                       | ✅ 全綠                |
 
 #### Results
 
@@ -714,12 +716,12 @@ P1 出題擴充最後一塊:批次題目 validate/confirm(1–50 題、全錯誤
 
 ##### Verification(Part A)
 
-| 命令 | 結果 |
-| --- | --- |
+| 命令                                                                                          | 結果                     |
+| --------------------------------------------------------------------------------------------- | ------------------------ |
 | `NODE_ENV=test npm run prisma:migrate:deploy`(20260816160000,授權套用至 `smartlearning_test`) | ✅ 8 migrations,新表建成 |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/cli-credential.e2e-spec.ts` | ✅ 1 suite / 6 tests |
-| 既有回歸(auth-courses/poll/openapi/questions-read/mutation/types) | ✅ 6 suites / 44 tests |
-| canonical-hash unit | ✅ 7 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/cli-credential.e2e-spec.ts`               | ✅ 1 suite / 6 tests     |
+| 既有回歸(auth-courses/poll/openapi/questions-read/mutation/types)                             | ✅ 6 suites / 44 tests   |
+| canonical-hash unit                                                                           | ✅ 7 tests               |
 
 #### Part B — 批次 validate/confirm(程式碼完成,驗證卡點中)
 
@@ -759,17 +761,17 @@ P1 出題擴充最後一塊:批次題目 validate/confirm(1–50 題、全錯誤
 
 ##### Verification(Part B,完成)
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm run typecheck` | ✅ 通過 |
-| `npm run lint:check` | ✅ 0 errors |
-| `npm run format:check` | ✅ All matched files use Prettier code style |
-| `npm run build` | ✅ nest build 通過 |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/question-batches.e2e-spec.ts` | ✅ 1 suite / 7 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand`(auth-courses/poll/openapi/questions-read/mutation/types/cli-credential/question-batches) | ✅ 8 suites / 57 tests |
-| `npm test -- --runInBand` | ✅ 18 suites / 86 tests |
-| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
-| `git diff --check` | ✅ PASS |
+| 命令                                                                                                                                     | 結果                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `npm run typecheck`                                                                                                                      | ✅ 通過                                      |
+| `npm run lint:check`                                                                                                                     | ✅ 0 errors                                  |
+| `npm run format:check`                                                                                                                   | ✅ All matched files use Prettier code style |
+| `npm run build`                                                                                                                          | ✅ nest build 通過                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/question-batches.e2e-spec.ts`                                                        | ✅ 1 suite / 7 tests                         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(auth-courses/poll/openapi/questions-read/mutation/types/cli-credential/question-batches) | ✅ 8 suites / 57 tests                       |
+| `npm test -- --runInBand`                                                                                                                | ✅ 18 suites / 86 tests                      |
+| `NODE_ENV=test npm run test:integration -- --runInBand`                                                                                  | ✅ 3 suites / 10 tests                       |
+| `git diff --check`                                                                                                                       | ✅ PASS                                      |
 
 ##### Results(Part B)
 
@@ -834,14 +836,14 @@ P2 課堂老師端第一個前端阻擋缺口:老師開題收答案後無 endpoi
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm test -- --runInBand src/modules/live-sessions/domain/question-results.spec.ts` | ✅ 1 suite / 12 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts` | ✅ 1 suite / 11 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` | ✅ 2 suites / 7 tests(無回歸) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新 route 進 spec) |
-| `npm test -- --runInBand`(全 unit) | ✅ 19 suites / 99 tests |
-| `npm run typecheck` / `lint:check` / `format:check` / `build` / `git diff --check` | ✅ 全綠(format 修 6 檔 Prettier) |
+| 命令                                                                                                                           | 結果                                   |
+| ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| `npm test -- --runInBand src/modules/live-sessions/domain/question-results.spec.ts`                                            | ✅ 1 suite / 12 tests                  |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts`                                          | ✅ 1 suite / 11 tests                  |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/poll-single-choice.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` | ✅ 2 suites / 7 tests(無回歸)          |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`                                                       | ✅ 1 suite / 3 tests(新 route 進 spec) |
+| `npm test -- --runInBand`(全 unit)                                                                                             | ✅ 19 suites / 99 tests                |
+| `npm run typecheck` / `lint:check` / `format:check` / `build` / `git diff --check`                                             | ✅ 全綠(format 修 6 檔 Prettier)       |
 
 #### e2e 覆蓋(11 cases)
 
@@ -889,13 +891,13 @@ P2 課堂老師端第二個缺口:老師 dashboard 需「加入 / 已投」即�
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-detail.e2e-spec.ts` | ✅ 1 suite / 9 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 3 suites / 18 tests(無回歸) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | ✅ 1 suite / 3 tests(新 route 進 spec) |
-| `npm run build` | ✅ nest build 成功 |
-| `npm run typecheck` / `lint:check` / `format:check` | ✅ 全綠 |
+| 命令                                                                                                                                                                 | 結果                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-detail.e2e-spec.ts`                                                                                 | ✅ 1 suite / 9 tests                   |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts test/poll-single-choice.e2e-spec.ts` | ✅ 3 suites / 18 tests(無回歸)         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`                                                                                             | ✅ 1 suite / 3 tests(新 route 進 spec) |
+| `npm run build`                                                                                                                                                      | ✅ nest build 成功                     |
+| `npm run typecheck` / `lint:check` / `format:check`                                                                                                                  | ✅ 全綠                                |
 
 #### e2e 覆蓋(9 cases)
 
@@ -948,20 +950,20 @@ P2 課堂老師端第三個缺口:joined/voted 即時人數的 **push** 交付�
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm install` + `npm audit` | ✅ 0 vulnerabilities |
-| `npm run typecheck` | ✅ PASS |
-| `npm run lint:check` | ✅ 0 errors |
-| `npm run format:check` | ✅ All matched files use Prettier |
-| `npm run build` | ✅ nest build PASS |
-| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts` | ✅ 1 suite / 5 tests |
-| `npm test -- --runInBand`(全 unit) | ✅ 20 suites / 104 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e) | ✅ 14 suites / 98 tests(無回歸) |
-| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
-| `NODE_ENV=test npm run prisma:migrate:status` | ✅ 8 migrations, schema up to date(無新 migration) |
-| `git diff --check` | ✅ PASS |
+| 命令                                                                                   | 結果                                               |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `npm install` + `npm audit`                                                            | ✅ 0 vulnerabilities                               |
+| `npm run typecheck`                                                                    | ✅ PASS                                            |
+| `npm run lint:check`                                                                   | ✅ 0 errors                                        |
+| `npm run format:check`                                                                 | ✅ All matched files use Prettier                  |
+| `npm run build`                                                                        | ✅ nest build PASS                                 |
+| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts`          | ✅ 1 suite / 5 tests                               |
+| `npm test -- --runInBand`(全 unit)                                                     | ✅ 20 suites / 104 tests                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped)         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e)                                | ✅ 14 suites / 98 tests(無回歸)                    |
+| `NODE_ENV=test npm run test:integration -- --runInBand`                                | ✅ 3 suites / 10 tests                             |
+| `NODE_ENV=test npm run prisma:migrate:status`                                          | ✅ 8 migrations, schema up to date(無新 migration) |
+| `git diff --check`                                                                     | ✅ PASS                                            |
 
 #### Debugging lesson(關鍵根因)
 
@@ -1033,20 +1035,20 @@ P2 課堂老師端第三個缺口:joined/voted 即時人數的 **push** 交付�
 
 #### Verification
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm install` + `npm audit` | ✅ 0 vulnerabilities |
-| `npm run typecheck` | ✅ PASS |
-| `npm run lint:check` | ✅ 0 errors |
-| `npm run format:check` | ✅ All matched files use Prettier |
-| `npm run build` | ✅ nest build PASS |
-| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts` | ✅ 1 suite / 5 tests |
-| `npm test -- --runInBand`(全 unit) | ✅ 20 suites / 104 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e) | ✅ 14 suites / 98 tests(無回歸) |
-| `NODE_ENV=test npm run test:integration -- --runInBand` | ✅ 3 suites / 10 tests |
-| `NODE_ENV=test npm run prisma:migrate:status` | ✅ 8 migrations, schema up to date(無新 migration) |
-| `git diff --check` | ✅ PASS |
+| 命令                                                                                   | 結果                                               |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `npm install` + `npm audit`                                                            | ✅ 0 vulnerabilities                               |
+| `npm run typecheck`                                                                    | ✅ PASS                                            |
+| `npm run lint:check`                                                                   | ✅ 0 errors                                        |
+| `npm run format:check`                                                                 | ✅ All matched files use Prettier                  |
+| `npm run build`                                                                        | ✅ nest build PASS                                 |
+| `npm test -- --runInBand src/modules/realtime/live-session-event-bus.spec.ts`          | ✅ 1 suite / 5 tests                               |
+| `npm test -- --runInBand`(全 unit)                                                     | ✅ 20 suites / 104 tests                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` | ✅ 1 suite / 9 tests(DB-backed, 0 skipped)         |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`(全 e2e)                                | ✅ 14 suites / 98 tests(無回歸)                    |
+| `NODE_ENV=test npm run test:integration -- --runInBand`                                | ✅ 3 suites / 10 tests                             |
+| `NODE_ENV=test npm run prisma:migrate:status`                                          | ✅ 8 migrations, schema up to date(無新 migration) |
+| `git diff --check`                                                                     | ✅ PASS                                            |
 
 #### Debugging lessons(關鍵根因)
 
@@ -1121,6 +1123,7 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 ## Checklist（建議順序）
 
 ### B1 — student role + 帳號 + 登入（不可建課）
+
 - [ ] schema/migration：`Account.role` CHECK 加 `student`（DROP/ADD `account_role_check`，範例 `20260815174233:32-34`）；`roles.ts` 加 `STUDENT`。
 - [ ] `CreateAccountDto`/`AdminController`/`AccountService` 接受 student；`canCreateCourse` 對 student 強制 false（service invariant + `CanCreateCourseGuard`）。
 - [ ] student 沿用同一 cookie session 登入；`SessionDto` role 回 student；`mustChangePassword`/disabled lifecycle 沿用。
@@ -1128,6 +1131,7 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - [ ] 測試：`identity.integration-spec.ts` role CHECK、`student-account.e2e-spec.ts` 登入/建課被拒/disabled。
 
 ### B2 — CourseEnrollment + 名冊 API（新 bounded context `enrollments`）
+
 - [ ] schema/migration：新 `CourseEnrollment` model（`uq_course_enrollment_course_student`、`idx_*`、`status` CHECK active/removed）。
 - [ ] 新 module `src/modules/enrollments`（api/application/domain），加入 `app.module.ts`，依賴方向 identity→courses→enrollments。
 - [ ] API（teacher owner/admin）：`POST /courses/:courseId/enrollments`、`DELETE /courses/:courseId/enrollments/:studentAccountId`、`GET /courses/:courseId/enrollments`（分頁）。
@@ -1136,6 +1140,7 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - [ ] 測試：teacher 加選/移除/列表、跨 owner 不洩、student 跨非 enrolled course 403/404。
 
 ### B3 — student cookie 綁定 Participant（HTTP）
+
 - [ ] schema/migration：`Participant` 加 optional `accountId` + FK Account `onDelete SetNull` + `idx_participant_account` + `uq_participant_session_account`。
 - [ ] `ParticipantOrSessionGuard` / `ParticipantsController` 新增 student cookie actor 分支（視為 participant；找/建該 session 的 account-bound Participant）；`assertCourseAccess` 不套用 student。
 - [ ] join：student 可 cookie 認證加入（省略 displayName，以 account identity）；匿名 session code fallback 保留。兩者產 Participant；student 路徑寫 `accountId`。
@@ -1143,20 +1148,555 @@ Lessons：PG CHECK 不能用 subquery（用 `jsonb_path_exists`）、Prisma `DbN
 - [ ] 測試：student cookie join/submit/results；匿名 fallback 仍可用；disabled student 不可重用。
 
 ### B4 — realtime student handshake
-- [ ] `live-gateway.ts`：cookie 不再一律走 teacher path；role=student 走 participant binding path（join `session:<id>` room，不進 teacher room）；`AuthenticatedClient` 加 student/participant-account 表達。
-- [ ] snapshot 分支對應調整；學生收 `result.updated`、不收 `counts.updated`。
-- [ ] 順便統一 gateway participant snapshot 與 REST participant snapshot（只保留 open + hasSubmitted）。
-- [ ] 測試：student cookie handshake 進 participant room、收 result、不收 counts。
+
+- [x] `live-gateway.ts`：cookie 不再一律走 teacher path；role=student 走 participant binding path（join `session:<id>` room，不進 teacher room）；`AuthenticatedClient` 加 student/participant-account 表達。
+- [x] snapshot 分支對應調整；學生收 `result.updated`、不收 `counts.updated`。
+- [x] 順便統一 gateway participant snapshot 與 REST participant snapshot（只保留 open + hasSubmitted）。
+- [x] 測試：student cookie handshake 進 participant room、收 result、不收 counts — targeted realtime e2e 14/14 passed。
 
 ### B5 — 隱私 / redaction / 設計文件
-- [ ] `pino-redaction.ts` 評估補 student profile/credential 欄位。
-- [ ] open_text results 維持匿名（不回 displayName/token）。
-- [ ] close 後 results 投影匿名；CourseEnrollment 關係保留（本期不做歷史查詢）。
-- [ ] 更新設計文件「無學員帳號」限制與 authorization matrix（`docs/.../Web Auth...`、`Backend NestJS 實作規劃.md:188-193`、`P0 核心需求基線.md`、`SPEC.md R-F5-5`、`BDD 場景.md`）。
+
+> **Status (2026-08-23): IN PROGRESS / targeted runtime evidence PASS.** Runtime behavior is present and the focused privacy regressions pass; this slice still has a sibling-document permission boundary and broad verification pending. No schema/migration change is in scope.
+
+- [x] `pino-redaction.ts` call-site audit completed; no reachable raw `passwordHash` logger payload found, so no blanket redaction was added for authorized `username`/`displayName`/opaque `accountId` projections.
+- [x] `pino-redaction.spec.ts` verifies credentials, cookies, tokens, answer payloads and open-text content are removed while authorized profile metadata remains available to projections.
+- [x] open_text results remain anonymous in open and closed REST projections; response objects contain only `{ text }` and no identity/token linkage.
+- [x] realtime student close `result.updated` remains participant-safe with no identity linkage or teacher-only counts.
+- [ ] synchronize all sibling design documents that still contain historical "no student account" wording; current workspace permission blocked edits to at least Web Auth and Backend NestJS planning files, while other approved addenda were applied.
+
+### B5 working notes
+
+- Focused unit: 2 suites / 14 tests PASS.
+- Focused DB-backed e2e: 2 suites / 15 tests PASS against guarded `smartlearning_test`.
+- B3 full HTTP/concurrency, full regression, and P0-06 archive/retention runtime remain separate pending scope.
 
 ## Phase B 驗證（DoD）
+
 - student 可登入、加選、看名冊/我的課、cookie 加入 session 並作答；匿名 session code fallback 保留（e2e 通過）。
-- realtime：student 進 participant room、收 `result.updated`、不收 `counts.updated`（e2e 通過）。
+- realtime：student 進 participant room、收 `result.updated`、不收 `counts.updated`（targeted e2e 14/14 通過；B4 verified）。
 - 權限 regression：student 存取 owner 路徑被拒。
 - `prisma:validate`、相關 unit/integration/e2e、`openapi.e2e-spec.ts` 通過。
 - 設計文件同步更新。
+
+---
+
+# Phase B — Execution Log
+
+日期：2026-08-18
+計畫：`/home/user/.claude/plans/streamed-toasting-panda.md`
+
+## Acceptance criteria
+
+- [ ] Student role/login/session lifecycle is supported; student `canCreateCourse` is always false and teacher/admin owner paths reject students.
+- [ ] CourseEnrollment roster APIs support owner/admin add/remove/list, student active-course listing, archived-course protection, and cross-owner privacy.
+- [ ] Enrolled students can cookie-join/read/submit/results through an account-bound Participant; anonymous session-code/token behavior remains unchanged.
+- [x] Student Socket.IO clients are participant-only, receive safe `result.updated`, and never receive `counts.updated` — targeted B4 realtime e2e passed.
+- [ ] Privacy/redaction and all authoritative design/authorization documents are synchronized.
+
+## Checklist
+
+- [ ] Checkpoint A: capture baseline, implement B1 migration/identity/authorization, add regression tests, verify targeted gates.
+- [ ] Checkpoint B: implement B2 CourseEnrollment bounded context and roster APIs, migrate/test isolated DB, verify OpenAPI.
+- [ ] Checkpoint C: implement B3 account-bound Participant HTTP flow, preserve anonymous flow, test concurrency and disabled accounts.
+- [ ] Checkpoint D: implement B4 realtime handshake/projection parity, complete B5 privacy/docs, run full regression gates.
+- [ ] Record final results, operational notes, and any new lesson in `tasks/lessons.md`.
+
+## Risk & rollback
+
+- **Risk:** high — authentication/authorization, enrollment tenancy, participant identity, and Socket.IO visibility.
+- **Rollback:** revert application slice-by-slice; retain additive migrations and committed student/enrollment/participant rows; use forward fixes instead of editing applied migrations or restoring revoked sessions/submissions.
+- **DB safety:** only mutate `smartlearning_test` through the guarded test setup and obtain explicit authorization before migration deployment to test/development databases.
+
+## Working notes
+
+- Existing role/status constraints are hand-written PostgreSQL `TEXT + CHECK`; UUIDs are app-generated UUID v7.
+- Existing test bootstrap must continue using `test/setup/db.ts`; it refuses databases other than `smartlearning_test`.
+- PostgreSQL remains the identity/enrollment/participant authority; realtime publishes only post-commit notifications.
+- B1 code-only verification (2026-08-18): unit 20 suites/104 tests, typecheck, lint, format, build, and diff check PASS; test migration/integration/e2e intentionally deferred by user, so B1 remains unverified against PostgreSQL.
+
+## B2 progress (2026-08-18)
+
+- Added `CourseEnrollment` schema model and additive migration `20260818110000_add_course_enrollment`; migration is not applied.
+- Added enrollment status domain, application service, controller, DTO projections, module wiring, and `/api/v1/me/courses`.
+- Add/reactivate is draft-only and course-row locked; remove is idempotent and allowed for authorized archived-course owners/admins; active-course listing is student-only.
+- Added enrollment e2e coverage and OpenAPI path assertions; PostgreSQL-backed tests remain deferred with migration authorization.
+
+## B3/B4 progress (2026-08-18)
+
+- Added nullable `Participant.accountId`, account/session uniqueness and index migration `20260818120000_bind_participant_account`; migration is not applied.
+- Student cookie joins/resolution require an active student account and active CourseEnrollment, create one participant idempotently under the LiveSession row lock, and never return the internal participant token.
+- Anonymous session-code/token joins and submissions remain available; cookie-backed mutations use CSRF/Origin validation while bearer-token paths remain unchanged.
+- Socket.IO cookie handshakes now branch student accounts into participant scope, keep teacher/admin scope unchanged, project only open participant questions, and never send teacher counts to student sockets.
+- B3/B4 DB-backed e2e/realtime verification remains deferred with migration authorization; static checks are rerun after the final code changes.
+
+## B5 discovery note (2026-08-18)
+
+- The design-document paths listed in the Phase B plan are not present in this checkout (only README/SKILL/task markdown is tracked); no authoritative design document was edited. Existing Pino redaction already covers cookies, participant/session tokens, idempotency keys, and answer fields.
+- Added Socket.IO handshake redaction for participant tokens, session codes, and handshake cookies; no password, password hash, cookie, raw session/participant token, or open-text content is exposed in responses or logs.
+
+## Final code-only verification (2026-08-18)
+
+- `src/modules/realtime/live-gateway.ts`: account-bound participant sockets are reauthorized before snapshots, participant result projections, and every signal; revoked enrollment/account status disconnects the socket before later broadcasts. `counts.updated` remains teacher-room-only.
+- Account-bound Participant creation and cookie-bound submission revalidation now lock rows in the order `liveSession → course → account` before the final enrollment/account checks, closing enrollment-removal and account-disable TOCTOU windows.
+- Replaced the Socket.IO `RemoteSocket[] as Socket[]` assertion with a narrow structural `DisconnectableSocket` shape (`id` + `disconnect`) and retained only the local helper cast needed by the Socket-oriented result path.
+
+| Command                                                    | Result                       |
+| ---------------------------------------------------------- | ---------------------------- |
+| `npm run typecheck`                                        | PASS                         |
+| `npm run lint:check`                                       | PASS                         |
+| `npm run format:check`                                     | PASS                         |
+| `npm run build`                                            | PASS                         |
+| `git diff --check`                                         | PASS                         |
+| `npm test -- --runInBand`                                  | PASS — 20 suites / 104 tests |
+| `npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | PASS — 1 suite / 3 tests     |
+
+The verification agent confirmed the working tree was unchanged by these checks. Expected LiveSessionEventBus simulated-error logs and existing Nest legacy wildcard-route warnings were non-blocking.
+
+## Intentional migration-backed verification block
+
+- The user explicitly chose `Defer migration`; no Phase B migration was deployed or applied, and no `setupTestDb` was run.
+- The following additive migrations remain unapplied: `20260818100000_add_student_role`, `20260818110000_add_course_enrollment`, and `20260818120000_bind_participant_account`.
+- Consequently, identity integration plus enrollment, student-account, account-bound participant, and realtime DB-backed e2e suites remain unexecuted. Phase B acceptance criteria and DoD stay unchecked until explicit migration authorization is provided.
+- When authorized, apply only to the isolated `smartlearning_test` database, verify migration status, then run the targeted B1–B4 integration/e2e suites before broader regression. Do not edit already-applied migrations or commit without explicit user instruction.
+
+## 2026-08-20 — US-F7 password policy and login rate limit (complete; DB verification blocked)
+
+### Context and acceptance criteria
+
+- [x] Enforce the 12–128 Unicode password policy plus deterministic normalized common-password rejection for account creation, admin reset, bootstrap, and self-service change.
+- [x] Enforce account + source fixed-window login limits with safe defaults, numeric env coercion, TTL expiry, generic 429 `RATE_LIMITED`, retry hint, anti-enumeration behavior, and account-scope clearing on success.
+- [x] Preserve no-schema/no-Redis MVP boundary and document the static-list and single-instance limitations.
+- [x] Complete frontend F7 regression coverage in the separate UI repository after backend contract verification.
+
+### Checkpoints
+
+- [x] A — audit/harden existing uncommitted backend F7 files and add policy/rate-limit tests.
+- [x] B — run targeted backend gates, then frontend F7 fixes/tests.
+- [x] C — attempt backend DB regression/status checks and record the block; PostgreSQL at `localhost:5432` was unavailable, so DB-backed verification remains blocked.
+
+### Risk & rollback
+
+- Risk: high — authentication, password state, session rotation, and abuse controls.
+- Rollback: revert/remove only F7 policy/limiter wiring and new files; no migration rollback. Preserve unrelated README, live-session DTO, lesson, and Phase B changes.
+
+### Dependencies & environment
+
+- Node 24+, migrated `smartlearning_test` for DB-backed e2e, and guarded test DB setup. Redis and real breached-password source remain deferred.
+
+### Working notes
+
+- Backend working tree was already dirty before this slice; unrelated changes must not be reset or overwritten.
+- RateLimiterService must coerce ConfigService env strings at read time; this is a required permanent-lockout tripwire.
+- Frontend StepUpDialog/useStepUp remain deferred to F8; self-service change-password is Session + CSRF only.
+
+### Results (2026-08-20)
+
+- **What changed**: retained and hardened the static common-password policy, applied it to account creation/reset/bootstrap/self-change, added normalized account limiter keys and string-env TTL coverage, corrected the disabled-account rate-limit e2e fixture, added source-scope and retry-envelope regression assertions, and preserved the in-memory single-instance MVP boundary.
+- **Static verification**: typecheck, lint, format, build, and targeted policy/limiter/filter tests passed (3 suites / 33 tests). A prior full backend static/unit pass also passed (21 suites / 120 tests before the final targeted additions).
+- **DB verification blocked**: `prisma:migrate:status` failed with PostgreSQL `P1001` at `localhost:5432`; auth-rate-limit/auth-courses e2e and identity integration were guarded/blocked and did not exercise DB assertions.
+- **Unrelated work preserved**: existing README, live-session DTO, lesson, Docker, and Phase B changes remain untouched by this F7 slice; no schema/migration or commit was created.
+
+## 2026-08-21 — US-F16 account course-creation permission (backend + isolated browser acceptance verified)
+
+### Goal and acceptance criteria
+
+- [x] Add admin-only `PATCH /api/v1/admin/accounts/:id/permissions` with body `{ canCreateCourse: boolean }` and HTTP 200 `AccountDto` response.
+- [x] Keep permission changes separate from disable/restore, WebSession/CLI credential revocation, unused-token invalidation, and existing domain rows.
+- [x] Enforce the student invariant: a student target cannot be granted `canCreateCourse=true`.
+- [x] Add OpenAPI and targeted account-admin e2e coverage; record the real DB gate explicitly when unavailable.
+
+### Checkpoints
+
+- [x] A — Confirm the execution-plan contract and implement DTO/controller/service boundaries.
+- [x] B — Add row-locked single-field mutation, no-op behavior, OpenAPI assertion, and account-admin behavioral cases.
+- [x] C — Close the revoke/create TOCTOU by rechecking `canCreateCourse` under the owner row lock in `CourseService.createCourse`, with a unit regression test.
+- [x] D — Run DB-backed F16 e2e/side-effect matrix: targeted `account-admin.e2e-spec.ts` passed (1 suite / 10 tests) against migrated `smartlearning_test`.
+- [x] E — Real Playwright acceptance passed against the rebuilt dirty-source backend with an isolated fixture and exact `CORS_ORIGIN=http://localhost:3001`.
+
+### Risk & rollback
+
+- Risk: high — authorization boundary and preservation of sessions, credentials, and domain data.
+- Rollback: remove only the F16 DTO/route/service/tests/docs; preserve existing account list/detail/create and disable/restore/CLI flows. No schema migration or data rollback is required.
+
+### Dependencies & environment
+
+- Node 24+, migrated isolated `smartlearning_test`, backend on `localhost:3000`, frontend origin `http://localhost:3001` for browser integration.
+- No Prisma schema/migration change; the existing `Account.canCreateCourse` column is authoritative.
+
+### Working notes
+
+- Contract source: `/home/user/projects/smartLearning/docs/智學互動平台/50_實作與測試/US-F16 前端實作計畫-執行方案.md`.
+- `TransactionService.lockAccountForUpdate()` serializes permission changes; same-value updates return the locked row without side effects.
+- `CourseService.createCourse()` now takes the same account row lock and rechecks the authoritative permission before inserting, so a revoke/create race linearizes at the account lock.
+- Student `true` is rejected with `FORBIDDEN`; malformed/unknown IDs remain existence-safe; global validation rejects non-boolean/unknown body fields.
+
+### Results
+
+- **What changed**: added `UpdateAccountPermissionsDto`, admin controller PATCH route, `AccountService.updateCourseCreationPermission`, the transaction-locked course-create recheck plus regression tests, frontend API reference rows for existing list/detail and new PATCH, OpenAPI path assertion, and F16 account-admin e2e cases.
+- **Static verification**: targeted `npm test -- --runInBand src/modules/courses/application/course.service.spec.ts` passed (1 suite / 2 tests); `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` all passed after the race fix. No DB-mutating tests or migrations were run.
+- **Integration verification**: OpenAPI e2e passed (3 tests); `NODE_ENV=test npm run prisma:migrate:status` passed with 12 migrations up to date; targeted `NODE_ENV=test npm run test:e2e -- --runInBand test/account-admin.e2e-spec.ts` passed (1 suite / 10 tests), covering true/false course creation, student/non-admin/CSRF behavior, revoke/create serialization, and domain/credential preservation assertions.
+- **Historical before isolated fixture**: real browser acceptance was blocked because all five `F16_*` fixture variables were unset and UI port `3001` was not listening; the final acceptance evidence is recorded below.
+
+### Real F16 browser acceptance — 2026-08-22 (dirty source + isolated fixture)
+
+- **Runtime**: rebuilt the current uncommitted F16 source and launched an isolated `f16isolated` Compose stack. `f16-isolated-backend` runs on host `3000` with `CORS_ORIGIN=http://localhost:3001`; `f16-isolated-db` runs on host `55433` with a fresh named volume. The prior `smartlearning-backend` container was stopped only; its original container/database/volume were preserved.
+- **Fixture**: compiled bootstrap created a fresh admin in the isolated database; the real admin API created a unique teacher and the forced password change completed. Target account ID: `01a028b5-c31f-7410-83a5-7032e8e81acd`. Passwords and cookies stayed in-process and were not written to source, tasks, logs, or commits.
+- **Preflight**: `/health/live`, `/health/ready`, `/api/docs-json` all returned HTTP 200; isolated migration exited `0`; `prisma migrate status` found 12 migrations with no pending migrations; live OpenAPI exposed the F16 detail and permission PATCH routes; allowed CORS returned the exact UI origin and credentials, while an unapproved origin received no ACAO.
+- **Browser**: `node test/browser/run.mjs test/browser/us-f16-account-permission.spec.ts` passed Chromium **1/1** in 3.1 seconds, including real admin/teacher login, keyboard/ARIA switch behavior, revoke→403/no-new-course, re-enable→201, archive, restore, and logout cleanup.
+- **Scope**: no backend source, schema, existing domain row, or volume was reset/deleted. CP0 is now `PASS`; CP1–CP5 were not started.
+
+---
+
+# 2026-08-23 — US-F0 CP5 → US-F1 Backend Contract → F1 Frontend
+
+## Goal and acceptance criteria
+
+- [ ] Complete US-F0 CP5 real-backend Playwright acceptance with isolated runtime/fixtures, CSRF/Origin negatives, stale-session authorization, accessibility/responsive evidence, scoped cleanup, and no-new-row proof.
+- [ ] Freeze and obtain manual approval for the F1 history/result/governance contract before schema changes.
+- [ ] Implement F1 backend archive authority, retention/deletion/tombstone semantics, history/result APIs, privacy/race tests, OpenAPI and frontend reference.
+- [ ] Obtain manual approval of the backend gate before any F1 frontend route/hook/type/component.
+- [ ] Implement F1 frontend only from the confirmed backend contract and complete real-backend acceptance.
+
+## Checkpoint checklist
+
+- [ ] CP0 — non-mutating source/runtime/OpenAPI/CORS/migration/fixture preflight.
+- [ ] Manual confirmation 1 — authorize authenticated Course create/archive/permission mutations.
+- [ ] CP1 — run existing US-F0 real-browser spec and sanitized handoff.
+- [ ] Manual confirmation 2 — confirm CP5 acceptance matrix completed.
+- [ ] CP2 — present canonical F1 routes/DTOs/authorization/race/retention/deletion semantics.
+- [ ] Manual confirmation 3 — authorize schema/migration implementation.
+- [ ] CP3/4 — implement additive archive authority, governance APIs/worker, docs, and regression coverage.
+- [ ] CP5 — run backend contract verification bundle.
+- [ ] Manual confirmation 4 — authorize F1 frontend implementation.
+- [ ] CP6 — implement and verify F1 frontend; request Manual confirmation 5.
+
+## Risk & rollback
+
+- **Risk:** high — authentication/authorization, anonymous result governance, irreversible deletion, additive migration, and close/submit/archive races.
+- **Rollback:** preserve existing F8/Phase-B dirty work; use additive migration plus revert/forward-fix; never reset working trees, truncate, broad `down -v`, restore revoked sessions, or resurrect deleted/tombstoned result content.
+
+## Dependencies and environment
+
+- Node 24+, PostgreSQL, Prisma 7, backend `3000`, UI `3001`, Chromium/Playwright 1.62.1, exact runtime `CORS_ORIGIN=http://localhost:3001` for CP5.
+- CP5 uses process-only `F0_*` variables; secrets/raw cookies/CSRF/participant/CLI tokens and raw backend messages must not enter source, logs, task records, traces, or chat.
+- DB-backed verification is limited to protected `smartlearning_test` or an explicitly isolated database; do not mutate unknown databases.
+
+## Working notes
+
+- Current backend dirty scope is US-F16/F8/Phase-B; current UI dirty scope is task documentation. Keep these scopes separate.
+- Current backend has close/cancel and per-question result projections but no ArchivedResult/history/retention/tombstone authority.
+- P0 cancellation and current backend/wire behavior require an explicit CP2 decision; result route naming also requires explicit canonicalization before frontend work.
+
+## Results
+
+- Planning completed and approved; no product source, schema, migration, environment file, or runtime/domain data changed during planning.
+- CP0 execution is the next action. Stop at Manual confirmation 1 before authenticated CP5 mutations.
+
+### CP0 preflight — 2026-08-23 (BLOCKED; no authenticated CP5 mutation)
+
+- **PASS:** existing isolated backend on `3000` returned HTTP 200 for `/health/live`, `/health/ready`, `/api/docs`, and `/api/docs-json`; live OpenAPI had 37 paths including Course, F16 permission, Phase-B enrollment/participant, and current LiveSession routes.
+- **PASS:** runtime CORS was exactly `http://localhost:3001`; allowed-origin response exposed matching ACAO/credentials and an unapproved origin had no ACAO. Protected `smartlearning_test` migration status reported 12 migrations and schema up to date.
+- **PASS:** existing migrate container exited `0`; backend container was healthy. No source, product file, database row, or existing volume was changed by this preflight.
+- **BLOCKER:** the reachable backend was built from `/tmp/smartlearning-cp5-20260822` (Compose labels/config), not the current checkout; source/runtime parity therefore cannot be claimed. UI `3001` was unreachable, and all eight process-only `F0_*` variables were missing.
+- **Safety decision:** no Course create/archive, permission mutation, authenticated browser run, fixture mutation, teardown, or volume deletion was performed. CP5 remains `BLOCKED`; Manual confirmation 1 has not been requested as a PASS handoff.
+- **Next action requiring user decision:** rebuild a fresh isolated stack from the current checkout on backend `3000` (which requires stopping only the named stale isolated `smartlearning-cp5-20260822` stack while preserving its volume), start UI `3001`, and provision the eight F0 fixture variables before requesting Manual confirmation 1.
+
+### CP0 rerun — 2026-08-23 (PASS; awaiting Manual confirmation 1)
+
+- **Runtime/source:** stopped only the named stale isolated stack while preserving `smartlearning-cp5-20260822_cp5_pgdata`; built `smartlearning-cp5-20260823` from the current checkout context `/home/user/projects/smartLearning/smartLearning-backend` with a new volume `smartlearning-cp5-20260823_cp5f0_20260823_pgdata`.
+- **Services:** backend `3000` healthy, isolated DB `55435` healthy, migrate exited `0`, UI `3001` returned HTTP 200. No existing development DB/container/volume was touched.
+- **Contract/CORS:** `/health/live`, `/health/ready`, `/api/docs`, `/api/docs-json` returned HTTP 200; live OpenAPI exposed 37 paths including current F16/Phase-B routes; `CORS_ORIGIN` was exactly `http://localhost:3001`, allowed origin returned matching ACAO/credentials, blocked origin returned no ACAO.
+- **Fixture:** compiled bootstrap in the current-source runtime image created an isolated admin; real admin API created an isolated teacher with `canCreateCourse=false`; teacher completed forced password change; all eight F0 variables exist only in the waiting provisioning process. No credentials, cookies, CSRF values, or raw tokens were persisted or printed.
+- **Safety:** no Course create/archive, permission update, authenticated browser run, arbitrary delete, truncate, or volume deletion was performed. CP0 exit criteria are PASS; waiting for explicit Manual confirmation 1 before CP5 mutations.
+- **User decision:** Manual confirmation 1 was intentionally declined on 2026-08-23; execution is paused at CP0. The isolated runtime/fixture remains available; the credential-holding provisioning process was stopped and its control markers removed. CP1 remains pending.
+
+### Implementation lesson (2026-08-23)
+
+- Host `npm run bootstrap:admin` under the available Node/tsx toolchain failed before application startup with `PrismaService` receiving an undefined `ConfigService`; the current-source compiled runtime image worked. For isolated Docker fixtures, use the compiled bootstrap artifact inside the exact runtime image and verify its exit code, rather than treating a host CLI failure as a database/runtime failure.
+
+### CP5 isolated-stack execution checklist — 2026-08-23
+
+- [x] A — repeat sanitized runtime/source/config/health/CORS/UI/migration preflight; no authenticated mutation.
+- [x] Manual A — user selected **Stop here** after the sanitized preflight; no lifecycle action or authenticated mutation was authorized.
+- [ ] B — provision a fresh isolated F0 admin/teacher fixture with compiled bootstrap and process-only credentials.
+- [ ] Manual B — obtain explicit confirmation before releasing the fixture marker for real Playwright Course/permission mutations.
+- [ ] C — run static gates and the existing Chromium 1-worker `us-f0-course-flow.spec.ts`; require non-skipped pass and scoped cleanup.
+- [ ] D — collect sanitized evidence, verify Compose scope/volume preservation, and append UI task-log results only after real acceptance.
+
+**Scope:** no backend/product source, schema, migration, env file, commit, broad teardown, volume deletion, truncate, or arbitrary row deletion. Existing CP5 and unrelated Compose projects/volumes remain protected.
+
+**Working notes:** current shell has no F0 variables; existing CP5 fixture credentials must not be recovered. If a fresh current-source migration image fails, stop as blocked and do not modify the Dockerfile in this CP5 run.
+
+### CP5 isolated-stack preflight attempt — 2026-08-23 (BLOCKED; paused at Manual A)
+
+- **PASS:** backend and UI repository scope was preserved; backend source remained clean before this execution attempt and the UI retained only its existing `tasks/todo.md` modification.
+- **PASS:** named `smartlearning-cp5-20260823` runtime reported backend healthy on `3000`, DB healthy on `55435`, migration exit `0`, network `smartlearning-cp5-20260823_default`, and volume `smartlearning-cp5-20260823_cp5f0_20260823_pgdata`.
+- **PASS:** `/health/live`, `/health/ready`, `/api/docs`, `/api/docs-json`, and UI `3001` returned HTTP `200`; allowed CORS returned `http://localhost:3001`, while a blocked origin returned no ACAO.
+- **PASS:** merged config safe projection contained only backend `3000:3000` and DB `55435:5432`; resource labels matched the named CP5 project. No F0 variable names were present in the current process environment.
+- **BLOCKED:** the user selected **Stop here** at Manual confirmation A. No existing CP5 container was stopped, no rerun project/volume was created, no fixture was provisioned, and no authenticated Course/permission/browser mutation was attempted.
+- **Decision:** CP5 real-browser acceptance remains `BLOCKED`/pending a later explicit confirmation; existing CP5 runtime, volume, unrelated Compose projects, and domain data were left untouched. UI `tasks/todo.md` was not appended because browser/cleanup evidence does not exist.
+
+### CP5 fresh rerun — 2026-08-23 (PAUSED at Checkpoint A)
+
+- **PASS:** backend `HEAD` was `cc0b88146afa3cf7712d708aa850aaea20fd766c` with a clean working tree; the UI retained only its pre-existing task-log change at the start of the rerun.
+- **PASS:** existing Compose scope was inventoried without secrets: `smartlearning-cp5-20260823` owned `3000:3000`, `55435:5432`, network `smartlearning-cp5-20260823_default`, and volume `smartlearning-cp5-20260823_cp5f0_20260823_pgdata`; unrelated projects/resources were not targeted. All `F0_*` names were absent from the current process environment.
+- **PASS:** the run-scoped temporary Compose projection passed with project `smartlearning-cp5-20260823-rerun-20260822172242`, current-checkout build context, `migrate`/`runtime` targets, exact `3000:3000` and `55435:5432` mappings, isolated volume/network names, `service_completed_successfully` dependency, and `CORS_ORIGIN=http://localhost:3001`. The temporary file was `/tmp/smartlearning-cp5-20260823-rerun-20260822172242.yml`; its volume and network were not created.
+- **PASS:** the already-running UI endpoint at `http://localhost:3001` returned HTTP `200`.
+- **PAUSED:** the user selected **Stop here** at Checkpoint A. No old CP5 container was stopped; no image build, new stack startup, migration, bootstrap, fixture provisioning, F0 marker, authenticated mutation, or browser run was performed.
+- **Decision:** this fresh rerun remains pending Checkpoint B authorization. Existing CP5 runtime/volume/network and unrelated Compose resources remain protected; no backend product source, schema, migration, environment file, or database row was changed.
+
+### CP5 Checkpoint B attempt — 2026-08-23 (BLOCKED; environment unavailable)
+
+- **Manual authorization:** received for the limited Checkpoint B lifecycle/fixture step only; authenticated Course, permission, and browser mutations remain unauthorized pending Manual B.
+- **BLOCKED:** the reviewed `/tmp/cp5f0-provision-and-run.sh` provisioning flow is absent, and the Docker API is unavailable (`unix:///var/run/docker.sock: no such file or directory`). Therefore no CP5 container was stopped, no fresh project/volume/network was created, no image was built, no migration/bootstrap/fixture provisioning ran, and no F0 marker was released.
+- **Safety:** no backend/UI product source, schema, migration, environment file, database row, existing CP5 resource, unrelated Compose project, or volume was changed.
+- **Next step:** restore Docker daemon access and recreate/recover the explicitly reviewed CP5 provisioning flow without recovering credentials; then rerun the limited Checkpoint B preflight before requesting Manual B.
+
+### CP5 Checkpoint B retry — 2026-08-23 (BLOCKED; execution artifact absent)
+
+- **Docker:** the Docker socket is now present, and the named project inventory is readable. The existing `smartlearning-cp5-20260823` containers are exited (`backend`/`db` exit 255; `migrate` exit 0).
+- **BLOCKED:** the reviewed provisioning script and temporary Compose file are absent (`/tmp/cp5f0-provision-and-run.sh` and `/tmp/smartlearning-cp5-20260823.yml` cannot be read). The Compose project metadata points to the missing temporary file, so the exact isolated lifecycle/config cannot be safely reconstructed from the current filesystem without risking the wrong project or volume.
+- **Safety:** no container was stopped or started, no stack was rebuilt, no volume/network/database mutation was attempted, and no F0 credential or marker was recovered.
+- **Next step:** restore the exact CP5 execution artifact (or provide an explicitly reviewed replacement) before retrying; then re-run the scoped Checkpoint B preflight and fixture provisioning.
+
+### CP5 Checkpoint B preflight — 2026-08-23 (PASS; lifecycle intentionally not executed)
+
+- **Docker:** daemon available (`29.5.3`); named project inventory is readable. Existing `smartlearning-cp5-20260823` containers remain exited: backend/db `255`, migrate `0`.
+- **Artifacts:** reviewed `/tmp/cp5f0-provision-and-run.sh` and `/tmp/smartlearning-cp5-20260823.yml`; the script is gated on the fixture marker and Manual confirmation 1 before UI mutations. No marker files currently exist.
+- **Scope:** container labels match project `smartlearning-cp5-20260823`; the existing DB volume is `smartlearning-cp5-20260823_cp5f0_20260823_pgdata`, attached only at PostgreSQL data path; network is `smartlearning-cp5-20260823_default`.
+- **Compose projection:** sanitized merged config contains exactly `backend:3000:3000` and `db:55435:5432`; no lifecycle command was issued.
+- **Safety:** no container was stopped/started, no image was built, no migration/bootstrap/fixture provisioning ran, no marker was released, and no authenticated Course/permission/browser mutation was attempted.
+- **Next step:** the limited preflight is complete. Stop before the reviewed provisioning script's bootstrap or any fixture/authenticated mutation; request a separate explicit authorization before proceeding past Manual B.
+
+### Phase B Checkpoint A preflight — 2026-08-23 (BLOCKED; PostgreSQL unavailable)
+
+- **PASS:** current backend branch is `phase-b-student-enrollment`; the only pre-existing dirty file is `tasks/todo.md`, containing unrelated CP5 notes. No product source, schema, migration, or unrelated change was reset or overwritten.
+- **PASS:** Phase B migrations were inspected read-only: `20260818100000_add_student_role`, `20260818110000_add_course_enrollment`, and `20260818120000_bind_participant_account`. The guarded test configuration names `smartlearning_test`; development configuration names `smartlearning_dev`.
+- **BLOCKED:** read-only `NODE_ENV=test npm run prisma:migrate:status` resolved target `smartlearning_test` but PostgreSQL at `localhost:5432` was unreachable (`P1001`). Development status likewise resolved `smartlearning_dev` but was unreachable. Migration status is therefore unproven; no targeted tests, migration deploy, schema/data write, or manual authorization request was performed.
+- **Next step:** restore PostgreSQL connectivity, rerun the read-only Checkpoint A status preflight, then request manual authorization before any targeted Phase B test.
+
+### Phase B Checkpoint A rerun + B1/B2 targeted verification — 2026-08-23
+
+- **PASS:** after PostgreSQL recovery, read-only `NODE_ENV=test npm run prisma:migrate:status` resolved `smartlearning_test`; 12 migrations were found and the database schema was up to date. No migration file, schema, product source, or unrelated CP5/F8 change was edited.
+- **AUTHORIZED:** the user authorized targeted B1/B2 DB-backed tests and fixture-isolation truncation limited to `smartlearning_test`.
+- **PASS:** `NODE_ENV=test npm run test:integration -- --runInBand test/identity.integration-spec.ts` — 1 suite / 7 tests passed, 0 skipped.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/student-account.e2e-spec.ts test/enrollments.e2e-spec.ts test/openapi.e2e-spec.ts` — 3 suites / 8 tests passed, 0 skipped.
+- **PASS:** combined B1/B2 scope — 4 suites / 15 tests passed, 0 failures, 0 skips. Evidence covers student role and `canCreateCourse=false` normalization/persistence/session projection, owner roster add/list/remove/reactivate/idempotency, cross-owner privacy, archived-course rejection, `/api/v1/me/courses`, student owner-path denial, DB CHECK rejection, and OpenAPI enrollment/admin paths.
+- **NOTE:** `test/setup/db.ts` internally invokes idempotent `npx prisma migrate deploy` before DB-backed suites. The tests made no schema change because status was already up to date, but this implicit setup behavior differs from the Checkpoint A wording “不重套 migration”; it is recorded as a boundary discrepancy, not silently treated as a no-op.
+- **Checkpoint B decision required:** accept this B1/B2 report and authorize the next scoped step, B3 account-bound HTTP participant tests. No B3, realtime, documentation, or broad regression work has started.
+
+### Phase B current execution status — 2026-08-23
+
+- **Completed:** Checkpoint A DB preflight, authorized B1/B2 targeted verification, and authorized B4 realtime targeted verification.
+- **B1/B2 result:** 4 suites / 15 tests passed, 0 skipped, 0 failures against `smartlearning_test`; no `smartlearning_dev` access.
+- **B4 result:** `test/live-session-realtime.e2e-spec.ts` passed with 1 suite / 14 tests, 0 failures, 0 skips; realtime static gates also passed.
+- **Current state:** B4 targeted acceptance verified; B3 full HTTP suite, B5 authoritative-document synchronization, and final regression gates remain pending.
+- **Not started:** `test/participant-account.e2e-spec.ts` (B3 full suite), B5 authoritative-document synchronization, and broad/full regression gates.
+- **Next action:** decide whether to run the separate B3 account-bound HTTP suite, then complete B5 documentation/privacy synchronization before claiming the overall Phase B DoD.
+- **Safety status:** no runtime source, Prisma schema, migration, design document, commit, reset, down migration, or broad deletion was performed. Existing CP5/F8 work was preserved.
+- **Working-tree note:** this execution appended the B4 result and updated the B4 checklist only; product source and schema remain unchanged.
+- **Boundary note:** DB-backed test setup internally runs idempotent `npx prisma migrate deploy`; migration status was already up to date and no schema change was observed. This remains an explicit process-boundary note.
+
+### B4 realtime targeted verification — 2026-08-23
+
+- **AUTHORIZED:** the user explicitly authorized the guarded B4 realtime fixture isolation limited to `smartlearning_test`; no `smartlearning_dev` or unknown database access was authorized.
+- **PASS:** read-only `NODE_ENV=test npm run prisma:migrate:status` resolved `smartlearning_test`; 12 migrations were found and the schema was up to date.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-realtime.e2e-spec.ts` — 1 suite / 14 tests passed, 0 failures, 0 skips. The suite used real TCP Socket.IO clients and PostgreSQL; all tests reached `requireDatabase()` rather than passing vacuously.
+- **PASS:** B4-focused static gates — realtime event-bus unit 1 suite / 5 tests, typecheck, lint:check, format:check, and `git diff --check` all passed.
+- **RESULT:** B4 realtime targeted acceptance is verified: student cookie participant scope, snapshot privacy, participant-safe result push, teacher-only counts, enrollment/account revocation disconnects, anonymous fallback, and existing teacher lifecycle paths passed. No product source, schema, migration, environment file, commit, or unrelated CP5/F8 change was edited.
+- **BOUNDARY:** B3 full `participant-account.e2e-spec.ts`, B5 authoritative-document synchronization, and broad/full regression remain unverified and are not claimed complete. Existing non-blocking Nest legacy route-converter warnings remained.
+
+### B5 privacy targeted verification — 2026-08-23
+
+- **PASS:** `NODE_ENV=test npm run prisma:validate` — Prisma schema/config valid; no schema or migration edits.
+- **PASS:** `NODE_ENV=test npm test -- --runInBand src/common/observability/pino-redaction.spec.ts src/modules/live-sessions/domain/question-results.spec.ts` — 2 suites / 14 tests passed.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/open-text-live-flow.e2e-spec.ts test/live-session-realtime.e2e-spec.ts` — 2 suites / 15 tests passed against guarded `smartlearning_test`; no skips/failures. Evidence covers open/closed open_text anonymity, account-bound student cookie submit/results, realtime close projection identity negatives, teacher-only counts isolation, and anonymous fallback.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — `smartlearning_test`, 12 migrations, schema up to date.
+- **PASS:** `git diff --check` — no whitespace errors.
+- **PASS:** current backend `SKILL.md` and `docs/frontend-api-reference.md` now distinguish B1/B2/B4/B5 targeted evidence from B3/full regression pending; P0/SPEC/BDD/result-governance/domain/API/contract-review/historical-DB sibling addenda were applied where workspace permissions allowed.
+- **BLOCKED:** edits to sibling `Web Auth 與安全設計.md`, `Backend NestJS 實作規劃.md`, canonical `資料模型與 ER 設計.md`, and `即時同步與結果治理設計.md` were denied by the current permission classifier; no workaround was attempted. B5 docs sync is therefore not claimed complete.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` all passed on the current working tree.
+- **BOUNDARY:** B3 full HTTP/concurrency and broad/full regression remain pending. P0-06 archive/retention runtime remains out of scope.
+
+### 2026-08-24 — Config: DB-backed test command permission rules (project-local)
+
+- **AUTHORIZED:** the user explicitly authorized adding project-local permission rules so `NODE_ENV=test npm run test:e2e` and `NODE_ENV=test npm run test:integration` run without a permission prompt, scoped to `smartlearning_test`.
+- **DONE:** `.claude/settings.local.json` → `permissions.allow` now includes `Bash(NODE_ENV=test npm run test:e2e *)` and `Bash(NODE_ENV=test npm run test:integration *)`. The pre-existing `Bash(npm run *)` rule does not match env-prefixed commands, hence the explicit rules.
+- **VERIFIED:** `jq` confirms valid JSON and both rules present. `.claude/` is gitignored (not committed).
+- **NOTE:** the initial `Edit` was denied by the auto-mode permission classifier as self-modification; it succeeded only after the user granted explicit authorization (1+2). No workaround of the classifier was attempted.
+- **BOUNDARY:** no product source, Prisma schema, migration, environment file, design document, or commit changed. Phase B feature work remains at the B5 status above; B3 full HTTP/concurrency and broad/full regression remain pending.
+
+### 2026-08-26 — BE-1.1 Account-bound Participant HTTP 驗收（TEST-ONLY）
+
+- **AUTHORIZED:** the user confirmed the Checkpoint-1 scope and the 3 new tests, then authorized the DB-backed e2e (Checkpoint 3) and the broad regression (Checkpoint 4). DB-backed runs touch `smartlearning_test` only (implicit idempotent `migrate deploy` + `truncateAll`, existing isolation).
+- **EDIT (TEST-ONLY):** `test/participant-account.e2e-spec.ts` — added 3 `it` blocks (net +223 lines), reusing existing helpers (`loginAs`, `provisionAndLogin`, `setupActiveSession`, `cookieValue`, `TEST_ORIGIN`); no runtime/schema/migration/other-test edits.
+  - `rejects a cookie-join when the student has no active enrollment` (BE-1.1.1 negative): not-enrolled student cookie join → 403 + no participant row (count=0).
+  - `returns participant-safe results through the student cookie (vote-to-reveal)` (BE-1.1.6): submitted student reads OPEN poll aggregate 200 with `options[i].isCorrect === undefined`; teacher projection 200 same shape; non-submitting enrolled student → 409 `RESULTS_NOT_REVEALED`.
+  - `rejects a cookie submission without a valid CSRF token or exact Origin` (BE-1.1.8): missing token / wrong token / wrong Origin (`http://evil.test`) → 403 `AUTH_CSRF_INVALID`; then a valid token+Origin → 201.
+- **BE-1.1 coverage:** all 8 sub-items now have assertions (1.1.1 ✓/✓, 1.1.2–1.1.5/1.1.7 pre-existing, 1.1.6 new, 1.1.8 new).
+- **PASS:** targeted e2e — `NODE_ENV=test npm run test:e2e -- test/participant-account.e2e-spec.ts --runInBand` → 1 suite / **8 passed, 0 failed, 0 skipped**.
+- **PASS:** full regression — typecheck, lint:check, format:check, build, `git diff --check` all passed; unit 22 suites / 123 tests; full e2e 22 suites / 136 tests; integration 3 suites / 12 tests; `prisma:migrate:status` → `smartlearning_test` 12 migrations, schema up to date.
+- **ENV NOTE:** the e2e subagent brought up the local Docker engine (Rancher Desktop) because Postgres was not initially listening; the existing `smart-learning-pg-dev` container then served `smartlearning_test` on 5432. No test data or other DB was affected.
+- **RESULT:** BE-1.1 acceptance met (8/8 covered, 0 skipped, 0 failed). No implementation bug surfaced; all 3 risk flags verified against source before writing (403 join path, poll `isCorrect` omission, CSRF/Origin fail-closed).
+- **BOUNDARY:** no commit made (per request, commit only if the user asks). BE-1.2+ sub-item verification and any docs authorization-matrix sync remain out of this task's scope. Pre-existing non-blocking Nest legacy route-converter warnings remained.
+
+### 2026-08-26 — BE-1.2 撤銷與競態（TEST-ONLY）
+
+- **PLAN:** `/home/user/.claude/plans/wsl-localhost-ubuntu-home-user-projects-silly-breeze.md`. USER CONFIRMED: (1) new test file `test/participant-revocation.e2e-spec.ts`, (2) DB-backed e2e authorized on `smartlearning_test` only (existing isolation; implicit idempotent migrate deploy + truncateAll).
+- **SCOPE (test-only):** source exploration confirmed the revocation invariants already hold — cookie join locks `liveSession → course → account` and re-reads account/enrollment under the Course/Account row locks (`participant.service.ts` `findOrCreateAccountParticipant`); cookie submit locks `sessionQuestion → course → account` and re-reads under the same locks (`submission.service.ts` submit); enrollment removal locks Course, account disable locks Account, both serializing vs join/submit. No runtime/schema/migration/design-doc change was required.
+- **EDIT (TEST-ONLY):** new `test/participant-revocation.e2e-spec.ts` — 9 tests mapping BE-1.2.1→BE-1.2.9, reusing BE-1.1 setup helpers (`loginAs`/`provisionAndLogin`/`setupActiveSession`/`cookieValue`/`TEST_ORIGIN`) and the `Promise.all` race idiom from `account-admin.e2e-spec.ts`.
+  - Sequential: removal→join 403, removal→submit 403, disable→join 401, disable→submit 401.
+  - Concurrent (winner-tolerant `count <= 1` + branch status): removal vs join, removal vs submit, disable vs join, disable vs submit.
+  - Authority no-duplicate: idempotent double join + single submission → `participant.count==1` / `submission.count==1`.
+- **FIX DURING VERIFY (test-only):** first run surfaced an assertion-contract gap, not a source bug — the two disable-race tests only anticipated 401 (guard) on the disable-wins branch, but the late join/submit can legitimately surface **403** `ForbiddenError` (session still valid at the guard, then the in-transaction account-lock TOCTOU re-check sees disabled). Fixed to accept `[401, 403]` on the disable-wins branch.
+- **PASS:** targeted e2e — `participant-revocation.e2e-spec.ts` **9/9, 0 skipped**, green on every run.
+- **REGRESSION:** full unit 22/123, full integration 3/12, typecheck/lint/format/build/`git diff --check` all PASS; `prisma:migrate:status` → `smartlearning_test` 12 migrations up to date.
+- **BOUNDARY (pre-existing flake, NOT this slice):** the full e2e suite (`-- --runInBand`) is dominated by a pre-existing, non-deterministic test-isolation cascade — `ConflictError: Bootstrap already completed` thrown in `beforeEach` (`createFirstAdmin`, `bootstrap.service.ts:110`) because the shared `system_setting.bootstrap_completed` flag intermittently survives `truncateAll`, cascading `login`/`admin/accounts` 401/500 across suites. Full e2e is flaky run-to-run regardless of this change; `participant-revocation` itself passed in both full runs and every isolated run. This is a pre-existing harness isolation defect out of BE-1.2 scope; noted as a follow-up, not fixed here.
+- **RESULT:** BE-1.2 acceptance met (9/9 covered, 0 skipped, 0 failed). No implementation bug surfaced; both disable-wins outcomes (401 guard / 403 lock-guard) verified against source. `participant-revocation` is untracked (new file); no commit made.
+
+### 2026-08-26 — BE-1.3 匿名流程回歸（Checkpoint B）
+
+- **AUTHORIZED:** user authorized Checkpoint B and explicitly authorized guarded DB-backed test operations against `smartlearning_test` only (implicit idempotent migration setup + truncation).
+- **EDIT (TEST-ONLY):** `test/participant-account.e2e-spec.ts` — added one coexistence regression covering anonymous session-code/token and enrolled student cookie identities in the same LiveSession; no runtime/schema/migration changes.
+- **COVERAGE:** anonymous join returns raw token; token snapshot works; token submission works; token results work; account-bound join returns `participantToken: null`; both rows remain distinct (`accountId` vs `NULL`, distinct IDs/hashes); both submissions remain independently linked; both participant result projections remain safe and aggregate both answers.
+- **PASS:** focused test — `NODE_ENV=test npm run test:e2e -- --runInBand test/participant-account.e2e-spec.ts -t "keeps anonymous and account-bound participants independent" --silent` → 1 passed, 0 failed, 0 skipped.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` → `smartlearning_test`, 12 migrations, schema up to date; `git diff --check` passed.
+- **BOUNDARY:** this is a Checkpoint B implementation slice. Existing anonymous poll/result suites and broader quality gates remain for Checkpoint C; no commit made.
+
+### 2026-08-26 — BE-1.4 Phase B 回歸驗證規劃
+
+- **EDIT (DOC-ONLY):** expanded `docs/智學互動平台/00_專案規劃/智學互動平台剩餘工作WBS.md` BE-1.4 from a flat command list into an executable regression plan.
+- **PLAN:** added schema/migration preflight, B1–B5 targeted sequencing, OpenAPI, full unit/integration/e2e, static quality gates, baseline/evidence format, DB authorization boundary, implicit test migration note, stop conditions, and explicit sign-off DoD.
+- **CURRENT EVIDENCE:** BE-1.1 (8/8), BE-1.2 (9/9), BE-1.3 coexistence regression, B1/B2 (4 suites / 15 tests), B4 (1 suite / 14 tests), and B5 focused privacy (2 suites / 14 tests plus 2 e2e suites / 15 tests) are recorded as passing in this file; B3 full HTTP/concurrency, B5 authoritative-document synchronization, and broad/full regression remain pending unless separately verified.
+- **RESULTS:** no runtime, schema, migration, environment, or test source changed by this planning update; no database command was run; no commit made.
+
+### 2026-08-26 — BE-2 Checkpoint A contract inventory（READ-ONLY）
+
+- **SCOPE:** completed the Checkpoint A static inventory for BE-2 Student／Enrollment API stabilization. No migration, truncate, test execution, service startup, database mutation, or product-source change was performed.
+- **BASELINE:** branch `phase-b-student-enrollment`; HEAD `82f6a4e01b77f298131b80ba8f6b679fc93348af`; pre-existing working tree remains `M tasks/todo.md`, `?? AGENTS.md`, `?? CLAUDE.md`. The WBS BE-2 contract-freeze plan is present in `docs/智學互動平台/00_專案規劃/智學互動平台剩餘工作WBS.md`.
+- **IMPLEMENTATION INVENTORY:** student role／session projection is implemented under `src/modules/identity`; `CourseEnrollment` and `EnrollmentsController` are wired under `src/modules/enrollments`; routes are `/api/v1/courses/:courseId/enrollments` (POST/GET), `/api/v1/courses/:courseId/enrollments/:studentAccountId` (DELETE), and `/api/v1/me/courses` (GET). Phase B migrations are additive: student role, enrollment table, and participant account binding.
+- **CURRENT EVIDENCE:** `test/student-account.e2e-spec.ts`, `test/enrollments.e2e-spec.ts`, and `test/openapi.e2e-spec.ts` cover student login／role and owner-path denial, roster add/list/remove/reactivation/idempotency, `/me/courses`, archived-course add rejection, cross-owner privacy, and enrollment OpenAPI paths. Existing task evidence records B1/B2 as 4 suites／15 tests, 0 failure／0 skipped, against `smartlearning_test`; BE-1.1～1.3 and B4/B5 evidence remains separately scoped.
+- **FROZEN SEMANTICS TO CARRY FORWARD:** student `canCreateCourse=false`; active duplicate add returns the existing row; removed row re-add reactivates it; remove is idempotent; archived course rejects new/reactivation; non-owner teacher is existence-hidden with 404; student cannot manage roster and receives 403; mutation requires CSRF + exact Origin; response projections exclude credentials/tokens/hashes.
+- **GAPS／DECISIONS FOR CHECKPOINT B:** verify the above semantics against current source and OpenAPI output; explicitly settle active／removed roster list visibility, archived-course list/remove behavior, invalid／disabled target-account status and error-code mapping, pagination ordering／bounds, and whether any current frontend reference wording diverges from runtime. No contract decision was silently changed during Checkpoint A.
+- **NEXT GATE:** Checkpoint A static inventory is complete. Before DB-backed verification or any implementation/contract correction in Checkpoint B, obtain explicit authorization for guarded operations limited to `smartlearning_test`; test setup implicitly runs idempotent `migrate deploy` and `truncateAll`.
+
+### 2026-08-27 — BE-2 Checkpoint B smartlearning_test 驗證
+
+- **AUTHORIZED:** user authorized Checkpoint B DB-backed validation limited to `smartlearning_test`; test setup's implicit idempotent `migrate deploy` + `truncateAll` was within the stated authorization boundary.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — target `smartlearning_test` at `localhost:5432`, 12 migrations found, database schema up to date; no pending or failed migration.
+- **PASS:** `NODE_ENV=test npm run test:integration -- --runInBand test/identity.integration-spec.ts` — 1 suite / 7 tests passed, 0 failed, 0 skipped; PostgreSQL-backed student role/identity checks passed.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/student-account.e2e-spec.ts test/enrollments.e2e-spec.ts test/openapi.e2e-spec.ts` — 3 suites / 8 tests passed, 0 failed, 0 skipped; student account, enrollment roster, `/me/courses`, archived/duplicate/reactivation/privacy and OpenAPI checks passed.
+- **BOUNDARY:** no source/schema/migration/environment/document change and no commit. Existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` remained non-blocking.
+- **RESULT:** Checkpoint B smartlearning_test verification complete; further contract corrections, documentation freeze, broader regression, or next checkpoint requires a separate authorization decision.
+
+### 2026-08-27 — BE-2 Checkpoint C smartlearning_test 驗證
+
+- **AUTHORIZED:** user explicitly authorized Checkpoint C DB-backed validation limited to `smartlearning_test`; the test setup's implicit idempotent `migrate deploy` + `truncateAll` stayed within that boundary.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — target `smartlearning_test` at `localhost:5432`, 12 migrations found, database schema up to date; no pending or failed migration.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/enrollments.e2e-spec.ts` — 1 suite / 2 tests passed, 0 failed, 0 skipped; `/me/courses` active-only behavior, removed-enrollment omission, archived existing-enrollment behavior, pagination/metadata/ordering, non-student 403, roster add/list/remove/reactivation, and cross-owner rejection passed.
+- **BOUNDARY:** no source/schema/migration/environment/document change and no commit. Existing Nest `LegacyRouteConverter` wildcard-route warnings remained non-blocking.
+- **RESULT:** Checkpoint C targeted database-backed E2E verification complete. This does not constitute full Phase B regression/sign-off; broader regression and any remaining contract/documentation freeze require separate scope/authorization.
+
+### 2026-08-27 — BE-2 Checkpoint D smartlearning_test 回歸驗證
+
+- **AUTHORIZED:** user explicitly authorized Checkpoint D DB-backed validation limited to PostgreSQL `smartlearning_test`; existing test setup implicit idempotent `migrate deploy` + `truncateAll` stayed within this boundary.
+- **PASS:** `NODE_ENV=test npm run prisma:validate` and `NODE_ENV=test npm run prisma:migrate:status` — schema valid; `smartlearning_test` at `localhost:5432`, 12 migrations, schema up to date.
+- **PASS:** targeted BE-2/BE-1/live-flow verification — 9 suites / 36 tests passed, 0 failed, 0 skipped. Covered identity, student account, enrollment, OpenAPI, participant account/revocation, anonymous poll, poll-multiple, and open-text live flows.
+- **PASS:** full regression — unit 22 suites / 123 tests; integration 3 suites / 12 tests; E2E 23 suites / 146 tests; all passed with 0 failures and 0 skips.
+- **PASS:** quality gates — `typecheck`, `lint:check`, `format:check`, `build`, and `git diff --check` all passed.
+- **BOUNDARY:** no source/schema/migration/environment/document changes and no commit. Existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` remained non-blocking.
+- **RESULT:** Checkpoint D verification complete. Full runtime regression and quality gates pass, but BE-2 contract-freeze DoD is not claimed until any remaining artifact/document synchronization and explicit release sign-off are completed.
+
+### 2026-08-27 — BE-2 contract freeze 文件同步（DOC-ONLY）
+
+- [x] 同步 frontend API reference、SKILL、Web Auth、API Schema、M2 Contract Review：student Web Session + active enrollment account-bound Participant、anonymous fallback、CSRF/exact Origin、roster/my-courses ordering/idempotency、OpenAPI 與 per-question results route。
+- [x] Refresh Checkpoint D evidence：smartlearning_test 12 migrations up to date；targeted 9 suites/36 tests；full unit 22/123、integration 3/12、E2E 23/146；quality gates pass；0 failure/skip。
+- [x] 保留 archive/retention 與 durable realtime/replay deferred；明確記載尚未取得 final sign-off，需 sync/release approval。
+- [ ] Final sign-off：待文件同步與 release approval。
+- **SCOPE:** 僅上述文件與本 evidence log；未修改 source/schema/migration/env/test/config；未執行 DB command；未 commit。
+
+### 2026-08-27 — BE-2 final sign-off review（READ-ONLY）
+
+- **RESULT:** BLOCKED；contract artifacts 已同步，但 BE-2 DoD 尚不能宣稱 final sign-off。
+- **BLOCKER 1 — archived error code:** WBS 要求 archived add/reactivation 為 409 `COURSE_NOT_EDITABLE`；目前 runtime/e2e 僅證明 generic 409 `CONFLICT`，尚無 code assertion。
+- **BLOCKER 2 — concurrency authority proof:** WBS 要求 concurrent add/remove 的 transaction lock／unique-constraint proof；目前僅有 sequential duplicate、remove、reactivation evidence。
+- **BLOCKER 3 — archived list/remove evidence:** source 允許 archived roster list/remove，但缺少明確 DB-backed test/contract decision；需先凍結並驗證政策。
+- **PARTIAL:** OpenAPI e2e 已驗證 paths、`/api/v1` prefix 與無 double prefix，但尚未針對 enrollment DTO、query parameters 與 response schema 做明確 assertions。
+- **PASS:** BE-2.1、BE-2.2、BE-2.3、BE-2.6 的主要 runtime／targeted evidence 與文件已對齊；BE-2.7 artifact sync 與 Checkpoint D regression evidence 已記錄。
+- **BOUNDARY:** release approval 未授予，不能由測試或文件同步推定；archive/retention、durable realtime/replay 仍 deferred。此次未執行 DB/test，未修改 runtime/schema/migration/env。
+
+### 2026-08-27 — BE-2 Contract Gaps Forward-Fix Slice
+
+- [x] Archived enrollment add/reactivation now returns 409 `COURSE_NOT_EDITABLE` with `field: courseId`; generic conflicts remain unchanged.
+- [x] Enrollment controller OpenAPI metadata documents UUID/path/query constraints, inner DTO/page schemas, and archived 409 envelope shape.
+- [x] Extended enrollment/OpenAPI contract assertions for archived behavior, unchanged rows, roster/my-courses visibility, ordering/idempotency, and concurrency scenarios.
+- [ ] Verify static formatting, typecheck, lint, build, and diff check; DB-backed tests remain intentionally unauthorized.
+- **BOUNDARY:** no Prisma schema/migration/env/config changes; no migration, truncate, DB-backed test, or service startup.
+
+### 2026-08-27 — BE-3.1 CP2 Question cascade targeted verification
+
+- **AUTHORIZED:** user explicitly authorized DB-backed targeted E2E limited to `smartlearning_test`; setup implicit idempotent `migrate deploy` + `truncateAll` remained within scope.
+- **FIX (test-only):** active-session cleanup in `test/live-session-results.e2e-spec.ts` now uses `close` and asserts `201`; active cancellation remains rejected by the frozen policy. Realtime cancellation fixture now remains `waiting` via `setupActiveSession(false)` so it exercises `waiting → cancelled`.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` — 3 suites / 33 tests passed, 0 failed, 0 skipped.
+- **PASS:** CP2 coverage includes question open/close, duplicate close/reopen and invalid-state rejection, session-close question cascade, waiting cancellation realtime event and terminal reconnect rejection, active-cancel `409 CONFLICT`, and result visibility/error paths.
+- **BOUNDARY:** account-disable realtime timeout did not reproduce in the rerun; no runtime source/schema/migration/env/config change was needed. Existing Nest `LegacyRouteConverter` wildcard warnings remained non-blocking.
+- **RESULT:** CP2 targeted E2E now passes with 0 failure/0 skipped.
+- **MANUAL CHECKPOINT 2 CONFIRMED:** user reviewed CP2 and authorized entry into CP3; no release sign-off is inferred from this checkpoint.
+
+### 2026-08-27 — BE-3.1 CP3 Terminal-state negative paths
+
+- [x] Verify closed/cancelled direct join and reconnect rejection, post-terminal submission rejection, question-close submission rejection, no side effects, and account-bound/anonymous parity.
+- [x] Record targeted DB-backed verification against `smartlearning_test`; test setup implicitly runs idempotent `migrate deploy` + `truncateAll`.
+
+#### Verification evidence
+
+- `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/cp3-terminal-state.e2e-spec.ts` — PASS; 1 suite / 4 tests, 0 failed, 0 skipped.
+- `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/cp3-terminal-state.e2e-spec.ts test/live-session-realtime.e2e-spec.ts test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` — PASS; 4 suites / 37 tests, 0 failed, 0 skipped.
+- `npm run typecheck` — PASS.
+- `npm run lint:check` — PASS.
+- `npm run format:check` — PASS; all matched files use Prettier code style.
+- `npm run build` — PASS.
+- `git diff --check` — PASS.
+- Warnings: existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` legacy wildcard route patterns; non-blocking and unchanged.
+- No runtime, Prisma schema, migration, environment, or configuration changes were made; only this task-log evidence was updated.
+
+### 2026-08-27 — CP4 full regression verification
+
+- **AUTHORIZED:** user requested entry into CP4 verification; DB-backed execution was limited to PostgreSQL `smartlearning_test`. Test setup's implicit idempotent `migrate deploy` + `truncateAll` remained within that boundary. Development DB was not touched.
+- **PASS:** `NODE_ENV=test npm run prisma:validate` and `NODE_ENV=test npm run prisma:migrate:status` — schema valid; 12 migrations present; schema up to date.
+- **PASS:** targeted BE-2/BE-1/live-flow E2E — 10 suites / 57 tests, 0 failed, 0 skipped. The repository's available participant-account coverage was used in place of a nonexistent `identity.e2e-spec.ts`.
+- **PASS:** full unit — 22 suites / 123 tests; integration — 3 suites / 12 tests, 0 skipped; E2E — 24 suites / 152 tests, 0 skipped.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **WARNINGS:** existing non-blocking Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*`; no failures or flakes.
+- **RESULT:** CP4 full regression verification passed with full regression confidence. No runtime, schema, migration, environment, configuration, or test-source changes were made; only this evidence log was updated.
+
+### 2026-08-27 — BE-3.1 CP4 專項驗證（coverage review）
+
+- **AUTHORIZED:** user requested entry into BE-3.1 CP4 specialized verification; any DB-backed activity was limited to `smartlearning_test`. No development DB operation or source/test modification was performed.
+- **PASS／PARTIAL:** existing evidence covers owner success, unauthenticated `401`, missing CSRF `403`, non-owner teacher `404` existence hiding, common envelope/filter behavior, and selected redaction/privacy projections.
+- **GAPS:** no dedicated student wrong-role `403` control-route test; no admin control-route success; wrong-CSRF and non-exact-Origin cases are covered on submission but not directly on each control route; control-route E2E does not systematically assert the complete envelope; no close/cancel-specific log-capture assertion.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-close-cancel.e2e-spec.ts test/live-session-detail.e2e-spec.ts test/student-account.e2e-spec.ts test/api-envelope.e2e-spec.ts` — 4 suites / 24 tests passed, 0 skipped.
+- **PASS:** `NODE_ENV=test npm test -- --runInBand src/common/observability/pino-redaction.spec.ts src/modules/live-sessions/domain/live-session-status.spec.ts src/modules/live-sessions/domain/question-results.spec.ts` — 3 suites / 18 tests passed, 0 skipped.
+- **PRECHECK:** `smartlearning_test` is reachable with 12 migrations applied and schema up to date; no manual migration was run. Existing warnings include Nest legacy wildcard routes and a pg@9 `client.query()` deprecation warning.
+- **RESULT:** BE-3.1 CP4 remains **BLOCKED／PARTIAL** despite the targeted suites passing: wrong-CSRF and wrong-Origin control-route evidence, student wrong-role, admin success, systematic control-route envelope assertions, close/cancel log-capture, and manual Checkpoint 4 review remain outstanding. Do not advance to CP5 or infer release sign-off.
+
+### 2026-08-27 — BE-3.1 CP4 gap-test implementation
+
+- **EDIT (TEST-ONLY):** extended `test/live-session-close-cancel.e2e-spec.ts` with student wrong-role/detail rejection, admin cross-owner control success, wrong CSRF/Origin no-side-effect checks, complete envelope metadata assertions, and response secret-field absence assertions.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-close-cancel.e2e-spec.ts` — 1 suite / 12 tests, 0 failed, 0 skipped, against `smartlearning_test`.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **WARNINGS:** existing Nest `LegacyRouteConverter` wildcard-route warnings only; no runtime/schema/migration/config changes.
+- **REMAINING:** missing-CSRF and non-exact-Origin cases are currently asserted on the cancel route, not every control route; admin cancel, student create/start/open/question-close, and close/cancel log-capture/manual evidence remain pending. CP4 manual sign-off is not inferred from automated tests.
+
+### 2026-08-27 — BE-3.1 CP4 remaining route-matrix verification
+
+- **AUTHORIZED:** user authorized the remaining CP4 route-matrix verification; all DB-backed operations were limited to `smartlearning_test`, including the guarded test setup's implicit idempotent `migrate deploy` and `truncateAll`. No development DB was touched.
+- **EDIT (TEST-ONLY):** added `test/live-session-route-matrix.e2e-spec.ts`; no runtime, Prisma schema, migration, environment, or configuration changes.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — `smartlearning_test`, 12 migrations, schema up to date.
+- **PASS:** focused route matrix — `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-route-matrix.e2e-spec.ts` — 1 suite / 14 tests, 0 failures, 0 skips.
+- **PASS:** adjacent close/detail regression — `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-close-cancel.e2e-spec.ts test/live-session-detail.e2e-spec.ts` — 2 suites / 21 tests, 0 failures, 0 skips.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **COVERAGE:** direct HTTP checks now exercise create, start, question open/close, session close/cancel, and detail across authenticated/unauthenticated, student, non-owner, admin/owner, CSRF, exact-Origin, envelope/request-id, redaction, and rejected-mutation side-effect paths.
+- **WARNING:** existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` wildcard routes remain non-blocking and unchanged.
+- **RESULT:** CP4 automated route-matrix verification is complete with full targeted verification confidence.
+- **MANUAL CHECKPOINT 4 SIGN-OFF:** User confirmed **“Checkpoint 4 verified”** on 2026-08-27. The CP4 actor/role/credential matrix and raw HTTP evidence review are accepted. This sign-off covers CP4 only; it does not approve CP5 or BE-3.1 final release sign-off.

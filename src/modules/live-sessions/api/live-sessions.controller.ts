@@ -8,7 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CsrfGuard, CurrentAccount, SessionGuard } from '../../../common/auth';
+import {
+  CsrfGuard,
+  CurrentAccount,
+  SessionGuard,
+  TeacherOrAdminGuard,
+} from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
 import {
   LiveSessionService,
@@ -27,7 +32,7 @@ export class LiveSessionsController {
   constructor(private readonly sessions: LiveSessionService) {}
 
   @Post()
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async create(
     @Body() dto: CreateLiveSessionDto,
     @CurrentAccount() auth: AuthContext,
@@ -41,7 +46,7 @@ export class LiveSessionsController {
   }
 
   @Post(':liveSessionId/start')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async start(
     @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
     @CurrentAccount() auth: AuthContext,
@@ -55,7 +60,7 @@ export class LiveSessionsController {
   }
 
   @Post(':liveSessionId/questions/:sessionQuestionId/open')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async open(
     @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
     @Param('sessionQuestionId', new ParseUUIDPipe()) sessionQuestionId: string,
@@ -70,7 +75,7 @@ export class LiveSessionsController {
   }
 
   @Post(':liveSessionId/questions/:sessionQuestionId/close')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async close(
     @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
     @Param('sessionQuestionId', new ParseUUIDPipe()) sessionQuestionId: string,
@@ -85,7 +90,7 @@ export class LiveSessionsController {
   }
 
   @Post(':liveSessionId/close')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async closeSession(
     @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
     @CurrentAccount() auth: AuthContext,
@@ -99,7 +104,7 @@ export class LiveSessionsController {
   }
 
   @Post(':liveSessionId/cancel')
-  @UseGuards(SessionGuard, CsrfGuard)
+  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard)
   async cancelSession(
     @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
     @CurrentAccount() auth: AuthContext,
@@ -113,7 +118,7 @@ export class LiveSessionsController {
   }
 
   @Get(':liveSessionId')
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, TeacherOrAdminGuard)
   async detail(
     @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
     @CurrentAccount() auth: AuthContext,

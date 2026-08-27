@@ -32,6 +32,12 @@ describe('Open-text live flow (e2e)', () => {
     tempPassword: 'ot-e2e-temp-password-1234',
     password: 'ot-e2e-final-password-1234',
   };
+  const STUDENT = {
+    username: 'ot-e2e-student',
+    displayName: 'OpenText E2E Student',
+    tempPassword: 'ot-e2e-student-temp-password-1234',
+    password: 'ot-e2e-student-final-password-1234',
+  };
 
   type AuthenticatedAgent = {
     agent: request.SuperAgentTest;
@@ -125,6 +131,42 @@ describe('Open-text live flow (e2e)', () => {
     return loginAs(TEACHER.username, TEACHER.password);
   }
 
+  async function createStudent(): Promise<{
+    accountId: string;
+    auth: AuthenticatedAgent;
+  }> {
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const created = await admin.agent
+      .post('/api/v1/admin/accounts')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        username: STUDENT.username,
+        displayName: STUDENT.displayName,
+        role: AccountRole.STUDENT,
+        canCreateCourse: true,
+        tempPassword: STUDENT.tempPassword,
+      });
+    expect(created.status).toBe(201);
+    expect(created.body.data.canCreateCourse).toBe(false);
+
+    const temporary = await loginAs(STUDENT.username, STUDENT.tempPassword);
+    const changed = await temporary.agent
+      .post('/api/v1/auth/change-password')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, temporary.csrfToken)
+      .send({
+        currentPassword: STUDENT.tempPassword,
+        newPassword: STUDENT.password,
+      });
+    expect(changed.status).toBe(201);
+
+    return {
+      accountId: created.body.data.id as string,
+      auth: await loginAs(STUDENT.username, STUDENT.password),
+    };
+  }
+
   function requireDatabase(): void {
     if (!dbReachable) {
       throw new Error(
@@ -150,6 +192,7 @@ describe('Open-text live flow (e2e)', () => {
   it('runs an open_text question through the full classroom lifecycle with text answers', async () => {
     requireDatabase();
     const teacher = await createTeacher();
+    const student = await createStudent();
 
     const courseResponse = await teacher.agent
       .post('/api/v1/courses')
@@ -158,6 +201,13 @@ describe('Open-text live flow (e2e)', () => {
       .send({ name: 'OpenText E2E Course', description: 'open_text slice' });
     expect(courseResponse.status).toBe(201);
     const courseId = courseResponse.body.data.id as string;
+
+    const enrollment = await teacher.agent
+      .post(`/api/v1/courses/${courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ studentAccountId: student.accountId });
+    expect(enrollment.status).toBe(201);
 
     const questionResponse = await teacher.agent
       .post(`/api/v1/courses/${courseId}/questions`)
@@ -228,22 +278,60 @@ describe('Open-text live flow (e2e)', () => {
       .send({ sessionQuestionId, textAnswer: '抽樣誤差' });
     expect(submission2.status).toBe(201);
 
-    // Results: anonymous text list (no display name / token / identity).
-    const results = await request(app.getHttpServer())
-      .get(
-        `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/results`,
-      )
-      .set('X-Participant-Token', p1.participantToken);
-    expect(results.status).toBe(200);
-    expect(results.body.data.snapshotType).toBe('open_text');
-    expect(results.body.data.totalResponses).toBe(2);
-    const texts = (results.body.data.responses as Array<{ text: string }>).map(
-      (r) => r.text,
+    const studentJoin = await student.auth.agent
+      .post(`/api/v1/live-sessions/${sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(studentJoin.status).toBe(201);
+    expect(studentJoin.body.data.participantToken).toBeNull();
+
+    const studentSubmission = await student.auth.agent
+      .post(`/api/v1/live-sessions/${liveSessionId}/submissions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000305')
+      .send({ sessionQuestionId, textAnswer: '可觀測性' });
+    expect(studentSubmission.status).toBe(201);
+    expect(studentSubmission.body.data.textAnswer).toBe('可觀測性');
+
+    function expectAnonymousResults(response: request.Response): void {
+      expect(response.status).toBe(200);
+      expect(response.body.data.snapshotType).toBe('open_text');
+      expect(response.body.data.totalResponses).toBe(3);
+      expect(response.body.data.responses).toEqual(
+        expect.arrayContaining([
+          { text: '我 學到了因果關係' },
+          { text: '抽樣誤差' },
+          { text: '可觀測性' },
+        ]),
+      );
+      for (const result of response.body.data.responses as Array<
+        Record<string, unknown>
+      >) {
+        expect(Object.keys(result)).toEqual(['text']);
+      }
+      const serialized = JSON.stringify(response.body.data);
+      for (const field of [
+        'participantId',
+        'accountId',
+        'displayName',
+        'participantToken',
+        'sessionCode',
+      ]) {
+        expect(serialized).not.toContain(field);
+      }
+      expect(serialized).not.toContain(student.accountId);
+      expect(serialized).not.toContain(STUDENT.displayName);
+      expect(serialized).not.toContain(p1.participantToken);
+      expect(serialized).not.toContain(p2.participantToken);
+    }
+
+    // Results remain anonymous in the open state for the account-bound student.
+    const openResults = await student.auth.agent.get(
+      `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/results`,
     );
-    expect(texts).toContain('我 學到了因果關係');
-    expect(texts).toContain('抽樣誤差');
-    expect(JSON.stringify(results.body.data)).not.toContain('participantId');
-    expect(JSON.stringify(results.body.data)).not.toContain('displayName');
+    expectAnonymousResults(openResults);
 
     // Overlong text (>2000 code points) is rejected.
     const longText = 'x'.repeat(2001);
@@ -253,5 +341,24 @@ describe('Open-text live flow (e2e)', () => {
       .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000304')
       .send({ sessionQuestionId, textAnswer: longText });
     expect(overlong.status).toBe(400);
+
+    const closeResponse = await teacher.agent
+      .post(
+        `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/close`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    expect(closeResponse.status).toBe(201);
+
+    // Closing must not add identity metadata to either teacher or participant results.
+    const teacherResults = await teacher.agent.get(
+      `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/results`,
+    );
+    expectAnonymousResults(teacherResults);
+
+    const closedStudentResults = await student.auth.agent.get(
+      `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/results`,
+    );
+    expectAnonymousResults(closedStudentResults);
   });
 });

@@ -35,12 +35,9 @@ export function canCloseLiveSession(status: LiveSessionStatus): boolean {
   return status === LiveSessionStatus.ACTIVE;
 }
 
-/** Cancel is the discard path for sessions not yet (or no longer) worth keeping.
- * Allowed from waiting (never started) or active (in progress); closed/cancelled
- * are terminal and cannot be cancelled. Per design §6.1, cancelled does not
- * create an ArchivedResult and does not record closedAt. */
+/** Cancel is the discard path for a session that has not started.
+ * Active, closed, and cancelled sessions cannot be cancelled. Per design §6.1,
+ * cancelled does not create an ArchivedResult and does not record closedAt. */
 export function canCancelLiveSession(status: LiveSessionStatus): boolean {
-  return (
-    status === LiveSessionStatus.WAITING || status === LiveSessionStatus.ACTIVE
-  );
+  return status === LiveSessionStatus.WAITING;
 }

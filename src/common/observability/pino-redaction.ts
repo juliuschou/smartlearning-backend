@@ -23,6 +23,9 @@ export const PINO_REDACT_PATHS: string[] = [
   // realtime handshake auth (Socket.IO `auth` payload) — raw tokens never logged
   'req.body.participantToken',
   'req.body.sessionCode',
+  'req.handshake.auth.participantToken',
+  'req.handshake.auth.sessionCode',
+  'req.handshake.headers.cookie',
   // response
   'res.headers["set-cookie"]',
   'res.body.token',

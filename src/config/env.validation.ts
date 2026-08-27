@@ -59,6 +59,28 @@ export class EnvConfig {
   @IsOptional()
   @IsBoolean()
   SESSION_COOKIE_SECURE?: boolean;
+
+  // Login rate limit (US-F7 / R-F7-7). In-memory single-instance MVP floor.
+  // All optional with safe defaults; tests/CI work without extra config.
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  LOGIN_RATE_LIMIT_ACCOUNT_MAX?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1000)
+  LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  LOGIN_RATE_LIMIT_SOURCE_MAX?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1000)
+  LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS?: number;
 }
 
 /**

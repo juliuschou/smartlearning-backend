@@ -1,5 +1,7 @@
 import { Transform } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsOptional,
   IsString,
   MinLength,
   Validate,
@@ -25,11 +27,14 @@ class DisplayNameCodePointMaxLengthConstraint implements ValidatorConstraintInte
 }
 
 export class JoinLiveSessionDto {
+  /** Required for anonymous joins; ignored for authenticated students. */
+  @ApiProperty({ required: false })
+  @IsOptional()
   @Transform(({ value }) => normalizeDisplayNameInput(value))
   @IsString()
   @MinLength(1)
   @Validate(DisplayNameCodePointMaxLengthConstraint, [40])
-  displayName!: string;
+  displayName?: string;
 }
 
 export class ParticipantDto {
@@ -41,7 +46,10 @@ export class ParticipantDto {
 
 export class JoinLiveSessionResponseDto {
   participantId!: string;
-  participantToken!: string;
+
+  @ApiProperty({ nullable: true, type: String })
+  participantToken!: string | null;
+
   liveSession!: {
     id: string;
     status: string;

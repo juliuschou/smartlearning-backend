@@ -94,21 +94,21 @@ tasks/                          # todo.md、lessons.md（檔案式任務追蹤�
 | Submissions | `594e9d3` | Phase A：quiz/open_text/poll-multiple 作答（activation gate、DB constraint 放寬、answer-contract、result reveal privacy、per-client participant-safe push） |
 
 ### 尚未實作 / 已延後
-- **Phase B — 學生帳號 + 加選名冊**（下一階段，見下方專節）
+- **Phase B — 學生帳號 + 加選名冊**（B1–B4 runtime 已落地；BE-2 contract freeze 文件同步與 release approval 收尾）
 - **R-1 full**：outbox table、eventSeq/aggregateVersion、replay/sync.required、coalescing、Redis adapter、durable publisher、per-participant vote-to-reveal socket projection（部分已於 `594e9d3` 落地）
 - **CLI key** rotation/successor、pending_verification、key prefix/suffix、max active key、7/30/90/365 expiry；CLI `courses list`/`courses create`；CLI/batch rate limit
 - **S-5** 封存/保留：`POST /live-sessions/:id/archive` → ArchivedResult + 90 天保留 + 早刪/tombstone（需 S-1 先完成）
 - **R-4** auto-close scheduler + submit/close 競態 matrix
-- **E-2/E-3** `GET /auth/session` 回真實 `expiresAt`（目前空字串）；區分 `AUTH_SESSION_EXPIRED` vs `UNAUTHORIZED`
+- **E-2/E-3** `GET /auth/session` 已回真實 `expiresAt`；`AUTH_SESSION_EXPIRED` 與 `UNAUTHORIZED` 的細分仍屬後續 contract enhancement
 - **E-4** 非阻擋清理：Nest `LegacyRouteConverter`(`health/(.*)`、`/api/*`) 警告、`pg@9 client.query()` deprecation、`@Get('ready')` 重複 decorator
 - **E-5** 帳號管理 list/detail/update（目前只有 create/reset/disable/restore）
 - **API envelope Option B**（postprocess wrapper）
 - session-level `GET /live-sessions/:id/results`（M2 API catalog，隨 R-1）
 
-### Phase A 遺留（小，可隨時補）
-- batch validate preview 回應缺 `clientRef`（DTO 宣告但 `toPreview()` 沒填）— `question-batch.service.ts`。
-- gateway participant snapshot 與 REST participant snapshot 可見範圍不一致（gateway 用 `toLiveSessionDto` 未過濾 open question / hasSubmitted）— 建議 Phase B participant 改動時一起統一。
-- `GET /auth/session` 的 `expiresAt` 是空字串（既有問題，非 Phase A 引入）。
+### Phase A 遺留與已解決契約修正
+- batch validate preview 已回映輸入 `clientRef`，並由批次 e2e／既有回歸覆蓋。
+- participant snapshot／realtime visibility 與 account-bound participant、anonymous fallback 的邊界已由 Phase B/B5 tests 覆蓋；durable replay/outbox 仍屬 R-1 full deferred。
+- `GET /auth/session` 已回傳真實 `expiresAt`；過期錯誤碼的細分仍屬後續 E-2/E-3 enhancement。
 
 ---
 
@@ -135,25 +135,25 @@ tasks/                          # todo.md、lessons.md（檔案式任務追蹤�
 | P3 | R-4 submit/close 競態 + auto-close | ⬜ 待執行 |
 | P4 | E-1~E-5 工程基準補強 | ⬜ 部分非阻擋 |
 | — | Phase A 三題型 activation+submission | ✅ `594e9d3` |
-| — | Phase B 學生帳號 + 加選名冊 | ⬜ 待執行（見下方專節） |
+| — | Phase B 學生帳號 + 加選名冊 | ✅ B1–B4 runtime；B5 privacy evidence／文件同步收尾中 |
 
 ---
 
-## 3.2 Phase B — 學生帳號 + 加選名冊（待執行）
+## 3.2 Phase B — 學生帳號 + 加選名冊（B1–B4 已落地，B5 收尾中）
 
-新增 `student` role + `CourseEnrollment` + 登入學生綁定 `Participant`（保留匿名 session code fallback）。
-屬**需求升級**：既有設計明列「無學員帳號」為 MVP 限制，需同步更新設計文件 authorization matrix。
-計畫檔：`/home/user/.claude/plans/expressive-hopping-kitten.md`。**風險：高**（auth/權限/realtime handshake），分小切片、每切片獨立 e2e、可逐一切 rollback。
+Phase B 是對早期「無學員帳號」MVP 前提的需求升級：新增 `student` role、`CourseEnrollment` 與登入學生綁定 `Participant`，並保留匿名 session-code + participant-token fallback。admin 建立 student account；不提供公開 self-registration。`canCreateCourse` 對 student 永遠為 false，student 不得進入 teacher/admin owner paths。
 
-| 切片 | 內容 |
-|---|---|
-| B1 | `Account.role` CHECK 加 `student` + `roles.ts` `STUDENT`；`canCreateCourse` 對 student 強制 false；student 不可存取 owner 路徑（現有 service 只比 owner/admin，需加 student 拒絕）；沿用同一 cookie session 登入 |
-| B2 | 新 `enrollments` bounded context：`CourseEnrollment` model（`uq_course_enrollment_course_student`、status CHECK）；teacher owner/admin 加選/移除/列表、student `GET /me/courses`；Course archived 禁止新加選 |
-| B3 | `Participant` 加 optional `accountId`（FK `onDelete: SetNull` + `uq_participant_session_account`）；`ParticipantOrSessionGuard` 加 student cookie actor 分支；student cookie join/submit 取代 `X-Participant-Token`；匿名 session code fallback 保留 |
-| B4 | realtime student handshake：cookie 不再一律走 teacher path，role=student 進 `session:<id>` room（不進 teacher room）、收 `result.updated` 不收 `counts.updated`；順便統一 gateway 與 REST participant snapshot |
-| B5 | 隱私/redaction/設計文件：open_text results 維持匿名；更新設計文件「無學員帳號」限制與 authorization matrix（`Web Auth...`、`Backend NestJS 實作規劃.md:188-193`、`P0 核心需求基線.md`、`SPEC.md R-F5-5`、`BDD 場景.md`） |
+計畫檔：`/home/user/.claude/plans/b5-privacy-rosy-tower.md`。**風險：高**（auth/權限/realtime handshake）；B1–B4 runtime 已在目前 branch，B5 補 privacy regression、redaction boundary 與權威文件同步。
 
-**DoD**：student 可登入/加選/看名冊/我的課/cookie 加入 session 並作答；匿名 fallback 保留；realtime student 進 participant room 收 `result.updated` 不收 `counts.updated`；權限 regression student 存取 owner 路徑被拒；設計文件同步。
+| 切片 | 內容 | 狀態 |
+|---|---|---|
+| B1 | `Account.role` 含 `student`；`canCreateCourse` 對 student 強制 false；沿用同一 cookie session 登入；student 不可存取 owner 路徑 | ✅ runtime + targeted evidence |
+| B2 | `CourseEnrollment` bounded context；teacher owner/admin 加選/移除/列表、student `GET /me/courses`；archived Course 禁止新加選 | ✅ runtime + targeted evidence |
+| B3 | `Participant.accountId` optional relation；student cookie join/submit；匿名 session-code/token fallback 保留 | ✅ runtime；full HTTP/concurrency verification pending |
+| B4 | student handshake 只進 `session:<id>`，不進 teacher room；participant-safe `result.updated`，不收 `counts.updated`；撤銷後 disconnect | ✅ runtime + 14 realtime e2e tests |
+| B5 | open_text results 維持匿名；raw credential/token/answer 不進 log；同步 current authorization/result-governance wording | 🔄 focused privacy tests pass；docs/full regression status tracked separately |
+
+**DoD**：student 可登入/加選/看名冊/我的課/cookie 加入 session 並作答；匿名 fallback 保留；realtime student 進 participant room 收 `result.updated` 不收 `counts.updated`；權限 regression student 存取 owner path 被拒；open_text open/closed projection 不含 identity linkage；設計文件同步。B3 full HTTP/concurrency、全 repo regression、P0-06 archive/retention runtime 不因 B1–B5 code presence 自動視為完成。
 
 ---
 
@@ -165,7 +165,7 @@ tasks/                          # todo.md、lessons.md（檔案式任務追蹤�
 2. **CORS_ORIGIN 不可用 `*`**：CSRF Origin 檢查 fail-closed，`*` 會讓所有 authenticated mutation 回 403 `AUTH_CSRF_INVALID`。需設明確 origin。
 3. **回應永遠包在 envelope**：資料在 `response.body.data`；課程分頁是 `data.data` + `data.meta`；logout 為 `data: null`。
 4. **submission 回傳值正規化**：`selectedOptionRefs` 可能被正規化成 formal option UUID，而非送出的 optionRef → 前端比對答案需用 ID。
-5. **`GET /auth/session` 回傳 `expiresAt: ""`**（空字串）：不要用來判 session 過期；過期目前一律映射成 `UNAUTHORIZED`（`AUTH_SESSION_EXPIRED` 宣告但未使用）。
+5. **`GET /auth/session` 回傳真實 `expiresAt`**：前端可使用 ISO timestamp 作為 absolute expiry 顯示；authentication failure 仍依現行 error contract 處理。
 6. **OpenAPI**：`/api/docs` UI + `/api/docs-json` JSON only（無 YAML）；envelope 採選項 A — spec 顯示內層型別，前端 client 生成後手動解 `body.data`。型別亦可直接對齊 `src/modules/*/api/dto/*.ts`。
 7. **無 GET session detail 給老師的獨立 participant 路由**：S-2 已補 teacher 專屬 `GET /live-sessions/:id`（含 joined/voted）；participant 用 `GET /live-sessions/:id/snapshot`。
 8. **健康檢查不在 envelope**：`/health/*` 為原始回應，前端不可套用 envelope 解析。
@@ -245,7 +245,8 @@ npm run start:dev           # http://localhost:3000
 ### Realtime
 - **PostgreSQL 為唯一權威**；socket 僅通知，vote-to-reveal 仍由 REST 強制。
 - **commit-then-publish**：post-commit fire-and-forget，bus 失敗不得導致 mutation 失敗；per-listener error isolation。
-- handshake auth：teacher 用 Web session cookie（socket.io bypass express middleware，手動以 `cookie` 解析）；participant 用 token + session code。
+- handshake auth：teacher 用 Web session cookie（socket.io bypass express middleware，手動以 `cookie` 解析）；student cookie 需 active enrollment 並解析為 account-bound participant；anonymous participant 用 token + session code。
+- student realtime privacy：student 只進 `session:<liveSessionId>`，不進 `teacher:<liveSessionId>`；`counts.updated` 僅 teacher room；`result.updated` 逐 client 計算 participant-safe projection。open_text results 僅 `{ text }`，不得帶 participant/account/display/token linkage；raw credential、token、answer/open-text payload 不進 log。
 
 ### 程式碼風格
 - 三層切片：`api`（controller/dto）→ `application`（service）→ `domain`（純邏輯 + spec）。純邏輯放 domain 並寫 unit spec，I/O 隔離在 application。

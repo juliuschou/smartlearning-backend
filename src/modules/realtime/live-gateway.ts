@@ -1,4 +1,4 @@
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -10,6 +10,10 @@ import {
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 import cookie from 'cookie';
+import {
+  AccountLifecycleBus,
+  type AccountLifecycleSignal,
+} from '../../common/auth/account-lifecycle.bus';
 import { SessionService } from '../../common/auth/session.service';
 import { DomainError } from '../../common/errors';
 import { SESSION_COOKIE_NAME } from '../../common/security';
@@ -17,7 +21,11 @@ import {
   LiveSessionService,
   toLiveSessionDto,
 } from '../live-sessions/application/live-session.service';
-import { LiveSessionStatus } from '../live-sessions/domain';
+import {
+  LiveSessionStatus,
+  SessionQuestionStatus,
+} from '../live-sessions/domain';
+import { AccountRole } from '../identity/domain/roles';
 import { ParticipantService } from '../participants/application/participant.service';
 import {
   LiveSessionEventBus,
@@ -50,6 +58,26 @@ function teacherRoom(liveSessionId: string): string {
   return `teacher:${liveSessionId}`;
 }
 
+function toParticipantLiveSessionDto(
+  view: Awaited<ReturnType<LiveSessionService['getParticipantSnapshot']>>,
+) {
+  const snapshot = toLiveSessionDto(view.session);
+  const {
+    questionSelections: _questionSelections,
+    sessionQuestions,
+    ...participantSnapshot
+  } = snapshot;
+  return {
+    ...participantSnapshot,
+    sessionQuestions: (sessionQuestions ?? [])
+      .filter((question) => question.status === SessionQuestionStatus.OPEN)
+      .map((question) => ({
+        ...question,
+        hasSubmitted: view.submittedQuestionIds.has(question.id),
+      })),
+  };
+}
+
 type AuthenticatedClient =
   | {
       kind: 'teacher';
@@ -61,14 +89,25 @@ type AuthenticatedClient =
       kind: 'participant';
       participantId: string;
       liveSessionId: string;
+      accountId?: string;
     };
+
+type DisconnectableSocket = {
+  id: string;
+  disconnect(close?: boolean): unknown;
+};
 
 @WebSocketGateway({ namespace: LIVE_NAMESPACE })
 export class LiveGateway
-  implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect
+  implements
+    OnModuleInit,
+    OnModuleDestroy,
+    OnGatewayConnection,
+    OnGatewayDisconnect
 {
   private readonly logger = new Logger(LiveGateway.name);
   private unsubscribe?: () => void;
+  private accountLifecycleUnsubscribe?: () => void;
 
   @WebSocketServer()
   server!: Server;
@@ -78,6 +117,7 @@ export class LiveGateway
     private readonly liveSessions: LiveSessionService,
     private readonly participants: ParticipantService,
     private readonly bus: LiveSessionEventBus,
+    private readonly accountLifecycleBus: AccountLifecycleBus,
   ) {}
 
   onModuleInit(): void {
@@ -96,10 +136,30 @@ export class LiveGateway
         );
       });
     });
+
+    // US-F8: account-level lifecycle signals (e.g. a disabled account) are on
+    // a separate boundary. Disconnect the affected teacher/admin and
+    // account-bound participant sockets immediately; anonymous participant
+    // sockets are account-independent and survive.
+    this.accountLifecycleUnsubscribe = this.accountLifecycleBus.subscribe(
+      (signal: AccountLifecycleSignal) => {
+        if (signal.type !== 'account.disabled') return;
+        void this.handleAccountDisabled(signal.accountId).catch((error) => {
+          this.logger.error(
+            {
+              accountId: signal.accountId,
+              err: error instanceof Error ? error.message : String(error),
+            },
+            'Failed to handle account disabled signal',
+          );
+        });
+      },
+    );
   }
 
   onModuleDestroy(): void {
     this.unsubscribe?.();
+    this.accountLifecycleUnsubscribe?.();
   }
 
   async handleConnection(socket: Socket): Promise<void> {
@@ -174,17 +234,30 @@ export class LiveGateway
       : undefined;
     const cookieToken = cookieJar?.[SESSION_COOKIE_NAME] as string | undefined;
     if (cookieToken) {
-      return this.authenticateTeacher(socket, cookieToken);
+      return this.authenticateCookie(socket, cookieToken);
     }
     return this.authenticateParticipant(socket);
   }
 
-  private async authenticateTeacher(
+  private async authenticateCookie(
     socket: Socket,
     cookieToken: string,
   ): Promise<AuthenticatedClient> {
     const { account } = await this.sessions.loadActiveSession(cookieToken);
     const liveSessionId = this.readLiveSessionIdParam(socket);
+    if (account.role === AccountRole.STUDENT) {
+      const participant = await this.participants.resolveAccountParticipant(
+        liveSessionId,
+        account.id,
+      );
+      return {
+        kind: 'participant',
+        participantId: participant.participantId,
+        accountId: account.id,
+        liveSessionId: participant.liveSessionId,
+      };
+    }
+
     // Verify course ownership/admin via the teacher detail read (non-owner →
     // 404 path). Reusing getTeacherDetail keeps "no existence leak" ordering
     // consistent with the REST S-2 endpoint.
@@ -258,23 +331,160 @@ export class LiveGateway
         }),
       );
     } else {
+      if (!(await this.reauthorizeParticipant(socket, client))) return;
       const view = await this.liveSessions.getParticipantSnapshot(
         client.liveSessionId,
         client.participantId,
+        client.accountId,
       );
       socket.emit(
         'session.snapshot',
         this.envelope('participant', client.liveSessionId, {
-          liveSession: toLiveSessionDto(view.session),
+          liveSession: toParticipantLiveSessionDto(view),
           submittedQuestionIds: [...view.submittedQuestionIds],
         }),
       );
     }
   }
 
+  /**
+   * WebSocket authorization is established at handshake time, but enrollment
+   * and account status can change while the socket remains connected. Reuse the
+   * account-bound resolver before every student projection/event path so a
+   * removed or disabled student is disconnected instead of retaining room
+   * access.
+   */
+  private async reauthorizeParticipant(
+    socket: DisconnectableSocket,
+    client: Extract<AuthenticatedClient, { kind: 'participant' }>,
+  ): Promise<boolean> {
+    if (!client.accountId) return true;
+    try {
+      const current = await this.participants.resolveAccountParticipant(
+        client.liveSessionId,
+        client.accountId,
+      );
+      if (current.participantId !== client.participantId) {
+        socket.disconnect(true);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      this.logger.debug(
+        {
+          sid: socket.id,
+          liveSessionId: client.liveSessionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Disconnected unauthorized participant socket',
+      );
+      socket.disconnect(true);
+      return false;
+    }
+  }
+
+  /** Remove account-bound sockets that lost enrollment or account status. */
+  private async pruneUnauthorizedParticipantSockets(
+    liveSessionId: string,
+  ): Promise<void> {
+    try {
+      const sockets = await this.server
+        .in(sessionRoom(liveSessionId))
+        .fetchSockets();
+      await Promise.all(
+        sockets.map(async (socket) => {
+          const client = socket.data?.auth as AuthenticatedClient | undefined;
+          if (
+            !client ||
+            client.kind !== 'participant' ||
+            client.liveSessionId !== liveSessionId
+          ) {
+            return;
+          }
+          await this.reauthorizeParticipant(socket, client);
+        }),
+      );
+    } catch (error) {
+      this.logger.debug(
+        {
+          liveSessionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Skipped participant socket reauthorization (fetchSockets failed)',
+      );
+    }
+  }
+
   // --- signal handling ----------------------------------------------------
 
+  /**
+   * Disconnect every socket whose principal is the disabled account (teacher/
+   * admin sockets and account-bound student participant sockets). Anonymous
+   * participant sockets carry no `accountId` and are account-independent — they
+   * are deliberately skipped. O(all sockets) is acceptable at single-instance
+   * scale; cross-instance revocation is deferred (in-process bus guarantee).
+   */
+  private async handleAccountDisabled(accountId: string): Promise<void> {
+    let sockets: Awaited<ReturnType<Server['fetchSockets']>>;
+    try {
+      sockets = await this.server.fetchSockets();
+    } catch (error) {
+      this.logger.debug(
+        {
+          accountId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Skipped account-disabled disconnect (fetchSockets failed)',
+      );
+      return;
+    }
+    await Promise.all(
+      sockets.map(async (socket) => {
+        const auth = socket.data?.auth as AuthenticatedClient | undefined;
+        if (!auth || auth.accountId !== accountId) return;
+        socket.disconnect(true);
+      }),
+    );
+  }
+
+  /**
+   * Server-side fallback: before acting on any session signal, drop teacher
+   * sockets whose account is no longer active, even if the account-disabled
+   * signal was missed. The account row is the authority; handshake-time
+   * ownership alone must not keep a disabled teacher connected.
+   */
+  private async pruneDisabledTeacherSockets(
+    liveSessionId: string,
+  ): Promise<void> {
+    try {
+      const sockets = await this.server
+        .in(teacherRoom(liveSessionId))
+        .fetchSockets();
+      await Promise.all(
+        sockets.map(async (socket) => {
+          const auth = socket.data?.auth as AuthenticatedClient | undefined;
+          if (!auth || auth.kind !== 'teacher') return;
+          try {
+            await this.sessions.assertAccountActive(auth.accountId);
+          } catch {
+            socket.disconnect(true);
+          }
+        }),
+      );
+    } catch (error) {
+      this.logger.debug(
+        {
+          liveSessionId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Skipped teacher socket account re-check (fetchSockets failed)',
+      );
+    }
+  }
+
   private async handleSignal(signal: LiveSessionSignal): Promise<void> {
+    await this.pruneUnauthorizedParticipantSockets(signal.liveSessionId);
+    await this.pruneDisabledTeacherSockets(signal.liveSessionId);
     const liveSessionId = signal.liveSessionId;
     switch (signal.type) {
       case 'participant.joined':
@@ -459,19 +669,32 @@ export class LiveGateway
         ) {
           return null;
         }
-        return { socketId: socket.id, participantId: auth.participantId };
+        return { socketId: socket.id, socket, client: auth };
       })
       .filter(
-        (value): value is { socketId: string; participantId: string } =>
-          value !== null,
+        (
+          value,
+        ): value is {
+          socketId: string;
+          socket: (typeof remoteSockets)[number];
+          client: Extract<AuthenticatedClient, { kind: 'participant' }>;
+        } => value !== null,
       );
     await Promise.all(
-      targets.map(async ({ socketId, participantId }) => {
+      targets.map(async ({ socketId, socket: remoteSocket, client }) => {
         try {
+          const socket = remoteSocket as unknown as Socket;
+          if (!(await this.reauthorizeParticipant(socket, client))) {
+            return;
+          }
           const results = await this.liveSessions.getResults(
             liveSessionId,
             sessionQuestionId,
-            { kind: 'participant', participantId },
+            {
+              kind: 'participant',
+              participantId: client.participantId,
+              accountId: client.accountId,
+            },
           );
           this.server.to(socketId).emit(
             'result.updated',
@@ -488,7 +711,7 @@ export class LiveGateway
             {
               liveSessionId,
               sessionQuestionId,
-              participantId,
+              participantId: client.participantId,
               err: error instanceof Error ? error.message : String(error),
             },
             'Skipped participant result.updated (reveal gate)',

@@ -39,6 +39,20 @@ export class CreateLiveSessionDto {
   questionIds!: string[];
 }
 
+export class QuestionSelectionDto {
+  @ApiProperty({
+    example: '01945f3e-...-uuid-v7',
+    description: 'Question definition id.',
+  })
+  questionDefinitionId!: string;
+
+  @ApiProperty({
+    example: 0,
+    description: 'Zero-based position within the session.',
+  })
+  position!: number;
+}
+
 export class LiveSessionDto {
   id!: string;
   courseId!: string;
@@ -60,10 +74,17 @@ export class LiveSessionDto {
       'Number of submissions for the currently open question (0 when no question is open).',
   })
   votedCount?: number;
-  questionSelections?: Array<{
-    questionDefinitionId: string;
-    position: number;
-  }>;
+  @ApiProperty({
+    type: () => QuestionSelectionDto,
+    isArray: true,
+    description: 'Ordered question selections for this session.',
+  })
+  questionSelections?: QuestionSelectionDto[];
+  @ApiProperty({
+    type: () => SessionQuestionDto,
+    isArray: true,
+    description: 'Session questions, ordered by position.',
+  })
   sessionQuestions?: SessionQuestionDto[];
 }
 

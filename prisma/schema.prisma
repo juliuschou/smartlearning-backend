@@ -32,9 +32,10 @@ model SystemSetting {
   @@map("system_setting")
 }
 
-/// Web 帳號。MVP 只建 admin 與 teacher 兩種角色，無 student 帳號。
-/// 身分：UUID v7（app 層產生）。狀態：TEXT + CHECK（role/status），CHECK 由手寫 migration 補。
-/// 切片範圍：bootstrap→首位 admin、admin 建 teacher、login、session。disable/restore 延後。
+/// Web 帳號。角色：admin | teacher | student（CHECK 由手寫 migration 補）。
+/// 身分：UUID v7（app 層產生）。狀態：TEXT + CHECK（role/status）。
+/// student 的 can_create_course 必須為 false，由 application 與 migration 共同守護。
+/// 切片範圍：bootstrap→首位 admin、admin 建帳號、login、session、disable/restore。
 model Account {
   /// UUID v7（app 層產生）
   id                 String    @id @db.Uuid
@@ -42,7 +43,7 @@ model Account {
   username           String    @unique
   /// 顯示名稱
   displayName        String    @map("display_name")
-  /// 角色：admin | teacher（CHECK 由 migration 補）
+  /// 角色：admin | teacher | student（CHECK 由 migration 補）
   role               String
   /// 狀態：active | disabled（CHECK 由 migration 補，default active）
   status             String    @default("active")
@@ -61,12 +62,14 @@ model Account {
   /// 建立者；bootstrap 首位 admin 為 null，self-FK ON DELETE RESTRICT
   createdBy          String?   @map("created_by") @db.Uuid
 
-  sessions   WebSession[]
-  courses    Course[]     @relation("CourseOwner")
-  cliCredentials CliCredential[]
-  validationTokens QuestionValidationToken[]
-  createdByAccount Account? @relation("AccountCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
-  createdAccounts Account[] @relation("AccountCreatedBy")
+  sessions          WebSession[]
+  courses           Course[]                  @relation("CourseOwner")
+  cliCredentials    CliCredential[]
+  validationTokens  QuestionValidationToken[]
+  createdByAccount  Account?                  @relation("AccountCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAccounts   Account[]                 @relation("AccountCreatedBy")
+  courseEnrollments CourseEnrollment[]        @relation("StudentCourseEnrollments")
+  participants      Participant[]
 
   @@index([createdBy], map: "idx_account_created_by")
   @@map("account")
@@ -103,21 +106,44 @@ model WebSession {
 /// 題目/live_session 依後續 phase 加入。切片只做 create/list/detail/archive。
 model Course {
   /// UUID v7（app 層產生）
-  id            String   @id @db.Uuid
-  ownerAccountId String  @map("owner_account_id") @db.Uuid
-  name          String
-  description   String?
+  id             String   @id @db.Uuid
+  ownerAccountId String   @map("owner_account_id") @db.Uuid
+  name           String
+  description    String?
   /// 狀態：draft | archived（CHECK 由 migration 補，default draft）
-  status        String   @default("draft")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  status         String   @default("draft")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  owner         Account              @relation("CourseOwner", fields: [ownerAccountId], references: [id], onDelete: Restrict)
-  questions     QuestionDefinition[]
-  liveSessions  LiveSession[]
+  owner        Account              @relation("CourseOwner", fields: [ownerAccountId], references: [id], onDelete: Restrict)
+  questions    QuestionDefinition[]
+  liveSessions LiveSession[]
+  enrollments  CourseEnrollment[]
 
   @@index([ownerAccountId], map: "idx_course_owner")
   @@map("course")
+}
+
+/// Persistent roster membership between a Course and a student Account.
+/// Removed rows are retained and reactivated on a later add; history queries are
+/// intentionally out of scope for this phase.
+model CourseEnrollment {
+  id               String   @id @db.Uuid
+  courseId         String   @map("course_id") @db.Uuid
+  studentAccountId String   @map("student_account_id") @db.Uuid
+  /// Status: active | removed (CHECK由 migration 補)
+  status           String   @default("active")
+  enrolledAt       DateTime @default(now()) @map("enrolled_at") @db.Timestamptz
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  course         Course  @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  studentAccount Account @relation("StudentCourseEnrollments", fields: [studentAccountId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@unique([courseId, studentAccountId], map: "uq_course_enrollment_course_student")
+  @@index([courseId, status], map: "idx_course_enrollment_course_status")
+  @@index([studentAccountId, status], map: "idx_course_enrollment_student_status")
+  @@map("course_enrollment")
 }
 
 /// Reusable, course-owned question definition. Supports poll (single/multiple),
@@ -132,9 +158,9 @@ model QuestionDefinition {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  course           Course                         @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  options          QuestionOption[]
-  sessionQuestions SessionQuestion[]
+  course            Course                         @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  options           QuestionOption[]
+  sessionQuestions  SessionQuestion[]
   sessionSelections LiveSessionQuestionSelection[]
 
   @@unique([courseId, position], map: "uq_question_definition_course_position")
@@ -144,11 +170,11 @@ model QuestionDefinition {
 }
 
 model QuestionOption {
-  id                   String             @id @db.Uuid
-  questionDefinitionId String             @map("question_definition_id") @db.Uuid
-  optionRef            String?            @map("option_ref")
+  id                   String  @id @db.Uuid
+  questionDefinitionId String  @map("question_definition_id") @db.Uuid
+  optionRef            String? @map("option_ref")
   text                 String
-  isCorrect            Boolean            @default(false) @map("is_correct")
+  isCorrect            Boolean @default(false) @map("is_correct")
   position             Int
 
   questionDefinition QuestionDefinition @relation(fields: [questionDefinitionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -171,11 +197,11 @@ model LiveSession {
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  course            Course                      @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  course             Course                         @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   questionSelections LiveSessionQuestionSelection[]
-  questions         SessionQuestion[]
-  participants      Participant[]
-  submissions       Submission[]
+  questions          SessionQuestion[]
+  participants       Participant[]
+  submissions        Submission[]
 
   @@unique([id, courseId], map: "uq_live_session_id_course")
   @@index([courseId], map: "idx_live_session_course")
@@ -214,8 +240,8 @@ model SessionQuestion {
   openedAt              DateTime? @map("opened_at") @db.Timestamptz
   closedAt              DateTime? @map("closed_at") @db.Timestamptz
 
-  liveSession        LiveSession            @relation(fields: [liveSessionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  questionDefinition QuestionDefinition?    @relation(fields: [questionDefinitionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  liveSession        LiveSession             @relation(fields: [liveSessionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  questionDefinition QuestionDefinition?     @relation(fields: [questionDefinitionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   options            SessionQuestionOption[]
   submissions        Submission[]
 
@@ -241,20 +267,26 @@ model SessionQuestionOption {
   @@map("session_question_option")
 }
 
-/// Anonymous participant identity scoped to one LiveSession.
+/// Anonymous or account-bound participant identity scoped to one LiveSession.
+/// Account-bound rows retain an internal token hash for schema compatibility;
+/// that token is never returned or accepted as the cookie identity.
 model Participant {
   id            String   @id @db.Uuid
   liveSessionId String   @map("live_session_id") @db.Uuid
+  accountId     String?  @map("account_id") @db.Uuid
   displayName   String   @map("display_name")
   tokenHash     String   @map("token_hash")
   joinedAt      DateTime @default(now()) @map("joined_at") @db.Timestamptz
 
   liveSession LiveSession  @relation(fields: [liveSessionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  account     Account?     @relation(fields: [accountId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   submissions Submission[]
 
   @@unique([id, liveSessionId], map: "uq_participant_id_live_session")
+  @@unique([liveSessionId, accountId], map: "uq_participant_session_account")
   @@unique([liveSessionId, tokenHash], map: "uq_participant_session_token_hash")
   @@index([liveSessionId, tokenHash], map: "idx_participant_session_token_hash")
+  @@index([accountId], map: "idx_participant_account")
   @@map("participant")
 }
 
@@ -286,21 +318,21 @@ model Submission {
 /// M2 紅卡 #8：can_create_course=false 不撤銷 CLI key；CLI 撤銷是獨立 admin 流程。
 model CliCredential {
   /// UUID v7（app 層產生）
-  id          String    @id @db.Uuid
-  accountId   String    @map("account_id") @db.Uuid
+  id         String    @id @db.Uuid
+  accountId  String    @map("account_id") @db.Uuid
   /// 每帳號內唯一的名稱
-  name        String
+  name       String
   /// raw key 的 SHA-256 hash，全域唯一
-  keyHash     String    @unique @map("key_hash")
+  keyHash    String    @unique @map("key_hash")
   /// 授權範圍：all_courses | single_course（CHECK 由 migration 補；MVP 只用 all_courses）
-  scope       String    @default("all_courses")
+  scope      String    @default("all_courses")
   /// 狀態：active | revoked（CHECK 由 migration 補）
-  status      String    @default("active")
-  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz
+  status     String    @default("active")
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz
 
-  account          Account                  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account          Account                   @relation(fields: [accountId], references: [id], onDelete: Cascade)
   validationTokens QuestionValidationToken[]
 
   @@unique([accountId, name], map: "uq_cli_credential_account_name")

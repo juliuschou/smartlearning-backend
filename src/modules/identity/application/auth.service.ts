@@ -4,14 +4,20 @@ import { SessionService, type SessionMeta } from '../../../common/auth';
 import { hashPassword, verifyPassword } from '../../../common/crypto';
 import {
   InvalidCredentialsError,
+  RateLimitedError,
   UnauthorizedError,
   ValidationError,
 } from '../../../common/errors';
 import { TransactionService } from '../../../prisma/transaction.service';
+import {
+  normalizeRateLimitAccountKey,
+  RateLimiterService,
+} from '../../rate-limit/rate-limiter.service';
 import { AccountStatus } from '../domain/account-status';
 import {
   PasswordPolicyError,
   validatePassword,
+  rejectCommonPassword,
 } from '../domain/password-policy';
 import { AccountService } from './account.service';
 
@@ -25,6 +31,7 @@ export class AuthService {
     private readonly accounts: AccountService,
     private readonly sessions: SessionService,
     private readonly transactions: TransactionService,
+    private readonly rateLimiter: RateLimiterService,
   ) {}
 
   /**
@@ -36,6 +43,18 @@ export class AuthService {
     password: string,
     meta?: SessionMeta,
   ): Promise<{ token: string; session: WebSession; account: Account }> {
+    // R-F7-7: dual-scope (account + source) login rate limit. Check BEFORE the
+    // credential path. The decision is identical whether the account exists, so
+    // surfacing `RATE_LIMITED` here leaks no account existence. The source key
+    // is the client IP; 'unknown' is a stable fallback when no IP is available
+    // (e.g. tests without a proxy), so such callers share one source budget.
+    const accountKey = normalizeRateLimitAccountKey(username);
+    const sourceKey = meta?.ipAddress ?? 'unknown';
+    const limit = this.rateLimiter.check(accountKey, sourceKey);
+    if (limit.limited) {
+      throw new RateLimitedError(limit.retryAfterSeconds);
+    }
+
     const account = await this.accounts.findByUsername(username);
 
     // Constant-ish path: always verify against a real hash when present, and
@@ -46,6 +65,7 @@ export class AuthService {
     // observed after that verification.
     if (!account) {
       await verifyDummy(password);
+      this.recordLoginFailure(accountKey, sourceKey);
       throw new InvalidCredentialsError();
     }
 
@@ -57,29 +77,46 @@ export class AuthService {
       !ok ||
       account.status !== AccountStatus.ACTIVE
     ) {
+      this.recordLoginFailure(accountKey, sourceKey);
       throw new InvalidCredentialsError();
     }
 
-    return this.transactions.run(async (txClient) => {
-      await this.transactions.lockAccountForUpdate(txClient, account.id);
-      const current = await txClient.account.findUnique({
-        where: { id: account.id },
-      });
-      if (
-        !current ||
-        current.status !== AccountStatus.ACTIVE ||
-        current.passwordHash !== account.passwordHash
-      ) {
-        throw new InvalidCredentialsError();
-      }
+    try {
+      const result = await this.transactions.run(async (txClient) => {
+        await this.transactions.lockAccountForUpdate(txClient, account.id);
+        const current = await txClient.account.findUnique({
+          where: { id: account.id },
+        });
+        if (
+          !current ||
+          current.status !== AccountStatus.ACTIVE ||
+          current.passwordHash !== account.passwordHash
+        ) {
+          throw new InvalidCredentialsError();
+        }
 
-      const { token, session } = await this.sessions.createSessionInTransaction(
-        txClient,
-        current,
-        meta,
-      );
-      return { token, session, account: current };
-    });
+        const { token, session } =
+          await this.sessions.createSessionInTransaction(
+            txClient,
+            current,
+            meta,
+          );
+        return { token, session, account: current };
+      });
+      // Success: clear the account-scope counter (source scope decays via TTL).
+      this.rateLimiter.clearOnSuccess(accountKey);
+      return result;
+    } catch (e) {
+      if (e instanceof InvalidCredentialsError) {
+        this.recordLoginFailure(accountKey, sourceKey);
+      }
+      throw e;
+    }
+  }
+
+  /** Record a failed login on both scopes (R-F7-7). */
+  private recordLoginFailure(accountKey: string, sourceKey: string): void {
+    this.rateLimiter.recordFailure(accountKey, sourceKey);
   }
 
   async stepUp(
@@ -177,6 +214,7 @@ export class AuthService {
   private validatePassword(password: string, field: string): void {
     try {
       validatePassword(password);
+      rejectCommonPassword(password);
     } catch (e) {
       if (e instanceof PasswordPolicyError) {
         throw new ValidationError(e.message, field);

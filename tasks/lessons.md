@@ -87,3 +87,56 @@
 - **Detection signal:** Debug log in the service catch showed `prismaCode: 'P2039'` on the open_text submission path; option-answer path (array value) worked.
 - **Root cause:** `Prisma.JsonNull` writes a JSON `null` *value* (not SQL NULL), so the CHECK `IS NULL` branch is false and the array branch evaluates `jsonb_typeof(null::jsonb)`. `Prisma.DbNull` writes an actual SQL NULL, which satisfies `IS NULL`. The two are not interchangeable.
 - **Prevention rule:** For a `Json?` column that must read as SQL NULL (e.g. to satisfy a `IS NULL OR ...` CHECK), write `Prisma.DbNull`, not `Prisma.JsonNull`. Use `Prisma.JsonNull` only when you want the JSON value `null` stored. When a Prisma write fails opaquely, add a temporary `PrismaClientKnownRequestError` log (code + message) in the service catch to surface the exact code, then remove it.
+
+## 2026-08-18 — Account-bound authorization must share lock order
+
+- **Failure mode:** Participant creation or submission could pass an active-enrollment/account check and commit after a concurrent enrollment removal or account disable committed.
+- **Detection signal:** The authorization read and the revocation mutation locked different rows, so a check-then-create/submit interleaving remained possible.
+- **Prevention rule:** For account-bound live-session operations, lock the shared rows before the final authorization read in one documented order (`liveSession → course → account`), and revalidate role, status, and enrollment inside the same transaction.
+
+## 2026-08-18 — Socket.IO `fetchSockets()` uses `RemoteSocket`
+
+- **Failure mode:** Casting `RemoteSocket[]` to `Socket[]`, or typing a helper as `Pick<Socket, ...>`, caused TypeScript errors because `RemoteSocket.disconnect()` returns its own `this` type.
+- **Detection signal:** `TS2352`/`TS2345` during typecheck/build at the gateway's `fetchSockets()` paths.
+- **Prevention rule:** Keep the inferred remote-socket collection, describe only the members the helper uses (`id` and `disconnect(close?)`), and isolate any Socket-specific cast to the narrow call site that genuinely requires it.
+
+## 2026-08-19 — Prisma 7 generated client is ESM-TS; breaks `tsc` CJS compilation
+
+- **Failure mode:** Building the backend for Docker (`nest build` → `node dist/src/main`) crashed at startup with `ReferenceError: exports is not defined in ES module scope` at `dist/generated/prisma/client.js:38`, or `Cannot find module './internal/class.ts'`. The app ran fine in dev via `nest start` because the host `generated/prisma` was stale (from an older Prisma 7.x patch with extensionless imports).
+- **Detection signal:** Comparing host `generated/prisma/client.ts` (extensionless imports, no `import.meta`) vs a fresh `npx prisma generate` in the image (imports `./internal/class.ts`, has `import { fileURLToPath } from 'node:url'` + `globalThis['__dirname'] = ... import.meta.url ...`). Same `prisma@7.9.1`, same schema — the generator's output style changed across 7.x patches.
+- **Root cause:** Prisma 7.9.1's `prisma-client` generator emits ESM-flavored TS with explicit `.ts` import extensions and an `import.meta.url`-based `__dirname` shim. `tsc` with `module: commonjs` preserves the `.ts` suffix in the emitted `require("./internal/class.ts")`, but only `.js` files land in `dist/` → Node can't resolve them. The `import.meta` usage also confuses Node's CJS/ESM detection.
+- **Prevention rule:** After `prisma generate` in any build pipeline (Docker, CI), normalize the generated client to CJS-safe TS: strip `.ts` extensions from *relative* specifiers and drop the `import.meta.url` shim (CJS has a real `__dirname`). The repo's `scripts/normalize-prisma-client.mjs` does this idempotently. Do NOT rely on the host's stale `generated/` — a fresh clone regenerates the ESM-style output and breaks `node dist/...`. Verify with `node dist/src/main` (note: `nest build` emits `dist/src/main.js`, not `dist/main.js`, because tsconfig `rootDir=src` is preserved under `outDir`).
+
+## 2026-08-19 — `ConfigService.get<number>()` does NOT convert env strings to numbers
+
+- **Failure mode:** The login rate limiter read `LOGIN_RATE_LIMIT_*_WINDOW_MS` from `ConfigService.get<number>(...)` and used the value as `expiresAt = nowMs() + windowMs`. The env value is always a **string** (`"1000"`), and `ConfigService.get<number>` is only a TypeScript hint — no runtime coercion. `number + string` string-concatenated, so `expiresAt` became `~1.78e16` (≈ `String(nowMs()) + "1000"`) instead of `nowMs + 1000`. Buckets then never expired (`"17871546525501000" > 1787154653893` coerces the string to a huge number), turning the rate limit into a **permanent lockout** — the exact anti-pattern R-F7-7 forbids. The unit tests missed it because they passed plain numbers via a fake `ConfigService`; only the real-env e2e exposed it.
+- **Detection signal:** e2e "login works after the window elapses" failed with `429` after a real 1100ms wait, while the isolated `SystemClock` unit test passed. A diagnostic `console.log` of `expiresAt` vs `now` showed `expiresAt` ~10000× too large and `acctMax` printed as `"3"` (a string).
+- **Prevention rule:** Never trust `ConfigService.get<number>(key)` to yield a number — env values are strings. Coerce explicitly (`Number(raw)` + `Number.isFinite` guard) at the read site, or validate+convert in `env.validation.ts` and read the typed `EnvConfig` object. **Tripwire:** any module that does arithmetic on a `ConfigService.get` value must unit-test with a **string** env value (mirror real env), not just numbers, and must have an e2e/real-clock test that exercises expiry. The rate-limit e2e (`test/auth-rate-limit.e2e-spec.ts`) is now that tripwire.
+
+## 2026-08-20 — Password policy must cover bootstrap writes
+
+- **Failure mode:** Adding common-password rejection to `AccountService` left the first-admin bootstrap path able to hash a common password directly in `BootstrapService.createFirstAdmin`.
+- **Detection signal:** A review of every `hashPassword` call found `bootstrap.service.ts` validated length in `bootstrapFromEnv` but hashed directly in the transaction method; the normal account/reset paths already called the shared policy.
+- **Prevention rule:** Treat every password-to-hash sink, including bootstrap and test-only provisioning paths, as a policy boundary. Centralize the full validation helper and call it immediately before hashing.
+- **Tripwire:** `grep -R "hashPassword" src/modules/identity` and verify each call site is preceded by length + common-password validation; retain an integration assertion for bootstrap and account temp-password rejection.
+
+## 2026-08-22 — Compose commands and override ports need explicit working directory/merge checks
+
+- **Failure mode:** A background Compose command started from the UI repository because the shell directory change was omitted; a later isolated Compose override appended the base `5433:5432` port instead of replacing it, causing a port-allocation failure.
+- **Detection signal:** The first command reported `./.env.production` and Compose config missing; the isolated stack failed with `Bind for :::5433 failed`, and `docker compose config --format json` showed two DB port mappings.
+- **Prevention rule:** Put `cd /home/user/projects/smartLearning/smartLearning-backend` inside every background command, pass `--env-file .env.production` for Compose interpolation, and inspect the fully merged config before lifecycle actions. Use Compose `!override`/`!reset` tags when an override must replace a list such as `ports`.
+- **Tripwire:** Before `up`, assert the merged JSON contains exactly one backend `3000` mapping and one isolated DB mapping; after `up`, verify migration exit `0`, health `200`, and the runtime CORS value.
+
+## 2026-08-23 — Isolated bootstrap must use the runtime artifact
+
+- **Failure mode:** Running the host `npm run bootstrap:admin` through the available `tsx` toolchain failed before application startup because `PrismaService` received an undefined `ConfigService`; the Docker runtime itself was healthy.
+- **Detection signal:** Bootstrap log failed at `src/prisma/prisma.service.ts` constructor injection before any account write, while the compiled bootstrap artifact inside the current-source runtime image succeeded against the isolated database.
+- **Prevention rule:** For Docker-backed fixture provisioning, use the compiled bootstrap entrypoint from the exact image built from the checked-out source, pass secrets through process environment only, and verify the one-shot exit code before API fixture setup.
+- **Tripwire:** Run `docker compose run --rm --no-deps backend node dist/src/bootstrap/bootstrap-admin.js`, require exit `0`, then probe `/auth/login` and the resulting account projection before proceeding; do not infer runtime failure from the host `tsx` path.
+
+## 2026-08-23 — Compose config projections must accept string ports
+
+- **Failure mode:** A sanitized `docker compose config --format json` assertion assumed every `ports` entry was an object; Compose emitted a string form for at least one entry, causing the jq projection to fail before reporting the safe port scope.
+- **Detection signal:** `jq` reported `Cannot index string with string ("target")` while the lifecycle/runtime checks themselves remained read-only and unaffected.
+- **Prevention rule:** When inspecting merged Compose JSON, normalize both string and object port representations before asserting published/target ports; keep the projection output limited to non-secret scope fields.
+- **Tripwire:** Run the safe projection against both base and isolated config forms and require exactly one backend `3000:3000` and one isolated DB mapping before any `up`/`stop` action.

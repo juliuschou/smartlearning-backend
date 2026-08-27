@@ -1,8 +1,14 @@
 import { Global, Module } from '@nestjs/common';
+import { AccountLifecycleBus } from './account-lifecycle.bus';
 import { SessionService } from './session.service';
 import { SessionGuard } from './session.guard';
 import { CsrfGuard } from './csrf.guard';
-import { AdminGuard, CanCreateCourseGuard } from './authorization.guards';
+import {
+  AdminGuard,
+  CanCreateCourseGuard,
+  StudentGuard,
+  TeacherOrAdminGuard,
+} from './authorization.guards';
 import { StepUpGuard } from './step-up.guard';
 
 /**
@@ -13,19 +19,25 @@ import { StepUpGuard } from './step-up.guard';
 @Global()
 @Module({
   providers: [
+    AccountLifecycleBus,
     SessionService,
     SessionGuard,
     CsrfGuard,
     AdminGuard,
     CanCreateCourseGuard,
+    StudentGuard,
+    TeacherOrAdminGuard,
     StepUpGuard,
   ],
   exports: [
+    AccountLifecycleBus,
     SessionService,
     SessionGuard,
     CsrfGuard,
     AdminGuard,
     CanCreateCourseGuard,
+    StudentGuard,
+    TeacherOrAdminGuard,
     StepUpGuard,
   ],
 })
