@@ -1687,3 +1687,16 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
 - **WARNINGS:** existing Nest `LegacyRouteConverter` wildcard-route warnings only; no runtime/schema/migration/config changes.
 - **REMAINING:** missing-CSRF and non-exact-Origin cases are currently asserted on the cancel route, not every control route; admin cancel, student create/start/open/question-close, and close/cancel log-capture/manual evidence remain pending. CP4 manual sign-off is not inferred from automated tests.
+
+### 2026-08-27 — BE-3.1 CP4 remaining route-matrix verification
+
+- **AUTHORIZED:** user authorized the remaining CP4 route-matrix verification; all DB-backed operations were limited to `smartlearning_test`, including the guarded test setup's implicit idempotent `migrate deploy` and `truncateAll`. No development DB was touched.
+- **EDIT (TEST-ONLY):** added `test/live-session-route-matrix.e2e-spec.ts`; no runtime, Prisma schema, migration, environment, or configuration changes.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — `smartlearning_test`, 12 migrations, schema up to date.
+- **PASS:** focused route matrix — `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-route-matrix.e2e-spec.ts` — 1 suite / 14 tests, 0 failures, 0 skips.
+- **PASS:** adjacent close/detail regression — `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-close-cancel.e2e-spec.ts test/live-session-detail.e2e-spec.ts` — 2 suites / 21 tests, 0 failures, 0 skips.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **COVERAGE:** direct HTTP checks now exercise create, start, question open/close, session close/cancel, and detail across authenticated/unauthenticated, student, non-owner, admin/owner, CSRF, exact-Origin, envelope/request-id, redaction, and rejected-mutation side-effect paths.
+- **WARNING:** existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` wildcard routes remain non-blocking and unchanged.
+- **RESULT:** CP4 automated route-matrix verification is complete with full targeted verification confidence.
+- **MANUAL CHECKPOINT 4 SIGN-OFF:** User confirmed **“Checkpoint 4 verified”** on 2026-08-27. The CP4 actor/role/credential matrix and raw HTTP evidence review are accepted. This sign-off covers CP4 only; it does not approve CP5 or BE-3.1 final release sign-off.
