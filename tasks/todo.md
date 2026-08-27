@@ -1640,4 +1640,22 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` — 3 suites / 33 tests passed, 0 failed, 0 skipped.
 - **PASS:** CP2 coverage includes question open/close, duplicate close/reopen and invalid-state rejection, session-close question cascade, waiting cancellation realtime event and terminal reconnect rejection, active-cancel `409 CONFLICT`, and result visibility/error paths.
 - **BOUNDARY:** account-disable realtime timeout did not reproduce in the rerun; no runtime source/schema/migration/env/config change was needed. Existing Nest `LegacyRouteConverter` wildcard warnings remained non-blocking.
-- **RESULT:** CP2 targeted E2E now passes with 0 failure/0 skipped. Manual Checkpoint 2 review remains required before CP3; no release sign-off is inferred from automated tests.
+- **RESULT:** CP2 targeted E2E now passes with 0 failure/0 skipped.
+- **MANUAL CHECKPOINT 2 CONFIRMED:** user reviewed CP2 and authorized entry into CP3; no release sign-off is inferred from this checkpoint.
+
+### 2026-08-27 — BE-3.1 CP3 Terminal-state negative paths
+
+- [x] Verify closed/cancelled direct join and reconnect rejection, post-terminal submission rejection, question-close submission rejection, no side effects, and account-bound/anonymous parity.
+- [x] Record targeted DB-backed verification against `smartlearning_test`; test setup implicitly runs idempotent `migrate deploy` + `truncateAll`.
+
+#### Verification evidence
+
+- `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/cp3-terminal-state.e2e-spec.ts` — PASS; 1 suite / 4 tests, 0 failed, 0 skipped.
+- `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/cp3-terminal-state.e2e-spec.ts test/live-session-realtime.e2e-spec.ts test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` — PASS; 4 suites / 37 tests, 0 failed, 0 skipped.
+- `npm run typecheck` — PASS.
+- `npm run lint:check` — PASS.
+- `npm run format:check` — PASS; all matched files use Prettier code style.
+- `npm run build` — PASS.
+- `git diff --check` — PASS.
+- Warnings: existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` legacy wildcard route patterns; non-blocking and unchanged.
+- No runtime, Prisma schema, migration, environment, or configuration changes were made; only this task-log evidence was updated.
