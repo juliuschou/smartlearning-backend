@@ -422,11 +422,12 @@ describe('LiveSession question results (e2e)', () => {
     // while waiting/active. Instead, close the current question (closed is
     // allowed) — to test not_open we need a freshly started session whose
     // question has not been opened.
-    // Cancel current session to free the course, then create + start a new one.
-    await ctx.teacher.agent
-      .post(`/api/v1/live-sessions/${ctx.liveSessionId}/cancel`)
+    // Close the active session to free the course, then create + start a new one.
+    const closeResponse = await ctx.teacher.agent
+      .post(`/api/v1/live-sessions/${ctx.liveSessionId}/close`)
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, ctx.teacher.csrfToken);
+    expect(closeResponse.status).toBe(201);
 
     const courseResponse = await ctx.teacher.agent
       .get('/api/v1/courses')
@@ -472,12 +473,13 @@ describe('LiveSession question results (e2e)', () => {
   it('non-owner teacher gets 404 (not 409) even for a not_open question (no existence leak via state)', async () => {
     requireDatabase();
     const ctx = await setupOpenSession();
-    // Cancel to free the course, then create + start a new session with a
-    // question left in not_open state.
-    await ctx.teacher.agent
-      .post(`/api/v1/live-sessions/${ctx.liveSessionId}/cancel`)
+    // Close the active session to free the course, then create + start a new
+    // session with a question left in not_open state.
+    const closeResponse = await ctx.teacher.agent
+      .post(`/api/v1/live-sessions/${ctx.liveSessionId}/close`)
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, ctx.teacher.csrfToken);
+    expect(closeResponse.status).toBe(201);
 
     const courseResponse = await ctx.teacher.agent
       .get('/api/v1/courses')

@@ -1632,3 +1632,12 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - [x] Extended enrollment/OpenAPI contract assertions for archived behavior, unchanged rows, roster/my-courses visibility, ordering/idempotency, and concurrency scenarios.
 - [ ] Verify static formatting, typecheck, lint, build, and diff check; DB-backed tests remain intentionally unauthorized.
 - **BOUNDARY:** no Prisma schema/migration/env/config changes; no migration, truncate, DB-backed test, or service startup.
+
+### 2026-08-27 — BE-3.1 CP2 Question cascade targeted verification
+
+- **AUTHORIZED:** user explicitly authorized DB-backed targeted E2E limited to `smartlearning_test`; setup implicit idempotent `migrate deploy` + `truncateAll` remained within scope.
+- **FIX (test-only):** active-session cleanup in `test/live-session-results.e2e-spec.ts` now uses `close` and asserts `201`; active cancellation remains rejected by the frozen policy. Realtime cancellation fixture now remains `waiting` via `setupActiveSession(false)` so it exercises `waiting → cancelled`.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts test/live-session-results.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts` — 3 suites / 33 tests passed, 0 failed, 0 skipped.
+- **PASS:** CP2 coverage includes question open/close, duplicate close/reopen and invalid-state rejection, session-close question cascade, waiting cancellation realtime event and terminal reconnect rejection, active-cancel `409 CONFLICT`, and result visibility/error paths.
+- **BOUNDARY:** account-disable realtime timeout did not reproduce in the rerun; no runtime source/schema/migration/env/config change was needed. Existing Nest `LegacyRouteConverter` wildcard warnings remained non-blocking.
+- **RESULT:** CP2 targeted E2E now passes with 0 failure/0 skipped. Manual Checkpoint 2 review remains required before CP3; no release sign-off is inferred from automated tests.

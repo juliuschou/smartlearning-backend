@@ -251,7 +251,7 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     }
   }
 
-  async function setupActiveSession(): Promise<{
+  async function setupActiveSession(startSession = true): Promise<{
     teacher: AuthenticatedAgent & { sessionCookie: string };
     courseId: string;
     liveSessionId: string;
@@ -300,13 +300,16 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
     const liveSessionId = waitingResponse.body.data.id as string;
     const sessionCode = waitingResponse.body.data.sessionCode as string;
 
-    const startResponse = await teacher.agent
-      .post(`/api/v1/live-sessions/${liveSessionId}/start`)
-      .set('Origin', TEST_ORIGIN)
-      .set(CSRF_HEADER, teacher.csrfToken);
-    expect(startResponse.status).toBe(201);
-    const sessionQuestionId = startResponse.body.data.sessionQuestions[0]
-      .id as string;
+    let sessionQuestionId = '';
+    if (startSession) {
+      const startResponse = await teacher.agent
+        .post(`/api/v1/live-sessions/${liveSessionId}/start`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.csrfToken);
+      expect(startResponse.status).toBe(201);
+      sessionQuestionId = startResponse.body.data.sessionQuestions[0]
+        .id as string;
+    }
 
     return {
       teacher,
@@ -766,7 +769,7 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
 
   it('cancelling a session emits session.state_changed; reconnect with the now-cancelled token is rejected', async () => {
     requireDatabase();
-    const ctx = await setupActiveSession();
+    const ctx = await setupActiveSession(false);
     const p = await joinParticipant(ctx.sessionCode, 'p1');
     const participantSocket = connectParticipant(
       ctx.sessionCode,

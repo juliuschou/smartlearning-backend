@@ -23,9 +23,9 @@ describe('live-session state contract', () => {
     expect(canCloseLiveSession(LiveSessionStatus.CLOSED)).toBe(false);
   });
 
-  it('allows cancel only from waiting or active, not from terminal states', () => {
+  it('allows cancel only from waiting, not active or terminal states', () => {
     expect(canCancelLiveSession(LiveSessionStatus.WAITING)).toBe(true);
-    expect(canCancelLiveSession(LiveSessionStatus.ACTIVE)).toBe(true);
+    expect(canCancelLiveSession(LiveSessionStatus.ACTIVE)).toBe(false);
     expect(canCancelLiveSession(LiveSessionStatus.CLOSED)).toBe(false);
     expect(canCancelLiveSession(LiveSessionStatus.CANCELLED)).toBe(false);
   });
