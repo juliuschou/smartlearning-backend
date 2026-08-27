@@ -1659,3 +1659,13 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - `git diff --check` — PASS.
 - Warnings: existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` legacy wildcard route patterns; non-blocking and unchanged.
 - No runtime, Prisma schema, migration, environment, or configuration changes were made; only this task-log evidence was updated.
+
+### 2026-08-27 — CP4 full regression verification
+
+- **AUTHORIZED:** user requested entry into CP4 verification; DB-backed execution was limited to PostgreSQL `smartlearning_test`. Test setup's implicit idempotent `migrate deploy` + `truncateAll` remained within that boundary. Development DB was not touched.
+- **PASS:** `NODE_ENV=test npm run prisma:validate` and `NODE_ENV=test npm run prisma:migrate:status` — schema valid; 12 migrations present; schema up to date.
+- **PASS:** targeted BE-2/BE-1/live-flow E2E — 10 suites / 57 tests, 0 failed, 0 skipped. The repository's available participant-account coverage was used in place of a nonexistent `identity.e2e-spec.ts`.
+- **PASS:** full unit — 22 suites / 123 tests; integration — 3 suites / 12 tests, 0 skipped; E2E — 24 suites / 152 tests, 0 skipped.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **WARNINGS:** existing non-blocking Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*`; no failures or flakes.
+- **RESULT:** CP4 full regression verification passed with full regression confidence. No runtime, schema, migration, environment, configuration, or test-source changes were made; only this evidence log was updated.
