@@ -310,30 +310,6 @@ describe('Poll submission (integration)', () => {
     return { acquired, release: releaseLock, done };
   }
 
-  async function holdQuestionRowLock(questionId: string): Promise<{
-    acquired: Promise<void>;
-    release: () => void;
-    done: Promise<void>;
-  }> {
-    let markAcquired!: () => void;
-    let releaseLock!: () => void;
-    const acquired = new Promise<void>((resolve) => {
-      markAcquired = resolve;
-    });
-    const released = new Promise<void>((resolve) => {
-      releaseLock = resolve;
-    });
-    const done = prisma.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`
-        SELECT id FROM session_question WHERE id = ${questionId}::uuid FOR UPDATE
-      `;
-      markAcquired();
-      await released;
-    });
-    await acquired;
-    return { acquired, release: releaseLock, done };
-  }
-
   it('serializes concurrent submissions for one participant and question', async () => {
     requireDatabase();
     const scenario = await createScenario();
@@ -479,25 +455,38 @@ describe('Poll submission (integration)', () => {
       sessionQuestionId: question.id,
       selectedOptionRefs: [question.options[0].id],
     };
-    const lock = await holdQuestionRowLock(question.id);
+    // Hold the authority row so both real transactions queue on the same
+    // PostgreSQL lock, then release them together. Submission and close must
+    // share the live_session → session_question lock order.
+    const lock = await holdSessionRowLock(scenario.active.id);
     const submitPromise = submissions.submit(
       scenario.active.id,
       participant,
       newId(),
       input,
     );
+    await Promise.resolve();
+    const closePromise = sessions.closeSession(scenario.active.id, caller);
     lock.release();
-    const submit = await submitPromise;
-    await lock.done;
-    expect(submit.id).toBeDefined();
 
-    const close = await sessions.closeSession(scenario.active.id, caller);
-    expect(close.status).toBe('closed');
-    expect(
-      await prisma.prisma.submission.count({
-        where: { liveSessionId: scenario.active.id },
-      }),
-    ).toBe(1);
+    const [submit, close] = await Promise.allSettled([
+      submitPromise,
+      closePromise,
+    ]);
+    await lock.done;
+    expect(close.status).toBe('fulfilled');
+    expect(close.status === 'fulfilled' && close.value.status).toBe('closed');
+    const submissionCount = await prisma.prisma.submission.count({
+      where: { liveSessionId: scenario.active.id },
+    });
+    expect(submissionCount).toBeLessThanOrEqual(1);
+    if (submit.status === 'fulfilled') {
+      expect(submit.value.id).toBeDefined();
+      expect(submissionCount).toBe(1);
+    } else {
+      expect(submit.reason).toMatchObject({ code: 'CONFLICT' });
+      expect(submissionCount).toBe(0);
+    }
     expect(
       await prisma.prisma.sessionQuestion.findUniqueOrThrow({
         where: { id: question.id },
@@ -519,18 +508,37 @@ describe('Poll submission (integration)', () => {
       scenario.active.id,
       joined.participantToken,
     );
-    const lock = await holdQuestionRowLock(question.id);
+    const lock = await holdSessionRowLock(scenario.active.id);
     const closePromise = sessions.closeSession(scenario.active.id, caller);
-    lock.release();
-    const close = await closePromise;
-    await lock.done;
-    expect(close.status).toBe('closed');
-    await expect(
-      submissions.submit(scenario.active.id, participant, newId(), {
+    await Promise.resolve();
+    const submitPromise = submissions.submit(
+      scenario.active.id,
+      participant,
+      newId(),
+      {
         sessionQuestionId: question.id,
         selectedOptionRefs: [question.options[0].id],
-      }),
-    ).rejects.toMatchObject({ code: 'CONFLICT' });
-    expect(await prisma.prisma.submission.count()).toBe(0);
+      },
+    );
+    lock.release();
+
+    const [close, submit] = await Promise.allSettled([
+      closePromise,
+      submitPromise,
+    ]);
+    await lock.done;
+    expect(close.status).toBe('fulfilled');
+    expect(close.status === 'fulfilled' && close.value.status).toBe('closed');
+    const submissionCount = await prisma.prisma.submission.count({
+      where: { liveSessionId: scenario.active.id },
+    });
+    expect(submissionCount).toBeLessThanOrEqual(1);
+    if (submit.status === 'rejected') {
+      expect(submit.reason).toMatchObject({ code: 'CONFLICT' });
+      expect(submissionCount).toBe(0);
+    } else {
+      expect(submit.value.id).toBeDefined();
+      expect(submissionCount).toBe(1);
+    }
   });
 });

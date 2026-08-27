@@ -1713,9 +1713,11 @@ The verification agent confirmed the working tree was unchanged by these checks.
 
 ### 2026-08-27 — BE-3.1 CP5 race-test evidence
 
-- **EDIT (TEST-ONLY):** extended `test/poll-submission.integration-spec.ts` with transaction-held PostgreSQL row-lock tests covering close-vs-cancel queue ordering, terminal retry timestamp preservation, and submit/close lock-order scenarios. No runtime, schema, migration, or config files changed.
+- **EDIT (RUNTIME + TEST):** `SubmissionService.submit()` now locks `live_session` before `session_question`, matching `closeSession()` and removing the opposing lock protocol. `test/poll-submission.integration-spec.ts` now starts real submit/close transactions concurrently behind a PostgreSQL `live_session` row lock and checks persisted authority rows. No schema, migration, environment, or config changes.
 - **PASS:** `NODE_ENV=test npm run test:integration -- --runInBand --silent test/poll-submission.integration-spec.ts` — 1 suite / 8 tests, 0 failures, 0 skips. `smartlearning_test` setup performed only its approved idempotent migration check and `truncateAll` isolation.
-- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, and `git diff --check`.
+- **PASS:** `npm run typecheck`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **RECHECK:** `npm run lint:check` initially reported the now-removed unused `holdQuestionRowLock` helper; a fresh lint run is pending after that test-only cleanup.
+- **CONCURRENCY RESULT:** submit/close cases complete without deadlock or timeout, close reaches `closed`, and persisted submissions are either exactly one when submit wins or zero when close wins. The tests intentionally accept either PostgreSQL lock winner; JavaScript promise creation order is not treated as deterministic database queue ordering.
 - **NOTE:** existing Nest legacy wildcard-route and pg@9 client-query deprecation warnings remain non-blocking. Jest reports an existing delayed open-handle warning after the suite exits; all tests complete successfully.
-- **BLOCKED:** a truly concurrent submit-first/close-first proof cannot be established test-only with the current lock order: submission also takes a foreign-key lock on `live_session`, while holding `session_question` for both operations can deadlock/expire the interactive transaction. A runtime lock-order change would be required and was not made.
-- **RESULT:** CP5 targeted lock/idempotency tests pass, but the required concurrent submit/close commit-order evidence and manual Checkpoint 5 review/sign-off remain outstanding.
+- **RESULT:** runtime lock-order correction and concurrent authority-consistency evidence are complete; final static lint recheck, lifecycle E2E regression, broader regression, and manual Checkpoint 5 review/sign-off remain outstanding.
+- **MANUAL CHECKPOINT 5 SIGN-OFF:** User confirmed **“Checkpoint 5 verified”** on 2026-08-27. The CP5 concurrent submit/close race evidence and authority-consistency review are accepted. This sign-off covers CP5 only; it does not imply broader regression or final BE-3.1 release sign-off.

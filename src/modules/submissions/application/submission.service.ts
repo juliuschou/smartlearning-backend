@@ -95,6 +95,12 @@ export class SubmissionService {
         : null;
 
     const submission = await this.transactions.run(async (tx) => {
+      // Match closeSession's live_session → session_question order so the
+      // submit/close race has one PostgreSQL lock protocol and cannot cycle.
+      await this.transactions.lockLiveSessionForUpdate(
+        tx,
+        canonicalLiveSessionId,
+      );
       await this.transactions.lockSessionQuestionForUpdate(
         tx,
         canonicalQuestionId,
