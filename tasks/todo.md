@@ -1721,3 +1721,24 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **NOTE:** existing Nest legacy wildcard-route and pg@9 client-query deprecation warnings remain non-blocking. Jest reports an existing delayed open-handle warning after the suite exits; all tests complete successfully.
 - **RESULT:** runtime lock-order correction and concurrent authority-consistency evidence are complete; final static lint recheck, lifecycle E2E regression, broader regression, and manual Checkpoint 5 review/sign-off remain outstanding.
 - **MANUAL CHECKPOINT 5 SIGN-OFF:** User confirmed **“Checkpoint 5 verified”** on 2026-08-27. The CP5 concurrent submit/close race evidence and authority-consistency review are accepted. This sign-off covers CP5 only; it does not imply broader regression or final BE-3.1 release sign-off.
+
+### 2026-08-27 — BE-3.1 CP6 Post-commit realtime proof
+
+- [ ] Verify commit-before-publish ordering for lifecycle signals and preserve pre-mutation listener registration.
+- [ ] Verify event-bus/publisher failure cannot fail or roll back committed REST mutations.
+- [ ] Verify teacher, anonymous participant, and account-bound student projections remain visibility-safe.
+- [ ] Run focused realtime unit/E2E/integration verification against `smartlearning_test` only, then static gates.
+- [ ] Record sanitized evidence and manual Checkpoint 6 review; do not claim CP7 auto-close or durable BE-7 replay.
+
+**Risk & rollback:** Medium; prefer additive test coverage and revert only the focused source/test changes if a verified runtime defect is found. No migration, reset, truncate outside guarded test setup, or destructive rollback.
+
+**Dependencies & environment:** Node 24+, PostgreSQL `smartlearning_test`, `NODE_ENV=test`; DB-backed test setup implicitly performs idempotent migration checking and `truncateAll` and requires explicit authorization.
+
+#### CP6 preflight and focused verification
+
+- **AUTHORIZED:** User authorized CP6 DB-backed verification limited to `smartlearning_test`; the guarded test setup's implicit idempotent migration check and `truncateAll` remained within scope.
+- **PASS:** static preflight — realtime bus unit 1 suite / 5 tests; `npm run typecheck`; `npm run lint:check`; `npm run format:check`; `npm run build`; `git diff --check`.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — `smartlearning_test` at `localhost:5432`, 12 migrations, schema up to date.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` — 1 suite / 14 tests, 0 failures, 0 skips.
+- **COVERAGE:** existing focused realtime suite verifies pre-mutation listener registration, lifecycle signals, Socket.IO delivery, participant-safe projections, teacher-only counts/results, vote-to-reveal targeting, and account/enrollment revocation behavior.
+- **BOUNDARY:** no new CP6-specific deterministic publish-rejection/committed-state test or transaction-held commit-before-event proof was added in this preflight; adjacent regression and manual Checkpoint 6 review remain pending. Lite bus only; durable outbox/eventSeq/replay/Redis remain deferred.
