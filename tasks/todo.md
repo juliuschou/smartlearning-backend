@@ -1679,3 +1679,11 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `NODE_ENV=test npm test -- --runInBand src/common/observability/pino-redaction.spec.ts src/modules/live-sessions/domain/live-session-status.spec.ts src/modules/live-sessions/domain/question-results.spec.ts` — 3 suites / 18 tests passed, 0 skipped.
 - **PRECHECK:** `smartlearning_test` is reachable with 12 migrations applied and schema up to date; no manual migration was run. Existing warnings include Nest legacy wildcard routes and a pg@9 `client.query()` deprecation warning.
 - **RESULT:** BE-3.1 CP4 remains **BLOCKED／PARTIAL** despite the targeted suites passing: wrong-CSRF and wrong-Origin control-route evidence, student wrong-role, admin success, systematic control-route envelope assertions, close/cancel log-capture, and manual Checkpoint 4 review remain outstanding. Do not advance to CP5 or infer release sign-off.
+
+### 2026-08-27 — BE-3.1 CP4 gap-test implementation
+
+- **EDIT (TEST-ONLY):** extended `test/live-session-close-cancel.e2e-spec.ts` with student wrong-role/detail rejection, admin cross-owner control success, wrong CSRF/Origin no-side-effect checks, complete envelope metadata assertions, and response secret-field absence assertions.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-close-cancel.e2e-spec.ts` — 1 suite / 12 tests, 0 failed, 0 skipped, against `smartlearning_test`.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **WARNINGS:** existing Nest `LegacyRouteConverter` wildcard-route warnings only; no runtime/schema/migration/config changes.
+- **REMAINING:** missing-CSRF and non-exact-Origin cases are currently asserted on the cancel route, not every control route; admin cancel, student create/start/open/question-close, and close/cancel log-capture/manual evidence remain pending. CP4 manual sign-off is not inferred from automated tests.
