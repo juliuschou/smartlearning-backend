@@ -286,6 +286,54 @@ describe('Poll submission (integration)', () => {
     expect(await prisma.prisma.submission.count()).toBe(1);
   });
 
+  async function holdSessionRowLock(sessionId: string): Promise<{
+    acquired: Promise<void>;
+    release: () => void;
+    done: Promise<void>;
+  }> {
+    let markAcquired!: () => void;
+    let releaseLock!: () => void;
+    const acquired = new Promise<void>((resolve) => {
+      markAcquired = resolve;
+    });
+    const released = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    const done = prisma.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT id FROM live_session WHERE id = ${sessionId}::uuid FOR UPDATE
+      `;
+      markAcquired();
+      await released;
+    });
+    await acquired;
+    return { acquired, release: releaseLock, done };
+  }
+
+  async function holdQuestionRowLock(questionId: string): Promise<{
+    acquired: Promise<void>;
+    release: () => void;
+    done: Promise<void>;
+  }> {
+    let markAcquired!: () => void;
+    let releaseLock!: () => void;
+    const acquired = new Promise<void>((resolve) => {
+      markAcquired = resolve;
+    });
+    const released = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    const done = prisma.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT id FROM session_question WHERE id = ${questionId}::uuid FOR UPDATE
+      `;
+      markAcquired();
+      await released;
+    });
+    await acquired;
+    return { acquired, release: releaseLock, done };
+  }
+
   it('serializes concurrent submissions for one participant and question', async () => {
     requireDatabase();
     const scenario = await createScenario();
@@ -319,5 +367,170 @@ describe('Poll submission (integration)', () => {
       DomainError,
     );
     expect(await prisma.prisma.submission.count()).toBe(1);
+  });
+
+  it('deterministically gives the queued close operation the session lock before cancel', async () => {
+    requireDatabase();
+    const scenario = await createScenario();
+    const lock = await holdSessionRowLock(scenario.active.id);
+
+    const closePromise = sessions.closeSession(scenario.active.id, caller);
+    await Promise.resolve();
+    const cancelPromise = sessions.cancelSession(scenario.active.id, caller);
+    lock.release();
+
+    const [close, cancel] = await Promise.allSettled([
+      closePromise,
+      cancelPromise,
+    ]);
+    await lock.done;
+    expect(close.status).toBe('fulfilled');
+    expect(cancel.status).toBe('rejected');
+    expect(cancel.status === 'rejected' && cancel.reason).toMatchObject({
+      code: 'CONFLICT',
+    });
+
+    const terminal = await prisma.prisma.liveSession.findUniqueOrThrow({
+      where: { id: scenario.active.id },
+      select: { status: true, closedAt: true },
+    });
+    expect(terminal.status).toBe('closed');
+    expect(terminal.closedAt).not.toBeNull();
+    await expect(
+      sessions.closeSession(scenario.active.id, caller),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    expect(
+      (
+        await prisma.prisma.liveSession.findUniqueOrThrow({
+          where: { id: scenario.active.id },
+          select: { closedAt: true },
+        })
+      ).closedAt,
+    ).toEqual(terminal.closedAt);
+  });
+
+  it('deterministically gives the queued cancel operation the session lock before close', async () => {
+    requireDatabase();
+    await createScenario();
+    const secondCourse = await prisma.prisma.course.create({
+      data: {
+        id: newId(),
+        ownerAccountId: caller.id,
+        name: 'Second Poll Course',
+        status: 'draft',
+      },
+    });
+    const secondQuestion = await questions.createQuestion(
+      secondCourse.id,
+      caller,
+      {
+        type: 'poll',
+        prompt: 'Second question',
+        selectionMode: 'single',
+        options: [
+          { optionRef: 'a', text: 'A' },
+          { optionRef: 'b', text: 'B' },
+        ],
+      },
+    );
+    const waiting = await sessions.createSession(
+      { courseId: secondCourse.id, questionIds: [secondQuestion.id] },
+      caller,
+    );
+    const lock = await holdSessionRowLock(waiting.id);
+
+    const cancelPromise = sessions.cancelSession(waiting.id, caller);
+    await Promise.resolve();
+    const closePromise = sessions.closeSession(waiting.id, caller);
+    lock.release();
+
+    const [cancel, close] = await Promise.allSettled([
+      cancelPromise,
+      closePromise,
+    ]);
+    await lock.done;
+    expect(cancel.status).toBe('fulfilled');
+    expect(close.status).toBe('rejected');
+    expect(close.status === 'rejected' && close.reason).toMatchObject({
+      code: 'CONFLICT',
+    });
+    expect(
+      await prisma.prisma.liveSession.findUniqueOrThrow({
+        where: { id: waiting.id },
+        select: { status: true, closedAt: true },
+      }),
+    ).toEqual({ status: 'cancelled', closedAt: null });
+  });
+
+  it('proves submit-first commit ordering before close', async () => {
+    requireDatabase();
+    const scenario = await createScenario();
+    const question = scenario.active.questions[0];
+    await sessions.openQuestion(scenario.active.id, question.id, caller);
+    const joined = await participants.join(
+      scenario.waiting.sessionCode,
+      'Race participant',
+    );
+    const participant = await participants.authenticate(
+      scenario.active.id,
+      joined.participantToken,
+    );
+    const input: CreateSubmissionDto = {
+      sessionQuestionId: question.id,
+      selectedOptionRefs: [question.options[0].id],
+    };
+    const lock = await holdQuestionRowLock(question.id);
+    const submitPromise = submissions.submit(
+      scenario.active.id,
+      participant,
+      newId(),
+      input,
+    );
+    lock.release();
+    const submit = await submitPromise;
+    await lock.done;
+    expect(submit.id).toBeDefined();
+
+    const close = await sessions.closeSession(scenario.active.id, caller);
+    expect(close.status).toBe('closed');
+    expect(
+      await prisma.prisma.submission.count({
+        where: { liveSessionId: scenario.active.id },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.prisma.sessionQuestion.findUniqueOrThrow({
+        where: { id: question.id },
+        select: { status: true },
+      }),
+    ).toEqual({ status: 'closed' });
+  });
+
+  it('proves close-first commit ordering before a blocked submission', async () => {
+    requireDatabase();
+    const scenario = await createScenario();
+    const question = scenario.active.questions[0];
+    await sessions.openQuestion(scenario.active.id, question.id, caller);
+    const joined = await participants.join(
+      scenario.waiting.sessionCode,
+      'Close first',
+    );
+    const participant = await participants.authenticate(
+      scenario.active.id,
+      joined.participantToken,
+    );
+    const lock = await holdQuestionRowLock(question.id);
+    const closePromise = sessions.closeSession(scenario.active.id, caller);
+    lock.release();
+    const close = await closePromise;
+    await lock.done;
+    expect(close.status).toBe('closed');
+    await expect(
+      submissions.submit(scenario.active.id, participant, newId(), {
+        sessionQuestionId: question.id,
+        selectedOptionRefs: [question.options[0].id],
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    expect(await prisma.prisma.submission.count()).toBe(0);
   });
 });

@@ -1700,3 +1700,22 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **WARNING:** existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` wildcard routes remain non-blocking and unchanged.
 - **RESULT:** CP4 automated route-matrix verification is complete with full targeted verification confidence.
 - **MANUAL CHECKPOINT 4 SIGN-OFF:** User confirmed **“Checkpoint 4 verified”** on 2026-08-27. The CP4 actor/role/credential matrix and raw HTTP evidence review are accepted. This sign-off covers CP4 only; it does not approve CP5 or BE-3.1 final release sign-off.
+
+### 2026-08-27 — BE-3.1 CP5 targeted verification
+
+- **AUTHORIZED:** user authorized DB-backed CP5 verification limited to `smartlearning_test`; test setup's implicit idempotent `migrate deploy` + `truncateAll` remained within that boundary.
+- **PASS:** `NODE_ENV=test npm run prisma:migrate:status` — `smartlearning_test`, 12 migrations, schema up to date.
+- **PASS:** targeted lifecycle/terminal E2E — `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-route-matrix.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts test/cp3-terminal-state.e2e-spec.ts` — 3 suites / 30 tests, 0 failures, 0 skips.
+- **PASS:** submission integration — `NODE_ENV=test npm run test:integration -- --runInBand --silent test/poll-submission.integration-spec.ts` — 1 suite / 4 tests, 0 failures, 0 skips; concurrent same-participant submission serialization and idempotency passed.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **GAP:** current evidence does not include concurrent close-vs-cancel, timestamp-preserving terminal retry/side-effect proof, or submit-vs-close commit-order races. Existing sequential terminal tests and concurrent-submission test do not satisfy those CP5 race requirements.
+- **RESULT:** CP5 targeted lifecycle/static verification passed, but BE-3.1 CP5 remains **INCOMPLETE/BLOCKED** pending dedicated DB-backed race evidence and manual Checkpoint 5 review. No runtime/schema/migration/config changes were made.
+
+### 2026-08-27 — BE-3.1 CP5 race-test evidence
+
+- **EDIT (TEST-ONLY):** extended `test/poll-submission.integration-spec.ts` with transaction-held PostgreSQL row-lock tests covering close-vs-cancel queue ordering, terminal retry timestamp preservation, and submit/close lock-order scenarios. No runtime, schema, migration, or config files changed.
+- **PASS:** `NODE_ENV=test npm run test:integration -- --runInBand --silent test/poll-submission.integration-spec.ts` — 1 suite / 8 tests, 0 failures, 0 skips. `smartlearning_test` setup performed only its approved idempotent migration check and `truncateAll` isolation.
+- **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, and `git diff --check`.
+- **NOTE:** existing Nest legacy wildcard-route and pg@9 client-query deprecation warnings remain non-blocking. Jest reports an existing delayed open-handle warning after the suite exits; all tests complete successfully.
+- **BLOCKED:** a truly concurrent submit-first/close-first proof cannot be established test-only with the current lock order: submission also takes a foreign-key lock on `live_session`, while holding `session_question` for both operations can deadlock/expire the interactive transaction. A runtime lock-order change would be required and was not made.
+- **RESULT:** CP5 targeted lock/idempotency tests pass, but the required concurrent submit/close commit-order evidence and manual Checkpoint 5 review/sign-off remain outstanding.
