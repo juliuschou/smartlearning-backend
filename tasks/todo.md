@@ -1834,7 +1834,7 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - [x] Bounded due-archive purge entrypoint (`purgeDue`) with fixed 90-day deadline
 - [x] Harden deletion-request idempotency/request linkage and pagination query contract (request creation now uses the session transaction lock; migration adds a partial unique index for outstanding requests)
 - [x] Add archive aggregate projection and focused privacy regression tests
-- [ ] Add full archive governance e2e/regression matrix
+- [x] Add full archive governance e2e/regression matrix
 - [x] Deploy archive migration and run authorized DB-backed verification against `smartlearning_test`
 
 ### Results
@@ -1846,4 +1846,6 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `npm test -- --runInBand` — 24 suites / 127 tests; `npm run prisma:validate`; `npm run typecheck`; `npm run lint:check`; `npm run format:check`; `npm run build`; and `git diff --check`.
 - **PASS:** authorized `NODE_ENV=test npm run prisma:migrate:deploy` applied migration `20260828090000_add_archive_governance` to `smartlearning_test`; `NODE_ENV=test npm run prisma:migrate:status` reports 13 migrations and schema up to date.
 - **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-close-cancel.e2e-spec.ts test/live-session-detail.e2e-spec.ts test/live-session-realtime.e2e-spec.ts test/live-session-results.e2e-spec.ts test/live-session-route-matrix.e2e-spec.ts` — 5 suites / 65 tests, 0 failed, 0 skipped; expected realtime post-commit isolation warnings only.
-- **PENDING:** dedicated archive-governance E2E/regression matrix and destructive purge assertions are not yet implemented/run; no purge or truncation was executed beyond guarded test setup authorization.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` — 1 suite / 3 tests passed, 0 failed, 0 skipped, against guarded `smartlearning_test`.
+- Added focused archive governance coverage for active archive finalization and 90-day retention metadata, owner/admin/cross-owner detail visibility, list access, CSRF and deletion-request idempotency, step-up/confirmation gates, early-delete tombstone cleanup, and due-retention purge idempotency.
+- Destructive assertions ran only inside the guarded E2E setup against `smartlearning_test`; no production database or migration command was run during this verification.
