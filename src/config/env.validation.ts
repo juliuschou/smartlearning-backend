@@ -81,6 +81,15 @@ export class EnvConfig {
   @IsNumber()
   @Min(1000)
   LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS?: number;
+
+  // Active LiveSession hard limit and maintenance sweep interval.
+  @IsNumber()
+  @Min(1)
+  LIVE_SESSION_AUTO_CLOSE_MS = 8 * 60 * 60 * 1000;
+
+  @IsNumber()
+  @Min(1000)
+  LIVE_SESSION_AUTO_CLOSE_TICK_MS = 60 * 1000;
 }
 
 /**
@@ -105,6 +114,14 @@ export function validateEnv(
     PORT: num(raw.PORT, 3000),
     SESSION_IDLE_MS: num(raw.SESSION_IDLE_MS, 30 * 60 * 1000),
     SESSION_ABSOLUTE_MS: num(raw.SESSION_ABSOLUTE_MS, 8 * 60 * 60 * 1000),
+    LIVE_SESSION_AUTO_CLOSE_MS: num(
+      raw.LIVE_SESSION_AUTO_CLOSE_MS,
+      8 * 60 * 60 * 1000,
+    ),
+    LIVE_SESSION_AUTO_CLOSE_TICK_MS: num(
+      raw.LIVE_SESSION_AUTO_CLOSE_TICK_MS,
+      60 * 1000,
+    ),
     SESSION_COOKIE_SECURE: bool(raw.SESSION_COOKIE_SECURE),
   };
 

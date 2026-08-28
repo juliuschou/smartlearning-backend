@@ -1849,3 +1849,17 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` — 1 suite / 3 tests passed, 0 failed, 0 skipped, against guarded `smartlearning_test`.
 - Added focused archive governance coverage for active archive finalization and 90-day retention metadata, owner/admin/cross-owner detail visibility, list access, CSRF and deletion-request idempotency, step-up/confirmation gates, early-delete tombstone cleanup, and due-retention purge idempotency.
 - Destructive assertions ran only inside the guarded E2E setup against `smartlearning_test`; no production database or migration command was run during this verification.
+
+## BE-6 — auto-close scheduler (2026-08-28)
+
+- [x] Add validated `LIVE_SESSION_AUTO_CLOSE_MS` (8h default) and `LIVE_SESSION_AUTO_CLOSE_TICK_MS` configuration.
+- [x] Add bounded, row-lock serialized automatic close with atomic open-question closure, `autoClosed=true`, archive follow-up, and realtime signals.
+- [x] Add lifecycle-managed native timer with startup sweep, overlap guard, shutdown cleanup, and per-candidate failure isolation.
+- [ ] Add authorized PostgreSQL scheduler race/e2e coverage; DB-backed tests were not run in this slice because explicit authorization was not available.
+
+### Results
+
+- Implemented `LiveSessionService.autoCloseExpiredSessions()` and registered `LiveSessionAutoCloseScheduler` in `LiveSessionsModule`.
+- Existing manual close/cancel behavior and database schema remain unchanged; auto-close uses the existing session row lock and post-commit governance/event boundaries.
+- PASS: `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, `git diff --check`.
+- Not run: unit/integration/e2e suites and migration status requiring guarded DB operations; explicit authorization is still required.

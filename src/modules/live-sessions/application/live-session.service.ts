@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '../../../../generated/prisma/client';
 import { newId, normalizeUuid } from '../../../common/crypto';
 import {
@@ -30,6 +31,7 @@ import {
   SessionQuestionStatus,
 } from '../domain';
 import { GovernanceService } from '../../governance/application/governance.service';
+import { Clock, SystemClock } from '../../../common/clock';
 import type {
   CreateLiveSessionDto,
   SessionQuestionResultsDto,
@@ -77,7 +79,99 @@ export class LiveSessionService {
     private readonly questions: QuestionService,
     private readonly eventBus: LiveSessionEventBus,
     private readonly governance: GovernanceService,
+    @Optional() private readonly config?: ConfigService,
+    @Optional() private readonly clock?: Clock,
   ) {}
+
+  private get lifecycleClock(): Clock {
+    return this.clock ?? new SystemClock();
+  }
+
+  /** Close due active sessions; each candidate is independently serialized. */
+  async autoCloseExpiredSessions(
+    now = this.lifecycleClock.now(),
+  ): Promise<number> {
+    const duration =
+      this.config?.get<number>('LIVE_SESSION_AUTO_CLOSE_MS') ??
+      8 * 60 * 60 * 1000;
+    const cutoff = new Date(now.getTime() - duration);
+    const candidates = await this.db.liveSession.findMany({
+      where: {
+        status: LiveSessionStatus.ACTIVE,
+        startedAt: { not: null, lte: cutoff },
+      },
+      select: { id: true },
+      take: 50,
+      orderBy: { startedAt: 'asc' },
+    });
+    let closed = 0;
+    for (const candidate of candidates) {
+      try {
+        const result = await this.transactions.run(async (tx) => {
+          await this.transactions.lockLiveSessionForUpdate(tx, candidate.id);
+          const session = await tx.liveSession.findUnique({
+            where: { id: candidate.id },
+            include: {
+              questions: {
+                where: { status: SessionQuestionStatus.OPEN },
+                select: { id: true },
+              },
+            },
+          });
+          if (
+            !session ||
+            session.status !== LiveSessionStatus.ACTIVE ||
+            !session.startedAt ||
+            session.startedAt > cutoff
+          )
+            return null;
+          const closedAt = now;
+          const questionIds = session.questions.map((q) => q.id);
+          await tx.sessionQuestion.updateMany({
+            where: {
+              liveSessionId: session.id,
+              status: SessionQuestionStatus.OPEN,
+            },
+            data: { status: SessionQuestionStatus.CLOSED, closedAt },
+          });
+          await tx.liveSession.update({
+            where: { id: session.id },
+            data: {
+              status: LiveSessionStatus.CLOSED,
+              closedAt,
+              autoClosed: true,
+            },
+          });
+          return questionIds;
+        });
+        if (!result) continue;
+        closed += 1;
+        try {
+          await this.governance.archiveSession(candidate.id);
+        } catch (error) {
+          this.logger.error(
+            `Auto-close archive failed for ${candidate.id}: ${error instanceof Error ? error.name : 'unknown'}`,
+          );
+        }
+        for (const sessionQuestionId of result)
+          this.publish({
+            type: 'question.closed',
+            liveSessionId: candidate.id,
+            sessionQuestionId,
+          });
+        this.publish({
+          type: 'session.state_changed',
+          liveSessionId: candidate.id,
+          status: LiveSessionStatus.CLOSED,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Auto-close failed for ${candidate.id}: ${error instanceof Error ? error.name : 'unknown'}`,
+        );
+      }
+    }
+    return closed;
+  }
 
   private get db() {
     return this.prismaService.prisma;
