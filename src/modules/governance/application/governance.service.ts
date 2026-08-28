@@ -156,33 +156,39 @@ export class GovernanceService {
       : { ...this.summary(a), payload: a.payload };
   }
   async request(id: string, accountId: string, role: string, reason?: string) {
-    const a = await this.db.archivedResult.findUnique({
-      where: { liveSessionId: normalizeUuid(id) },
-      include: { course: true },
-    });
-    if (!a || (role !== 'admin' && a.course.ownerAccountId !== accountId))
-      throw new NotFoundError('Archive not found');
-    const existing = await this.db.deletionEvent.findFirst({
-      where: {
-        liveSessionId: a.liveSessionId,
-        requesterId: accountId,
-        trigger: 'teacher_request',
-        status: 'requested',
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (existing) return existing;
-    return this.db.deletionEvent.create({
-      data: {
-        id: newId(),
-        archivedResultId: a.id,
-        liveSessionId: a.liveSessionId,
-        courseId: a.courseId,
-        requesterId: accountId,
-        trigger: 'teacher_request',
-        reason,
-        status: 'requested',
-      },
+    const sid = normalizeUuid(id);
+    return this.tx.run(async (t) => {
+      // Serialize request creation with purge so exactly one outstanding request
+      // can exist for a session/requester pair, even when clients retry together.
+      await this.tx.lockLiveSessionForUpdate(t, sid);
+      const a = await t.archivedResult.findUnique({
+        where: { liveSessionId: sid },
+        include: { course: true },
+      });
+      if (!a || (role !== 'admin' && a.course.ownerAccountId !== accountId))
+        throw new NotFoundError('Archive not found');
+      const existing = await t.deletionEvent.findFirst({
+        where: {
+          liveSessionId: sid,
+          requesterId: accountId,
+          trigger: 'teacher_request',
+          status: 'requested',
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (existing) return existing;
+      return t.deletionEvent.create({
+        data: {
+          id: newId(),
+          archivedResultId: a.id,
+          liveSessionId: sid,
+          courseId: a.courseId,
+          requesterId: accountId,
+          trigger: 'teacher_request',
+          reason,
+          status: 'requested',
+        },
+      });
     });
   }
   async delete(

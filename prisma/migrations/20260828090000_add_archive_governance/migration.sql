@@ -26,3 +26,6 @@ CREATE TABLE "deletion_event" (
   "error_code" TEXT
 );
 CREATE INDEX "idx_deletion_event_session_trigger" ON "deletion_event" ("live_session_id", "trigger");
+CREATE UNIQUE INDEX "uq_deletion_event_outstanding_request"
+  ON "deletion_event" ("live_session_id", "requester_id")
+  WHERE "trigger" = 'teacher_request' AND "status" = 'requested';

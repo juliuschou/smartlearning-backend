@@ -1832,15 +1832,18 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - [x] Teacher/admin archive list/detail and ownership scoping skeleton
 - [x] Whole-session purge removes archive payload, submissions, participants, and snapshots
 - [x] Bounded due-archive purge entrypoint (`purgeDue`) with fixed 90-day deadline
-- [ ] Harden deletion-request idempotency/request linkage and pagination query contract (pagination exists; request dedup remains application-level until DB-backed race coverage)
+- [x] Harden deletion-request idempotency/request linkage and pagination query contract (request creation now uses the session transaction lock; migration adds a partial unique index for outstanding requests)
 - [x] Add archive aggregate projection and focused privacy regression tests
 - [ ] Add full archive governance e2e/regression matrix
-- [ ] Deploy migration or run DB-backed tests (requires explicit authorization)
+- [x] Deploy archive migration and run authorized DB-backed verification against `smartlearning_test`
 
 ### Results
 
 - Added `projectArchive()` using the shared `aggregateResults()` primitive. Archive payloads now contain ordered, typed anonymous aggregates only; raw submission rows, timestamps, and identity/linkage fields are not persisted.
 - Added focused projection tests for poll, quiz, open-text, ordering, correctness aggregates, and privacy-negative fields.
 - Updated frontend API reference for `/results` archive list/detail and deletion governance semantics.
-- **PASS:** focused governance unit tests (2 suites / 4 tests), `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
-- **NOT RUN:** migration deployment, DB-backed e2e/integration, truncation, and destructive purge; these require explicit authorization and remain pending.
+- Added a transaction-scoped lock around deletion-request creation and a partial unique index for one outstanding request per session/requester, preventing concurrent duplicate requests.
+- **PASS:** `npm test -- --runInBand` — 24 suites / 127 tests; `npm run prisma:validate`; `npm run typecheck`; `npm run lint:check`; `npm run format:check`; `npm run build`; and `git diff --check`.
+- **PASS:** authorized `NODE_ENV=test npm run prisma:migrate:deploy` applied migration `20260828090000_add_archive_governance` to `smartlearning_test`; `NODE_ENV=test npm run prisma:migrate:status` reports 13 migrations and schema up to date.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-close-cancel.e2e-spec.ts test/live-session-detail.e2e-spec.ts test/live-session-realtime.e2e-spec.ts test/live-session-results.e2e-spec.ts test/live-session-route-matrix.e2e-spec.ts` — 5 suites / 65 tests, 0 failed, 0 skipped; expected realtime post-commit isolation warnings only.
+- **PENDING:** dedicated archive-governance E2E/regression matrix and destructive purge assertions are not yet implemented/run; no purge or truncation was executed beyond guarded test setup authorization.
