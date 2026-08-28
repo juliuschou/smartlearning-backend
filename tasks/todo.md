@@ -438,7 +438,7 @@ Targeted verification is complete against real PostgreSQL; the full repository u
 - [x] **S-2** 老師端 session detail:獨立 `GET /live-sessions/:id`(目前靠 snapshot)→ 回完整 projection 含 joined/voted 人數。
 - [x] **S-3** 結果/聚合 endpoint:`GET /live-sessions/:id/questions/:qid/results` → 選項計數 + vote-to-reveal 投影 + 匿名聚合(US-F17);quiz 正確率 / open_text 投影隨 Q-3 一起。前端占位:結果頁先 mock 靜態資料 + 介面抽象成 `ResultsProvider`,後端就緒後切換。
 - [x] **S-4** joined/voted 即時人數:見 P3 即時通道;無 Socket 前先用 snapshot 輪詢頂著。
-- [ ] **S-5** 封存/保留:`POST /live-sessions/:id/archive` → ArchivedResult + 90 天保留 + 早刪/tombstone(依《即時同步與結果治理設計》)。需 S-1 先完成。
+- [x] **S-5** 封存/保留:`ArchivedResult` + 90 天保留 + 早刪/tombstone(依《即時同步與結果治理設計》)。目前由 close 後 archive finalization 觸發，保留明確 purge entrypoint；HTTP archive routes 為 `/api/v1/results`。
 
 ##### P3 — 學員課堂流程補完
 
@@ -1824,3 +1824,18 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **PASS:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
 - **WARNING:** Existing NestJS `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` remain non-blocking.
 - **RESULT:** BE-4.4 acceptance evidence is complete for the current open-text runtime; no runtime or database change was required.
+
+## BE-5 — archive governance (2026-08-28)
+
+- [x] Additive Prisma models/migration draft for ArchivedResult and DeletionEvent
+- [x] Close flow invokes idempotent archive finalization after committed close
+- [x] Teacher/admin archive list/detail and ownership scoping skeleton
+- [x] Whole-session purge removes archive payload, submissions, participants, and snapshots
+- [x] Bounded due-archive purge entrypoint (`purgeDue`) with fixed 90-day deadline
+- [ ] Add deletion-request idempotency/request linkage and pagination query contract
+- [ ] Add archive aggregate projection and regression tests
+- [ ] Deploy migration or run DB-backed tests (requires explicit authorization)
+
+### Results
+
+Static verification passed: `prisma validate`, `prisma generate`, normalized client, `npm run typecheck`, `npm run lint:check`, `npm run format:check`, and `npm run build`. Migration deployment, destructive operations, and DB-backed tests were not run.

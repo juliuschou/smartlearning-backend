@@ -119,6 +119,7 @@ model Course {
   questions    QuestionDefinition[]
   liveSessions LiveSession[]
   enrollments  CourseEnrollment[]
+  archivedResults ArchivedResult[]
 
   @@index([ownerAccountId], map: "idx_course_owner")
   @@map("course")
@@ -202,6 +203,7 @@ model LiveSession {
   questions          SessionQuestion[]
   participants       Participant[]
   submissions        Submission[]
+  archivedResult     ArchivedResult?
 
   @@unique([id, courseId], map: "uq_live_session_id_course")
   @@index([courseId], map: "idx_live_session_course")
@@ -311,6 +313,44 @@ model Submission {
   @@index([sessionQuestionId], map: "idx_submission_session_question")
   @@index([liveSessionId], map: "idx_submission_live_session")
   @@map("submission")
+}
+
+/// Immutable anonymous archive for one closed session.
+model ArchivedResult {
+  id            String   @id @db.Uuid
+  liveSessionId String   @unique @map("live_session_id") @db.Uuid
+  courseId      String   @map("course_id") @db.Uuid
+  closedAt      DateTime @map("closed_at") @db.Timestamptz
+  purgeAt       DateTime @map("purge_at") @db.Timestamptz
+  status        String   @default("active")
+  payload       Json?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Restrict)
+  course        Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  deletionEvents DeletionEvent[]
+  @@index([courseId, closedAt], map: "idx_archived_result_course_closed")
+  @@index([purgeAt, status], map: "idx_archived_result_purge_status")
+  @@map("archived_result")
+}
+
+/// Minimal governance tombstone/request. Never stores answer-bearing content.
+model DeletionEvent {
+  id            String   @id @db.Uuid
+  archivedResultId String? @map("archived_result_id") @db.Uuid
+  liveSessionId String   @map("live_session_id") @db.Uuid
+  courseId      String   @map("course_id") @db.Uuid
+  requesterId   String?  @map("requester_id") @db.Uuid
+  executorId    String?  @map("executor_id") @db.Uuid
+  trigger       String
+  reason        String?
+  status        String
+  deletedCategories Json? @map("deleted_categories")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz
+  errorCode     String? @map("error_code")
+  archivedResult ArchivedResult? @relation(fields: [archivedResultId], references: [id], onDelete: SetNull)
+  @@index([liveSessionId, trigger], map: "idx_deletion_event_session_trigger")
+  @@map("deletion_event")
 }
 
 /// CLI 憑證 — 與 Web Session 分離的獨立認證路徑。raw key 只在簽發時回傳一次，

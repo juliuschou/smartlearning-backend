@@ -29,6 +29,7 @@ import {
   normalizeSessionCode,
   SessionQuestionStatus,
 } from '../domain';
+import { GovernanceService } from '../../governance/application/governance.service';
 import type {
   CreateLiveSessionDto,
   SessionQuestionResultsDto,
@@ -75,6 +76,7 @@ export class LiveSessionService {
     private readonly transactions: TransactionService,
     private readonly questions: QuestionService,
     private readonly eventBus: LiveSessionEventBus,
+    private readonly governance: GovernanceService,
   ) {}
 
   private get db() {
@@ -357,6 +359,8 @@ export class LiveSessionService {
         };
       },
     );
+    // Archive is an idempotent post-commit follow-up; it never exposes partial rows.
+    await this.governance.archiveSession(canonicalSessionId);
     // Publish after commit. Bulk-close emits a question.closed signal per
     // previously-open question (at most one by invariant) plus the state change.
     for (const qid of closedQuestionIds) {
