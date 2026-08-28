@@ -90,6 +90,12 @@ export class EnrollmentService {
         );
       }
 
+      // Serialize roster creation/reactivation with account disable so the
+      // active-account check observes the same authority row version.
+      await this.transactions.lockAccountForUpdate(
+        tx,
+        canonicalStudentAccountId,
+      );
       const student = await tx.account.findUnique({
         where: { id: canonicalStudentAccountId },
         select: {

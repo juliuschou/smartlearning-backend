@@ -21,6 +21,12 @@ import {
   LiveSessionService,
 } from '../../live-sessions';
 import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
+import { LiveSessionOutboxService } from '../../realtime/live-session-outbox.service';
+import {
+  RealtimeCheckpointReason,
+  RealtimeEvent,
+  RealtimeVisibility,
+} from '../../realtime/live-session-realtime-contract';
 import { AccountRole } from '../../identity/domain/roles';
 import { AccountStatus } from '../../identity/domain/account-status';
 import { EnrollmentStatus } from '../../enrollments/domain';
@@ -45,6 +51,7 @@ export class ParticipantService {
     private readonly transactions: TransactionService,
     private readonly sessions: LiveSessionService,
     private readonly eventBus: LiveSessionEventBus,
+    private readonly outbox: LiveSessionOutboxService,
     private readonly enrollments: EnrollmentService,
   ) {}
 
@@ -77,7 +84,7 @@ export class ParticipantService {
           409,
         );
       }
-      return tx.participant.create({
+      const participant = await tx.participant.create({
         data: {
           id: newId(),
           liveSessionId: current.id,
@@ -85,6 +92,15 @@ export class ParticipantService {
           tokenHash,
         },
       });
+      await this.outbox.append(tx, {
+        liveSessionId: current.id,
+        event: RealtimeEvent.SESSION_SNAPSHOT,
+        visibility: RealtimeVisibility.TEACHER,
+        projectionInput: {
+          reason: RealtimeCheckpointReason.PARTICIPANT_JOINED,
+        },
+      });
+      return participant;
     });
 
     // Publish after the join transaction commits.
@@ -255,6 +271,14 @@ export class ParticipantService {
           tokenHash: hashToken(generateToken()),
         },
       });
+      await this.outbox.append(tx, {
+        liveSessionId: canonicalLiveSessionId,
+        event: RealtimeEvent.SESSION_SNAPSHOT,
+        visibility: RealtimeVisibility.TEACHER,
+        projectionInput: {
+          reason: RealtimeCheckpointReason.PARTICIPANT_JOINED,
+        },
+      });
       return { participant, created: true };
     });
 
@@ -304,6 +328,9 @@ export class ParticipantService {
       include: { liveSession: true },
     });
     if (!participant) throw new UnauthorizedError();
+    // Account-bound participants authenticate through the student session
+    // cookie, never through the anonymous bearer-token path.
+    if (participant.accountId !== null) throw new UnauthorizedError();
     if (!isJoinableLiveSessionStatus(participant.liveSession.status)) {
       throw new DomainError(
         'SESSION_NOT_JOINABLE',

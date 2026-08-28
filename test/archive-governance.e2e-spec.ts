@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { BootstrapService } from '../src/modules/identity/application/bootstrap.service';
 import { AccountRole } from '../src/modules/identity/domain/roles';
+import { newId } from '../src/common/crypto';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { CSRF_HEADER } from '../src/common/security';
 import { createTestApp } from './setup/app-factory';
@@ -143,6 +144,7 @@ describe('LiveSession close/cancel (e2e)', () => {
 
   async function createStartedSession(teacher: AuthenticatedAgent): Promise<{
     liveSessionId: string;
+    sessionCode: string;
     sessionQuestionId: string;
   }> {
     const courseResponse = await teacher.agent
@@ -176,6 +178,7 @@ describe('LiveSession close/cancel (e2e)', () => {
       .send({ courseId, questionIds: [questionId] });
     expect(waitingResponse.status).toBe(201);
     const liveSessionId = waitingResponse.body.data.id as string;
+    const sessionCode = waitingResponse.body.data.sessionCode as string;
 
     const startResponse = await teacher.agent
       .post(`/api/v1/live-sessions/${liveSessionId}/start`)
@@ -184,7 +187,7 @@ describe('LiveSession close/cancel (e2e)', () => {
     expect(startResponse.status).toBe(201);
     const sessionQuestionId = startResponse.body.data.sessionQuestions[0]
       .id as string;
-    return { liveSessionId, sessionQuestionId };
+    return { liveSessionId, sessionCode, sessionQuestionId };
   }
 
   function requireDatabase(): void {
@@ -210,6 +213,28 @@ describe('LiveSession close/cancel (e2e)', () => {
       OTHER_TEACHER.password,
     );
     const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Known participant' });
+    expect(joined.status).toBe(201);
+    const participantId = joined.body.data.participantId as string;
+    const participantToken = joined.body.data.participantToken as string;
+    const opened = await teacher.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    expect(opened.status).toBe(201);
+    const submitted = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('X-Participant-Token', participantToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expect(submitted.status).toBe(201);
     const closed = await teacher.agent
       .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
       .set('Origin', TEST_ORIGIN)
@@ -226,6 +251,19 @@ describe('LiveSession close/cancel (e2e)', () => {
     expect(archive?.purgeAt.getTime()).toBe(
       archive!.closedAt.getTime() + 90 * 24 * 60 * 60 * 1000,
     );
+    const participant = await prisma.prisma.participant.findUnique({
+      where: { id: participantId },
+    });
+    expect(participant).toMatchObject({
+      accountId: null,
+      displayName: 'Anonymous',
+    });
+    expect(
+      await prisma.prisma.submission.findUnique({
+        where: { id: submitted.body.data.id as string },
+        select: { participantId: true },
+      }),
+    ).toEqual({ participantId });
     const detail = await teacher.agent.get(
       `/api/v1/results/${session.liveSessionId}`,
     );
@@ -348,11 +386,42 @@ describe('LiveSession close/cancel (e2e)', () => {
       TEACHER.password,
     );
     const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Purge participant' });
+    expect(joined.status).toBe(201);
+    const participantId = joined.body.data.participantId as string;
     const close = await teacher.agent
       .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, teacher.csrfToken);
     expect(close.status).toBe(201);
+    const liveSession = await prisma.prisma.liveSession.findUniqueOrThrow({
+      where: { id: session.liveSessionId },
+      select: { realtimeEventSeq: true },
+    });
+    const sessionQuestion =
+      await prisma.prisma.sessionQuestion.findUniqueOrThrow({
+        where: {
+          id: session.sessionQuestionId,
+          liveSessionId: session.liveSessionId,
+        },
+        select: { aggregateVersion: true },
+      });
+    await prisma.prisma.liveSessionEvent.create({
+      data: {
+        id: newId(),
+        liveSessionId: session.liveSessionId,
+        sessionQuestionId: session.sessionQuestionId,
+        targetParticipantId: participantId,
+        eventName: 'result.updated',
+        schemaVersion: 1,
+        eventSeq: liveSession.realtimeEventSeq + 1n,
+        aggregateVersion: sessionQuestion.aggregateVersion,
+        visibility: 'participant_after_submit',
+        projectionInput: { sessionQuestionId: session.sessionQuestionId },
+      },
+    });
     const archive = await prisma.prisma.archivedResult.findUniqueOrThrow({
       where: { liveSessionId: session.liveSessionId },
     });
@@ -394,5 +463,13 @@ describe('LiveSession close/cancel (e2e)', () => {
         },
       }),
     ).toBe(1);
+    expect(
+      await prisma.prisma.liveSessionEvent.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          visibility: 'participant_after_submit',
+        },
+      }),
+    ).toBe(0);
   });
 });

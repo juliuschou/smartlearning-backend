@@ -1,12 +1,20 @@
-import { Controller, Get, VERSION_NEUTRAL, Version } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Controller, Get, Res, VERSION_NEUTRAL, Version } from '@nestjs/common';
+import type { Response } from 'express';
+import { ReadinessService } from './readiness.service';
 
 interface HealthResponse {
   status: 'ok' | 'degraded';
   timestamp: string;
   checks: Record<
     string,
-    { healthy: boolean; latencyMs?: number; error?: string }
+    {
+      healthy: boolean;
+      latencyMs?: number;
+      mode?: string;
+      adapter?: string;
+      readiness?: string;
+      error?: string;
+    }
   >;
 }
 
@@ -16,12 +24,12 @@ interface HealthResponse {
  * versioning concerns.
  *
  * - live: process is running. No dependency checks.
- * - ready: DB responds to `SELECT 1`. Redis readiness is added in Phase 7/9
- *   when the adapter is wired.
+ * - ready: PostgreSQL is reachable and the configured realtime Redis policy is
+ *   satisfied. Optional Redis fallback remains HTTP 200 but reports degraded.
  */
 @Controller('health')
 export class HealthController {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly readiness: ReadinessService) {}
 
   @Get('live')
   @Version(VERSION_NEUTRAL)
@@ -34,28 +42,11 @@ export class HealthController {
   }
 
   @Get('ready')
-  @Get('ready')
   @Version(VERSION_NEUTRAL)
-  async ready(): Promise<HealthResponse> {
-    const checks: HealthResponse['checks'] = {};
-    let dbHealthy = true;
-
-    const start = Date.now();
-    try {
-      await this.prismaService.prisma.$queryRaw`SELECT 1`;
-      checks.db = { healthy: true, latencyMs: Date.now() - start };
-    } catch (error) {
-      dbHealthy = false;
-      checks.db = {
-        healthy: false,
-        error: error instanceof Error ? error.message : 'unknown error',
-      };
-    }
-
-    return {
-      status: dbHealthy ? 'ok' : 'degraded',
-      timestamp: new Date().toISOString(),
-      checks,
-    };
+  async ready(@Res({ passthrough: true }) response: Response) {
+    const result = await this.readiness.check();
+    response.status(result.httpStatus);
+    const { httpStatus: _httpStatus, ...health } = result;
+    return health;
   }
 }

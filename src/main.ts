@@ -11,7 +11,7 @@ async function bootstrap(): Promise<void> {
 
   // Shared setup for production + e2e (prefix, versioning, validation, error
   // envelope, helmet, cookies, CORS, shutdown hooks).
-  configureApplication(app);
+  await configureApplication(app);
 
   // OpenAPI document + Swagger UI (/api/docs, /api/docs-json).
   configureSwagger(app);

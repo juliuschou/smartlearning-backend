@@ -79,12 +79,21 @@ export class ParticipantsController {
   ): Promise<LiveSessionDto> {
     if (!participant && !request.authContext) throw new UnauthorizedError();
     if (!participant) {
-      return toLiveSessionDto(
-        await this.sessions.getSnapshot(liveSessionId, {
+      const snapshot = await this.sessions.getTeacherRealtimeSnapshot(
+        liveSessionId,
+        {
           id: request.authContext!.account.id,
           role: request.authContext!.account.role,
-        }),
+        },
       );
+      return {
+        ...toLiveSessionDto(snapshot.session, {
+          joinedCount: snapshot.joinedCount,
+          votedCount: snapshot.votedCount,
+        }),
+        watermark: snapshot.watermark,
+        results: snapshot.results,
+      };
     }
 
     const participantView = await this.sessions.getParticipantSnapshot(
@@ -106,6 +115,8 @@ export class ParticipantsController {
           ...question,
           hasSubmitted: participantView.submittedQuestionIds.has(question.id),
         })),
+      watermark: participantView.watermark,
+      results: participantView.results,
     };
   }
 

@@ -11,10 +11,10 @@ import { createTestApp } from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
 /**
- * R-1 lite realtime e2e. Connects real socket.io-client clients to a real TCP
+ * Durable realtime e2e. Connects real socket.io-client clients to a real TCP
  * port and exercises the lifecycle event flow against PostgreSQL.
  */
-describe('LiveSession realtime (R-1 lite) (e2e)', () => {
+describe('LiveSession realtime (durable) (e2e)', () => {
   let app: INestApplication;
   let httpServer: ReturnType<INestApplication['getHttpServer']>;
   let baseUrl: string;
@@ -72,6 +72,7 @@ describe('LiveSession realtime (R-1 lite) (e2e)', () => {
       'session.closed',
       'counts.updated',
       'result.updated',
+      'sync.required',
       'error',
     ]) {
       socket.on(name, record(name));

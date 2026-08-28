@@ -1,5 +1,6 @@
 import { normalizeUuid } from '../../../../common/crypto';
 import { ApiProperty } from '@nestjs/swagger';
+import type { SessionQuestionResultsDto } from './results.dto';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -86,6 +87,19 @@ export class LiveSessionDto {
     description: 'Session questions, ordered by position.',
   })
   sessionQuestions?: SessionQuestionDto[];
+  @ApiProperty({
+    required: false,
+    description: 'Durable realtime sequence and visible question versions.',
+  })
+  watermark?: {
+    eventSeq: string;
+    aggregateVersions: Record<string, number>;
+  };
+  @ApiProperty({
+    required: false,
+    description: 'Actor-safe aggregate results keyed by session question id.',
+  })
+  results?: Record<string, SessionQuestionResultsDto>;
 }
 
 export class SessionQuestionOptionDto {

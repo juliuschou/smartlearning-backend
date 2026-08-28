@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { ConflictError, NotFoundError } from '../common/errors';
 import { PrismaService } from './prisma.service';
+import { normalizeUuid } from '../common/crypto';
 
 /**
  * Centralized transaction + raw-SQL lock helpers.
@@ -52,6 +53,44 @@ export class TransactionService {
     if (rows.length === 0) {
       throw new NotFoundError('SessionQuestion not found', 'sessionQuestionId');
     }
+  }
+
+  /** Lock the shared LiveSession -> SessionQuestion pair in canonical order. */
+  async lockLiveSessionAndQuestionForUpdate(
+    tx: Prisma.TransactionClient,
+    liveSessionId: string,
+    sessionQuestionId: string,
+  ): Promise<void> {
+    await this.lockLiveSessionForUpdate(tx, liveSessionId);
+    await this.lockSessionQuestionForUpdate(tx, sessionQuestionId);
+  }
+
+  /**
+   * Lock multiple questions deterministically after the LiveSession lock. The
+   * caller may retain a different presentation order for events; lock order is
+   * always canonical UUID order so competing close paths cannot cycle.
+   */
+  async lockSessionQuestionsForUpdate(
+    tx: Prisma.TransactionClient,
+    sessionQuestionIds: readonly string[],
+  ): Promise<void> {
+    const ordered = [...new Set(sessionQuestionIds.map(normalizeUuid))].sort();
+    for (const sessionQuestionId of ordered) {
+      await this.lockSessionQuestionForUpdate(tx, sessionQuestionId);
+    }
+  }
+
+  /** Allocate the next per-session durable realtime sequence in this transaction. */
+  async allocateRealtimeEventSeq(
+    tx: Prisma.TransactionClient,
+    liveSessionId: string,
+  ): Promise<bigint> {
+    const session = await tx.liveSession.update({
+      where: { id: normalizeUuid(liveSessionId) },
+      data: { realtimeEventSeq: { increment: 1 } },
+      select: { realtimeEventSeq: true },
+    });
+    return session.realtimeEventSeq;
   }
 
   /**

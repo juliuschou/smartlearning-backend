@@ -63,10 +63,10 @@
 
 ## 2026-08-17 — Post-commit socket emit races the REST response
 
-- **Failure mode:** A service publishes a realtime signal synchronously after its transaction commits; the gateway fans out to the room within the same tick — so the socket event can reach the client *before* the test's `nextEvent(listener)` is registered, and the event is lost (test times out).
+- **Failure mode:** A service publishes a realtime signal synchronously after its transaction commits; the gateway fans out to the room within the same tick — so the socket event can reach the client _before_ the test's `nextEvent(listener)` is registered, and the event is lost (test times out).
 - **Detection signal:** Server log shows `roomHas=true roomSize=1 sockCount=1` at emit time (socket IS in the room, emit IS targeted correctly), yet the client never receives the event.
-- **Root cause:** The listener was registered *after* `await restCall`, but the emit fires during/right after the REST response — the listener attaches too late.
-- **Prevention rule:** In realtime e2e, pre-register the event-listener promise (`const p = nextEvent(socket, name)`) *before* performing the mutation that triggers the emit, then `await p` after. Applies to every signal-driven event test (open/submit/close/cancel).
+- **Root cause:** The listener was registered _after_ `await restCall`, but the emit fires during/right after the REST response — the listener attaches too late.
+- **Prevention rule:** In realtime e2e, pre-register the event-listener promise (`const p = nextEvent(socket, name)`) _before_ performing the mutation that triggers the emit, then `await p` after. Applies to every signal-driven event test (open/submit/close/cancel).
 
 ## 2026-08-17 — DomainError.code vs .message
 
@@ -85,7 +85,7 @@
 
 - **Failure mode:** Persisting `selectedOptionRefs: Prisma.JsonNull` on a `Json?` column guarded by a CHECK `selected_option_refs IS NULL OR (...)` raised `PrismaClientKnownRequestError P2039` (value not allowed for a Json field) at runtime, surfacing as an opaque 500.
 - **Detection signal:** Debug log in the service catch showed `prismaCode: 'P2039'` on the open_text submission path; option-answer path (array value) worked.
-- **Root cause:** `Prisma.JsonNull` writes a JSON `null` *value* (not SQL NULL), so the CHECK `IS NULL` branch is false and the array branch evaluates `jsonb_typeof(null::jsonb)`. `Prisma.DbNull` writes an actual SQL NULL, which satisfies `IS NULL`. The two are not interchangeable.
+- **Root cause:** `Prisma.JsonNull` writes a JSON `null` _value_ (not SQL NULL), so the CHECK `IS NULL` branch is false and the array branch evaluates `jsonb_typeof(null::jsonb)`. `Prisma.DbNull` writes an actual SQL NULL, which satisfies `IS NULL`. The two are not interchangeable.
 - **Prevention rule:** For a `Json?` column that must read as SQL NULL (e.g. to satisfy a `IS NULL OR ...` CHECK), write `Prisma.DbNull`, not `Prisma.JsonNull`. Use `Prisma.JsonNull` only when you want the JSON value `null` stored. When a Prisma write fails opaquely, add a temporary `PrismaClientKnownRequestError` log (code + message) in the service catch to surface the exact code, then remove it.
 
 ## 2026-08-18 — Account-bound authorization must share lock order
@@ -105,7 +105,7 @@
 - **Failure mode:** Building the backend for Docker (`nest build` → `node dist/src/main`) crashed at startup with `ReferenceError: exports is not defined in ES module scope` at `dist/generated/prisma/client.js:38`, or `Cannot find module './internal/class.ts'`. The app ran fine in dev via `nest start` because the host `generated/prisma` was stale (from an older Prisma 7.x patch with extensionless imports).
 - **Detection signal:** Comparing host `generated/prisma/client.ts` (extensionless imports, no `import.meta`) vs a fresh `npx prisma generate` in the image (imports `./internal/class.ts`, has `import { fileURLToPath } from 'node:url'` + `globalThis['__dirname'] = ... import.meta.url ...`). Same `prisma@7.9.1`, same schema — the generator's output style changed across 7.x patches.
 - **Root cause:** Prisma 7.9.1's `prisma-client` generator emits ESM-flavored TS with explicit `.ts` import extensions and an `import.meta.url`-based `__dirname` shim. `tsc` with `module: commonjs` preserves the `.ts` suffix in the emitted `require("./internal/class.ts")`, but only `.js` files land in `dist/` → Node can't resolve them. The `import.meta` usage also confuses Node's CJS/ESM detection.
-- **Prevention rule:** After `prisma generate` in any build pipeline (Docker, CI), normalize the generated client to CJS-safe TS: strip `.ts` extensions from *relative* specifiers and drop the `import.meta.url` shim (CJS has a real `__dirname`). The repo's `scripts/normalize-prisma-client.mjs` does this idempotently. Do NOT rely on the host's stale `generated/` — a fresh clone regenerates the ESM-style output and breaks `node dist/...`. Verify with `node dist/src/main` (note: `nest build` emits `dist/src/main.js`, not `dist/main.js`, because tsconfig `rootDir=src` is preserved under `outDir`).
+- **Prevention rule:** After `prisma generate` in any build pipeline (Docker, CI), normalize the generated client to CJS-safe TS: strip `.ts` extensions from _relative_ specifiers and drop the `import.meta.url` shim (CJS has a real `__dirname`). The repo's `scripts/normalize-prisma-client.mjs` does this idempotently. Do NOT rely on the host's stale `generated/` — a fresh clone regenerates the ESM-style output and breaks `node dist/...`. Verify with `node dist/src/main` (note: `nest build` emits `dist/src/main.js`, not `dist/main.js`, because tsconfig `rootDir=src` is preserved under `outDir`).
 
 ## 2026-08-19 — `ConfigService.get<number>()` does NOT convert env strings to numbers
 
@@ -140,3 +140,59 @@
 - **Detection signal:** `jq` reported `Cannot index string with string ("target")` while the lifecycle/runtime checks themselves remained read-only and unaffected.
 - **Prevention rule:** When inspecting merged Compose JSON, normalize both string and object port representations before asserting published/target ports; keep the projection output limited to non-secret scope fields.
 - **Tripwire:** Run the safe projection against both base and isolated config forms and require exactly one backend `3000:3000` and one isolated DB mapping before any `up`/`stop` action.
+
+## 2026-08-28 — Keep hand-written migrations aligned with Prisma indexes
+
+- **Failure mode:** The Prisma model declared a durable outbox target-routing index, but the hand-written migration initially omitted its `CREATE INDEX`; `prisma validate` still passed because it validates the schema, not migration completeness.
+- **Detection signal:** Comparing the `LiveSessionEvent` model's `@@index` declarations with the migration DDL exposed the missing `idx_live_session_event_target` before deployment.
+- **Prevention rule:** For every hand-written migration, diff model-level indexes/constraints against the SQL and inspect the migration file directly; use a read-only `prisma migrate diff`/schema review before requesting deployment.
+- **Tripwire:** Require each new `@@index`, unique constraint, and CHECK constraint to have a corresponding migration assertion or explicit documented rationale, then rerun `prisma validate` plus `git diff --check`.
+
+## 2026-08-29 — Durable realtime maintenance must stay bounded
+
+- **Failure mode:** Publisher maintenance scans for expired, dead, or coalescible rows without a cap, so a backlog can starve normal event claims and overload socket recovery enumeration.
+- **Detection signal:** Code review found unbounded `findMany`/global `UPDATE` maintenance before the already bounded `BATCH_SIZE` claim query.
+- **Prevention rule:** Bound every maintenance selection/update/delete by a deterministic batch of IDs or a SQL CTE `LIMIT`; preserve retry/recovery fences when a batch cannot be notified.
+- **Tripwire:** Unit assertions must verify `take: BATCH_SIZE` or equivalent `LIMIT` on expiry/dead/coalescing paths, and the publisher must still reach the claim query after a maintenance batch.
+
+## 2026-08-29 — Realtime authorization and governance share commit boundaries
+
+- **Failure mode:** Actor reads or archived participant rows can observe or retain identity state across a revocation/close boundary when authorization or anonymization runs as an unlocked/separate operation.
+- **Detection signal:** Lock-order/privacy review identified anonymous reads that skipped the LiveSession lock and close/archive that left `Participant.accountId`, displayName, and token lookup fields attached to retained submissions.
+- **Prevention rule:** Lock `liveSession` before anonymous realtime reads and use `READ COMMITTED` for lock-first authorization; atomically anonymize participant identity fields when creating the archive while keeping only anonymous submission linkage.
+- **Tripwire:** Add lock-hold tests for anonymous read versus close and archive assertions that retained submissions point only to sanitized participant rows.
+
+## 2026-08-29 — Reject wildcard origins at every credentialed transport boundary
+
+- **Failure mode:** HTTP CSRF matching could be strict while Socket.IO CORS still translated configured `*` into `origin: true`, allowing credentialed cross-origin handshake attempts.
+- **Detection signal:** WebSocket adapter construction accepted wildcard origins independently of the environment validation path.
+- **Prevention rule:** Reject wildcard entries in validated `CORS_ORIGIN` and pass only explicit origin arrays to both HTTP and Socket.IO CORS configuration.
+- **Tripwire:** Keep an environment-validation test for a wildcard in a comma-separated list and a websocket adapter test for the explicit-origin array.
+
+## 2026-08-29 — Shutdown cleanup must not assume a new migration is deployed
+
+- **Failure mode:** A newly wired publisher cleanup query ran during an AppModule unit-test teardown against a database that predated the durable outbox migration, causing module close to fail even though no lease had been claimed.
+- **Detection signal:** Full unit verification failed with Prisma `P2021` (`public.live_session_event` does not exist) from `onModuleDestroy`.
+- **Prevention rule:** Track outstanding leases and perform graceful lease release only when this process has actually claimed rows; schema-required runtime paths must still fail loudly when exercised.
+- **Tripwire:** Keep an un-migrated AppModule compile/close test and assert the publisher does not issue cleanup writes without an outstanding claim.
+
+## 2026-08-29 — Redis adapter binding must follow availability
+
+- **Failure mode:** Selecting the Redis adapter only during Socket.IO startup left optional-mode traffic on a broken adapter after a runtime Redis outage, despite readiness reporting local fallback.
+- **Detection signal:** Realtime review compared the advertised `optional` policy with the one-time adapter installation in the WebSocket bootstrap.
+- **Prevention rule:** Rebind the active `/live` namespace to a local adapter on outage, preserve room membership synchronously, and reconnect Redis with bounded backoff; rebind Redis after both clients are ready.
+- **Tripwire:** Add adapter transition tests that cover startup-unavailable, runtime outage, room preservation, recovery, and shutdown timer cleanup.
+
+## 2026-08-29 — Account revocation enumeration failures need retry
+
+- **Failure mode:** A post-commit account-disabled signal could be swallowed when Socket.IO adapter enumeration failed, leaving matching sockets connected without a retry path.
+- **Detection signal:** Realtime authorization review found `fetchSockets()` failure logged as a successful return from the revocation handler.
+- **Prevention rule:** Propagate enumeration failure, schedule bounded-backoff retries until enumeration succeeds, and retain per-delivery PostgreSQL authorization checks as the safety net.
+- **Tripwire:** Unit-test rejected `fetchSockets()` with a retry timer and verify shutdown clears the pending timer.
+
+## 2026-08-29 — Close replaced Socket.IO adapters
+
+- **Failure mode:** Dynamically switching `/live` from Redis to the local adapter without closing the previous Redis adapter retained its subscriber listeners across Redis outages and recoveries.
+- **Detection signal:** Realtime review found `applyAdapter()` replacing the namespace adapter while never invoking the prior adapter's lifecycle cleanup.
+- **Prevention rule:** Capture and close the previous namespace adapter before every actual adapter transition; isolate cleanup failures so failover still completes, and preserve room membership during the replacement.
+- **Tripwire:** Exercise local → Redis → local → Redis transitions and assert the replaced adapter is closed exactly once while all socket rooms are restored.

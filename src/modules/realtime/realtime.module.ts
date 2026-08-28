@@ -3,21 +3,33 @@ import { LiveSessionsModule } from '../live-sessions/live-sessions.module';
 import { ParticipantsModule } from '../participants/participants.module';
 import { LiveGateway } from './live-gateway';
 import { LiveSessionEventBus } from './live-session-event-bus';
+import { LiveSessionOutboxService } from './live-session-outbox.service';
+import { LiveSessionPublisher } from './live-session-publisher';
+import { RealtimeRedisService } from './realtime-redis.service';
 
 /**
- * Realtime (R-1 lite) wiring.
+ * Durable realtime wiring.
  *
- * `LiveSessionEventBus` is exported as a `@Global` provider so the domain
- * mutation services (`LiveSessionService`, `ParticipantService`,
- * `SubmissionService`) inject the bus without importing this module — the bus
- * is a leaf with no service deps, so there is no cycle. The gateway imports
- * the feature modules to reach the read services; services depend only on the
- * bus, never on the gateway, so the dependency direction is one-way.
+ * `LiveSessionEventBus` remains a global post-commit wake boundary so the domain
+ * mutation services do not depend on the gateway. The bounded publisher owns
+ * durable row claiming and invokes the gateway only after a transport is ready;
+ * PostgreSQL remains authoritative for event order and projections.
  */
 @Global()
 @Module({
   imports: [LiveSessionsModule, ParticipantsModule],
-  providers: [LiveSessionEventBus, LiveGateway],
-  exports: [LiveSessionEventBus],
+  providers: [
+    LiveSessionEventBus,
+    LiveSessionOutboxService,
+    LiveGateway,
+    LiveSessionPublisher,
+    RealtimeRedisService,
+  ],
+  exports: [
+    LiveSessionEventBus,
+    LiveSessionOutboxService,
+    LiveSessionPublisher,
+    RealtimeRedisService,
+  ],
 })
 export class RealtimeModule {}

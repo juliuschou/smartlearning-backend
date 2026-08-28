@@ -1,19 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 /**
- * In-process realtime signal bus (R-1 lite).
+ * In-process post-commit wake bus.
  *
- * Domain mutation services publish a thin signal here **after** their
- * PostgreSQL transaction commits ("commit then publish", design §1). The
- * `LiveGateway` subscribes and recomputes visibility-safe projections from
- * the authoritative rows via the existing read services, then emits Socket.IO
- * events. PostgreSQL remains the sole authority; the bus is a non-durable
- * notification fan-out only — a publish failure is logged and swallowed so it
- * can never fail a domain mutation.
- *
- * The durable outbox / `eventSeq` / replay contract is deferred to R-1; this
- * lite carries no sequence numbers (a reconnect simply fetches a fresh
- * snapshot).
+ * Domain mutation services publish a thin compatibility signal here after the
+ * PostgreSQL transaction commits. The durable publisher uses it only to wake a
+ * bounded outbox scan; startup scanning remains the recovery mechanism. The
+ * bus carries no authoritative event sequence or projection data, and listener
+ * failures are isolated so they cannot alter a committed mutation.
  */
 
 export type LiveSessionSignal =

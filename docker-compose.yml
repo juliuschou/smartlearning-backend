@@ -26,14 +26,35 @@ services:
     volumes:
       - pgdata_smartlearning:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-smartlearning} -d ${DB_NAME:-smartlearning}"]
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USERNAME:-smartlearning} -d ${DB_NAME:-smartlearning}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
     # Exposed on host port 5433 so it coexists with the dev PG container that
-      # already binds 5432. The backend reaches the DB over the internal network.
+    # already binds 5432. The backend reaches the DB over the internal network.
     ports:
-      - "${DB_PORT:-5433}:5432"
+      - '${DB_PORT:-5433}:5432'
+    networks:
+      - smartlearning
+
+  # Optional cross-instance Socket.IO fan-out. The default stack does not start
+  # this service; enable it with `docker compose --profile realtime-redis up`.
+  redis:
+    image: redis:7-alpine
+    profiles:
+      - realtime-redis
+    container_name: smartlearning-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - smartlearning
 
@@ -46,7 +67,7 @@ services:
       target: migrate
     image: smartlearning-backend-migrate:latest
     container_name: smartlearning-migrate
-    restart: "no"
+    restart: 'no'
     depends_on:
       db:
         condition: service_healthy
@@ -68,6 +89,12 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      # The Redis service is profile-gated; when enabled, wait for its health
+      # check before initializing the adapter. `required: false` preserves the
+      # default local/optional deployment when the profile is omitted.
+      redis:
+        condition: service_healthy
+        required: false
     env_file:
       - .env.production
     environment:
@@ -76,7 +103,7 @@ services:
       DATABASE_URL: postgresql://${DB_USERNAME:-smartlearning}:${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/${DB_NAME:-smartlearning}?schema=public
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     ports:
-      - "${PORT:-3000}:3000"
+      - '${PORT:-3000}:3000'
     networks:
       - smartlearning
 

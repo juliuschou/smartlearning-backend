@@ -1,12 +1,13 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '../../../../generated/prisma/client';
-import { newId, normalizeUuid } from '../../../common/crypto';
+import { isUuid, newId, normalizeUuid } from '../../../common/crypto';
 import {
   ConflictError,
   DomainError,
   ForbiddenError,
   NotFoundError,
+  UnauthorizedError,
 } from '../../../common/errors';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
@@ -16,6 +17,12 @@ import { AccountStatus } from '../../identity/domain/account-status';
 import { EnrollmentStatus } from '../../enrollments/domain';
 import { CourseStatus } from '../../courses/domain/course-status';
 import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
+import { LiveSessionOutboxService } from '../../realtime/live-session-outbox.service';
+import {
+  RealtimeEvent,
+  RealtimeVisibility,
+  toWatermark,
+} from '../../realtime/live-session-realtime-contract';
 import {
   aggregateResults,
   canCancelLiveSession,
@@ -49,6 +56,13 @@ const sessionForProjection = {
 type SessionProjection = Prisma.LiveSessionGetPayload<{
   include: typeof sessionForProjection;
 }>;
+type SnapshotQuestion = SessionProjection['questions'][number];
+type SnapshotSubmission = {
+  sessionQuestionId: string;
+  selectedOptionRefs: Prisma.JsonValue | null;
+  textAnswer: string | null;
+  participantId: string;
+};
 
 export interface SessionQuestionProjection {
   id: string;
@@ -69,6 +83,10 @@ export interface SessionQuestionProjection {
   }>;
 }
 
+export type RealtimeWatermarkActor =
+  | { kind: 'teacher'; accountId: string; role: string }
+  | { kind: 'participant'; participantId: string; accountId?: string };
+
 @Injectable()
 export class LiveSessionService {
   private readonly logger = new Logger(LiveSessionService.name);
@@ -78,6 +96,7 @@ export class LiveSessionService {
     private readonly transactions: TransactionService,
     private readonly questions: QuestionService,
     private readonly eventBus: LiveSessionEventBus,
+    private readonly outbox: LiveSessionOutboxService,
     private readonly governance: GovernanceService,
     @Optional() private readonly config?: ConfigService,
     @Optional() private readonly clock?: Clock,
@@ -85,6 +104,136 @@ export class LiveSessionService {
 
   private get lifecycleClock(): Clock {
     return this.clock ?? new SystemClock();
+  }
+
+  private async closeSessionInTransaction(
+    tx: Prisma.TransactionClient,
+    liveSessionId: string,
+    closedAt: Date,
+    autoClosed: boolean,
+    caller?: { id: string; role: string },
+  ): Promise<{
+    session: SessionProjection;
+    closedQuestionIds: string[];
+  }> {
+    const canonicalSessionId = normalizeUuid(liveSessionId);
+    await this.transactions.lockLiveSessionForUpdate(tx, canonicalSessionId);
+    const session = await tx.liveSession.findUnique({
+      where: { id: canonicalSessionId },
+      include: { course: true },
+    });
+    if (!session)
+      throw new NotFoundError('LiveSession not found', 'liveSessionId');
+    if (caller) this.assertCourseAccess(session.course, caller);
+    if (!canCloseLiveSession(session.status as LiveSessionStatus)) {
+      throw new ConflictError(
+        'LiveSession cannot be closed from its current state.',
+        'status',
+      );
+    }
+
+    const openQuestions = await tx.sessionQuestion.findMany({
+      where: {
+        liveSessionId: session.id,
+        status: SessionQuestionStatus.OPEN,
+      },
+      select: { id: true },
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
+    });
+    await this.transactions.lockSessionQuestionsForUpdate(
+      tx,
+      openQuestions.map((question) => question.id),
+    );
+    const lockedOpenQuestions = await tx.sessionQuestion.findMany({
+      where: {
+        liveSessionId: session.id,
+        status: SessionQuestionStatus.OPEN,
+      },
+      select: { id: true },
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
+    });
+
+    const closedQuestionIds: string[] = [];
+    for (const question of lockedOpenQuestions) {
+      const closedQuestion = await tx.sessionQuestion.update({
+        where: { id: question.id },
+        data: {
+          status: SessionQuestionStatus.CLOSED,
+          closedAt,
+          aggregateVersion: { increment: 1 },
+        },
+        select: { id: true, aggregateVersion: true },
+      });
+      closedQuestionIds.push(closedQuestion.id);
+      await this.outbox.append(tx, {
+        liveSessionId: session.id,
+        sessionQuestionId: closedQuestion.id,
+        event: RealtimeEvent.QUESTION_CLOSED,
+        visibility: RealtimeVisibility.SESSION,
+        aggregateVersion: closedQuestion.aggregateVersion,
+        projectionInput: { status: SessionQuestionStatus.CLOSED },
+        serverTimestamp: closedAt,
+      });
+      await this.outbox.append(tx, {
+        liveSessionId: session.id,
+        sessionQuestionId: closedQuestion.id,
+        event: RealtimeEvent.RESULT_UPDATED,
+        visibility: RealtimeVisibility.PARTICIPANT,
+        aggregateVersion: closedQuestion.aggregateVersion,
+        projectionInput: { status: SessionQuestionStatus.CLOSED },
+        serverTimestamp: closedAt,
+      });
+    }
+
+    await tx.liveSession.update({
+      where: { id: session.id },
+      data: {
+        status: LiveSessionStatus.CLOSED,
+        closedAt,
+        autoClosed,
+      },
+    });
+    await this.outbox.append(tx, {
+      liveSessionId: session.id,
+      event: RealtimeEvent.SESSION_STATE_CHANGED,
+      visibility: RealtimeVisibility.SESSION,
+      projectionInput: { status: LiveSessionStatus.CLOSED },
+      serverTimestamp: closedAt,
+    });
+    await this.outbox.append(tx, {
+      liveSessionId: session.id,
+      event: RealtimeEvent.SESSION_CLOSED,
+      visibility: RealtimeVisibility.SESSION,
+      projectionInput: { status: LiveSessionStatus.CLOSED },
+      serverTimestamp: closedAt,
+    });
+    await this.governance.archiveSessionInTransaction(tx, session.id);
+
+    return {
+      session: await tx.liveSession.findUniqueOrThrow({
+        where: { id: session.id },
+        include: sessionForProjection,
+      }),
+      closedQuestionIds,
+    };
+  }
+
+  private publishClosedSession(
+    liveSessionId: string,
+    closedQuestionIds: readonly string[],
+  ): void {
+    for (const sessionQuestionId of closedQuestionIds) {
+      this.publish({
+        type: 'question.closed',
+        liveSessionId,
+        sessionQuestionId,
+      });
+    }
+    this.publish({
+      type: 'session.state_changed',
+      liveSessionId,
+      status: LiveSessionStatus.CLOSED,
+    });
   }
 
   /** Close due active sessions; each candidate is independently serialized. */
@@ -111,59 +260,21 @@ export class LiveSessionService {
           await this.transactions.lockLiveSessionForUpdate(tx, candidate.id);
           const session = await tx.liveSession.findUnique({
             where: { id: candidate.id },
-            include: {
-              questions: {
-                where: { status: SessionQuestionStatus.OPEN },
-                select: { id: true },
-              },
-            },
+            select: { status: true, startedAt: true },
           });
           if (
             !session ||
             session.status !== LiveSessionStatus.ACTIVE ||
             !session.startedAt ||
             session.startedAt > cutoff
-          )
+          ) {
             return null;
-          const closedAt = now;
-          const questionIds = session.questions.map((q) => q.id);
-          await tx.sessionQuestion.updateMany({
-            where: {
-              liveSessionId: session.id,
-              status: SessionQuestionStatus.OPEN,
-            },
-            data: { status: SessionQuestionStatus.CLOSED, closedAt },
-          });
-          await tx.liveSession.update({
-            where: { id: session.id },
-            data: {
-              status: LiveSessionStatus.CLOSED,
-              closedAt,
-              autoClosed: true,
-            },
-          });
-          return questionIds;
+          }
+          return this.closeSessionInTransaction(tx, candidate.id, now, true);
         });
         if (!result) continue;
         closed += 1;
-        try {
-          await this.governance.archiveSession(candidate.id);
-        } catch (error) {
-          this.logger.error(
-            `Auto-close archive failed for ${candidate.id}: ${error instanceof Error ? error.name : 'unknown'}`,
-          );
-        }
-        for (const sessionQuestionId of result)
-          this.publish({
-            type: 'question.closed',
-            liveSessionId: candidate.id,
-            sessionQuestionId,
-          });
-        this.publish({
-          type: 'session.state_changed',
-          liveSessionId: candidate.id,
-          status: LiveSessionStatus.CLOSED,
-        });
+        this.publishClosedSession(candidate.id, result.closedQuestionIds);
       } catch (error) {
         this.logger.error(
           `Auto-close failed for ${candidate.id}: ${error instanceof Error ? error.name : 'unknown'}`,
@@ -175,6 +286,29 @@ export class LiveSessionService {
 
   private get db() {
     return this.prismaService.prisma;
+  }
+
+  /**
+   * Serialize account-bound realtime reads with the same authority rows used by
+   * enrollment removal and account disable. Callers use READ COMMITTED so a
+   * waiter observes the row version committed by the revocation before the
+   * final authorization query.
+   */
+  private async lockAccountBoundRealtimeRows(
+    tx: Prisma.TransactionClient,
+    liveSessionId: string,
+    accountId: string,
+  ): Promise<void> {
+    await this.transactions.lockLiveSessionForUpdate(tx, liveSessionId);
+    const session = await tx.liveSession.findUnique({
+      where: { id: liveSessionId },
+      select: { courseId: true },
+    });
+    if (!session) {
+      throw new NotFoundError('LiveSession not found', 'liveSessionId');
+    }
+    await this.transactions.lockCourseForUpdate(tx, session.courseId);
+    await this.transactions.lockAccountForUpdate(tx, accountId);
   }
 
   /**
@@ -204,7 +338,7 @@ export class LiveSessionService {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const sessionCode = generateSessionCode();
       try {
-        return await this.transactions.run(async (tx) => {
+        const created = await this.transactions.run(async (tx) => {
           await this.transactions.lockCourseForUpdate(tx, courseId);
           const course = await tx.course.findUnique({
             where: { id: courseId },
@@ -256,11 +390,23 @@ export class LiveSessionService {
               position: index + 1,
             })),
           });
+          await this.outbox.append(tx, {
+            liveSessionId: liveSession.id,
+            event: RealtimeEvent.SESSION_STATE_CHANGED,
+            visibility: RealtimeVisibility.SESSION,
+            projectionInput: { status: LiveSessionStatus.WAITING },
+          });
           return tx.liveSession.findUniqueOrThrow({
             where: { id: liveSession.id },
             include: sessionForProjection,
           });
         });
+        this.publish({
+          type: 'session.state_changed',
+          liveSessionId: created.id,
+          status: LiveSessionStatus.WAITING,
+        });
+        return created;
       } catch (error) {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -368,6 +514,12 @@ export class LiveSessionService {
           where: { id: session.id },
           data: { status: LiveSessionStatus.ACTIVE, startedAt: new Date() },
         });
+        await this.outbox.append(tx, {
+          liveSessionId: session.id,
+          event: RealtimeEvent.SESSION_STATE_CHANGED,
+          visibility: RealtimeVisibility.SESSION,
+          projectionInput: { status: LiveSessionStatus.ACTIVE },
+        });
         return tx.liveSession.findUniqueOrThrow({
           where: { id: session.id },
           include: sessionForProjection,
@@ -401,74 +553,18 @@ export class LiveSessionService {
     caller: { id: string; role: string },
   ): Promise<SessionProjection> {
     const canonicalSessionId = normalizeUuid(sessionId);
-    const { session, closedQuestionIds } = await this.transactions.run(
-      async (tx) => {
-        await this.transactions.lockLiveSessionForUpdate(
-          tx,
-          canonicalSessionId,
-        );
-        const session = await tx.liveSession.findUnique({
-          where: { id: canonicalSessionId },
-          include: {
-            course: true,
-            questions: { where: { status: SessionQuestionStatus.OPEN } },
-          },
-        });
-        if (!session)
-          throw new NotFoundError('LiveSession not found', 'liveSessionId');
-        this.assertCourseAccess(session.course, caller);
-        if (!canCloseLiveSession(session.status as LiveSessionStatus)) {
-          throw new ConflictError(
-            'LiveSession cannot be closed from its current state.',
-            'status',
-          );
-        }
-
-        const closedAt = new Date();
-        // Close the currently open SessionQuestion(s) under the same transaction.
-        // The session row is already FOR UPDATE; the commit of this transaction is
-        // the linearization point shared with the question-close path (design §5.2).
-        const closedQuestionIds = session.questions.map((q) => q.id);
-        await tx.sessionQuestion.updateMany({
-          where: {
-            liveSessionId: session.id,
-            status: SessionQuestionStatus.OPEN,
-          },
-          data: { status: SessionQuestionStatus.CLOSED, closedAt },
-        });
-        await tx.liveSession.update({
-          where: { id: session.id },
-          data: {
-            status: LiveSessionStatus.CLOSED,
-            closedAt,
-            autoClosed: false,
-          },
-        });
-        return {
-          session: await tx.liveSession.findUniqueOrThrow({
-            where: { id: session.id },
-            include: sessionForProjection,
-          }),
-          closedQuestionIds,
-        };
-      },
+    const { session, closedQuestionIds } = await this.transactions.run((tx) =>
+      this.closeSessionInTransaction(
+        tx,
+        canonicalSessionId,
+        new Date(),
+        false,
+        caller,
+      ),
     );
-    // Archive is an idempotent post-commit follow-up; it never exposes partial rows.
-    await this.governance.archiveSession(canonicalSessionId);
-    // Publish after commit. Bulk-close emits a question.closed signal per
-    // previously-open question (at most one by invariant) plus the state change.
-    for (const qid of closedQuestionIds) {
-      this.publish({
-        type: 'question.closed',
-        liveSessionId: canonicalSessionId,
-        sessionQuestionId: qid,
-      });
-    }
-    this.publish({
-      type: 'session.state_changed',
-      liveSessionId: canonicalSessionId,
-      status: LiveSessionStatus.CLOSED,
-    });
+    // Publish after commit. Durable rows are now the replay authority; these
+    // signals remain compatibility/wake aliases for the publisher.
+    this.publishClosedSession(canonicalSessionId, closedQuestionIds);
     return session;
   }
 
@@ -497,6 +593,12 @@ export class LiveSessionService {
       await tx.liveSession.update({
         where: { id: session.id },
         data: { status: LiveSessionStatus.CANCELLED },
+      });
+      await this.outbox.append(tx, {
+        liveSessionId: session.id,
+        event: RealtimeEvent.SESSION_STATE_CHANGED,
+        visibility: RealtimeVisibility.SESSION,
+        projectionInput: { status: LiveSessionStatus.CANCELLED },
       });
       return tx.liveSession.findUniqueOrThrow({
         where: { id: session.id },
@@ -548,6 +650,129 @@ export class LiveSessionService {
     return session;
   }
 
+  async getRealtimeWatermark(
+    sessionId: string,
+    actor?: RealtimeWatermarkActor,
+  ): Promise<ReturnType<typeof toWatermark>> {
+    const canonicalSessionId = normalizeUuid(sessionId);
+    const canonicalAccountId =
+      actor?.kind === 'teacher'
+        ? normalizeUuid(actor.accountId)
+        : actor?.kind === 'participant' && actor.accountId !== undefined
+          ? normalizeUuid(actor.accountId)
+          : undefined;
+    const isolationLevel = Prisma.TransactionIsolationLevel.ReadCommitted;
+    return this.transactions.run(
+      async (tx) => {
+        if (canonicalAccountId !== undefined) {
+          await this.lockAccountBoundRealtimeRows(
+            tx,
+            canonicalSessionId,
+            canonicalAccountId,
+          );
+        } else {
+          // Anonymous reads also serialize with lifecycle close/cancel. This
+          // makes the LiveSession commit the boundary for their projection.
+          await this.transactions.lockLiveSessionForUpdate(
+            tx,
+            canonicalSessionId,
+          );
+        }
+        const session = await tx.liveSession.findUnique({
+          where: { id: canonicalSessionId },
+          include: {
+            course: true,
+            questions: {
+              select: {
+                id: true,
+                aggregateVersion: true,
+                status: true,
+              },
+              orderBy: [{ position: 'asc' }, { id: 'asc' }],
+            },
+          },
+        });
+        if (!session)
+          throw new NotFoundError('LiveSession not found', 'liveSessionId');
+
+        let questions = session.questions;
+        if (actor?.kind === 'teacher') {
+          this.assertCourseAccess(session.course, {
+            id: actor.accountId,
+            role: actor.role,
+          });
+          const account = await tx.account.findUnique({
+            where: { id: actor.accountId },
+            select: { status: true },
+          });
+          if (!account || account.status !== AccountStatus.ACTIVE) {
+            throw new UnauthorizedError();
+          }
+        } else if (actor?.kind === 'participant') {
+          const participant = await tx.participant.findUnique({
+            where: { id: normalizeUuid(actor.participantId) },
+            select: { liveSessionId: true, accountId: true },
+          });
+          if (
+            !participant ||
+            participant.liveSessionId !== canonicalSessionId
+          ) {
+            throw new NotFoundError('Participant not found', 'participantId');
+          }
+          if (actor.accountId !== undefined) {
+            const canonicalAccountId = normalizeUuid(actor.accountId);
+            if (
+              participant.accountId === null ||
+              normalizeUuid(participant.accountId) !== canonicalAccountId
+            ) {
+              throw new ForbiddenError('Active student participant required');
+            }
+            const [account, enrollment] = await Promise.all([
+              tx.account.findUnique({
+                where: { id: canonicalAccountId },
+                select: { role: true, status: true },
+              }),
+              tx.courseEnrollment.findUnique({
+                where: {
+                  courseId_studentAccountId: {
+                    courseId: session.courseId,
+                    studentAccountId: canonicalAccountId,
+                  },
+                },
+                select: { status: true },
+              }),
+            ]);
+            if (
+              !account ||
+              account.role !== AccountRole.STUDENT ||
+              account.status !== AccountStatus.ACTIVE ||
+              enrollment?.status !== EnrollmentStatus.ACTIVE
+            ) {
+              throw new ForbiddenError('Active course enrollment required');
+            }
+          }
+          // Participant snapshots expose open questions plus closed results;
+          // keep not-open questions out of the watermark so future/hidden
+          // question IDs cannot leak through the participant projection.
+          questions = questions.filter(
+            (question) => question.status !== SessionQuestionStatus.NOT_OPEN,
+          );
+        }
+
+        return toWatermark(
+          session.realtimeEventSeq,
+          Object.fromEntries(
+            questions.map((question) => [
+              question.id,
+              question.aggregateVersion,
+            ]),
+          ),
+        );
+      },
+      { isolationLevel },
+    );
+  }
+
   async getSnapshot(
     sessionId: string,
     caller?: { id: string; role: string },
@@ -580,36 +805,161 @@ export class LiveSessionService {
     votedCount: number;
   }> {
     const canonicalSessionId = normalizeUuid(sessionId);
-    const session = await this.db.liveSession.findUnique({
-      where: { id: canonicalSessionId },
-      include: sessionForProjection,
-    });
-    if (!session)
-      throw new NotFoundError('LiveSession not found', 'liveSessionId');
-    this.assertCourseAccess(session.course, caller);
+    const canonicalAccountId = isUuid(caller.id)
+      ? normalizeUuid(caller.id)
+      : undefined;
+    return this.transactions.run(
+      async (tx) => {
+        if (canonicalAccountId !== undefined) {
+          await this.lockAccountBoundRealtimeRows(
+            tx,
+            canonicalSessionId,
+            canonicalAccountId,
+          );
+        } else {
+          // Anonymous reads also serialize with lifecycle close/cancel. This
+          // makes the LiveSession commit the boundary for their projection.
+          await this.transactions.lockLiveSessionForUpdate(
+            tx,
+            canonicalSessionId,
+          );
+        }
+        const session = await tx.liveSession.findUnique({
+          where: { id: canonicalSessionId },
+          include: sessionForProjection,
+        });
+        if (!session)
+          throw new NotFoundError('LiveSession not found', 'liveSessionId');
+        this.assertCourseAccess(session.course, {
+          id: canonicalAccountId ?? caller.id,
+          role: caller.role,
+        });
+        if (canonicalAccountId !== undefined) {
+          const account = await tx.account.findUnique({
+            where: { id: canonicalAccountId },
+            select: { status: true },
+          });
+          if (!account || account.status !== AccountStatus.ACTIVE) {
+            throw new UnauthorizedError();
+          }
+        }
 
-    // At most one SessionQuestion may be open at a time (P2002 guard in
-    // transitionQuestion), so find() yields the single current question or null.
-    const current =
-      session.questions.find(
-        (question) => question.status === SessionQuestionStatus.OPEN,
-      ) ?? null;
+        // At most one SessionQuestion may be open at a time (P2002 guard in
+        // transitionQuestion), so find() yields the single current question or null.
+        const current =
+          session.questions.find(
+            (question) => question.status === SessionQuestionStatus.OPEN,
+          ) ?? null;
 
-    const [joinedCount, votedCount] = await Promise.all([
-      this.db.participant.count({
-        where: { liveSessionId: canonicalSessionId },
-      }),
-      current
-        ? this.db.submission.count({
-            where: {
-              liveSessionId: canonicalSessionId,
-              sessionQuestionId: current.id,
-            },
-          })
-        : Promise.resolve(0),
-    ]);
+        const [joinedCount, votedCount] = await Promise.all([
+          tx.participant.count({
+            where: { liveSessionId: canonicalSessionId },
+          }),
+          current
+            ? tx.submission.count({
+                where: {
+                  liveSessionId: canonicalSessionId,
+                  sessionQuestionId: current.id,
+                },
+              })
+            : Promise.resolve(0),
+        ]);
 
-    return { session, joinedCount, votedCount };
+        return { session, joinedCount, votedCount };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
+  }
+
+  /**
+   * Read the teacher realtime snapshot and its watermark from one consistent
+   * PostgreSQL view. The account-status check is deliberately repeated here so
+   * an already-connected socket cannot keep reading after disable/revocation.
+   */
+  async getTeacherRealtimeSnapshot(
+    sessionId: string,
+    caller: { id: string; role: string },
+  ): Promise<{
+    session: SessionProjection;
+    joinedCount: number;
+    votedCount: number;
+    watermark: ReturnType<typeof toWatermark>;
+    results: Record<string, SessionQuestionResultsDto>;
+  }> {
+    const canonicalSessionId = normalizeUuid(sessionId);
+    return this.transactions.run(
+      async (tx) => {
+        await this.lockAccountBoundRealtimeRows(
+          tx,
+          canonicalSessionId,
+          normalizeUuid(caller.id),
+        );
+        const session = await tx.liveSession.findUnique({
+          where: { id: canonicalSessionId },
+          include: sessionForProjection,
+        });
+        if (!session)
+          throw new NotFoundError('LiveSession not found', 'liveSessionId');
+        this.assertCourseAccess(session.course, caller);
+
+        const account = await tx.account.findUnique({
+          where: { id: caller.id },
+          select: { status: true },
+        });
+        if (!account || account.status !== AccountStatus.ACTIVE) {
+          throw new UnauthorizedError();
+        }
+
+        const currentQuestion =
+          session.questions.find(
+            (question) => question.status === SessionQuestionStatus.OPEN,
+          ) ?? null;
+        const [joinedCount, votedCount] = await Promise.all([
+          tx.participant.count({
+            where: { liveSessionId: canonicalSessionId },
+          }),
+          currentQuestion
+            ? tx.submission.count({
+                where: {
+                  liveSessionId: canonicalSessionId,
+                  sessionQuestionId: currentQuestion.id,
+                },
+              })
+            : Promise.resolve(0),
+        ]);
+        const submissions = await tx.submission.findMany({
+          where: { liveSessionId: canonicalSessionId },
+          select: {
+            sessionQuestionId: true,
+            selectedOptionRefs: true,
+            textAnswer: true,
+            participantId: true,
+          },
+        });
+
+        return {
+          session,
+          joinedCount,
+          votedCount,
+          results: buildSnapshotResults(
+            session.questions,
+            submissions,
+            (question) => question.status !== SessionQuestionStatus.NOT_OPEN,
+            () => true,
+          ),
+          watermark: toWatermark(
+            session.realtimeEventSeq,
+            Object.fromEntries(
+              session.questions.map((question) => [
+                question.id,
+                question.aggregateVersion,
+              ]),
+            ),
+          ),
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
   }
 
   async getParticipantSnapshot(
@@ -619,11 +969,30 @@ export class LiveSessionService {
   ): Promise<{
     session: SessionProjection;
     submittedQuestionIds: Set<string>;
+    watermark: ReturnType<typeof toWatermark>;
+    results: Record<string, SessionQuestionResultsDto>;
   }> {
     const canonicalSessionId = normalizeUuid(sessionId);
     const canonicalParticipantId = normalizeUuid(participantId);
+    const canonicalAccountId =
+      accountId === undefined ? undefined : normalizeUuid(accountId);
+    const isolationLevel = Prisma.TransactionIsolationLevel.ReadCommitted;
     return this.transactions.run(
       async (tx) => {
+        if (canonicalAccountId !== undefined) {
+          await this.lockAccountBoundRealtimeRows(
+            tx,
+            canonicalSessionId,
+            canonicalAccountId,
+          );
+        } else {
+          // Anonymous reads also serialize with lifecycle close/cancel. This
+          // makes the LiveSession commit the boundary for their projection.
+          await this.transactions.lockLiveSessionForUpdate(
+            tx,
+            canonicalSessionId,
+          );
+        }
         const participant = await tx.participant.findUnique({
           where: { id: canonicalParticipantId },
           select: { liveSessionId: true, accountId: true },
@@ -644,8 +1013,7 @@ export class LiveSessionService {
             409,
           );
         }
-        if (accountId !== undefined) {
-          const canonicalAccountId = normalizeUuid(accountId);
+        if (canonicalAccountId !== undefined) {
           if (
             participant.accountId === null ||
             normalizeUuid(participant.accountId) !== canonicalAccountId
@@ -675,22 +1043,48 @@ export class LiveSessionService {
           }
         }
         const submissions = await tx.submission.findMany({
-          where: {
-            liveSessionId: canonicalSessionId,
-            participantId: canonicalParticipantId,
+          where: { liveSessionId: canonicalSessionId },
+          select: {
+            sessionQuestionId: true,
+            selectedOptionRefs: true,
+            textAnswer: true,
+            participantId: true,
           },
-          select: { sessionQuestionId: true },
         });
+        const submittedQuestionIds = new Set(
+          submissions
+            .filter(
+              (submission) =>
+                submission.participantId === canonicalParticipantId,
+            )
+            .map((submission) => submission.sessionQuestionId),
+        );
         return {
           session,
-          submittedQuestionIds: new Set(
-            submissions.map((submission) => submission.sessionQuestionId),
+          submittedQuestionIds,
+          results: buildSnapshotResults(
+            session.questions,
+            submissions,
+            (question) =>
+              question.status === SessionQuestionStatus.CLOSED ||
+              (question.status === SessionQuestionStatus.OPEN &&
+                submittedQuestionIds.has(question.id)),
+            (question) => question.status === SessionQuestionStatus.CLOSED,
+          ),
+          watermark: toWatermark(
+            session.realtimeEventSeq,
+            Object.fromEntries(
+              session.questions
+                .filter(
+                  (question) =>
+                    question.status !== SessionQuestionStatus.NOT_OPEN,
+                )
+                .map((question) => [question.id, question.aggregateVersion]),
+            ),
           ),
         };
       },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-      },
+      { isolationLevel },
     );
   }
 
@@ -713,127 +1107,169 @@ export class LiveSessionService {
   ): Promise<SessionQuestionResultsDto> {
     const canonicalSessionId = normalizeUuid(liveSessionId);
     const canonicalQuestionId = normalizeUuid(sessionQuestionId);
+    const canonicalAccountId =
+      actor.kind === 'teacher'
+        ? isUuid(actor.accountId)
+          ? normalizeUuid(actor.accountId)
+          : undefined
+        : actor.accountId !== undefined
+          ? normalizeUuid(actor.accountId)
+          : undefined;
+    const isolationLevel = Prisma.TransactionIsolationLevel.ReadCommitted;
 
-    const question = await this.db.sessionQuestion.findUnique({
-      where: {
-        id_liveSessionId: {
-          id: canonicalQuestionId,
-          liveSessionId: canonicalSessionId,
-        },
-      },
-      include: {
-        liveSession: { include: { course: true } },
-        options: { orderBy: { position: 'asc' } },
-        submissions: {
-          select: {
-            selectedOptionRefs: true,
-            textAnswer: true,
-            participantId: true,
-          },
-        },
-      },
-    });
-    if (!question) {
-      throw new NotFoundError('SessionQuestion not found', 'sessionQuestionId');
-    }
-
-    let revealCorrectness: boolean;
-    let canonicalParticipantId: string | undefined;
-    if (actor.kind === 'teacher') {
-      // Owner/admin check via the loaded course; non-owner → 404 (no existence
-      // leak). This runs before the status check so a non-owner cannot learn
-      // that a question exists via a state-specific 409.
-      this.assertCourseAccess(question.liveSession.course, {
-        id: actor.accountId,
-        role: actor.role,
-      });
-      revealCorrectness = true;
-    } else {
-      canonicalParticipantId = normalizeUuid(actor.participantId);
-      // Defense in depth: confirm the participant belongs to this session.
-      // (The guard already bound the token to the session via hash lookup.)
-      const participant = await this.db.participant.findUnique({
-        where: { id: canonicalParticipantId },
-        select: { liveSessionId: true, accountId: true },
-      });
-      if (!participant || participant.liveSessionId !== canonicalSessionId) {
-        throw new NotFoundError('Participant not found', 'participantId');
-      }
-      if (actor.accountId !== undefined) {
-        const canonicalAccountId = normalizeUuid(actor.accountId);
-        if (
-          participant.accountId === null ||
-          normalizeUuid(participant.accountId) !== canonicalAccountId
-        ) {
-          throw new ForbiddenError('Active student participant required');
+    return this.transactions.run(
+      async (tx) => {
+        if (canonicalAccountId !== undefined) {
+          await this.lockAccountBoundRealtimeRows(
+            tx,
+            canonicalSessionId,
+            canonicalAccountId,
+          );
+        } else {
+          // Anonymous reads also serialize with lifecycle close/cancel. This
+          // makes the LiveSession commit the boundary for their projection.
+          await this.transactions.lockLiveSessionForUpdate(
+            tx,
+            canonicalSessionId,
+          );
         }
-        const account = await this.db.account.findUnique({
-          where: { id: canonicalAccountId },
-          select: { role: true, status: true },
-        });
-        const enrollment = await this.db.courseEnrollment.findUnique({
+        const question = await tx.sessionQuestion.findUnique({
           where: {
-            courseId_studentAccountId: {
-              courseId: question.liveSession.courseId,
-              studentAccountId: canonicalAccountId,
+            id_liveSessionId: {
+              id: canonicalQuestionId,
+              liveSessionId: canonicalSessionId,
             },
           },
-          select: { status: true },
+          include: {
+            liveSession: { include: { course: true } },
+            options: { orderBy: { position: 'asc' } },
+            submissions: {
+              select: {
+                selectedOptionRefs: true,
+                textAnswer: true,
+                participantId: true,
+              },
+            },
+          },
         });
-        if (
-          !account ||
-          account.role !== AccountRole.STUDENT ||
-          account.status !== AccountStatus.ACTIVE ||
-          enrollment?.status !== EnrollmentStatus.ACTIVE
-        ) {
-          throw new ForbiddenError('Active course enrollment required');
+        if (!question) {
+          throw new NotFoundError(
+            'SessionQuestion not found',
+            'sessionQuestionId',
+          );
         }
-      }
-      // Participants see correct answers only after the question is closed.
-      revealCorrectness = question.status === SessionQuestionStatus.CLOSED;
-    }
 
-    if (question.status === SessionQuestionStatus.NOT_OPEN) {
-      throw new DomainError(
-        'SESSION_QUESTION_NOT_OPEN',
-        'Results are not available for a question that has not been opened.',
-        409,
-        'sessionQuestionId',
-      );
-    }
+        let revealCorrectness: boolean;
+        let canonicalParticipantId: string | undefined;
+        if (actor.kind === 'teacher') {
+          // Owner/admin check via the loaded course; non-owner → 404 (no existence
+          // leak). This runs before the status check so a non-owner cannot learn
+          // that a question exists via a state-specific 409.
+          this.assertCourseAccess(question.liveSession.course, {
+            id: actor.accountId,
+            role: actor.role,
+          });
+          if (canonicalAccountId !== undefined) {
+            const account = await tx.account.findUnique({
+              where: { id: canonicalAccountId },
+              select: { status: true },
+            });
+            if (!account || account.status !== AccountStatus.ACTIVE) {
+              throw new UnauthorizedError();
+            }
+          }
+          revealCorrectness = true;
+        } else {
+          canonicalParticipantId = normalizeUuid(actor.participantId);
+          // Defense in depth: confirm the participant belongs to this session.
+          // (The guard already bound the token to the session via hash lookup.)
+          const participant = await tx.participant.findUnique({
+            where: { id: canonicalParticipantId },
+            select: { liveSessionId: true, accountId: true },
+          });
+          if (
+            !participant ||
+            participant.liveSessionId !== canonicalSessionId
+          ) {
+            throw new NotFoundError('Participant not found', 'participantId');
+          }
+          if (canonicalAccountId !== undefined) {
+            if (
+              participant.accountId === null ||
+              normalizeUuid(participant.accountId) !== canonicalAccountId
+            ) {
+              throw new ForbiddenError('Active student participant required');
+            }
+            const account = await tx.account.findUnique({
+              where: { id: canonicalAccountId },
+              select: { role: true, status: true },
+            });
+            const enrollment = await tx.courseEnrollment.findUnique({
+              where: {
+                courseId_studentAccountId: {
+                  courseId: question.liveSession.courseId,
+                  studentAccountId: canonicalAccountId,
+                },
+              },
+              select: { status: true },
+            });
+            if (
+              !account ||
+              account.role !== AccountRole.STUDENT ||
+              account.status !== AccountStatus.ACTIVE ||
+              enrollment?.status !== EnrollmentStatus.ACTIVE
+            ) {
+              throw new ForbiddenError('Active course enrollment required');
+            }
+          }
+          // Participants see correct answers only after the question is closed.
+          revealCorrectness = question.status === SessionQuestionStatus.CLOSED;
+        }
 
-    if (canonicalParticipantId !== undefined) {
-      const hasSubmitted = question.submissions.some(
-        (submission) => submission.participantId === canonicalParticipantId,
-      );
-      if (question.status === SessionQuestionStatus.OPEN && !hasSubmitted) {
-        throw new DomainError(
-          'RESULTS_NOT_REVEALED',
-          'Submit your own answer before viewing live results for this question.',
-          409,
-          undefined,
-          'Submit an answer to reveal the aggregate.',
-        );
-      }
-    }
+        if (question.status === SessionQuestionStatus.NOT_OPEN) {
+          throw new DomainError(
+            'SESSION_QUESTION_NOT_OPEN',
+            'Results are not available for a question that has not been opened.',
+            409,
+            'sessionQuestionId',
+          );
+        }
 
-    return aggregateResults({
-      snapshotType: question.snapshotType,
-      selectionMode: question.snapshotSelectionMode,
-      status: question.status,
-      options: question.options.map((option) => ({
-        id: option.id,
-        optionRef: option.optionRef,
-        text: option.text,
-        isCorrect: option.isCorrect,
-      })),
-      submissions: question.submissions.map((submission) => ({
-        selectedOptionRefs:
-          (submission.selectedOptionRefs as string[] | null) ?? null,
-        textAnswer: submission.textAnswer,
-      })),
-      revealCorrectness,
-    });
+        if (canonicalParticipantId !== undefined) {
+          const hasSubmitted = question.submissions.some(
+            (submission) => submission.participantId === canonicalParticipantId,
+          );
+          if (question.status === SessionQuestionStatus.OPEN && !hasSubmitted) {
+            throw new DomainError(
+              'RESULTS_NOT_REVEALED',
+              'Submit your own answer before viewing live results for this question.',
+              409,
+              undefined,
+              'Submit an answer to reveal the aggregate.',
+            );
+          }
+        }
+
+        return aggregateResults({
+          snapshotType: question.snapshotType,
+          selectionMode: question.snapshotSelectionMode,
+          status: question.status,
+          options: question.options.map((option) => ({
+            id: option.id,
+            optionRef: option.optionRef,
+            text: option.text,
+            isCorrect: option.isCorrect,
+          })),
+          submissions: question.submissions.map((submission) => ({
+            selectedOptionRefs:
+              (submission.selectedOptionRefs as string[] | null) ?? null,
+            textAnswer: submission.textAnswer,
+          })),
+          revealCorrectness,
+        });
+      },
+      { isolationLevel },
+    );
   }
 
   private async transitionQuestion(
@@ -845,8 +1281,9 @@ export class LiveSessionService {
     const canonicalSessionId = normalizeUuid(sessionId);
     const canonicalQuestionId = normalizeUuid(sessionQuestionId);
     const updated = await this.transactions.run(async (tx) => {
-      await this.transactions.lockSessionQuestionForUpdate(
+      await this.transactions.lockLiveSessionAndQuestionForUpdate(
         tx,
+        canonicalSessionId,
         canonicalQuestionId,
       );
       const question = await tx.sessionQuestion.findUnique({
@@ -881,15 +1318,51 @@ export class LiveSessionService {
         );
       }
 
+      const transitionedAt = new Date();
       try {
         const updated = await tx.sessionQuestion.update({
           where: { id: question.id },
           data:
             target === 'open'
-              ? { status: SessionQuestionStatus.OPEN, openedAt: new Date() }
-              : { status: SessionQuestionStatus.CLOSED, closedAt: new Date() },
+              ? {
+                  status: SessionQuestionStatus.OPEN,
+                  openedAt: transitionedAt,
+                }
+              : {
+                  status: SessionQuestionStatus.CLOSED,
+                  closedAt: transitionedAt,
+                  aggregateVersion: { increment: 1 },
+                },
           include: { options: { orderBy: { position: 'asc' } } },
         });
+        await this.outbox.append(tx, {
+          liveSessionId: canonicalSessionId,
+          sessionQuestionId: updated.id,
+          event:
+            target === 'open'
+              ? RealtimeEvent.QUESTION_OPENED
+              : RealtimeEvent.QUESTION_CLOSED,
+          visibility: RealtimeVisibility.SESSION,
+          aggregateVersion: updated.aggregateVersion,
+          projectionInput: {
+            status:
+              target === 'open'
+                ? SessionQuestionStatus.OPEN
+                : SessionQuestionStatus.CLOSED,
+          },
+          serverTimestamp: transitionedAt,
+        });
+        if (target === 'closed') {
+          await this.outbox.append(tx, {
+            liveSessionId: canonicalSessionId,
+            sessionQuestionId: updated.id,
+            event: RealtimeEvent.RESULT_UPDATED,
+            visibility: RealtimeVisibility.PARTICIPANT,
+            aggregateVersion: updated.aggregateVersion,
+            projectionInput: { status: SessionQuestionStatus.CLOSED },
+            serverTimestamp: transitionedAt,
+          });
+        }
         return updated;
       } catch (error) {
         if (
@@ -927,6 +1400,51 @@ export class LiveSessionService {
       throw new NotFoundError('Course not found', 'courseId');
     }
   }
+}
+
+function buildSnapshotResults(
+  questions: readonly SnapshotQuestion[],
+  submissions: readonly SnapshotSubmission[],
+  includeQuestion: (question: SnapshotQuestion) => boolean,
+  revealCorrectness: (question: SnapshotQuestion) => boolean,
+): Record<string, SessionQuestionResultsDto> {
+  const submissionsByQuestion = new Map<string, SnapshotSubmission[]>();
+  for (const submission of submissions) {
+    const current =
+      submissionsByQuestion.get(submission.sessionQuestionId) ?? [];
+    current.push(submission);
+    submissionsByQuestion.set(submission.sessionQuestionId, current);
+  }
+
+  const results: Record<string, SessionQuestionResultsDto> = {};
+  for (const question of questions) {
+    if (!includeQuestion(question)) continue;
+    results[question.id] = aggregateResults({
+      snapshotType: question.snapshotType,
+      selectionMode: question.snapshotSelectionMode,
+      status: question.status,
+      options: question.options.map((option) => ({
+        id: option.id,
+        optionRef: option.optionRef,
+        text: option.text,
+        isCorrect: option.isCorrect,
+      })),
+      submissions: (submissionsByQuestion.get(question.id) ?? []).map(
+        (submission) => ({
+          selectedOptionRefs: snapshotOptionRefs(submission.selectedOptionRefs),
+          textAnswer: submission.textAnswer,
+        }),
+      ),
+      revealCorrectness: revealCorrectness(question),
+    });
+  }
+  return results;
+}
+
+function snapshotOptionRefs(value: Prisma.JsonValue | null): string[] | null {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+    ? value
+    : null;
 }
 
 export function toSessionQuestionDto(question: SessionQuestionProjection) {

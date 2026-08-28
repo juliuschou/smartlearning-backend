@@ -115,10 +115,10 @@ model Course {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  owner        Account              @relation("CourseOwner", fields: [ownerAccountId], references: [id], onDelete: Restrict)
-  questions    QuestionDefinition[]
-  liveSessions LiveSession[]
-  enrollments  CourseEnrollment[]
+  owner           Account              @relation("CourseOwner", fields: [ownerAccountId], references: [id], onDelete: Restrict)
+  questions       QuestionDefinition[]
+  liveSessions    LiveSession[]
+  enrollments     CourseEnrollment[]
   archivedResults ArchivedResult[]
 
   @@index([ownerAccountId], map: "idx_course_owner")
@@ -188,21 +188,23 @@ model QuestionOption {
 
 /// One classroom run for a Course.
 model LiveSession {
-  id          String    @id @db.Uuid
-  courseId    String    @map("course_id") @db.Uuid
-  status      String    @default("waiting")
-  sessionCode String    @unique @map("session_code")
-  startedAt   DateTime? @map("started_at") @db.Timestamptz
-  closedAt    DateTime? @map("closed_at") @db.Timestamptz
-  autoClosed  Boolean   @default(false) @map("auto_closed")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  id               String    @id @db.Uuid
+  courseId         String    @map("course_id") @db.Uuid
+  status           String    @default("waiting")
+  sessionCode      String    @unique @map("session_code")
+  startedAt        DateTime? @map("started_at") @db.Timestamptz
+  closedAt         DateTime? @map("closed_at") @db.Timestamptz
+  autoClosed       Boolean   @default(false) @map("auto_closed")
+  realtimeEventSeq BigInt    @default(0) @map("realtime_event_seq")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   course             Course                         @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   questionSelections LiveSessionQuestionSelection[]
   questions          SessionQuestion[]
   participants       Participant[]
   submissions        Submission[]
+  realtimeEvents     LiveSessionEvent[]
   archivedResult     ArchivedResult?
 
   @@unique([id, courseId], map: "uq_live_session_id_course")
@@ -236,6 +238,7 @@ model SessionQuestion {
   questionDefinitionId  String?   @map("question_definition_id") @db.Uuid
   position              Int
   status                String    @default("not_open")
+  aggregateVersion      Int       @default(0) @map("aggregate_version")
   snapshotType          String    @map("snapshot_type")
   snapshotPrompt        String    @map("snapshot_prompt")
   snapshotSelectionMode String?   @map("snapshot_selection_mode")
@@ -246,6 +249,7 @@ model SessionQuestion {
   questionDefinition QuestionDefinition?     @relation(fields: [questionDefinitionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   options            SessionQuestionOption[]
   submissions        Submission[]
+  realtimeEvents     LiveSessionEvent[]
 
   @@unique([id, liveSessionId], map: "uq_session_question_id_live_session")
   @@unique([liveSessionId, position], map: "uq_session_question_session_position")
@@ -315,19 +319,60 @@ model Submission {
   @@map("submission")
 }
 
+/// Durable realtime outbox/event log. Projection inputs are a small allowlisted
+/// JSON object; actor-specific data is materialized from PostgreSQL at delivery.
+/// `targetParticipantId` is routing-only metadata for open-question submitter
+/// notifications; it is never copied into projectionInput or an event payload.
+model LiveSessionEvent {
+  id                  String    @id @db.Uuid
+  liveSessionId       String    @map("live_session_id") @db.Uuid
+  sessionQuestionId   String?   @map("session_question_id") @db.Uuid
+  targetParticipantId String?   @map("target_participant_id") @db.Uuid
+  eventName           String    @map("event_name")
+  schemaVersion       Int       @default(1) @map("schema_version")
+  eventSeq            BigInt    @map("event_seq")
+  aggregateVersion    Int       @default(0) @map("aggregate_version")
+  serverTimestamp     DateTime  @default(now()) @map("server_timestamp") @db.Timestamptz
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  visibility          String
+  projectionInput     Json?     @map("projection_input")
+  deliveryState       String    @default("pending") @map("delivery_state")
+  attemptCount        Int       @default(0) @map("attempt_count")
+  nextAttemptAt       DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz
+  claimedAt           DateTime? @map("claimed_at") @db.Timestamptz
+  claimToken          String?   @map("claim_token") @db.Uuid
+  leaseExpiresAt      DateTime? @map("lease_expires_at") @db.Timestamptz
+  lastFailureClass    String?   @map("last_failure_class")
+  coalesced           Boolean   @default(false)
+  deliveredAt         DateTime? @map("delivered_at") @db.Timestamptz
+  expiresAt           DateTime? @map("expires_at") @db.Timestamptz
+
+  liveSession     LiveSession      @relation(fields: [liveSessionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sessionQuestion SessionQuestion? @relation(fields: [sessionQuestionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@unique([liveSessionId, eventSeq], map: "uq_live_session_event_session_seq")
+  @@index([liveSessionId, eventSeq], map: "idx_live_session_event_replay")
+  @@index([deliveryState, nextAttemptAt, leaseExpiresAt], map: "idx_live_session_event_delivery")
+  @@index([expiresAt], map: "idx_live_session_event_expiry")
+  @@index([liveSessionId, sessionQuestionId, visibility, deliveryState, aggregateVersion], map: "idx_live_session_event_coalesce")
+  @@index([liveSessionId, targetParticipantId, eventSeq], map: "idx_live_session_event_target")
+  @@map("live_session_event")
+}
+
 /// Immutable anonymous archive for one closed session.
 model ArchivedResult {
-  id            String   @id @db.Uuid
-  liveSessionId String   @unique @map("live_session_id") @db.Uuid
-  courseId      String   @map("course_id") @db.Uuid
-  closedAt      DateTime @map("closed_at") @db.Timestamptz
-  purgeAt       DateTime @map("purge_at") @db.Timestamptz
-  status        String   @default("active")
-  payload       Json?
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
-  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Restrict)
-  course        Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  id             String          @id @db.Uuid
+  liveSessionId  String          @unique @map("live_session_id") @db.Uuid
+  courseId       String          @map("course_id") @db.Uuid
+  closedAt       DateTime        @map("closed_at") @db.Timestamptz
+  purgeAt        DateTime        @map("purge_at") @db.Timestamptz
+  status         String          @default("active")
+  payload        Json?
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  liveSession    LiveSession     @relation(fields: [liveSessionId], references: [id], onDelete: Restrict)
+  course         Course          @relation(fields: [courseId], references: [id], onDelete: Restrict)
   deletionEvents DeletionEvent[]
+
   @@index([courseId, closedAt], map: "idx_archived_result_course_closed")
   @@index([purgeAt, status], map: "idx_archived_result_purge_status")
   @@map("archived_result")
@@ -335,20 +380,21 @@ model ArchivedResult {
 
 /// Minimal governance tombstone/request. Never stores answer-bearing content.
 model DeletionEvent {
-  id            String   @id @db.Uuid
-  archivedResultId String? @map("archived_result_id") @db.Uuid
-  liveSessionId String   @map("live_session_id") @db.Uuid
-  courseId      String   @map("course_id") @db.Uuid
-  requesterId   String?  @map("requester_id") @db.Uuid
-  executorId    String?  @map("executor_id") @db.Uuid
-  trigger       String
-  reason        String?
-  status        String
-  deletedCategories Json? @map("deleted_categories")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
-  completedAt   DateTime? @map("completed_at") @db.Timestamptz
-  errorCode     String? @map("error_code")
-  archivedResult ArchivedResult? @relation(fields: [archivedResultId], references: [id], onDelete: SetNull)
+  id                String          @id @db.Uuid
+  archivedResultId  String?         @map("archived_result_id") @db.Uuid
+  liveSessionId     String          @map("live_session_id") @db.Uuid
+  courseId          String          @map("course_id") @db.Uuid
+  requesterId       String?         @map("requester_id") @db.Uuid
+  executorId        String?         @map("executor_id") @db.Uuid
+  trigger           String
+  reason            String?
+  status            String
+  deletedCategories Json?           @map("deleted_categories")
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  completedAt       DateTime?       @map("completed_at") @db.Timestamptz
+  errorCode         String?         @map("error_code")
+  archivedResult    ArchivedResult? @relation(fields: [archivedResultId], references: [id], onDelete: SetNull)
+
   @@index([liveSessionId, trigger], map: "idx_deletion_event_session_trigger")
   @@map("deletion_event")
 }

@@ -27,4 +27,13 @@ describe('validateEnv', () => {
       }),
     ).toThrow('SESSION_COOKIE_SECURE=false is only allowed in NODE_ENV=test');
   });
+
+  it('rejects wildcard CORS origins', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        CORS_ORIGIN: 'http://localhost:3000, *',
+      }),
+    ).toThrow('CORS_ORIGIN must not contain a wildcard origin');
+  });
 });

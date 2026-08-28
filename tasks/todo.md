@@ -1855,11 +1855,114 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - [x] Add validated `LIVE_SESSION_AUTO_CLOSE_MS` (8h default) and `LIVE_SESSION_AUTO_CLOSE_TICK_MS` configuration.
 - [x] Add bounded, row-lock serialized automatic close with atomic open-question closure, `autoClosed=true`, archive follow-up, and realtime signals.
 - [x] Add lifecycle-managed native timer with startup sweep, overlap guard, shutdown cleanup, and per-candidate failure isolation.
-- [ ] Add authorized PostgreSQL scheduler race/e2e coverage; DB-backed tests were not run in this slice because explicit authorization was not available.
+- [x] Add authorized PostgreSQL scheduler race/e2e coverage; test setup was authorized to use guarded `smartlearning_test` migration/truncation operations.
 
 ### Results
 
 - Implemented `LiveSessionService.autoCloseExpiredSessions()` and registered `LiveSessionAutoCloseScheduler` in `LiveSessionsModule`.
 - Existing manual close/cancel behavior and database schema remain unchanged; auto-close uses the existing session row lock and post-commit governance/event boundaries.
-- PASS: `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, `git diff --check`.
-- Not run: unit/integration/e2e suites and migration status requiring guarded DB operations; explicit authorization is still required.
+- PASS: `NODE_ENV=test npm run test:integration -- --runInBand test/poll-submission.integration-spec.ts` — 1 suite / 8 tests, 0 failed, 0 skipped; PostgreSQL submit/close race coverage passed against `smartlearning_test`.
+- BLOCKED: `NODE_ENV=test npm run test:e2e -- --runInBand test/live-session-close-cancel.e2e-spec.ts` — 6 passed / 6 failed; all failures occurred during teacher provisioning/login with `Missing __Host-csrf cookie` at `test/live-session-close-cancel.e2e-spec.ts:88-103`, before lifecycle/auto-close assertions.
+- NOT RUN: `test/live-session-route-matrix.e2e-spec.ts`; lifecycle E2E prerequisite was blocked by CSRF cookie setup failure.
+- No code or schema files were modified; working tree remained clean.
+- Follow-up: investigate test login/CSRF cookie issuance under `NODE_ENV=test`, then rerun the lifecycle and route-matrix E2E suites. Do not claim BE-6 E2E completion until those assertions execute.
+
+## BE-7 — durable realtime Checkpoint A (2026-08-28)
+
+### Scope and mandatory boundary
+
+- [x] Inventory current R-1-lite bus/gateway, lifecycle producers, transaction lock helpers, schema, tests, and authoritative M2 realtime/API/ER/architecture contracts.
+- [x] Freeze the v1 durable envelope, event catalog, visibility values, cursor representation/validation, watermark/version semantics, replay recovery outcomes, coalescing eligibility, safe outbox input boundary, Redis degradation policy, and lock-order constants.
+- [x] Add DB-free contract fixtures/unit coverage only.
+- [x] Preserve the existing BE-6 evidence above without replacement.
+- [ ] **STOP:** obtain explicit human confirmation before changing `prisma/schema.prisma`, adding a migration, changing runtime transaction behavior, adding Redis dependencies, or running DB-backed tests. This checkpoint does not claim durable persistence or replay implementation.
+
+### Frozen decisions and findings
+
+- Canonical Socket envelope is camelCase `{ event, schemaVersion, eventSeq, aggregateVersion, serverTimestamp, liveSessionId, visibility, data }`; PostgreSQL `BIGINT` `eventSeq` is represented as a canonical non-negative decimal string to avoid JavaScript precision loss. Durable visibility values are `session`, `teacher`, `participant`, and `participant_after_submit`; lite `all` is compatibility-only.
+- Durable events are `session.snapshot`, `session.state_changed`, `question.opened`, `question.closed`, `result.updated`, `session.closed`, and `sync.required`. `participant.joined`, `submission.committed`, and `counts.updated` remain compatibility/wake aliases only.
+- `aggregateVersion` increments for each fresh accepted submission and each question-close finalization; lifecycle-only events use the current/neutral version. Snapshots carry `{ eventSeq, aggregateVersions }` watermarks.
+- Replay is strictly greater-than-cursor and sequence ordered. Hidden rows preserve continuity without exposing data. Gaps, stale/expired/dead/coalesced continuity failures, over-current or permission-invalid cursors produce actor-safe `sync.required` plus a fresh snapshot after authentication; no guessed delta or reason leak.
+- Only pending/retry `result.updated` display notifications coalesce by `(liveSessionId, sessionQuestionId, visibility)`; lifecycle, snapshot, close, control, and submission/idempotency outcomes do not coalesce.
+- Outbox projection inputs are allowlisted to safe reason/status/question/version/visibility fields; participant/account IDs, tokens, answers, and identity-answer links are rejected and are materialized from PostgreSQL at delivery time.
+- All submit, question open/close, manual close, and auto-close writes must converge on `liveSession → sessionQuestion`; account-bound authorization retains `liveSession → course → account`. Current `transitionQuestion()` and bulk close/auto-close still require the post-checkpoint runtime correction.
+- Redis policy is `REALTIME_REDIS_MODE=off|optional|required`: local healthy, local degraded fallback, or readiness-blocking required mode respectively; Redis never authorizes or stores domain truth.
+
+### Files added/changed
+
+- Added `src/modules/realtime/live-session-realtime-contract.ts` with pure contract types/validators for envelope fields, lossless sequence cursors, watermarks, replay decisions, coalescing, lock orders, safe outbox inputs, and Redis policy.
+- Added `src/modules/realtime/live-session-realtime-contract.spec.ts` covering catalog/visibility, cursor/sequence precision, version/watermark monotonicity, safe input rejection, replay/gap/recovery, coalescing, lock order, and Redis modes.
+- Exported the contract from `src/modules/realtime/index.ts`.
+
+### Verification and stop boundary
+
+- [x] DB-free verification: `npm test -- --runInBand src/modules/realtime/live-session-realtime-contract.spec.ts src/modules/realtime/live-session-event-bus.spec.ts` PASS (2 suites, 23 tests); `npm run prisma:validate` PASS; `npm run typecheck` PASS; `npm run format:check` PASS; `npm run lint:check` PASS; `npm run build` PASS; `git diff --check` PASS after removing the trailing blank line.
+- **Database scope:** no migration, deploy, truncate, DB-backed test, Redis connection, or runtime transaction change is authorized or claimed in Checkpoint A.
+- **Next step after explicit confirmation:** implement additive schema/outbox and sequence/version transaction integration, then run only authorized `smartlearning_test` migration/tests.
+
+## BE-7 — durable realtime Checkpoint B (2026-08-28, in progress)
+
+### Acceptance criteria and implementation slices
+
+- [x] Add additive durable schema/migration for per-session event sequences, question aggregate versions, bounded outbox delivery state, leases, retention evidence, and eligible result coalescing.
+- [x] Integrate transactional outbox appends with session/question lifecycle, participant creation, fresh submissions, close/auto-close, cancel, and archive linkage while retaining post-commit wake aliases.
+- [x] Preserve exact submitter-only open-question result delivery with a routing-only `targetParticipantId` column; it is never copied into `projectionInput` or emitted payloads. Closed-question result rows remain untargeted and actor-gated.
+- [x] Add bounded publisher claiming, per-session ordering, retry/backoff, lease recovery, expiry/dead handling, coalescing guards, transport readiness gating, and sync recovery notifications.
+- [x] Add actor-authorized snapshots with repeatable-read watermark reads, replay upper bounds/truncation detection, strict cursor validation, safe visibility filtering, and actor-safe result maps.
+- [x] Add Redis off/optional/required policy, optional Compose profile, adapter setup, readiness reporting, and lifecycle cleanup.
+- [ ] Add authorized PostgreSQL migration/integration/E2E regression evidence against exactly `smartlearning_test`.
+- [ ] Reproduce and resolve the pre-existing BE-6 lifecycle E2E CSRF fixture failure before claiming lifecycle regression completion.
+- [ ] Complete full unit/integration/E2E regression and update final WBS/load evidence.
+
+### Risk, rollback, and operational notes
+
+- **Risk:** high — durable event ordering, replay authorization, result privacy, and schema changes affect realtime correctness and security.
+- **Rollback:** stop publisher workers before application rollback; retain additive tables and rows for forward repair; keep Redis independently disabled with `REALTIME_REDIS_MODE=off`; do not use a destructive down migration.
+- **Monitoring:** sequence gaps, `sync.required`, pending/oldest age, retry/dead rows, coalescing count, publisher failures, duplicate delivery, and actor/privacy projection errors.
+- **Dependencies:** Node.js 24+, PostgreSQL migration `20260828110000_add_durable_realtime`, and (only when enabled) Redis reachable at `REDIS_URL`; DB-backed tests must use `smartlearning_test`.
+
+### Files and verification
+
+- Added/changed: `prisma/schema.prisma`, `prisma/migrations/20260828110000_add_durable_realtime/migration.sql`, realtime outbox/publisher/gateway/Redis services, lifecycle/submission/participant integrations, readiness/DTO/docs, and focused unit fixtures.
+- [x] PASS: `npx prisma format`; `npm run prisma:validate`; `npm run prisma:generate`; `node scripts/normalize-prisma-client.mjs generated/prisma`.
+- [x] PASS: `npm run typecheck`; `npm run lint:check`; `npm run format:check`; `npm run build`.
+- [x] PASS: targeted realtime/health tests — 4 suites / 30 tests, 0 failed.
+- [x] PASS: `git diff --check` (to be rerun after final documentation/task edits).
+- **BLOCKED/NOT RUN:** `NODE_ENV=test npx prisma migrate deploy`, DB-backed integration/E2E, and full regression. The migration deploy was rejected by the command permission boundary; no database mutation was performed. Required explicit scope remains migration `20260828110000_add_durable_realtime` on database `smartlearning_test`.
+
+### BE-7 final DB-free hardening results — 2026-08-29
+
+- [x] Prevent publisher shutdown cleanup from querying the new outbox table when this instance has no outstanding lease; this keeps an un-migrated AppModule compile/close test independent of the durable migration.
+- [x] Make replayed `session.closed` envelopes include the documented `{ status: 'closed' }` payload, matching live terminal delivery.
+- [x] Propagate account-disabled socket-enumeration failures and retry them with bounded backoff; shutdown clears pending revocation timers. Per-delivery PostgreSQL authorization checks remain the safety net.
+- [x] Make Redis optional-mode fallback operational: `/live` adapter transitions between Redis/local on availability changes, preserves existing room memberships, retries startup/runtime recovery with bounded backoff, and keeps required mode traffic-blocking while unavailable.
+- [x] Remove the unreachable wildcard HTTP CORS fallback; validated credentialed HTTP and Socket.IO CORS paths now use explicit origin arrays only.
+- [x] Add focused regression coverage for terminal replay status, account-revocation retry scheduling, and the publisher/adapter hardening paths.
+- [x] Close replaced Socket.IO adapters during Redis/local failover, add adapter transition coverage, and isolate lifecycle cleanup failures.
+- [x] Add gateway recovery-fence coverage and archive-governance coverage for purging targeted `participant_after_submit` rows.
+
+#### Latest DB-free verification
+
+- **PASS:** `npm run prisma:validate`, `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **PASS:** `npm test -- --runInBand` — 30 suites / 174 tests, 0 failed, 0 skipped.
+- **PASS:** focused realtime suites — 2 suites / 14 tests, 0 failed.
+- **NOT RUN:** migration deployment, PostgreSQL integration/E2E, or Redis-backed runtime/cross-instance tests; no database mutation or Redis connection was performed.
+
+#### Remaining release boundary
+
+- **BLOCKED:** explicit authorization is still required for exactly `20260828110000_add_durable_realtime` against `smartlearning_test` before `NODE_ENV=test npx prisma migrate deploy` or any guarded DB-backed suite.
+- **PENDING:** resolve the pre-existing BE-6 `Missing __Host-csrf cookie` lifecycle fixture, then run the authorized lifecycle/realtime/archive regression matrix and update WBS/load evidence.
+- **DEFERRED:** cross-instance account lifecycle propagation remains limited by the in-process `AccountLifecycleBus`; durable per-delivery authorization and Redis adapter recovery do not claim cross-instance disable-event delivery.
+
+#### Review follow-ups — 2026-08-29
+
+- [x] Close the previous `/live` namespace adapter before Redis/local replacement, isolate adapter-close failures, and preserve room membership; add transition coverage in `src/modules/realtime/realtime-redis.service.spec.ts`.
+- [x] Add gateway coverage proving `notifySyncRequiredForSession()` returns `false` when recovery socket enumeration fails, so the publisher's persisted dead-row recovery fence remains closed.
+- [x] Extend archive-governance E2E setup with a targeted `participant_after_submit` durable event and assert purge removes all such rows before participant cleanup.
+- **NOT RUN:** the new archive-governance assertion and publisher dead-predecessor sequence matrix require the authorized durable migration on `smartlearning_test`; no DB mutation was performed.
+
+#### Status — 2026-08-29
+
+- **IMPLEMENTATION COMMITTED:** BE-7 durable realtime implementation is committed on branch `feat/be7-durable-realtime` under `feat(realtime): add durable live-session outbox`.
+- **RELEASE STATUS:** code and DB-free verification are complete; PostgreSQL/Redis-backed verification remains pending explicit authorization for migration `20260828110000_add_durable_realtime` on `smartlearning_test`.
+- **NEXT ACTION:** after authorization, deploy only that migration to `smartlearning_test`, run the targeted durable realtime/lifecycle/archive matrix, resolve the pre-existing BE-6 CSRF fixture blocker, then update this status with the observed results.

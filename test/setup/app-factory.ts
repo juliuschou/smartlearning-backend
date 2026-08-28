@@ -14,7 +14,7 @@ export async function createTestApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn'],
   });
-  configureApplication(app);
+  await configureApplication(app);
   configureSwagger(app);
   return app;
 }

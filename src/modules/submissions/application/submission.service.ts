@@ -18,6 +18,11 @@ import { AccountRole } from '../../identity/domain/roles';
 import { AccountStatus } from '../../identity/domain/account-status';
 import { EnrollmentStatus } from '../../enrollments/domain';
 import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
+import { LiveSessionOutboxService } from '../../realtime/live-session-outbox.service';
+import {
+  RealtimeEvent,
+  RealtimeVisibility,
+} from '../../realtime/live-session-realtime-contract';
 import type { ParticipantContext } from '../../participants/application/participant.service';
 import type { CreateSubmissionDto } from '../api/dto';
 import {
@@ -44,6 +49,7 @@ export class SubmissionService {
   constructor(
     private readonly transactions: TransactionService,
     private readonly eventBus: LiveSessionEventBus,
+    private readonly outbox: LiveSessionOutboxService,
   ) {}
 
   /**
@@ -94,7 +100,7 @@ export class SubmissionService {
         ? normalizeTextAnswer(dto.textAnswer)
         : null;
 
-    const submission = await this.transactions.run(async (tx) => {
+    const result = await this.transactions.run(async (tx) => {
       // Match closeSession's live_session → session_question order so the
       // submit/close race has one PostgreSQL lock protocol and cannot cycle.
       await this.transactions.lockLiveSessionForUpdate(
@@ -198,7 +204,10 @@ export class SubmissionService {
             textAnswer,
           )
         ) {
-          return toSubmissionProjection(existingByKey);
+          return {
+            submission: toSubmissionProjection(existingByKey),
+            fresh: false,
+          };
         }
         throw new DomainError(
           'SUBMISSION_CONFLICT',
@@ -270,7 +279,25 @@ export class SubmissionService {
             textAnswer: isOptionAnswer ? null : textAnswer,
           },
         });
-        return toSubmissionProjection(created);
+        const versionedQuestion = await tx.sessionQuestion.update({
+          where: { id: question.id },
+          data: { aggregateVersion: { increment: 1 } },
+          select: { aggregateVersion: true },
+        });
+        await this.outbox.append(tx, {
+          liveSessionId: canonicalLiveSessionId,
+          sessionQuestionId: question.id,
+          targetParticipantId: canonicalParticipantId,
+          event: RealtimeEvent.RESULT_UPDATED,
+          visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
+          aggregateVersion: versionedQuestion.aggregateVersion,
+          projectionInput: { status: question.status },
+          serverTimestamp: created.submittedAt,
+        });
+        return {
+          submission: toSubmissionProjection(created),
+          fresh: true,
+        };
       } catch (error) {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -286,16 +313,18 @@ export class SubmissionService {
         throw error;
       }
     });
-    // Publish after the submission transaction commits. Reached only on the
-    // accepted path (fresh create or idempotent replay); conflict throws never
-    // reach here.
-    this.publish({
-      type: 'submission.committed',
-      liveSessionId: submission.liveSessionId,
-      sessionQuestionId: submission.sessionQuestionId,
-      participantId: submission.participantId,
-    });
-    return submission;
+    // Publish after the submission transaction commits. A same-key replay
+    // returns the original row but does not create another durable result event
+    // or wake notification.
+    if (result.fresh) {
+      this.publish({
+        type: 'submission.committed',
+        liveSessionId: result.submission.liveSessionId,
+        sessionQuestionId: result.submission.sessionQuestionId,
+        participantId: result.submission.participantId,
+      });
+    }
+    return result.submission;
   }
 }
 

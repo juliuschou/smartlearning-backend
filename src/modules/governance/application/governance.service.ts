@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../../generated/prisma/client';
-import { newId, normalizeUuid } from '../../../common/crypto';
+import { hashToken, newId, normalizeUuid } from '../../../common/crypto';
 import { ConflictError, NotFoundError } from '../../../common/errors';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { normalizePageRequest, toPage } from '../../../common/pagination';
 import { projectArchive } from '../domain/archive-projection';
+import { RealtimeVisibility } from '../../realtime/live-session-realtime-contract';
 import type {
   ArchivePageDto,
   ArchiveSummaryDto,
@@ -43,66 +44,110 @@ export class GovernanceService {
   async archiveSession(id: string): Promise<ArchiveSummaryDto | null> {
     const sid = normalizeUuid(id);
     return this.tx.run(async (t) => {
-      const s = await t.liveSession.findUnique({
-        where: { id: sid },
-        include: {
-          course: true,
-          questions: {
-            orderBy: { position: 'asc' },
-            include: { options: { orderBy: { position: 'asc' } } },
-          },
-          submissions: true,
-        },
-      });
-      if (!s || s.status !== 'closed' || !s.closedAt) return null;
-      const existing = await t.archivedResult.findUnique({
-        where: { liveSessionId: sid },
-      });
-      if (existing) return this.summary(existing);
-      const submissionsByQuestion = new Map<string, typeof s.submissions>();
-      for (const submission of s.submissions) {
-        const rows =
-          submissionsByQuestion.get(submission.sessionQuestionId) ?? [];
-        rows.push(submission);
-        submissionsByQuestion.set(submission.sessionQuestionId, rows);
-      }
-      const payload = projectArchive(
-        s.questions.map((q) => ({
-          id: q.id,
-          position: q.position,
-          snapshotType: q.snapshotType,
-          snapshotPrompt: q.snapshotPrompt,
-          snapshotSelectionMode: q.snapshotSelectionMode,
-          options: q.options.map((o) => ({
-            id: o.id,
-            optionRef: o.optionRef,
-            text: o.text,
-            isCorrect: o.isCorrect,
-            position: o.position,
-          })),
-          submissions: (submissionsByQuestion.get(q.id) ?? []).map((x) => ({
-            selectedOptionRefs: Array.isArray(x.selectedOptionRefs)
-              ? x.selectedOptionRefs.filter(
-                  (ref): ref is string => typeof ref === 'string',
-                )
-              : null,
-            textAnswer: x.textAnswer,
-          })),
-        })),
-      );
-      const a = await t.archivedResult.create({
-        data: {
-          id: newId(),
-          liveSessionId: sid,
-          courseId: s.courseId,
-          closedAt: s.closedAt,
-          purgeAt: new Date(s.closedAt.getTime() + RETENTION_DAYS * DAY),
-          payload: JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue,
-        },
-      });
-      return this.summary(a);
+      await this.tx.lockLiveSessionForUpdate(t, sid);
+      return this.archiveSessionInTransaction(t, sid);
     });
   }
+
+  /**
+   * Create the immutable archive while the caller's LiveSession transaction is
+   * still open. The caller must already hold the LiveSession row lock.
+   */
+  async archiveSessionInTransaction(
+    t: Prisma.TransactionClient,
+    id: string,
+  ): Promise<ArchiveSummaryDto | null> {
+    const sid = normalizeUuid(id);
+    const s = await t.liveSession.findUnique({
+      where: { id: sid },
+      include: {
+        course: true,
+        questions: {
+          orderBy: { position: 'asc' },
+          include: { options: { orderBy: { position: 'asc' } } },
+        },
+        submissions: true,
+      },
+    });
+    if (!s || s.status !== 'closed' || !s.closedAt) return null;
+    const existing = await t.archivedResult.findUnique({
+      where: { liveSessionId: sid },
+    });
+    if (existing) {
+      await this.anonymizeParticipantsInTransaction(t, sid);
+      return this.summary(existing);
+    }
+    const submissionsByQuestion = new Map<string, typeof s.submissions>();
+    for (const submission of s.submissions) {
+      const rows =
+        submissionsByQuestion.get(submission.sessionQuestionId) ?? [];
+      rows.push(submission);
+      submissionsByQuestion.set(submission.sessionQuestionId, rows);
+    }
+    const payload = projectArchive(
+      s.questions.map((q) => ({
+        id: q.id,
+        position: q.position,
+        snapshotType: q.snapshotType,
+        snapshotPrompt: q.snapshotPrompt,
+        snapshotSelectionMode: q.snapshotSelectionMode,
+        options: q.options.map((o) => ({
+          id: o.id,
+          optionRef: o.optionRef,
+          text: o.text,
+          isCorrect: o.isCorrect,
+          position: o.position,
+        })),
+        submissions: (submissionsByQuestion.get(q.id) ?? []).map((x) => ({
+          selectedOptionRefs: Array.isArray(x.selectedOptionRefs)
+            ? x.selectedOptionRefs.filter(
+                (ref): ref is string => typeof ref === 'string',
+              )
+            : null,
+          textAnswer: x.textAnswer,
+        })),
+      })),
+    );
+    const a = await t.archivedResult.create({
+      data: {
+        id: newId(),
+        liveSessionId: sid,
+        courseId: s.courseId,
+        closedAt: s.closedAt,
+        purgeAt: new Date(s.closedAt.getTime() + RETENTION_DAYS * DAY),
+        payload: JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue,
+      },
+    });
+    await this.anonymizeParticipantsInTransaction(t, sid);
+    return this.summary(a);
+  }
+
+  /**
+   * Remove account/display-name/token lookup paths once a session is archived.
+   * Submission rows remain available until retention purge, but only point to
+   * anonymous participant records after this transaction commits.
+   */
+  private async anonymizeParticipantsInTransaction(
+    t: Prisma.TransactionClient,
+    liveSessionId: string,
+  ): Promise<void> {
+    const participants = await t.participant.findMany({
+      where: { liveSessionId },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    });
+    for (const participant of participants) {
+      await t.participant.update({
+        where: { id: participant.id },
+        data: {
+          accountId: null,
+          displayName: 'Anonymous',
+          tokenHash: hashToken(newId()),
+        },
+      });
+    }
+  }
+
   async list(
     account: { id: string; role: string },
     rawPage: { page?: number; pageSize?: number } = {},
@@ -239,8 +284,16 @@ export class GovernanceService {
         );
 
       // Remove answer-bearing rows first, preserving the closed LiveSession shell
-      // and a minimal, non-content tombstone for governance/audit purposes.
+      // and a minimal, non-content tombstone for governance/audit purposes. The
+      // submitter-targeted event rows are removed with the answer rows so the
+      // retained durable log cannot preserve identity-to-answer routing.
       await t.submission.deleteMany({ where: { liveSessionId: sid } });
+      await t.liveSessionEvent.deleteMany({
+        where: {
+          liveSessionId: sid,
+          visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
+        },
+      });
       await t.sessionQuestionOption.deleteMany({
         where: { sessionQuestion: { liveSessionId: sid } },
       });
@@ -266,6 +319,7 @@ export class GovernanceService {
             'submissions',
             'participants',
             'session_questions',
+            'realtime_target_routing',
           ],
         },
       });

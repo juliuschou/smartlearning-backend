@@ -1,0 +1,60 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RealtimeRedisService } from '../realtime/realtime-redis.service';
+
+export interface ReadinessCheck {
+  healthy: boolean;
+  latencyMs?: number;
+  mode?: string;
+  adapter?: string;
+  readiness?: string;
+  error?: string;
+}
+
+export interface ReadinessResult {
+  status: 'ok' | 'degraded';
+  timestamp: string;
+  checks: Record<string, ReadinessCheck>;
+  httpStatus: 200 | 503;
+}
+
+/** Dependency readiness with safe, low-cardinality diagnostics. */
+@Injectable()
+export class ReadinessService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RealtimeRedisService,
+  ) {}
+
+  async check(): Promise<ReadinessResult> {
+    const checks: Record<string, ReadinessCheck> = {};
+    let dbHealthy = true;
+    const dbStart = Date.now();
+    try {
+      await this.prisma.prisma.$queryRaw`SELECT 1`;
+      checks.db = { healthy: true, latencyMs: Date.now() - dbStart };
+    } catch {
+      dbHealthy = false;
+      checks.db = { healthy: false, error: 'database_unavailable' };
+    }
+
+    const policy = this.redis.policy;
+    const redisHealthy =
+      this.redis.redisMode === 'off' || this.redis.availability === 'available';
+    checks.redis = {
+      healthy: redisHealthy,
+      mode: this.redis.redisMode,
+      adapter: policy.adapter,
+      readiness: policy.readiness,
+      ...(redisHealthy ? {} : { error: 'redis_unavailable' }),
+    };
+
+    const operational = dbHealthy && policy.acceptsTraffic;
+    return {
+      status: operational && redisHealthy ? 'ok' : 'degraded',
+      timestamp: new Date().toISOString(),
+      checks,
+      httpStatus: operational ? 200 : 503,
+    };
+  }
+}

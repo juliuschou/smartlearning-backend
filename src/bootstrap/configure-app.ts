@@ -23,7 +23,9 @@ export const API_VERSION = 'v1';
  *
  * Call this after `NestFactory.create()` and before `app.listen()`/`app.init()`.
  */
-export function configureApplication(app: INestApplication): void {
+export async function configureApplication(
+  app: INestApplication,
+): Promise<void> {
   const expressApp = app as NestExpressApplication;
   const configService = app.get(ConfigService);
 
@@ -42,13 +44,10 @@ export function configureApplication(app: INestApplication): void {
 
   // CORS — explicit origin allowlist from env; dev allows the configured origin.
   const corsOrigin = configService.get<string>('CORS_ORIGIN') ?? '';
-  const origins =
-    corsOrigin === '*'
-      ? true
-      : corsOrigin
-          .split(',')
-          .map((o) => o.trim())
-          .filter(Boolean);
+  const origins = corsOrigin
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   expressApp.enableCors({
     origin: origins,
     credentials: true,
@@ -72,9 +71,9 @@ export function configureApplication(app: INestApplication): void {
   expressApp.useGlobalInterceptors(new ApiResponseInterceptor());
   expressApp.useGlobalFilters(new GlobalExceptionFilter());
 
-  // Socket.IO adapter (R-1 lite /live namespace). Bound here so production and
-  // the e2e app factory share one websocket setup path.
-  configureWebSocket(expressApp);
+  // Socket.IO adapter for the durable /live namespace. Bound here so production
+  // and the e2e app factory share one websocket setup path.
+  await configureWebSocket(expressApp);
 
   // Graceful shutdown: SIGTERM/SIGINT trigger module destroy hooks (Prisma disconnect).
   expressApp.enableShutdownHooks();

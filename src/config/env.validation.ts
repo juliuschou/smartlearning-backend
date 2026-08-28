@@ -9,6 +9,7 @@ import {
   validateSync,
 } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
+import { RealtimeRedisMode } from '../modules/realtime/live-session-realtime-contract';
 
 export type NodeEnv = 'development' | 'test' | 'production';
 
@@ -38,10 +39,14 @@ export class EnvConfig {
   @IsString()
   COOKIE_SECRET!: string;
 
-  // Redis is optional until Phase 7/9; presence flips the readiness check.
+  // Redis is optional for single-instance realtime; the explicit mode controls
+  // whether an unavailable adapter is healthy, degraded, or traffic-blocking.
   @IsOptional()
   @IsString()
   REDIS_URL?: string;
+
+  @IsEnum(['off', 'optional', 'required'])
+  REALTIME_REDIS_MODE: RealtimeRedisMode = RealtimeRedisMode.OFF;
 
   // Web Session lifetime (M2 關鍵技術決策 §4). Idle 30m, absolute 8h defaults.
   @IsNumber()
@@ -122,6 +127,7 @@ export function validateEnv(
       raw.LIVE_SESSION_AUTO_CLOSE_TICK_MS,
       60 * 1000,
     ),
+    REALTIME_REDIS_MODE: raw.REALTIME_REDIS_MODE || RealtimeRedisMode.OFF,
     SESSION_COOKIE_SECURE: bool(raw.SESSION_COOKIE_SECURE),
   };
 
@@ -139,6 +145,9 @@ export function validateEnv(
     throw new Error(
       'SESSION_COOKIE_SECURE=false is only allowed in NODE_ENV=test',
     );
+  }
+  if (config.CORS_ORIGIN.split(',').some((origin) => origin.trim() === '*')) {
+    throw new Error('CORS_ORIGIN must not contain a wildcard origin');
   }
   return config;
 }
