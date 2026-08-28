@@ -1832,10 +1832,15 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - [x] Teacher/admin archive list/detail and ownership scoping skeleton
 - [x] Whole-session purge removes archive payload, submissions, participants, and snapshots
 - [x] Bounded due-archive purge entrypoint (`purgeDue`) with fixed 90-day deadline
-- [ ] Add deletion-request idempotency/request linkage and pagination query contract
-- [ ] Add archive aggregate projection and regression tests
+- [ ] Harden deletion-request idempotency/request linkage and pagination query contract (pagination exists; request dedup remains application-level until DB-backed race coverage)
+- [x] Add archive aggregate projection and focused privacy regression tests
+- [ ] Add full archive governance e2e/regression matrix
 - [ ] Deploy migration or run DB-backed tests (requires explicit authorization)
 
 ### Results
 
-Static verification passed: `prisma validate`, `prisma generate`, normalized client, `npm run typecheck`, `npm run lint:check`, `npm run format:check`, and `npm run build`. Migration deployment, destructive operations, and DB-backed tests were not run.
+- Added `projectArchive()` using the shared `aggregateResults()` primitive. Archive payloads now contain ordered, typed anonymous aggregates only; raw submission rows, timestamps, and identity/linkage fields are not persisted.
+- Added focused projection tests for poll, quiz, open-text, ordering, correctness aggregates, and privacy-negative fields.
+- Updated frontend API reference for `/results` archive list/detail and deletion governance semantics.
+- **PASS:** focused governance unit tests (2 suites / 4 tests), `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **NOT RUN:** migration deployment, DB-backed e2e/integration, truncation, and destructive purge; these require explicit authorization and remain pending.

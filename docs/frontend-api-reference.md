@@ -2,7 +2,7 @@
 
 後端 NestJS 11，所有 HTTP 端點在 `/api/v1` prefix 下（health probes 除外）。本文為前端開發基準，涵蓋老師出題、課堂使用（teacher）、學員課堂使用三大功能。
 
-> 生成日期：2026-08-27。對應後端 runtime：Phase B student/enrollment/account-bound participant、兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）及 Checkpoint D 回歸證據；archive/retention 與 durable realtime/replay 仍為 deferred。
+> 生成日期：2026-08-28。對應後端 runtime：Phase B student/enrollment/account-bound participant、BE-5 closed-session archive governance、兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）及既有回歸證據；durable realtime/replay 仍為 deferred。
 
 ---
 
@@ -381,7 +381,19 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 
 ---
 
-## 5. 已知限制（前端需設計 fallback）
+## 5. 封存結果與刪除治理（BE-5）
+
+- `GET /api/v1/results?page=1&pageSize=20`：teacher 僅可讀自己課程，admin 可讀全部；使用既有 `Page<T>` 分頁，依 `closedAt` 新到舊排序。
+- `GET /api/v1/results/:liveSessionId`：回傳 active archive 的 `payload`（`schemaVersion: 1`、依題目順序排列的 `questions`，每題含 `id`、`position`、`prompt` 與 aggregate `result`）；deleted archive 僅回 summary，不回 payload。
+- `POST /api/v1/results/:liveSessionId/deletion-requests`：teacher/course-owner 建立 deletion request；需 CSRF + exact Origin；重試會重用既有 outstanding request。
+- `POST /api/v1/admin/results/:liveSessionId/deletion`：admin 需 CSRF、`StepUpGuard` 與 `{ "confirmed": true, "reason": "privacy|support|retention" }`，且先有 teacher request；成功後整場 answer-bearing rows 與 archive payload 清除，保留 closed session shell 與最小 tombstone。
+- Archive 在 close commit 後建立，`purgeAt = closedAt + 90 days`；retention purge 在 `purgeAt` 當下即可執行，重複執行不產生第二個 destructive tombstone。cancelled/non-closed session 不建立 archive。
+- payload 是匿名 aggregate：不包含 participant/account/displayName、任何 token/sessionCode、idempotency key、submission timestamp 或 answer-to-person linkage；open-text 僅 `{ text }`。
+- 所有回應仍使用通用 envelope；目前沒有 student history/archive route，也沒有內建 scheduler，`purgeDue` 由受控 operational worker 呼叫。
+
+---
+
+## 6. 已知限制（前端需設計 fallback）
 
 | 限制 | 影響 | 前端對策 |
 |---|---|---|
@@ -393,7 +405,7 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 
 ---
 
-## 6. 驗證狀態
+## 7. 驗證狀態
 
 > **Evidence boundary（2026-08-23）：** wire contract、runtime code、targeted DB-backed evidence 與 full regression 必須分開描述；本節不把 code presence 當作全量驗證，也不把 B4 realtime PASS 當作 P0-06 archive/retention PASS。
 
@@ -407,7 +419,7 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 
 ---
 
-## 7. 快速驗證命令（前端連線前 self-check）
+## 8. 快速驗證命令（前端連線前 self-check）
 
 ```bash
 # 後端啟動

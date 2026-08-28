@@ -5,6 +5,7 @@ import { ConflictError, NotFoundError } from '../../../common/errors';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { normalizePageRequest, toPage } from '../../../common/pagination';
+import { projectArchive } from '../domain/archive-projection';
 import type {
   ArchivePageDto,
   ArchiveSummaryDto,
@@ -58,26 +59,37 @@ export class GovernanceService {
         where: { liveSessionId: sid },
       });
       if (existing) return this.summary(existing);
-      const payload = {
-        questions: s.questions.map((q) => ({
+      const submissionsByQuestion = new Map<string, typeof s.submissions>();
+      for (const submission of s.submissions) {
+        const rows =
+          submissionsByQuestion.get(submission.sessionQuestionId) ?? [];
+        rows.push(submission);
+        submissionsByQuestion.set(submission.sessionQuestionId, rows);
+      }
+      const payload = projectArchive(
+        s.questions.map((q) => ({
+          id: q.id,
           position: q.position,
-          type: q.snapshotType,
-          prompt: q.snapshotPrompt,
-          selectionMode: q.snapshotSelectionMode,
+          snapshotType: q.snapshotType,
+          snapshotPrompt: q.snapshotPrompt,
+          snapshotSelectionMode: q.snapshotSelectionMode,
           options: q.options.map((o) => ({
             id: o.id,
             optionRef: o.optionRef,
             text: o.text,
+            isCorrect: o.isCorrect,
             position: o.position,
           })),
+          submissions: (submissionsByQuestion.get(q.id) ?? []).map((x) => ({
+            selectedOptionRefs: Array.isArray(x.selectedOptionRefs)
+              ? x.selectedOptionRefs.filter(
+                  (ref): ref is string => typeof ref === 'string',
+                )
+              : null,
+            textAnswer: x.textAnswer,
+          })),
         })),
-        answers: s.submissions.map((x) => ({
-          sessionQuestionId: x.sessionQuestionId,
-          selectedOptionRefs: x.selectedOptionRefs,
-          textAnswer: x.textAnswer,
-          submittedAt: x.submittedAt.toISOString(),
-        })),
-      };
+      );
       const a = await t.archivedResult.create({
         data: {
           id: newId(),
@@ -85,7 +97,7 @@ export class GovernanceService {
           courseId: s.courseId,
           closedAt: s.closedAt,
           purgeAt: new Date(s.closedAt.getTime() + RETENTION_DAYS * DAY),
-          payload,
+          payload: JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue,
         },
       });
       return this.summary(a);
