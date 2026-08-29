@@ -1961,8 +1961,59 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - [x] Extend archive-governance E2E setup with a targeted `participant_after_submit` durable event and assert purge removes all such rows before participant cleanup.
 - **NOT RUN:** the new archive-governance assertion and publisher dead-predecessor sequence matrix require the authorized durable migration on `smartlearning_test`; no DB mutation was performed.
 
-#### Status — 2026-08-29
+#### Status — 2026-08-29 (updated after authorized runtime verification)
 
 - **IMPLEMENTATION COMMITTED:** BE-7 durable realtime implementation is committed on branch `feat/be7-durable-realtime` under `feat(realtime): add durable live-session outbox`.
-- **RELEASE STATUS:** code and DB-free verification are complete; PostgreSQL/Redis-backed verification remains pending explicit authorization for migration `20260828110000_add_durable_realtime` on `smartlearning_test`.
-- **NEXT ACTION:** after authorization, deploy only that migration to `smartlearning_test`, run the targeted durable realtime/lifecycle/archive matrix, resolve the pre-existing BE-6 CSRF fixture blocker, then update this status with the observed results.
+- **RELEASE STATUS:** the durable migration is applied to `smartlearning_test`; PostgreSQL and Redis runtime checks passed; integration passed; the targeted E2E matrix is partially blocked by two existing/adjacent behavioral failures recorded below.
+- **NEXT ACTION:** resolve the `cp3-terminal-state` terminal-session status mismatch and the realtime vote-to-reveal count/event-order failure, then rerun the lifecycle/realtime matrix and full E2E regression before claiming BE-7 E2E completion.
+
+### 2026-08-29 — BE-7 smartlearning_test runtime verification (completed with E2E blockers)
+
+#### Acceptance criteria
+
+- [x] Apply only `20260828110000_add_durable_realtime` to `smartlearning_test`.
+- [x] Verify PostgreSQL and Redis runtime availability without disturbing unrelated containers.
+- [x] Run the authorized durable realtime/lifecycle/archive integration and E2E matrix; record the failing assertions and isolation results precisely.
+- [x] Run final migration-status and diff checks; record exact outcomes.
+
+#### Risk & rollback
+
+- **Risk:** high — migration and DB-backed realtime verification affect durable event ordering and privacy paths.
+- **Rollback:** no destructive down migration was run; leave the additive schema in place for forward repair. Only services started for this verification may be stopped in a separately authorized cleanup.
+
+#### Dependencies & environment
+
+- Target: `.env.test` resolves `DATABASE_URL` to PostgreSQL database `smartlearning_test` at `localhost:5432`.
+- Runtime: PostgreSQL is provided by the running `smart-learning-pg-dev` container (it has no Docker healthcheck); Redis is the profile-gated `smartlearning-redis` service from `docker-compose.yml`.
+- Guardrail: `test/setup/db.ts` rejects any database other than `smartlearning_test`; the requested DB-backed suites used their documented guarded test setup, including test-database fixture cleanup. No manual reset/down migration was run.
+- Redis test boundary: `.env.test` keeps `REALTIME_REDIS_MODE=off`, so the Redis check proves container health/PING only; it does not claim Redis adapter or cross-instance E2E coverage.
+
+#### Working notes
+
+- Preflight status identified exactly one pending migration: `20260828110000_add_durable_realtime`.
+- Post-deploy schema probe returned `live_session_event`, `realtime_event_seq`, `aggregate_version`, and the migration record present.
+- Redis was started only as `smartlearning-redis`; unrelated PostgreSQL containers were not stopped or reconfigured.
+
+#### Verification
+
+| Command / check | Result |
+| --- | --- |
+| `NODE_ENV=test npm run prisma:migrate:deploy` | PASS — applied `20260828110000_add_durable_realtime` to `smartlearning_test`; no other migration was pending. |
+| `NODE_ENV=test npm run prisma:migrate:status` (post-deploy) | PASS — 14 migrations found; database schema up to date. |
+| Read-only PostgreSQL schema probe | PASS — `live_session_event` exists; both durable columns and migration record are present. |
+| PostgreSQL runtime | PASS — `smart-learning-pg-dev` is running (no Docker healthcheck); `pg_isready` accepted connections on `localhost:5432`. |
+| Redis runtime | PASS — `smartlearning-redis` healthy; `redis-cli ping` returned `PONG`. |
+| `NODE_ENV=test npm run test:integration -- --runInBand --silent` | PASS — 3 suites / 16 tests, no skips. |
+| Targeted E2E matrix (`live-session-realtime`, close/cancel, results, archive, route matrix, CP3) | FAIL — 4 suites passed, 2 failed; 59 passed, 3 failed, 62 total; Jest did not exit because of an open handle after a failing realtime test. |
+| Isolated realtime E2E | FAIL — 1 failed / 17 passed; vote-to-reveal assertion at `test/live-session-realtime.e2e-spec.ts:655` expected `votedCount=1`, received `0`. Outbox rows were delivered in order with a teacher `session.snapshot` at seq 4 before targeted `result.updated` at seq 5, supporting a stale counts event/order defect. |
+| Isolated CP3 terminal-state E2E | FAIL — expected 409, received 401 at `test/cp3-terminal-state.e2e-spec.ts:322`; `ParticipantService.authenticate` rejects the terminal session before submission handling. |
+| Isolated close-question realtime test | PASS — 1 selected test passed; the combined-run close timeout is treated as cross-suite/open-handle interference, not a standalone failure. |
+| Full E2E suite | NOT RUN — targeted E2E failures prevented the planned expansion. |
+| `git diff --check` | PASS — no whitespace errors. |
+
+#### Results
+
+- The authorized additive migration is deployed and verified against the intended PostgreSQL database only.
+- PostgreSQL connectivity and durable schema objects are proven; Redis is healthy and reachable, but `.env.test` intentionally exercised local realtime mode rather than Redis adapter mode.
+- All three integration suites passed. E2E execution reached the real PostgreSQL-backed fixtures and exposed two actionable failures; they are recorded rather than silently treated as skips.
+- No application source, Prisma schema/migration, or runtime configuration was edited. The only working-tree change is this verification record.
