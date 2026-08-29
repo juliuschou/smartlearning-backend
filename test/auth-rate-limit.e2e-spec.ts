@@ -4,7 +4,10 @@ import { BootstrapService } from '../src/modules/identity/application/bootstrap.
 import { AccountStatus } from '../src/modules/identity/domain/account-status';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RateLimiterService } from '../src/modules/rate-limit/rate-limiter.service';
-import { createTestApp } from './setup/app-factory';
+import {
+  createTestApp,
+  withQuiescedLiveSessionPublisher,
+} from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
 /**
@@ -84,7 +87,9 @@ describe('Auth rate limit (e2e)', () => {
 
   beforeEach(async () => {
     if (!dbReachable) return;
-    await truncateAll(prisma.prisma);
+    await withQuiescedLiveSessionPublisher(app, () =>
+      truncateAll(prisma.prisma),
+    );
     rateLimiter.reset();
     await bootstrap.createFirstAdmin(ADMIN);
   });

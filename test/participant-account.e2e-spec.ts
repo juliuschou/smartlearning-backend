@@ -5,7 +5,10 @@ import { CSRF_COOKIE_NAME, CSRF_HEADER } from '../src/common/security';
 import { BootstrapService } from '../src/modules/identity/application/bootstrap.service';
 import { AccountRole } from '../src/modules/identity/domain/roles';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { createTestApp } from './setup/app-factory';
+import {
+  createTestApp,
+  withQuiescedLiveSessionPublisher,
+} from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
 describe('Account-bound participants (B3 e2e)', () => {
@@ -71,7 +74,9 @@ describe('Account-bound participants (B3 e2e)', () => {
 
   beforeEach(async () => {
     if (!dbReachable) return;
-    await truncateAll(prisma.prisma);
+    await withQuiescedLiveSessionPublisher(app, () =>
+      truncateAll(prisma.prisma),
+    );
     await bootstrap.createFirstAdmin(ADMIN);
   });
 

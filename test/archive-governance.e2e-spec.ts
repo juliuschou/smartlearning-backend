@@ -5,7 +5,10 @@ import { AccountRole } from '../src/modules/identity/domain/roles';
 import { newId } from '../src/common/crypto';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { CSRF_HEADER } from '../src/common/security';
-import { createTestApp } from './setup/app-factory';
+import {
+  createTestApp,
+  withQuiescedLiveSessionPublisher,
+} from './setup/app-factory';
 import { GovernanceService } from '../src/modules/governance/application/governance.service';
 import { setupTestDb, truncateAll } from './setup/db';
 
@@ -66,7 +69,9 @@ describe('LiveSession close/cancel (e2e)', () => {
 
   beforeEach(async () => {
     if (!dbReachable) return;
-    await truncateAll(prisma.prisma);
+    await withQuiescedLiveSessionPublisher(app, () =>
+      truncateAll(prisma.prisma),
+    );
     await bootstrap.createFirstAdmin(ADMIN);
   });
 

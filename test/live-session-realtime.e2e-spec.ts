@@ -7,7 +7,10 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { CSRF_HEADER } from '../src/common/security';
 import { SESSION_COOKIE_NAME } from '../src/common/security';
 import { LiveSessionEventBus } from '../src/modules/realtime/live-session-event-bus';
-import { createTestApp } from './setup/app-factory';
+import {
+  createTestApp,
+  withQuiescedLiveSessionPublisher,
+} from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
 /**
@@ -106,14 +109,13 @@ describe('LiveSession realtime (durable) (e2e)', () => {
     timeoutMs = 1500,
   ): Promise<unknown> {
     return new Promise((resolve, reject) => {
-      let timer: NodeJS.Timeout;
       const handler = (payload: unknown) => {
         if (!predicate(payload)) return;
         clearTimeout(timer);
         socket.off(name, handler);
         resolve(payload);
       };
-      timer = setTimeout(() => {
+      const timer = setTimeout(() => {
         socket.off(name, handler);
         reject(new Error(`timeout waiting for ${name}`));
       }, timeoutMs);
@@ -168,7 +170,9 @@ describe('LiveSession realtime (durable) (e2e)', () => {
 
   beforeEach(async () => {
     if (!dbReachable) return;
-    await truncateAll(prisma.prisma);
+    await withQuiescedLiveSessionPublisher(app, () =>
+      truncateAll(prisma.prisma),
+    );
     await bootstrap.createFirstAdmin(ADMIN);
   });
 

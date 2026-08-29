@@ -1,5 +1,12 @@
 # Lessons learned
 
+## 2026-08-29 — Quiesce the shared publisher before every destructive truncate, not just the realtime suite
+
+- **Failure mode:** `LiveSessionPublisher` is a shared singleton across the whole Jest process. Wrapping only the realtime suite's `truncateAll()` left every other DB-backed suite truncating while the publisher was active, so the `40P01` deadlock recurred in `route-matrix`, `close-cancel`, `results`, `enrollments`, and `archive-governance` — intermittently, depending on whether the publisher had in-flight work at cleanup time.
+- **Detection signal:** The seven-suite matrix and full e2e run failed in `test/setup/db.ts::truncateAll()` with SQLSTATE `40P01`, while isolated reruns could pass; suites that passed in one run failed in another.
+- **Prevention rule:** Treat destructive fixture cleanup as a process-wide lifecycle boundary. Quiesce the publisher (`withQuiescedLiveSessionPublisher`) around **every** `truncateAll()` call site in DB-backed suites, not just the realtime suite. A suite that permanently stops the publisher in `beforeAll` (e.g. `cp3-terminal-state`) is already safe and needs no wrapper.
+- **Tripwire:** Keep the deterministic deferred/fake-timer lifecycle unit tests, and grep that no DB-backed suite calls `truncateAll()` without a quiesce wrapper (except suites that permanently stop the publisher).
+
 ## 2026-08-16 — Prisma advisory locks and PostgreSQL `void`
 
 - **Failure mode:** Prisma 7 `$queryRaw` cannot deserialize the `void` result returned by `pg_advisory_xact_lock`.
@@ -196,3 +203,10 @@
 - **Detection signal:** Realtime review found `applyAdapter()` replacing the namespace adapter while never invoking the prior adapter's lifecycle cleanup.
 - **Prevention rule:** Capture and close the previous namespace adapter before every actual adapter transition; isolate cleanup failures so failover still completes, and preserve room membership during the replacement.
 - **Tripwire:** Exercise local → Redis → local → Redis transitions and assert the replaced adapter is closed exactly once while all socket rooms are restored.
+
+## 2026-08-29 — Quiesce background publishers before destructive test cleanup
+
+- **Failure mode:** A long-lived E2E application let `LiveSessionPublisher` continue projection, acknowledgement, or retry work while the next test's `truncateAll()` issued schema-wide `TRUNCATE ... CASCADE`, intermittently deadlocking PostgreSQL.
+- **Detection signal:** Combined Checkpoint C execution failed in `test/setup/db.ts::truncateAll()` with SQLSTATE `40P01`, while isolated reruns could pass and publisher retry/dispatch warnings appeared around cleanup.
+- **Prevention rule:** Treat destructive fixture cleanup as a lifecycle boundary: stop wake sources, await the active publisher drain, release only the instance's outstanding leases, run cleanup, then restart exactly one subscription/timer/startup scan for realtime tests.
+- **Tripwire:** Keep deterministic deferred/fake-timer unit tests proving shutdown waits for in-flight work, restart performs a startup scan, duplicate init creates no duplicate wake sources, and repeated destroy performs lease cleanup at most once.

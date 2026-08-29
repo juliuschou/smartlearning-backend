@@ -4,7 +4,10 @@ import { BootstrapService } from '../src/modules/identity/application/bootstrap.
 import { AccountRole } from '../src/modules/identity/domain/roles';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { CSRF_HEADER } from '../src/common/security';
-import { createTestApp } from './setup/app-factory';
+import {
+  createTestApp,
+  withQuiescedLiveSessionPublisher,
+} from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
 /**
@@ -64,7 +67,9 @@ describe('Quiz live flow (e2e)', () => {
 
   beforeEach(async () => {
     if (!dbReachable) return;
-    await truncateAll(prisma.prisma);
+    await withQuiescedLiveSessionPublisher(app, () =>
+      truncateAll(prisma.prisma),
+    );
     await bootstrap.createFirstAdmin(ADMIN);
   });
 

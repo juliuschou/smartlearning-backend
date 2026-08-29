@@ -14,6 +14,22 @@ const LIVE_SESSION_ID = '0190c6b8-0000-7000-8000-000000000001';
 const EVENT_ID = '0190c6b8-0000-7000-8000-000000000002';
 const QUESTION_ID = '0190c6b8-0000-7000-8000-000000000003';
 
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
+
+async function flushPromises(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 type RawRow = {
   id: string;
   live_session_id: string;
@@ -239,5 +255,117 @@ describe('LiveSessionPublisher', () => {
       ...unknown[],
     ];
     expect(queryFragments.join('')).toContain('LIMIT');
+  });
+
+  it('waits for an in-flight drain before shutdown completes', async () => {
+    jest.useFakeTimers();
+    const harness = makeHarness();
+    const batch = deferred<number>();
+    jest
+      .spyOn(harness.publisher, 'processBatch')
+      .mockReturnValue(batch.promise);
+
+    try {
+      harness.publisher.onModuleInit();
+      await flushPromises();
+      expect(harness.publisher.processBatch).toHaveBeenCalledTimes(1);
+
+      let shutdownCompleted = false;
+      const shutdown = harness.publisher.onModuleDestroy().then(() => {
+        shutdownCompleted = true;
+      });
+      await flushPromises();
+      expect(shutdownCompleted).toBe(false);
+
+      batch.resolve(0);
+      await shutdown;
+      expect(shutdownCompleted).toBe(true);
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('restarts with one startup scan after shutdown', async () => {
+    jest.useFakeTimers();
+    const harness = makeHarness();
+    const processBatch = jest
+      .spyOn(harness.publisher, 'processBatch')
+      .mockResolvedValue(0);
+
+    try {
+      harness.publisher.onModuleInit();
+      await flushPromises();
+      await harness.publisher.onModuleDestroy();
+      processBatch.mockClear();
+
+      harness.publisher.onModuleInit();
+      await flushPromises();
+
+      expect(processBatch).toHaveBeenCalledTimes(1);
+      expect(jest.getTimerCount()).toBe(1);
+      await harness.publisher.onModuleDestroy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('ignores duplicate init without duplicating subscriptions or timers', async () => {
+    jest.useFakeTimers();
+    const bus = new LiveSessionEventBus();
+    const subscribe = jest.spyOn(bus, 'subscribe');
+    const harness = makeHarness();
+    const publisher = new LiveSessionPublisher(
+      { prisma: harness.database } as unknown as PrismaService,
+      bus,
+      harness.gateway as unknown as LiveGateway,
+    );
+    const processBatch = jest
+      .spyOn(publisher, 'processBatch')
+      .mockResolvedValue(0);
+
+    try {
+      publisher.onModuleInit();
+      publisher.onModuleInit();
+      await flushPromises();
+
+      expect(subscribe).toHaveBeenCalledTimes(1);
+      expect(processBatch).toHaveBeenCalledTimes(1);
+      expect(jest.getTimerCount()).toBe(1);
+      await publisher.onModuleDestroy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('repeated destroy releases outstanding leases only once', async () => {
+    jest.useFakeTimers();
+    const harness = makeHarness();
+    const dispatch = deferred<void>();
+    harness.gateway.dispatchDurableEvent.mockReturnValue(dispatch.promise);
+    harness.database.liveSessionEvent.updateMany.mockResolvedValue({
+      count: 0,
+    });
+
+    try {
+      harness.publisher.onModuleInit();
+      await flushPromises();
+      const firstDestroy = harness.publisher.onModuleDestroy();
+      const duplicateDestroy = harness.publisher.onModuleDestroy();
+      dispatch.resolve(undefined);
+      await Promise.all([firstDestroy, duplicateDestroy]);
+      await harness.publisher.onModuleDestroy();
+
+      const leaseCleanupCalls =
+        harness.database.liveSessionEvent.updateMany.mock.calls.filter(
+          ([input]) =>
+            (input as { data?: { lastFailureClass?: string } }).data
+              ?.lastFailureClass === 'lease_expired',
+        );
+      expect(leaseCleanupCalls).toHaveLength(1);
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

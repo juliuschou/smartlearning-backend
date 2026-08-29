@@ -2052,3 +2052,60 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - **REPRODUCTION RESULT:** The realtime-suite `40P01` cleanup deadlock did not recur when that suite was run alone. The prior failure remains recorded as an intermittent publisher/`truncateAll()` interaction; no fixed sleep or broad timeout was added. Matrix execution will determine whether further isolation hardening is necessary.
 - **CHECKPOINT B STATUS:** focused blocker behavior is green; proceed to Checkpoint C lifecycle/realtime/archive matrix, while preserving the transient cleanup warning as an explicit verification item.
 - **STOPPED BEFORE CHECKPOINT C:** the seven-suite matrix was not started because its guarded setup truncates `smartlearning_test` and requires a separate explicit authorization for the broader Checkpoint C scope. No matrix command or additional DB operation was performed.
+
+### 2026-08-29 — BE-7 Checkpoint C seven-suite matrix (blocked)
+
+- **AUTHORIZED SCOPE:** guarded DB-backed execution was limited to `NODE_ENV=test` / `smartlearning_test`, including the existing idempotent migration and truncation performed by test setup. No development database operation or manual reset/down migration was run.
+- **FAIL:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts test/live-session-close-cancel.e2e-spec.ts test/live-session-results.e2e-spec.ts test/archive-governance.e2e-spec.ts test/live-session-route-matrix.e2e-spec.ts test/cp3-terminal-state.e2e-spec.ts test/participant-account.e2e-spec.ts` — 6 suites passed / 1 failed / 7 total; 70 tests passed / 1 failed / 71 total; 0 skipped; duration 197.879s.
+- **FAILURE:** `test/live-session-realtime.e2e-spec.ts`, `teacher connects and receives a session.snapshot with joined/voted counts`, failed during guarded fixture cleanup with Prisma raw-query error `40P01 deadlock detected`. The intermittent durable publisher / `truncateAll()` cleanup interaction therefore recurred in the combined matrix.
+- **WARNINGS:** repeated `LiveSessionPublisher` transient retry/dispatch warnings (`state: retry`, `PrismaClientKnownRequestError`), existing Nest `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*`, and the existing `pg` `client.query()` deprecation warning were observed. No Jest open-handle warning was observed.
+- **STOP-THE-LINE:** full E2E, integration, migration-status, Prisma/static/build, and diff supporting checks were not run because the required seven-suite gate was not green. Diagnose deterministic publisher/cleanup isolation; do not add fixed sleeps or broad timeouts. No broader BE-7 completion or release sign-off is claimed.
+
+### 2026-08-29 — BE-7 Checkpoint C publisher/truncateAll deadlock fix (in progress)
+
+#### Acceptance criteria
+
+- [ ] Publisher shutdown stops wake sources and awaits the active drain before destructive test cleanup begins.
+- [ ] Publisher init/destroy is repeatable and idempotent with one subscription/timer/startup scan per active lifecycle.
+- [ ] Realtime E2E quiesces only around `truncateAll()` and restarts before fixture setup; CP3 remains permanently stopped.
+- [ ] Focused publisher unit, isolated realtime E2E, and exact seven-suite Checkpoint C matrix pass without `40P01`, skips, or open handles.
+- [ ] Only after the matrix is green, run and record the full authorized verification bundle against `smartlearning_test`.
+
+#### Risk & rollback
+
+- **Risk:** medium — production publisher lifecycle becomes restartable; delivery SQL, ordering, projection, retry, lease, and gateway contracts remain unchanged.
+- **Rollback:** revert lifecycle/helper/realtime-hook edits while retaining CP3's one-time shutdown and the recorded deadlock evidence. Do not replace the lifecycle barrier with sleeps or retries.
+- **Database boundary:** DB-backed verification is authorized only with `NODE_ENV=test` resolving to guarded `smartlearning_test`, including existing idempotent setup migration/truncation. No development database or destructive down/reset operation.
+
+#### Implementation checklist
+
+- [x] Add explicit active lifecycle guard and quiescent repeatable shutdown to `LiveSessionPublisher`.
+- [x] Add deterministic deferred/fake-timer lifecycle unit coverage.
+- [x] Add `withQuiescedLiveSessionPublisher()` to the test app factory.
+- [x] Wrap realtime-suite `truncateAll()` only; preserve existing socket cleanup unless inspection proves a leak.
+- [x] Record the deadlock lifecycle-barrier lesson and verification results.
+
+#### Checkpoint C verification results — 2026-08-29 (PASS)
+
+**AUTHORIZED SCOPE:** guarded DB-backed execution limited to `NODE_ENV=test` / `smartlearning_test`, including the existing idempotent migration and truncation performed by test setup. No development database operation or manual reset/down migration was run.
+
+**Scope expansion during verification:** the seven-suite matrix initially failed with `40P01` in `route-matrix`, `close-cancel`, and `results`; the full e2e run additionally failed in `enrollments` and `archive-governance`. Root cause: `LiveSessionPublisher` is a shared singleton across the whole test process, so **any** suite that calls `truncateAll()` while the publisher is active can deadlock — the realtime-suite-only wrapper was insufficient. Applied `withQuiescedLiveSessionPublisher(app, () => truncateAll(...))` to every `truncateAll()` call site in DB-backed suites (24 files), leaving `cp3-terminal-state` permanently stopped (its existing `onModuleDestroy()` in `beforeAll` already quiesces). Also fixed a `prefer-const` lint error in `live-session-realtime.e2e-spec.ts` (`nextEventMatching`).
+
+**Verification bundle (all PASS):**
+
+| Command | Result |
+| --- | --- |
+| `npm test -- --runInBand src/modules/realtime/live-session-publisher.spec.ts` | PASS — 1 suite / 11 tests (incl. 4 new lifecycle tests) |
+| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` | PASS — 1 suite / 18 tests |
+| Seven-suite Checkpoint C matrix | PASS — 7 suites / 71 tests, no `40P01`, no skips, no open handles |
+| `NODE_ENV=test npm run test:e2e -- --runInBand --silent` (full) | PASS — 26 suites / 178 tests, no `40P01`, no skips, no open handles |
+| `NODE_ENV=test npm run test:integration -- --runInBand --silent` | PASS — 3 suites / 16 tests |
+| `npm test -- --runInBand` | PASS — 30 suites / 178 tests |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `NODE_ENV=test npm run prisma:migrate:status` | PASS — 14 migrations, schema up to date |
+| `git diff --check` | PASS |
+
+**Result:** Checkpoint C lifecycle/realtime/archive matrix and the full authorized verification bundle are green against `smartlearning_test`. The publisher/`truncateAll()` deadlock is resolved deterministically (no fixed sleeps or broad timeouts). This does not claim a release sign-off; it records the Checkpoint C verification gate as passed.

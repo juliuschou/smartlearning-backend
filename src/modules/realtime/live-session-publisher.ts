@@ -62,10 +62,12 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
   private readonly claimToken = newId();
   private unsubscribe?: () => void;
   private timer?: NodeJS.Timeout;
+  private active = false;
   private stopped = false;
   private processing = false;
   private wakeQueued = false;
   private drainPromise?: Promise<void>;
+  private shutdownPromise?: Promise<void>;
   private outstandingLeaseCount = 0;
 
   constructor(
@@ -75,6 +77,10 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    if (this.active) return;
+
+    this.active = true;
+    this.stopped = false;
     this.unsubscribe = this.bus.subscribe((signal) => {
       this.queueWake(signal);
     });
@@ -82,14 +88,33 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
     this.queueWake();
   }
 
-  async onModuleDestroy(): Promise<void> {
+  onModuleDestroy(): Promise<void> {
+    if (this.shutdownPromise) return this.shutdownPromise;
+    if (!this.active) return Promise.resolve();
+
+    this.shutdownPromise = this.shutdown().finally(() => {
+      this.shutdownPromise = undefined;
+    });
+    return this.shutdownPromise;
+  }
+
+  private async shutdown(): Promise<void> {
+    this.active = false;
     this.stopped = true;
     this.unsubscribe?.();
+    this.unsubscribe = undefined;
     if (this.timer) clearInterval(this.timer);
+    this.timer = undefined;
     this.wakeQueued = false;
-    await this.drainPromise;
-    if (this.outstandingLeaseCount > 0) {
-      await this.releaseLeases();
+
+    const activeDrain = this.drainPromise;
+    await activeDrain;
+    try {
+      if (this.outstandingLeaseCount > 0) {
+        await this.releaseLeases();
+      }
+    } finally {
+      this.outstandingLeaseCount = 0;
     }
   }
 

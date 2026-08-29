@@ -4,7 +4,10 @@ import { AccountService } from '../src/modules/identity/application/account.serv
 import { PrismaService } from '../src/prisma/prisma.service';
 import { AccountRole } from '../src/modules/identity/domain/roles';
 import { hashPassword, verifyPassword, newId } from '../src/common/crypto';
-import { createTestApp } from './setup/app-factory';
+import {
+  createTestApp,
+  withQuiescedLiveSessionPublisher,
+} from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
 /**
@@ -47,7 +50,9 @@ describe('Identity (integration)', () => {
 
   beforeEach(async () => {
     if (!dbReachable) return;
-    await truncateAll(prisma.prisma);
+    await withQuiescedLiveSessionPublisher(app, () =>
+      truncateAll(prisma.prisma),
+    );
   });
 
   it('bootstrap is permitted on a fresh install', async () => {

@@ -10,7 +10,10 @@ import {
   CSRF_HEADER,
   SESSION_COOKIE_NAME,
 } from '../src/common/security';
-import { createTestApp } from './setup/app-factory';
+import {
+  createTestApp,
+  withQuiescedLiveSessionPublisher,
+} from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
 /**
@@ -82,7 +85,9 @@ describe('Auth + Courses (e2e)', () => {
 
   beforeEach(async () => {
     if (!dbReachable) return;
-    await truncateAll(prisma.prisma);
+    await withQuiescedLiveSessionPublisher(app, () =>
+      truncateAll(prisma.prisma),
+    );
     // Seed first admin via the bootstrap service (CLI equivalent).
     await bootstrap.createFirstAdmin(ADMIN);
   });

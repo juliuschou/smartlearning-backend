@@ -11,7 +11,10 @@ import { ParticipantService } from '../src/modules/participants/application/part
 import { SubmissionService } from '../src/modules/submissions/application/submission.service';
 import type { CreateQuestionDto } from '../src/modules/questions/api/dto';
 import type { CreateSubmissionDto } from '../src/modules/submissions/api/dto';
-import { createTestApp } from './setup/app-factory';
+import {
+  createTestApp,
+  withQuiescedLiveSessionPublisher,
+} from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
 describe('Poll submission (integration)', () => {
@@ -57,7 +60,10 @@ describe('Poll submission (integration)', () => {
   });
 
   beforeEach(async () => {
-    if (dbReachable) await truncateAll(prisma.prisma);
+    if (dbReachable)
+      await withQuiescedLiveSessionPublisher(app, () =>
+        truncateAll(prisma.prisma),
+      );
   });
 
   async function createScenario(questionCount = 1) {
