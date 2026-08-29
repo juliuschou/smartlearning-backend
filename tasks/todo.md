@@ -2109,3 +2109,28 @@ The verification agent confirmed the working tree was unchanged by these checks.
 | `git diff --check` | PASS |
 
 **Result:** Checkpoint C lifecycle/realtime/archive matrix and the full authorized verification bundle are green against `smartlearning_test`. The publisher/`truncateAll()` deadlock is resolved deterministically (no fixed sleeps or broad timeouts). This does not claim a release sign-off; it records the Checkpoint C verification gate as passed.
+
+## 2026-08-29 BE-8.0 Contract freeze 與人工授權（Checkpoint 0）
+
+Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-contract-freeze.md`
+
+- [x] 凍結 `GET /auth/session`（真實 `expiresAt`、401 語意、envelope 不變）
+- [x] 凍結錯誤契約（`AUTH_SESSION_EXPIRED` vs `UNAUTHORIZED`；已凍結、實作 CP1）
+- [x] 凍結 account update scope allowlist（實作 CP2）
+- [x] 凍結 CLI 憑證模型（rotation = 立即失效，使用者已決策；實作 CP3）
+- [x] 凍結 rate limit 契約（US-F7 coerce invariant 沿用；CLI/batch 归屬待 CP0 決策）
+- [x] 凍結 observability 目標（metrics 端點 + CP6 redaction 範圍）
+- [x] **人工 Checkpoint 0 — verified（2026-08-30，使用者回覆「全照建議」）**：Q1–Q7 決策已寫回 freeze 文件 §2–§8。CP1（Session expiry 契約）解鎖。
+
+#### Risk & rollback
+
+- **Risk:** low — 僅新增 design docs 檔案與本區塊；零程式碼/schema 變更。
+- **Rollback:** 刪除 `BackendBE8/be-8-contract-freeze.md` 與本區塊。
+- **Database boundary:** 本 CP 僅唯讀執行 `prisma:migrate:status`（`NODE_ENV=test`，`smartlearning_test`）；無任何資料操作。
+
+#### Results
+
+- 建立 `docs/智學互動平台/50_實作與測試/BackendBE8/be-8-contract-freeze.md`（§0 環境基準 → §7 DB 授權聲明 → §8 人工 CP0 清單 Q1–Q7 → §10 evidence）。
+- Verification：`git status` 乾淨（僅 docs 新檔）、`npm run typecheck` PASS、`NODE_ENV=test npm run prisma:migrate:status` 唯讀 PASS（14 migrations up to date）。
+- **CP0 決策記錄（2026-08-30）：** `username` 不可改；`displayName` 僅 admin；role 提權至 admin 需 step-up。CLI expiry = 無 TTL 直到 revoke（CP3 不做 expiry migration）。CLI/batch rate limit = per-CLI-key。`AUTH_SESSION_EXPIRED` 凍結、CP1 實作（SessionExpiredError 子類，idle/absolute 同 code）。Metrics = `/metrics` VERSION_NEUTRAL 無 envelope、network 層隔離。DB 授權：`smartlearning_test` + setup migrate/truncate 邊界，已授權。CP1 以 targeted auth/session suite 先行。
+- **§10 evidence 執行（2026-08-30）：** 唯讀核對全部 PASS — `git status` 乾淨（僅 `M tasks/todo.md`）、`git diff --check` PASS、`npm run typecheck` PASS、`NODE_ENV=test npm run prisma:migrate:status` PASS（14 migrations up to date）。§1–§6 凍結契約證據位置（`auth.controller.ts:111-125`、`session.guard.ts:54`、`error-codes.ts:19`、`session-limits.ts`、`admin.controller.ts:134-155`、`schema.prisma:405`、`frontend-api-reference.md` §auth）全部核對一致；Redis container Up 但 `REDIS_URL` 於各 env 檔皆註解（僅影響 CP5）。Stop conditions 未觸發，**CP0 完成**。
