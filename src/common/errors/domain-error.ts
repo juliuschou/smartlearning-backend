@@ -100,6 +100,22 @@ export class UnauthorizedError extends DomainError {
   }
 }
 
+/**
+ * The session cookie is present but the session has expired (idle or absolute
+ * timeout). Distinct from `UnauthorizedError` (missing/malformed/revoked) so
+ * clients can prompt a re-login. Both map to HTTP 401; the code is the only
+ * differentiator. Message is generic and MUST NOT leak internal details.
+ */
+export class SessionExpiredError extends DomainError {
+  constructor() {
+    super(
+      'AUTH_SESSION_EXPIRED' as ErrorCode,
+      'Session expired',
+      HttpStatus.UNAUTHORIZED,
+    );
+  }
+}
+
 export class InvalidCredentialsError extends DomainError {
   constructor() {
     super(

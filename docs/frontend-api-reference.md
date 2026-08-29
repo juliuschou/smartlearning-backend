@@ -357,6 +357,13 @@ PostgreSQL 仍是順序、授權與 domain projection 的 authority。
 }
 ```
 
+**Session 錯誤語意（BE-8.1 CP1）**：`GET /auth/session` 及所有 Session 守護路由，401 時以 `error.code` 區分：
+
+- `AUTH_SESSION_EXPIRED` — cookie 存在但 session 已過期（idle 或 absolute timeout）。前端應提示重新登入。
+- `UNAUTHORIZED` — 未認證（缺 cookie／malformed cookie）或已撤銷（logout 後帶舊 cookie）。前端視為未登入。
+
+兩者 HTTP status 皆 401；`expiresAt` 為絕對到期（UTC ISO 8601），不應以它判斷「是否已登入」，只作顯示用。
+
 **MyCourseDto**：`{ enrollmentId, courseId, name, description, status, ownerAccountId, enrolledAt, createdAt, updatedAt }`
 
 ### 3.2 我的課程與名冊

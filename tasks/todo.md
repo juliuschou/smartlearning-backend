@@ -2134,3 +2134,50 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - Verification：`git status` 乾淨（僅 docs 新檔）、`npm run typecheck` PASS、`NODE_ENV=test npm run prisma:migrate:status` 唯讀 PASS（14 migrations up to date）。
 - **CP0 決策記錄（2026-08-30）：** `username` 不可改；`displayName` 僅 admin；role 提權至 admin 需 step-up。CLI expiry = 無 TTL 直到 revoke（CP3 不做 expiry migration）。CLI/batch rate limit = per-CLI-key。`AUTH_SESSION_EXPIRED` 凍結、CP1 實作（SessionExpiredError 子類，idle/absolute 同 code）。Metrics = `/metrics` VERSION_NEUTRAL 無 envelope、network 層隔離。DB 授權：`smartlearning_test` + setup migrate/truncate 邊界，已授權。CP1 以 targeted auth/session suite 先行。
 - **§10 evidence 執行（2026-08-30）：** 唯讀核對全部 PASS — `git status` 乾淨（僅 `M tasks/todo.md`）、`git diff --check` PASS、`npm run typecheck` PASS、`NODE_ENV=test npm run prisma:migrate:status` PASS（14 migrations up to date）。§1–§6 凍結契約證據位置（`auth.controller.ts:111-125`、`session.guard.ts:54`、`error-codes.ts:19`、`session-limits.ts`、`admin.controller.ts:134-155`、`schema.prisma:405`、`frontend-api-reference.md` §auth）全部核對一致；Redis container Up 但 `REDIS_URL` 於各 env 檔皆註解（僅影響 CP5）。Stop conditions 未觸發，**CP0 完成**。
+
+## 2026-08-30 BE-8.1 CP1 — Session expiry 契約實作
+
+實作文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-1-cp1-session-expiry.md`（上游契約 `be-8-contract-freeze.md` §1–§2，CP0 verified）。
+
+#### Checklist
+
+- [x] `src/common/errors/domain-error.ts` 新增 `SessionExpiredError`（code `AUTH_SESSION_EXPIRED`、401、泛用 message `'Session expired'`）；`index.ts` 已 `export * from './domain-error'` 自動匯出。
+- [x] `src/common/auth/session.service.ts` `loadActiveSession` 改取 `sessionValidity()` 的 `reason`；`!valid` 分支依 `reason === 'expired' | 'idle'` 丟 `SessionExpiredError`（idle/absolute 同 code），防禦性 else 維持 `UnauthorizedError`。
+- [x] 明確不動：`revokedAt`／disabled／缺 hash 維持 `UnauthorizedError`；缺 cookie／malformed cookie 在 `SessionGuard` L31-33 維持 `UnauthorizedError`；`SessionGuard` 不需改（`SessionExpiredError` 透明上拋，由 `GlobalExceptionFilter` 映射 401 + `AUTH_SESSION_EXPIRED` envelope）。
+- [x] Realtime gateway `authenticateCookie`（`live-gateway.ts:306`）呼叫同一 `loadActiveSession`，過期時丟 `SessionExpiredError`（仍屬 `DomainError`），handshake catch-all 投影涵蓋 — 0 diff。
+- [x] 新增 `src/common/auth/session.service.spec.ts`（FakeClock）：valid 觸碰 lastSeenAt；absolute-expired／idle-expired → `SessionExpiredError`（同 code）；revoked／disabled／缺 hash → `UnauthorizedError`。
+- [x] 新增 `test/auth-session-expiry.e2e-spec.ts`（DB-backed，`smartlearning_test`，真實 clock + 直接 UPDATE `web_session` row）：8 凍結案例全綠。
+- [x] `docs/frontend-api-reference.md` §auth 補 `AUTH_SESSION_EXPIRED`（需重登）vs `UNAUTHORIZED`（未認證/撤銷）語意說明列。
+- [x] 無 schema、無 migration、無 DTO 變更。
+
+#### Risk & rollback
+
+- **Risk: 中高** — 改變所有 SessionGuard 路徑的錯誤分類、觸及 auth 層；但凍結契約限定改動面僅 `loadActiveSession` 的 `!valid` 分支。
+- **Rollback:** revert commit 即可；無 DB/migration 回滾需求。
+- **監控信號:** `AUTH_SESSION_EXPIRED` 出現量應僅限 genuinely expired cookie 場景。
+- **不變量:** envelope/auth/CSRF 行為不變；`revokedAt`／disabled／缺 cookie 維持 `UNAUTHORIZED`；realtime handshake 錯誤投影不變。
+
+#### Verification（執行結果）
+
+| 命令 | 結果 |
+| --- | --- |
+| `npm test -- --runInBand src/common/auth/session.service.spec.ts` | PASS — 1 suite / 6 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/auth-session-expiry.e2e-spec.ts` | PASS — 1 suite / 9 tests（8 凍結案例 + skip-guard） |
+| 既有回歸（auth-courses / auth-rate-limit / api-envelope） | PASS — 3 suites / 25 tests，無回歸 |
+| `npm run prisma:validate` | PASS |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `npm test -- --runInBand` | PASS — 31 suites / 184 tests |
+| `NODE_ENV=test npm run test:integration -- --runInBand` | PASS — 3 suites / 16 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand` | PASS — 27 suites / 187 tests |
+| `NODE_ENV=test npm run prisma:migrate:status` | PASS — 14 migrations, schema up to date |
+| `git diff --check` | PASS |
+
+#### Results
+
+- `SessionExpiredError` 落地：idle/absolute timeout → 401 `AUTH_SESSION_EXPIRED`；`revokedAt`／disabled／缺 cookie／malformed → 401 `UNAUTHORIZED`（凍結契約，不拆 idle/absolute 為兩 code）。
+- `GET /auth/session` 未登入 → 401（不回 200 + 空字串）；envelope 形狀不變，僅 additive forward-fix。
+- 全域 stop condition 未觸發：`AUTH_SESSION_EXPIRED` 未誤用於其他未認證情境。
+- 人工 Checkpoint 1 待使用者抽查（各案例 status/`error.code`、`expiresAt` 語意、後端 code 區分語意）。

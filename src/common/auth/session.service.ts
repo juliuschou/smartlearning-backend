@@ -14,7 +14,11 @@ import {
   absoluteExpiry,
 } from '../../modules/identity/domain/session-limits';
 import { AccountStatus } from '../../modules/identity/domain/account-status';
-import { StepUpRequiredError, UnauthorizedError } from '../errors';
+import {
+  SessionExpiredError,
+  StepUpRequiredError,
+  UnauthorizedError,
+} from '../errors';
 import { isStepUpValid } from './step-up';
 
 export type SessionMeta = {
@@ -194,9 +198,10 @@ export class SessionService {
 
   /**
    * Resolve a raw cookie token to a valid, active session + account.
-   * Throws UnauthorizedError if the token has no session, the session is
-   * expired/idle/revoked, or the account is no longer active. Touches
-   * lastSeenAt on success.
+   * Throws SessionExpiredError if the session is idle/absolute-expired;
+   * throws UnauthorizedError if the token has no session, the session is
+   * revoked, or the account is no longer active. Touches lastSeenAt on
+   * success.
    */
   async loadActiveSession(rawToken: string): Promise<{
     session: WebSession;
@@ -218,13 +223,20 @@ export class SessionService {
     if (session.revokedAt) {
       throw new UnauthorizedError();
     }
-    const { valid } = sessionValidity(
+    const { valid, reason } = sessionValidity(
       session.lastSeenAt,
       session.expiresAt,
       this.clock,
       this.idleMs,
     );
     if (!valid) {
+      // Frozen contract: idle and absolute timeouts share the same code
+      // (AUTH_SESSION_EXPIRED). `sessionValidity` only returns 'expired' |
+      // 'idle' | null; null cannot reach this branch, so the defensive else
+      // keeps UnauthorizedError for any unexpected reason.
+      if (reason === 'expired' || reason === 'idle') {
+        throw new SessionExpiredError();
+      }
       throw new UnauthorizedError();
     }
 
