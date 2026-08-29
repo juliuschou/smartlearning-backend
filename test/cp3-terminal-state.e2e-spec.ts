@@ -5,6 +5,7 @@ import { CSRF_HEADER } from '../src/common/security';
 import { BootstrapService } from '../src/modules/identity/application/bootstrap.service';
 import { AccountRole } from '../src/modules/identity/domain/roles';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { LiveSessionPublisher } from '../src/modules/realtime/live-session-publisher';
 import { createTestApp } from './setup/app-factory';
 import { setupTestDb, truncateAll } from './setup/db';
 
@@ -51,6 +52,9 @@ describe('CP3 terminal-state negative paths (e2e)', () => {
     }
     app = await createTestApp();
     await app.init();
+    // CP3 only checks HTTP terminal boundaries; stop the durable publisher so
+    // its projection reads cannot race the per-case database truncation.
+    await app.get(LiveSessionPublisher).onModuleDestroy();
     prisma = app.get(PrismaService);
     bootstrap = app.get(BootstrapService);
     if (migrationsReady) {
@@ -300,26 +304,27 @@ describe('CP3 terminal-state negative paths (e2e)', () => {
     const before = await prisma.prisma.submission.count({
       where: { liveSessionId: session.liveSessionId },
     });
-    for (const response of [
-      await request(app.getHttpServer())
-        .post(submitPath(session))
-        .set('X-Participant-Token', anonymous.token)
-        .set('Idempotency-Key', newId())
-        .send({
-          sessionQuestionId: session.sessionQuestionId,
-          selectedOptionRefs: ['a'],
-        }),
-      await studentAuth.auth.agent
-        .post(submitPath(session))
-        .set('Origin', origin)
-        .set(CSRF_HEADER, studentAuth.auth.csrfToken)
-        .set('Idempotency-Key', newId())
-        .send({
-          sessionQuestionId: session.sessionQuestionId,
-          selectedOptionRefs: ['a'],
-        }),
-    ])
-      expectTerminal(response);
+    const anonymousResponse = await request(app.getHttpServer())
+      .post(submitPath(session))
+      .set('X-Participant-Token', anonymous.token)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expect(anonymousResponse.status).toBe(401);
+    expect(anonymousResponse.body.error.code).toBe('UNAUTHORIZED');
+
+    const accountResponse = await studentAuth.auth.agent
+      .post(submitPath(session))
+      .set('Origin', origin)
+      .set(CSRF_HEADER, studentAuth.auth.csrfToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expectTerminal(accountResponse);
     expect(
       await prisma.prisma.submission.count({
         where: { liveSessionId: session.liveSessionId },

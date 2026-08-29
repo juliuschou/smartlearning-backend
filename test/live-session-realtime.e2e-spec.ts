@@ -99,6 +99,45 @@ describe('LiveSession realtime (durable) (e2e)', () => {
     });
   }
 
+  function nextEventMatching(
+    socket: ClientSocket,
+    name: string,
+    predicate: (payload: unknown) => boolean,
+    timeoutMs = 1500,
+  ): Promise<unknown> {
+    return new Promise((resolve, reject) => {
+      let timer: NodeJS.Timeout;
+      const handler = (payload: unknown) => {
+        if (!predicate(payload)) return;
+        clearTimeout(timer);
+        socket.off(name, handler);
+        resolve(payload);
+      };
+      timer = setTimeout(() => {
+        socket.off(name, handler);
+        reject(new Error(`timeout waiting for ${name}`));
+      }, timeoutMs);
+      socket.on(name, handler);
+    });
+  }
+
+  function countsMatch(
+    payload: unknown,
+    joinedCount: number,
+    votedCount: number,
+  ): boolean {
+    if (typeof payload !== 'object' || payload === null) return false;
+    const data = (payload as { data?: unknown }).data;
+    if (typeof data !== 'object' || data === null) return false;
+    const counts = data as {
+      joinedCount?: unknown;
+      votedCount?: unknown;
+    };
+    return (
+      counts.joinedCount === joinedCount && counts.votedCount === votedCount
+    );
+  }
+
   beforeAll(async () => {
     try {
       setupTestDb();
@@ -627,7 +666,20 @@ describe('LiveSession realtime (durable) (e2e)', () => {
     await openOpened;
     await openCounts;
 
+    // Pre-register before the participant join so its durable teacher snapshot
+    // and compatibility counts notification cannot satisfy the submit listener.
+    const joinedCounts = nextEventMatching(
+      teacherSocket,
+      'counts.updated',
+      (payload) => countsMatch(payload, 1, 0),
+    );
     const p = await joinParticipant(ctx.sessionCode, 'p1');
+    const joined = (await joinedCounts) as {
+      data: { joinedCount: number; votedCount: number };
+    };
+    expect(joined.data.joinedCount).toBe(1);
+    expect(joined.data.votedCount).toBe(0);
+
     const participantSocket = connectParticipant(
       ctx.sessionCode,
       p.participantToken,
@@ -636,7 +688,11 @@ describe('LiveSession realtime (durable) (e2e)', () => {
     const participantCollector = collectEvents(participantSocket);
 
     // Pre-register before the submission mutation.
-    const submitCounts = nextEvent(teacherSocket, 'counts.updated');
+    const submitCounts = nextEventMatching(
+      teacherSocket,
+      'counts.updated',
+      (payload) => countsMatch(payload, 1, 1),
+    );
     const submitResult = nextEvent(teacherSocket, 'result.updated');
 
     await request(app.getHttpServer())

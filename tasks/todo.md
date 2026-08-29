@@ -2017,3 +2017,38 @@ The verification agent confirmed the working tree was unchanged by these checks.
 - PostgreSQL connectivity and durable schema objects are proven; Redis is healthy and reachable, but `.env.test` intentionally exercised local realtime mode rather than Redis adapter mode.
 - All three integration suites passed. E2E execution reached the real PostgreSQL-backed fixtures and exposed two actionable failures; they are recorded rather than silently treated as skips.
 - No application source, Prisma schema/migration, or runtime configuration was edited. The only working-tree change is this verification record.
+
+### 2026-08-29 — BE-7 E2E blocker-fix plan Checkpoint A (understand/reproduce)
+
+- [x] Confirmed the CP3 mismatch in `test/cp3-terminal-state.e2e-spec.ts`: a post-close anonymous bearer submission uses a token whose participant lookup link was removed/rotated by archive finalization, so authentication correctly returns `401 UNAUTHORIZED`; an account-bound student-cookie submission still reaches the terminal-session state boundary and returns `409 SESSION_NOT_JOINABLE`. Cancellation and direct session-code reconnect paths remain strict `409 SESSION_NOT_JOINABLE`.
+- [x] Confirmed the durable realtime E2E ordering issue in `test/live-session-realtime.e2e-spec.ts`: the participant-join `session.snapshot`/compatibility `counts.updated` delivery may still be pending when the submission listener is registered, allowing the join-time `votedCount=0` event to satisfy a submission-time assertion. The deterministic fix is to await the join notifications before registering the submission listener; no publisher/gateway change is indicated.
+- [x] Cross-checked the authoritative P0/realtime/result-governance rules: closed/cancelled sessions reject future writes and reconnects; archive finalization must remove account/display-name/token lookup links; durable events remain ordered and per-socket delivery serialized; teacher-only counts stay out of participant projections.
+- [x] Existing reusable lessons cover both failure modes (`tasks/lessons.md`: post-commit listener registration, archive privacy/lock boundaries); no new lesson entry is required at this checkpoint.
+- **STOPPED at manual Checkpoint A:** no source/schema/migration/config changes were made and no DB-backed test or migration command was run. Awaiting explicit human authorization to edit the focused E2E fixtures and run the guarded `smartlearning_test` verification in Checkpoint B.
+
+### 2026-08-29 — BE-7 E2E blocker-fix plan Checkpoint B initial verification (blocked)
+
+- [x] Applied the authorized test-only changes in `test/cp3-terminal-state.e2e-spec.ts` and `test/live-session-realtime.e2e-spec.ts`; `npx prettier --write` reported both files unchanged after formatting.
+- **FAIL:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/cp3-terminal-state.e2e-spec.ts` — 1 failed / 3 passed / 4 total; `40P01 deadlock detected` occurred in guarded `truncateAll()` (`test/setup/db.ts:50`) before the terminal assertion, likely due to durable publisher DB activity from the prior case. No assertion result is claimed from the blocked case.
+- **FAIL:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` — 1 failed / 17 passed / 18 total; the vote-to-reveal test failed at `test/live-session-realtime.e2e-spec.ts:637` because the newly awaited join-count listener received `joinedCount: 0`. The initial teacher snapshot's follow-up `counts.updated` was still eligible to satisfy the listener, so the first fix did not fully drain earlier count notifications. The failed test also left a socket open, and Jest reported an open-handle warning.
+- **STOP-THE-LINE / RE-PLAN:** Checkpoint B is not green; do not expand to the lifecycle matrix or full regression. Preserve the evidence above, diagnose deterministic test isolation and event selection, then revise the minimal test-only fix before rerunning the focused commands. Existing non-blocking Nest route-converter and `pg@9 client.query()` warnings were also observed.
+
+### 2026-08-29 — BE-7 Checkpoint B re-plan after initial verification
+
+- **CP3 isolation correction:** `LiveSessionPublisher` starts during `app.init()` and can still hold PostgreSQL projection locks while CP3's `beforeEach` calls the dynamic `TRUNCATE ... CASCADE`. CP3 has no realtime assertions, so the test will stop and await the publisher once after app initialization; no fixed sleep, production change, schema change, or migration change is needed.
+- **Realtime event-selection correction:** durable sequence order is preserved, but generic `counts.updated` payloads have no event source/sequence marker. The test will use a predicate waiter that ignores earlier `0/0` counts and resolves only on expected join `1/0` and submit `1/1` states. This is deterministic for the one-participant/one-submission fixture and does not alter publisher/gateway behavior.
+- **Revised scope:** remain test-only in the same two focused E2E files; rerun Checkpoint B focused commands after formatting. Do not expand regression until both pass.
+
+### 2026-08-29 — BE-7 Checkpoint B revised verification (partial)
+
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/cp3-terminal-state.e2e-spec.ts` — 1 suite / 4 tests passed, 0 failed, 0 skipped; stopping the publisher after app initialization removed the cleanup deadlock. Existing Nest route-converter and `pg@9` warnings remained non-blocking; no open-handle warning.
+- **BLOCKED:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` — 17 passed / 1 failed / 18 total; the failing `non-owner teacher is rejected before room join` case hit `40P01 deadlock detected` in `truncateAll()` (`test/setup/db.ts:50`, suite `beforeEach` at `test/live-session-realtime.e2e-spec.ts:171`) before its assertion. Publisher transient retry/dispatch warnings were observed; no open-handle warning. The revised vote-to-reveal predicate waiters were not reached in this run.
+- **STOP-THE-LINE:** Do not expand regression. Reproduce the realtime cleanup deadlock in isolation and determine a deterministic test-only publisher/cleanup synchronization before claiming the focused suite green.
+
+### 2026-08-29 — BE-7 Checkpoint B focused rerun after transient cleanup deadlock
+
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/cp3-terminal-state.e2e-spec.ts` — 1 suite / 4 tests passed, 0 failed, 0 skipped; no open-handle warning.
+- **PASS:** `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` — 1 suite / 18 tests passed, 0 failed, 0 skipped; vote-to-reveal predicate waiters observed the expected teacher join `1/0` and submit `1/1` counts; no open-handle warning.
+- **REPRODUCTION RESULT:** The realtime-suite `40P01` cleanup deadlock did not recur when that suite was run alone. The prior failure remains recorded as an intermittent publisher/`truncateAll()` interaction; no fixed sleep or broad timeout was added. Matrix execution will determine whether further isolation hardening is necessary.
+- **CHECKPOINT B STATUS:** focused blocker behavior is green; proceed to Checkpoint C lifecycle/realtime/archive matrix, while preserving the transient cleanup warning as an explicit verification item.
+- **STOPPED BEFORE CHECKPOINT C:** the seven-suite matrix was not started because its guarded setup truncates `smartlearning_test` and requires a separate explicit authorization for the broader Checkpoint C scope. No matrix command or additional DB operation was performed.
