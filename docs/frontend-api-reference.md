@@ -442,6 +442,8 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 | GET    | `/admin/accounts/:id`                                      | 讀取單一帳號 metadata                     | 無      |
 | POST   | `/admin/accounts`                                          | 建帳號（admin/teacher/student）           | 無      |
 | PATCH  | `/admin/accounts/:id/permissions`                          | 更新 `canCreateCourse` 權限（只改此欄位） | 無      |
+| PATCH  | `/admin/accounts/:id`                                      | 更新 `displayName`/`role`/`canCreateCourse`（BE-8.2 CP2） | 提權至 admin 需 |
+| POST   | `/admin/accounts/:id/require-password-change`             | 設/清 `mustChangePassword` gate（BE-8.2 CP2） | 需      |
 | POST   | `/admin/accounts/:id/reset-password`                       | 重設密碼                                  | 需      |
 | POST   | `/admin/accounts/:id/disable`                              | 停用（撤 session/CLI/未用 token）         | 需      |
 | POST   | `/admin/accounts/:id/restore`                              | 復原                                      | 需      |
@@ -452,6 +454,11 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 **建帳號 body**：`{ username, displayName, role, canCreateCourse, tempPassword }`。student 的 `canCreateCourse` 恆為 false。
 
 **更新開課授權 body**：`{ canCreateCourse: boolean }`。成功回 `200` 與最新 `AccountDto`；僅 admin 可操作，target 可為 admin/teacher，student 設為 `true` 時回 `403 FORBIDDEN`。此 mutation 不停用帳號、不撤銷 WebSession/CLI credential/unused token，也不修改既有 Course、Question、LiveSession 或結果；`POST /courses` 仍是 server 授權來源。
+
+**更新帳號 profile（`PATCH /admin/accounts/:id`，BE-8.2 CP2）**：body allowlist 為 `{ displayName?, role?, canCreateCourse? }`，全部 optional、至少一欄（空 body → `400 VALIDATION_FAILED`）。成功回 `200` 與最新 `AccountDto`。僅 admin 可操作；`role` 提權至 `admin` 需 step-up（無近期 step-up → `403 AUTH_STEP_UP_REQUIRED`）；admin 改自己的 `role` → `403 FORBIDDEN`；disabled 帳號 → `403 FORBIDDEN`（先 restore）；student 設 `canCreateCourse=true` → `403 FORBIDDEN`。未知欄位（`username`/`passwordHash`/`status` 等）→ `400 VALIDATION_FAILED`（`forbidNonWhitelisted`）。此 mutation 不撤銷 WebSession/CLI credential/unused token、不發 lifecycle 事件；`canCreateCourse=false` 不撤銷既有 CLI credential（M2 紅卡 #8）。
+
+**設/清 mustChangePassword gate（`POST /admin/accounts/:id/require-password-change`，BE-8.2 CP2）**：body `{ mustChangePassword: boolean }`，step-up 保護。設 `true` 強制該帳號下次登入換密碼（不撤銷既有 session）；設 `false` 清除。self 目標允許（admin 清自己的旗標屬合理自救）。
+
 **AccountDto**：`{ id, username, displayName, role, status, canCreateCourse, mustChangePassword, disabledAt, createdAt }`。
 
 ---
@@ -475,7 +482,7 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 | 無 `GET /live-sessions/:id/results`（整場彙整）                     | teacher 全班總覽                          | 逐題呼叫 per-question results 聚合                                                        |
 | Realtime publisher/replay 受 bounded retention 與 Redis policy 約束 | dead/expired/gap 或 required Redis 不可用 | 處理 `sync.required`，採用 actor-safe snapshot；必要時顯示 retryable unavailable          |
 | auto-close scheduler 已支援 active session sweep                    | abandoned session 自動收尾                | 仍提供 teacher 手動 close/cancel，監聽 `session.closed`                                   |
-| admin account permission update 只支援 `canCreateCourse`            | 帳號管理 UI                               | 使用 `PATCH /admin/accounts/:id/permissions`；disable/restore/CLI credential 仍走各自端點 |
+| admin account update 僅凍結 allowlist（`displayName`/`role`/`canCreateCourse`） | 帳號管理 UI | 使用 `PATCH /admin/accounts/:id`；`mustChangePassword` 走 `require-password-change`；disable/restore/CLI credential 仍走各自端點 |
 | OpenAPI 顯示內層 DTO（非 envelope）                                 | 自動產 client 型別                        | client 手動解 `data`，或自訂 transformer                                                  |
 
 ---

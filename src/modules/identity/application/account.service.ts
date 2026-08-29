@@ -169,6 +169,135 @@ export class AccountService {
     });
   }
 
+  /**
+   * Admin account profile update (BE-8.2 CP2). Only the frozen allowlist
+   * (`displayName`, `role`, `canCreateCourse`) is writable; the DTO already
+   * rejects unknown fields. The account row is locked so competing lifecycle
+   * transitions serialize. This mutation never revokes sessions/CLI
+   * credentials, invalidates tokens, or publishes lifecycle signals — those
+   * side effects belong to disable/restore/reset.
+   *
+   * Frozen invariants:
+   * - disabled target → 403 (restore first).
+   * - self role change → 403 (prevents the last admin self-demoting to lockout).
+   * - promoting to admin requires a recent step-up (checked inside the lock,
+   *   before the write).
+   * - student + `canCreateCourse=true` → 403 (shared with permission update).
+   * - same-value no-op returns the target without writing.
+   */
+  async updateAccount(
+    targetAccountId: string,
+    actor: { account: { id: string }; sessionId: string },
+    patch: {
+      displayName?: string;
+      role?: AccountRole;
+      canCreateCourse?: boolean;
+    },
+  ): Promise<Account> {
+    if (!isUuid(targetAccountId)) {
+      throw new NotFoundError('Account not found');
+    }
+
+    return this.tx.run(async (txClient) => {
+      await this.tx.lockAccountForUpdate(txClient, targetAccountId);
+      const target = await txClient.account.findUnique({
+        where: { id: targetAccountId },
+      });
+      if (!target) throw new NotFoundError('Account not found');
+      if (target.status === AccountStatus.DISABLED) {
+        throw new ForbiddenError('Restore the account before updating it');
+      }
+
+      const isSelf =
+        targetAccountId.toLowerCase() === actor.account.id.toLowerCase();
+      if (patch.role !== undefined && isSelf && patch.role !== target.role) {
+        throw new ForbiddenError('Cannot change your own role');
+      }
+
+      // Promotion to admin requires a recent step-up. Checked inside the lock,
+      // before the write, so a concurrent step-up expiry cannot race the grant.
+      if (
+        patch.role === AccountRole.ADMIN &&
+        target.role !== AccountRole.ADMIN
+      ) {
+        await this.sessions.assertRecentStepUp(
+          actor.account.id,
+          actor.sessionId,
+        );
+      }
+
+      if (
+        target.role === AccountRole.STUDENT &&
+        patch.canCreateCourse === true
+      ) {
+        throw new ForbiddenError('Student accounts cannot create courses');
+      }
+
+      const data: {
+        displayName?: string;
+        role?: AccountRole;
+        canCreateCourse?: boolean;
+      } = {};
+      if (
+        patch.displayName !== undefined &&
+        patch.displayName !== target.displayName
+      ) {
+        data.displayName = patch.displayName;
+      }
+      if (patch.role !== undefined && patch.role !== target.role) {
+        data.role = patch.role;
+      }
+      if (
+        patch.canCreateCourse !== undefined &&
+        patch.canCreateCourse !== target.canCreateCourse
+      ) {
+        data.canCreateCourse = patch.canCreateCourse;
+      }
+
+      if (Object.keys(data).length === 0) return target;
+
+      return txClient.account.update({
+        where: { id: targetAccountId },
+        data,
+      });
+    });
+  }
+
+  /**
+   * Admin sets/clears the `mustChangePassword` gate (BE-8.2 CP2, plan §1.3).
+   * Quasi-lifecycle: setting `true` forces the target to change their own
+   * password on next login (the existing gate flow handles the redirect);
+   * setting `false` clears it. Self-target is allowed (an admin clearing
+   * their own flag is legitimate self-service, unlike reset-password). No
+   * session/CLI/token revocation — the gate is enforced at login, not by
+   * invalidating existing sessions.
+   */
+  async setMustChangePassword(
+    targetAccountId: string,
+    mustChangePassword: boolean,
+  ): Promise<Account> {
+    if (!isUuid(targetAccountId)) {
+      throw new NotFoundError('Account not found');
+    }
+
+    return this.tx.run(async (txClient) => {
+      await this.tx.lockAccountForUpdate(txClient, targetAccountId);
+      const target = await txClient.account.findUnique({
+        where: { id: targetAccountId },
+      });
+      if (!target) throw new NotFoundError('Account not found');
+      if (target.status === AccountStatus.DISABLED) {
+        throw new ForbiddenError('Restore the account before updating it');
+      }
+      if (target.mustChangePassword === mustChangePassword) return target;
+
+      return txClient.account.update({
+        where: { id: targetAccountId },
+        data: { mustChangePassword },
+      });
+    });
+  }
+
   async resetPassword(
     targetAccountId: string,
     tempPassword: string,

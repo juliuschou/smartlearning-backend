@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { ValidationError } from '../../../common/errors';
 import {
   AdminGuard,
   CsrfGuard,
@@ -24,7 +25,9 @@ import { AccountService } from '../application/account.service';
 import { CliCredentialService } from '../application/cli-credential.service';
 import { AccountDto } from './dto/account.dto';
 import { CreateAccountDto } from './dto/create-account.dto';
+import { RequirePasswordChangeDto } from './dto/require-password-change.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateAccountDto } from './dto/update-account.dto';
 import { UpdateAccountPermissionsDto } from './dto/update-account-permissions.dto';
 import {
   CreateCliCredentialDto,
@@ -80,6 +83,37 @@ export class AdminController {
     );
   }
 
+  /**
+   * Admin account profile update (BE-8.2 CP2). Frozen allowlist:
+   * `displayName` / `role` / `canCreateCourse`, all optional, at least one
+   * present. Promotion to admin is step-up-checked in the service (not via
+   * method-level StepUpGuard, which would also gate displayName updates).
+   * Self role change is rejected in the service. No session/CLI/token
+   * revocation — lifecycle side effects stay on their dedicated endpoints.
+   */
+  @Patch('accounts/:id')
+  async updateAccount(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateAccountDto,
+    @CurrentAccount() auth: AuthContext,
+  ): Promise<AccountDto> {
+    if (
+      dto.displayName === undefined &&
+      dto.role === undefined &&
+      dto.canCreateCourse === undefined
+    ) {
+      throw new ValidationError(
+        'At least one of displayName, role, or canCreateCourse is required',
+      );
+    }
+    const account = await this.accounts.updateAccount(id, auth, {
+      displayName: dto.displayName,
+      role: dto.role,
+      canCreateCourse: dto.canCreateCourse,
+    });
+    return toAccountDto(account);
+  }
+
   @Post('accounts')
   async createAccount(
     @Body() dto: CreateAccountDto,
@@ -128,6 +162,24 @@ export class AdminController {
     @CurrentAccount() auth: AuthContext,
   ): Promise<AccountDto> {
     const account = await this.accounts.restoreAccount(id, auth.account.id);
+    return toAccountDto(account);
+  }
+
+  /**
+   * Admin forces/clears the `mustChangePassword` gate (BE-8.2 CP2, plan §1.3).
+   * Step-up protected like the other lifecycle operations. Self-target is
+   * allowed (an admin clearing their own flag is legitimate self-service).
+   */
+  @Post('accounts/:id/require-password-change')
+  @UseGuards(StepUpGuard)
+  async requirePasswordChange(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: RequirePasswordChangeDto,
+  ): Promise<AccountDto> {
+    const account = await this.accounts.setMustChangePassword(
+      id,
+      dto.mustChangePassword,
+    );
     return toAccountDto(account);
   }
 

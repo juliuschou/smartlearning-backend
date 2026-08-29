@@ -582,4 +582,336 @@ describe('Account admin & disable/restore lifecycle (e2e)', () => {
       expect([401, 403, 409]).toContain(confirmRes.status);
     }
   });
+
+  // ---- BE-8.2 CP2 — account profile update (PATCH /admin/accounts/:id) ----
+
+  it('updates displayName / role / canCreateCourse and reflects them in the DB row', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacherId } = await createTeacher();
+
+    const res = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        displayName: 'Renamed Teacher',
+        role: AccountRole.STUDENT,
+        canCreateCourse: false,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.displayName).toBe('Renamed Teacher');
+    expect(res.body.data.role).toBe('student');
+    expect(res.body.data.canCreateCourse).toBe(false);
+    expect(res.body.data.status).toBe('active');
+
+    const row = await prisma.prisma.account.findUnique({
+      where: { id: teacherId },
+    });
+    expect(row?.displayName).toBe('Renamed Teacher');
+    expect(row?.role).toBe('student');
+    expect(row?.canCreateCourse).toBe(false);
+    // Frozen: username/status/hash untouched by profile update.
+    expect(row?.username).toBe(TEACHER.username);
+    expect(row?.status).toBe('active');
+    expect(row?.passwordHash).toBeTruthy();
+  });
+
+  it('rejects non-admin callers with 403 FORBIDDEN', async () => {
+    requireDatabase();
+    const { teacher, teacherId } = await createTeacher();
+    const res = await teacher.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ displayName: 'Nope' });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('allows admin self displayName update but rejects self role change', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const adminId = (await admin.agent.get('/api/v1/auth/session')).body.data
+      .accountId as string;
+
+    const selfName = await admin.agent
+      .patch(`/api/v1/admin/accounts/${adminId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ displayName: 'Self Renamed Admin' });
+    expect(selfName.status).toBe(200);
+    expect(selfName.body.data.displayName).toBe('Self Renamed Admin');
+
+    const selfRole = await admin.agent
+      .patch(`/api/v1/admin/accounts/${adminId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ role: AccountRole.TEACHER });
+    expect(selfRole.status).toBe(403);
+    expect(selfRole.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('404s for an unknown id and 400s for a malformed id', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+
+    const missing = await admin.agent
+      .patch('/api/v1/admin/accounts/01900000-0000-7000-8000-000000000099')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ displayName: 'X' });
+    expect(missing.status).toBe(404);
+    expect(missing.body.error.code).toBe('NOT_FOUND');
+
+    const malformed = await admin.agent
+      .patch('/api/v1/admin/accounts/not-a-uuid')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ displayName: 'X' });
+    expect(malformed.status).toBe(400);
+  });
+
+  it('rejects unknown fields and an empty body with 400 VALIDATION_FAILED', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacherId } = await createTeacher();
+
+    const unknown = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ username: 'hacked', passwordHash: 'x', status: 'disabled' });
+    expect(unknown.status).toBe(400);
+    expect(unknown.body.error.code).toBe('VALIDATION_FAILED');
+
+    const empty = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({});
+    expect(empty.status).toBe(400);
+    expect(empty.body.error.code).toBe('VALIDATION_FAILED');
+  });
+
+  it('rejects updating a disabled account, then allows it after restore', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacherId } = await createTeacher();
+
+    await adminStepUp(admin);
+    const disable = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherId}/disable`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(disable.status).toBe(201);
+
+    const blocked = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ displayName: 'Blocked' });
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.error.code).toBe('FORBIDDEN');
+
+    await adminStepUp(admin);
+    const restore = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherId}/restore`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(restore.status).toBe(201);
+
+    const after = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ displayName: 'Restored Name' });
+    expect(after.status).toBe(200);
+    expect(after.body.data.displayName).toBe('Restored Name');
+  });
+
+  it('requires step-up to promote to admin, and succeeds after step-up', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacherId } = await createTeacher();
+
+    const noStepUp = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ role: AccountRole.ADMIN });
+    expect(noStepUp.status).toBe(403);
+    expect(noStepUp.body.error.code).toBe('AUTH_STEP_UP_REQUIRED');
+
+    await adminStepUp(admin);
+    const promoted = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ role: AccountRole.ADMIN });
+    expect(promoted.status).toBe(200);
+    expect(promoted.body.data.role).toBe('admin');
+  });
+
+  it('rejects student + canCreateCourse=true on the profile route', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const created = await admin.agent
+      .post('/api/v1/admin/accounts')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        username: 'account-admin-cp2-student',
+        displayName: 'CP2 Student',
+        role: AccountRole.STUDENT,
+        canCreateCourse: false,
+        tempPassword: 'account-admin-cp2-student-password-1234',
+      });
+    expect(created.status).toBe(201);
+    const studentId = created.body.data.id as string;
+
+    const grant = await admin.agent
+      .patch(`/api/v1/admin/accounts/${studentId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: true });
+    expect(grant.status).toBe(403);
+    expect(grant.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('does not revoke an existing session on profile update', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacher, teacherId } = await createTeacher();
+
+    const before = await teacher.agent.get('/api/v1/auth/session');
+    expect(before.status).toBe(200);
+
+    const res = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ displayName: 'Still Logged In' });
+    expect(res.status).toBe(200);
+
+    const after = await teacher.agent.get('/api/v1/auth/session');
+    expect(after.status).toBe(200);
+  });
+
+  it('keeps an existing CLI credential usable after canCreateCourse=false (M2 紅卡 #8)', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacher, teacherId } = await createTeacher();
+
+    await adminStepUp(admin);
+    const cli = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherId}/cli-credentials`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ name: 'cp2-key' });
+    expect(cli.status).toBe(201);
+    const rawKey = cli.body.data.rawKey as string;
+
+    const course = await teacher.agent
+      .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ name: 'CP2 Course' });
+    expect(course.status).toBe(201);
+    const courseId = course.body.data.id as string;
+
+    // canCreateCourse=false via the profile route must NOT revoke the CLI key.
+    const res = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ canCreateCourse: false });
+    expect(res.status).toBe(200);
+    expect(res.body.data.canCreateCourse).toBe(false);
+
+    const cliAfter = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/validate`)
+      .set('X-CLI-Key', rawKey)
+      .send({ schemaVersion: 1, courseId, questions: [] });
+    expect(cliAfter.status).toBe(201);
+  });
+
+  it('require-password-change sets and clears the mustChangePassword gate', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacherId } = await createTeacher();
+
+    await adminStepUp(admin);
+    const set = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherId}/require-password-change`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ mustChangePassword: true });
+    expect(set.status).toBe(201);
+    expect(set.body.data.mustChangePassword).toBe(true);
+
+    const row = await prisma.prisma.account.findUnique({
+      where: { id: teacherId },
+    });
+    expect(row?.mustChangePassword).toBe(true);
+
+    await adminStepUp(admin);
+    const clear = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherId}/require-password-change`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ mustChangePassword: false });
+    expect(clear.status).toBe(201);
+    expect(clear.body.data.mustChangePassword).toBe(false);
+  });
+
+  it('require-password-change requires step-up and rejects a disabled target', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacherId } = await createTeacher();
+
+    const noStepUp = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherId}/require-password-change`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ mustChangePassword: true });
+    expect(noStepUp.status).toBe(403);
+    expect(noStepUp.body.error.code).toBe('AUTH_STEP_UP_REQUIRED');
+
+    await adminStepUp(admin);
+    const disable = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherId}/disable`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(disable.status).toBe(201);
+
+    await adminStepUp(admin);
+    const blocked = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherId}/require-password-change`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ mustChangePassword: true });
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('never leaks password/hash/CLI/session values in update responses', async () => {
+    requireDatabase();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { teacherId } = await createTeacher();
+
+    const res = await admin.agent
+      .patch(`/api/v1/admin/accounts/${teacherId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ displayName: 'Leak Check' });
+    expect(res.status).toBe(200);
+    const body = JSON.stringify(res.body);
+    expect(body).not.toContain('password');
+    expect(body).not.toContain('passwordHash');
+    expect(body).not.toContain('keyHash');
+    expect(body).not.toContain('rawKey');
+    expect(body).not.toContain('sessionToken');
+    expect(body).not.toContain('cookieHash');
+  });
 });

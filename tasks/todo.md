@@ -2181,3 +2181,58 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - `GET /auth/session` 未登入 → 401（不回 200 + 空字串）；envelope 形狀不變，僅 additive forward-fix。
 - 全域 stop condition 未觸發：`AUTH_SESSION_EXPIRED` 未誤用於其他未認證情境。
 - 人工 Checkpoint 1 待使用者抽查（各案例 status/`error.code`、`expiresAt` 語意、後端 code 區分語意）。
+
+## 2026-08-30 BE-8.2 CP2 — Account management update（8.3）
+
+實作文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-2-cp2-account-update.md`（上游契約 `be-8-contract-freeze.md` §3，CP0 verified；前置 BE-8.1 CP1 已落地）。
+
+#### Checkpoint 2 決策（使用者 2026-08-30 確認，全照 plan 預設）
+
+- [x] **mustChangePassword 端點形狀**：獨立 route `POST /admin/accounts/:id/require-password-change`（body `{ mustChangePassword: boolean }`，step-up 保護），不併入 general update。
+- [x] **self-role**：admin 改自己的 `role` → `403 FORBIDDEN`（防最後一個 admin 自降權鎖死）；self `displayName` 允許。
+- [x] **last-admin**：不做 server-side last-admin invariant（與凍結一致，不加契約外規則）。
+
+#### Checklist
+
+- [x] 新增 `src/modules/identity/api/dto/update-account.dto.ts`（`displayName?`/`role?`/`canCreateCourse?`，全 optional；`@IsEnum(ACCOUNT_ROLES)`、`@Length(1,100)`、`@IsBoolean`）。
+- [x] 新增 `src/modules/identity/api/dto/require-password-change.dto.ts`（`{ mustChangePassword: boolean }`）。
+- [x] `AccountService.updateAccount()`：row lock → existence → disabled 403 → self-role 403 → 提權 step-up（鎖內、寫入前）→ student+canCreateCourse 403 → 同值 no-op 不寫 → 只寫實際變更欄位；不撤 session/CLI/token、不發 lifecycle。
+- [x] `AccountService.setMustChangePassword()`：row lock → existence → disabled 403 → 同值 no-op；self 允許；不撤 session。
+- [x] `AdminController` 新增 `PATCH accounts/:id`（`ParseUUIDPipe` + `@CurrentAccount`；空 body → `ValidationError` 400）+ `POST accounts/:id/require-password-change`（`@UseGuards(StepUpGuard)`）。
+- [x] 新增 `src/modules/identity/application/account.service.spec.ts`（13 unit tests：update 成功、no-op、提權 step-up 有/無、disabled、missing、malformed、student、self-role、self-displayName、無 revoke/publish、setMustChangePassword set/no-op/disabled/malformed）。
+- [x] 擴充 `test/account-admin.e2e-spec.ts`（13 新案例：update 反映 DB、非 admin 403、self displayName/role、404/400、未知欄位/空 body、disabled→restore、提權 step-up、student+canCreateCourse、session 不撤、CLI 不撤（M2 紅卡 #8）、require-password-change set/clear、require-password-change step-up/disabled、負向洩漏）。
+- [x] `docs/frontend-api-reference.md` §4 補 `PATCH /admin/accounts/:id` + `require-password-change` path/body/status/error/side-effect；L478 limitation 更新為凍結 allowlist。
+- [x] `test/openapi.e2e-spec.ts` 斷言新 PATCH path + `UpdateAccountDto` schema 無敏感欄位/範例值。
+- [x] 無 schema、無 migration、無既有 DTO/response 形狀變更、不動既有 `permissions` route。
+
+#### Risk & rollback
+
+- **Risk: 高**（帳號權限/role 變更屬憑證與授權面；凍結明示 8.3 高風險、須獨立人工 Checkpoint）。緩解：純 additive（新 route，不動既有行為）、row lock 序列化、step-up 僅提權路徑、所有 revoke 留在既有專責端點。
+- **Rollback:** revert commit 即可；無 DB/migration 回滾。已寫入的 role/displayName 屬正常資料不需補償；本 CP 不撤銷任何憑證，故無需以資料操作恢復。
+- **監控信號:** `AUTH_STEP_UP_REQUIRED` 於此 route 僅限提權嘗試；403 `FORBIDDEN` 量突增可能代表前端誤用 route。
+- **Stop conditions 未觸發:** `canCreateCourse=false` 未撤銷 CLI credential（e2e 已斷言）；log/response 未出現 hash/credential。
+
+#### Verification（執行結果）
+
+| 命令 | 結果 |
+| --- | --- |
+| `npm test -- --runInBand src/modules/identity/application/account.service.spec.ts` | PASS — 1 suite / 13 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/account-admin.e2e-spec.ts` | PASS — 1 suite / 23 tests（10 既有 + 13 新） |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | PASS — 1 suite / 3 tests（新 path + DTO schema） |
+| `npm run prisma:validate` | PASS |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `npm test -- --runInBand` | PASS — 32 suites / 197 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand` | PASS — 27 suites / 200 tests |
+| `NODE_ENV=test npm run test:integration -- --runInBand` | PASS — 3 suites / 16 tests |
+| `npm run prisma:migrate:status` | PASS（唯讀，14 migrations up to date） |
+| `git diff --check` | PASS |
+
+#### Results
+
+- 凍結 allowlist 三欄位（`displayName`/`role`/`canCreateCourse`）落地 `PATCH /admin/accounts/:id`；`mustChangePassword` 走獨立 step-up 保護的 `require-password-change` route。
+- 提權至 admin 的 step-up 在 service 層鎖內判定（method-level `StepUpGuard` 會誤擋 displayName 更新，故不直接掛）；self-role 403 防最後 admin 自降權。
+- 所有 revoke/lifecycle 行為留在 disable/restore/reset 專責端點；profile update 不撤 session/CLI/token（e2e 已斷言）。
+- 人工 Checkpoint 2 待使用者抽查（update 前後 DB rows、disabled→restore、提權 step-up、CLI 不撤、三決策點）。

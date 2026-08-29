@@ -36,6 +36,10 @@ describe('OpenAPI document (e2e)', () => {
     expect(paths).toContain('/api/v1/admin/accounts');
     expect(paths).toContain('/api/v1/admin/accounts/{id}');
     expect(paths).toContain('/api/v1/admin/accounts/{id}/permissions');
+    // BE-8.2 CP2 — account profile update + mustChangePassword gate.
+    expect(paths).toContain(
+      '/api/v1/admin/accounts/{id}/require-password-change',
+    );
     // Health routes stay outside /api/v1 per the global-prefix exclusion.
     expect(paths).toContain('/health/live');
     expect(paths).toContain('/health/ready');
@@ -81,6 +85,19 @@ describe('OpenAPI document (e2e)', () => {
     expect(res.body.components.schemas.EnrollmentDto).toBeDefined();
     expect(res.body.components.schemas.EnrollmentStudentDto).toBeDefined();
     expect(res.body.components.schemas.MyCourseDto).toBeDefined();
+
+    // BE-8.2 CP2 — UpdateAccountDto allowlist has no sensitive fields/examples.
+    const updateAccount = res.body.components.schemas.UpdateAccountDto;
+    expect(updateAccount).toBeDefined();
+    const updateProps = Object.keys(updateAccount.properties ?? {});
+    expect(updateProps).toEqual(
+      expect.arrayContaining(['displayName', 'role', 'canCreateCourse']),
+    );
+    expect(updateProps).not.toContain('password');
+    expect(updateProps).not.toContain('passwordHash');
+    expect(updateProps).not.toContain('username');
+    expect(updateProps).not.toContain('status');
+    expect(JSON.stringify(updateAccount)).not.toContain('password');
   });
 
   it('GET /api/docs → 200 Swagger UI HTML', async () => {
