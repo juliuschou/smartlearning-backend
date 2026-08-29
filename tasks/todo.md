@@ -2235,4 +2235,4 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - 凍結 allowlist 三欄位（`displayName`/`role`/`canCreateCourse`）落地 `PATCH /admin/accounts/:id`；`mustChangePassword` 走獨立 step-up 保護的 `require-password-change` route。
 - 提權至 admin 的 step-up 在 service 層鎖內判定（method-level `StepUpGuard` 會誤擋 displayName 更新，故不直接掛）；self-role 403 防最後 admin 自降權。
 - 所有 revoke/lifecycle 行為留在 disable/restore/reset 專責端點；profile update 不撤 session/CLI/token（e2e 已斷言）。
-- 人工 Checkpoint 2 待使用者抽查（update 前後 DB rows、disabled→restore、提權 step-up、CLI 不撤、三決策點）。
+- **人工 Checkpoint 2 — verified（2026-08-30）**：新增 `test/manual-cp2-verify.e2e-spec.ts`（DB-backed，`smartlearning_test`）實測全部五項 — (1) update 前後 DB rows vs response DTO（僅 allowlist 欄位變更，username/status/hash/createdAt 未動）、(2) disabled update 403 → restore → 200、(3) 提權 step-up 403 `AUTH_STEP_UP_REQUIRED` → step-up → 200、(4) `canCreateCourse=false` 後 CLI credential 仍 active（M2 紅卡 #8）→ disable 後 revoked `CLI_CREDENTIAL_REVOKED`、(5) 三決策點（self-role 403、self displayName 200、require-password-change gate 201）。PASS — 1 suite / 1 test。
