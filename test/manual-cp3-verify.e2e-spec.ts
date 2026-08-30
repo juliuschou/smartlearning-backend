@@ -153,10 +153,10 @@ describe('BE-8.3 CP3 manual Checkpoint 3 verification', () => {
     requireDatabase();
     const admin = await login(ADMIN.username, ADMIN.password);
     const teacher = await createTeacher(admin);
-    const course = await teacher.agent
+    const course = await teacher.agent.agent
       .post('/api/v1/courses')
       .set('Origin', ORIGIN)
-      .set(CSRF_HEADER, teacher.csrf)
+      .set(CSRF_HEADER, teacher.agent.csrf)
       .send({ name: 'CP3 Manual Course' });
     expect(course.status).toBe(201);
     const courseId = course.body.data.id as string;
@@ -352,7 +352,7 @@ describe('BE-8.3 CP3 manual Checkpoint 3 verification', () => {
     const winner = raceResponses.find((response) => response.status === 201);
     const loser = raceResponses.find((response) => response.status === 409);
     expect(winner?.body.data.rawKey).toBeTruthy();
-    expect(loser?.body.data.rawKey).toBeUndefined();
+    expect(loser?.body.data?.rawKey).toBeUndefined();
     expect(JSON.stringify(loser?.body)).not.toMatch(/keyHash|rawKey/i);
 
     const raceSuccessors = await prisma.prisma.cliCredential.findMany({
