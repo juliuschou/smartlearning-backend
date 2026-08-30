@@ -13,6 +13,9 @@ describe('Pino auth redaction', () => {
         'req.headers.cookie',
         'req.headers["x-csrf-token"]',
         'req.headers["x-cli-key"]',
+        'req.headers["x-validation-token"]',
+        'req.headers["idempotency-key"]',
+        'req.body.payloadHash',
         'res.headers["set-cookie"]',
         'res.body.rawKey',
         'res.body.data.rawKey',
@@ -54,11 +57,14 @@ describe('Pino auth redaction', () => {
             tempPassword: 'temp-secret',
             username: 'student-username-safe',
             displayName: 'Student Display Safe',
+            payloadHash: 'payload-hash-secret',
           },
           headers: {
             cookie: '__Host-session=session-secret',
             'x-csrf-token': 'csrf-secret',
             'x-cli-key': 'cli-key-secret',
+            'x-validation-token': 'validation-token-secret',
+            'idempotency-key': 'idempotency-key-secret',
           },
           handshake: {
             auth: {
@@ -99,6 +105,9 @@ describe('Pino auth redaction', () => {
     expect(output).not.toContain('session-secret');
     expect(output).not.toContain('csrf-secret');
     expect(output).not.toContain('cli-key-secret');
+    expect(output).not.toContain('validation-token-secret');
+    expect(output).not.toContain('idempotency-key-secret');
+    expect(output).not.toContain('payload-hash-secret');
     expect(output).not.toContain('response-secret');
     expect(output).not.toContain('enveloped-raw-key-secret');
     expect(output).not.toContain('top-level-raw-key-secret');

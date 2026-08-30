@@ -12,14 +12,26 @@ import { CourseService } from '../application/course.service';
 import {
   SessionGuard,
   CsrfGuard,
-  CanCreateCourseGuard,
   TeacherOrAdminGuard,
   CurrentAccount,
+  CourseActorGuard,
+  CourseCsrfGuard,
+  CurrentCourseActor,
 } from '../../../common/auth';
-import type { AuthContext } from '../../../common/auth';
-import { CreateCourseDto, CourseDto } from './dto/course.dto';
+import type { AuthContext, CourseActorContext } from '../../../common/auth';
+import {
+  CliCourseSummaryDto,
+  CreateCourseDto,
+  CourseDto,
+  ListCoursesQueryDto,
+} from './dto/course.dto';
 import { type Page } from '../../../common/pagination';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiExtraModels, ApiHeader, ApiTags } from '@nestjs/swagger';
+import { OperationRateLimitGuard } from '../../rate-limit/operation-rate-limit.guard';
+import {
+  OperationRateLimit,
+  OperationRateLimitPolicy,
+} from '../../rate-limit/operation-rate-limit';
 
 /**
  * Course endpoints under /api/v1/courses.
@@ -28,37 +40,55 @@ import { ApiTags } from '@nestjs/swagger';
  * archive. Question/live-session endpoints are later phases.
  */
 @ApiTags('courses')
+@ApiExtraModels(CourseDto, CliCourseSummaryDto)
 @Controller({ path: 'courses', version: '1' })
 export class CoursesController {
   constructor(private readonly courses: CourseService) {}
 
   @Post()
-  @UseGuards(SessionGuard, CsrfGuard, TeacherOrAdminGuard, CanCreateCourseGuard)
+  @ApiHeader({
+    name: 'X-CLI-Key',
+    required: false,
+    description:
+      'CLI credential alternative to a Web session. If supplied, invalid credentials do not fall back to cookies.',
+  })
+  @OperationRateLimit(OperationRateLimitPolicy.CLI_COURSES_CREATE)
+  @UseGuards(CourseActorGuard, OperationRateLimitGuard, CourseCsrfGuard)
   async create(
     @Body() dto: CreateCourseDto,
-    @CurrentAccount() auth: AuthContext,
-  ): Promise<CourseDto> {
+    @CurrentCourseActor() actor: CourseActorContext,
+  ): Promise<CourseDto | CliCourseSummaryDto> {
     const course = await this.courses.createCourse({
-      ownerAccountId: auth.account.id,
+      ownerAccountId: actor.accountId,
       name: dto.name,
       description: dto.description,
     });
-    return toDto(course);
+    return actor.kind === 'cli' ? toCliDto(course) : toDto(course);
   }
 
   @Get()
-  @UseGuards(SessionGuard, TeacherOrAdminGuard)
+  @ApiHeader({
+    name: 'X-CLI-Key',
+    required: false,
+    description:
+      'CLI credential alternative to a Web session. If supplied, invalid credentials do not fall back to cookies.',
+  })
+  @OperationRateLimit(OperationRateLimitPolicy.CLI_COURSES_LIST)
+  @UseGuards(CourseActorGuard, OperationRateLimitGuard)
   async list(
-    @CurrentAccount() auth: AuthContext,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-  ): Promise<Page<CourseDto>> {
+    @CurrentCourseActor() actor: CourseActorContext,
+    @Query() query: ListCoursesQueryDto,
+  ): Promise<Page<CourseDto> | Page<CliCourseSummaryDto>> {
+    if (actor.kind === 'cli') {
+      return this.courses.listOwnedDraftCourseSummaries(
+        { id: actor.accountId, role: actor.role },
+        query,
+      );
+    }
+
     const result = await this.courses.listOwnedCourses(
-      { id: auth.account.id, role: auth.account.role },
-      {
-        page: page ? Number(page) : undefined,
-        pageSize: pageSize ? Number(pageSize) : undefined,
-      },
+      { id: actor.accountId, role: actor.role },
+      query,
     );
     return {
       data: result.data.map(toDto),
@@ -91,6 +121,18 @@ export class CoursesController {
     });
     return toDto(course);
   }
+}
+
+function toCliDto(course: {
+  id: string;
+  name: string;
+  status: string;
+}): CliCourseSummaryDto {
+  return {
+    id: course.id,
+    name: course.name,
+    status: course.status,
+  };
 }
 
 function toDto(course: {

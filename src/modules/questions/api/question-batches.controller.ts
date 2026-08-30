@@ -8,7 +8,12 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiHeader, ApiTags } from '@nestjs/swagger';
+import { OperationRateLimitGuard } from '../../rate-limit/operation-rate-limit.guard';
+import {
+  OperationRateLimit,
+  OperationRateLimitPolicy,
+} from '../../rate-limit/operation-rate-limit';
 import {
   BatchActorGuard,
   BatchCsrfGuard,
@@ -38,12 +43,19 @@ const VALIDATION_TOKEN_HEADER = 'x-validation-token';
  * contract validation to the domain layer (`validateBatch` → `validateQuestion`).
  */
 @ApiTags('question-batches')
+@ApiHeader({
+  name: 'X-CLI-Key',
+  required: false,
+  description:
+    'CLI credential alternative to a Web session. If supplied, invalid credentials do not fall back to cookies.',
+})
 @Controller({ path: 'courses', version: '1' })
 export class QuestionBatchesController {
   constructor(private readonly batches: QuestionBatchService) {}
 
   @Post(':courseId/question-batches/validate')
-  @UseGuards(BatchActorGuard, BatchCsrfGuard)
+  @OperationRateLimit(OperationRateLimitPolicy.CLI_BATCH_VALIDATE)
+  @UseGuards(BatchActorGuard, OperationRateLimitGuard, BatchCsrfGuard)
   async validate(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
     @Body(
@@ -63,7 +75,8 @@ export class QuestionBatchesController {
   }
 
   @Post(':courseId/question-batches/confirm')
-  @UseGuards(BatchActorGuard, BatchCsrfGuard)
+  @OperationRateLimit(OperationRateLimitPolicy.CLI_BATCH_CONFIRM)
+  @UseGuards(BatchActorGuard, OperationRateLimitGuard, BatchCsrfGuard)
   async confirm(
     @Param('courseId', new ParseUUIDPipe()) courseId: string,
     @Body(

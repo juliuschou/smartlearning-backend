@@ -100,6 +100,30 @@ export class CourseService {
     return toPage(data, total, req);
   }
 
+  /** CLI projection: owner-scoped draft Courses only, with no extra fields. */
+  async listOwnedDraftCourseSummaries(
+    caller: { id: string; role: string },
+    raw: { page?: number; pageSize?: number },
+  ): Promise<Page<{ id: string; name: string; status: string }>> {
+    this.assertTeacherOrAdmin(caller.role);
+    const req: PageRequest = normalizePageRequest(raw);
+    const where = {
+      ownerAccountId: caller.id,
+      status: CourseStatus.DRAFT,
+    };
+    const [data, total] = await Promise.all([
+      this.db.course.findMany({
+        where,
+        select: { id: true, name: true, status: true },
+        orderBy: { createdAt: 'desc' },
+        skip: (req.page - 1) * req.pageSize,
+        take: req.pageSize,
+      }),
+      this.db.course.count({ where }),
+    ]);
+    return toPage(data, total, req);
+  }
+
   /**
    * Get a course by id. Caller must be the owner (or admin). Throws
    * NotFoundError if missing, ForbiddenError if not authorized.

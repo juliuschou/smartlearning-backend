@@ -77,6 +77,46 @@ describe('OpenAPI document (e2e)', () => {
     ).toContain('EnrollmentDto');
     expect(roster.post.responses['409'].description).toMatch(/Archived course/);
 
+    const courses = res.body.paths['/api/v1/courses'];
+    for (const operation of [courses.get, courses.post]) {
+      expect(operation.parameters).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'X-CLI-Key',
+            in: 'header',
+            required: false,
+          }),
+        ]),
+      );
+    }
+    expect(courses.get.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'page', in: 'query' }),
+        expect.objectContaining({
+          name: 'pageSize',
+          in: 'query',
+          schema: expect.objectContaining({ minimum: 1, maximum: 100 }),
+        }),
+      ]),
+    );
+    expect(res.body.components.schemas.CliCourseSummaryDto).toBeDefined();
+    expect(
+      Object.keys(res.body.components.schemas.CliCourseSummaryDto.properties),
+    ).toEqual(['id', 'name', 'status']);
+
+    const validateBatch =
+      res.body.paths['/api/v1/courses/{courseId}/question-batches/validate']
+        .post;
+    expect(validateBatch.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'X-CLI-Key',
+          in: 'header',
+          required: false,
+        }),
+      ]),
+    );
+
     const myCourses = res.body.paths['/api/v1/me/courses'].get;
     expect(myCourses.parameters).toEqual(
       expect.arrayContaining([

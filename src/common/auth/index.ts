@@ -13,4 +13,7 @@ export * from './current-cli-account.decorator';
 export * from './batch-actor.guard';
 export * from './current-batch-actor.decorator';
 export * from './batch-csrf.guard';
+export * from './course-actor.guard';
+export * from './current-course-actor.decorator';
+export * from './course-csrf.guard';
 export * from './auth.module';

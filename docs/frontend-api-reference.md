@@ -2,7 +2,7 @@
 
 後端 NestJS 11，所有 HTTP 端點在 `/api/v1` prefix 下（health probes 除外）。本文為前端開發基準，涵蓋老師出題、課堂使用（teacher）、學員課堂使用三大功能。
 
-> 生成日期：2026-08-28。對應後端 runtime：Phase B student/enrollment/account-bound participant、BE-5 closed-session archive governance、BE-7 durable realtime/replay runtime、兩個契約修正（`/auth/session` expiresAt、batch preview clientRef）及既有回歸證據；BE-7 PostgreSQL migration/DB-backed regression evidence 仍待授權與執行。
+> 生成日期：2026-08-31。對應後端 runtime：Phase B student/enrollment/account-bound participant、BE-5 closed-session archive governance、BE-7 durable realtime/replay runtime，以及 BE-8.4 CP4 CLI Course collection 與 per-credential in-process rate limit。
 
 ---
 
@@ -47,15 +47,16 @@
   - `__Host-session`（HttpOnly，session token）
   - `__Host-csrf`（非 HttpOnly，前端可讀）
 - 後續請求瀏覽器自動帶 session cookie。前端讀 `__Host-csrf` 的值作為 CSRF token。
+- **CLI credential**：CLI-enabled routes 接受 `X-CLI-Key`。若 request 同時帶 cookie 與此 header，header 路徑優先；無效或撤銷 key 不會 fallback 到 cookie。raw key 不得記錄或回顯。
 
-### 0.3 CSRF（所有 mutation 必須）
+### 0.3 CSRF（Web mutation 必須）
 
-凡 `POST/PUT/PATCH/DELETE` 需同時滿足：
+Web session 的 `POST/PUT/PATCH/DELETE` 需同時滿足：
 
 1. `Origin` header 在 `CORS_ORIGIN` allowlist 內（exact match）
 2. `X-CSRF-Token` header 等於 `__Host-csrf` cookie 值（constant-time 比對）
 
-`GET` 不需 CSRF。`POST /auth/login` 刻意不套 CSRF。
+`GET` 不需 CSRF。`POST /auth/login` 刻意不套 CSRF；以 `X-CLI-Key` 成功驗證的 CLI mutation 亦不使用 browser CSRF。
 
 ### 0.4 Idempotency-Key（部分端點必須）
 
@@ -92,12 +93,20 @@ admin 的 reset-password / disable / restore / cli-credentials 需先 `POST /aut
 
 ### 1.1 課程
 
-| Method | Path                     | 用途                                                     | 守護                                              | Body/Query               |
-| ------ | ------------------------ | -------------------------------------------------------- | ------------------------------------------------- | ------------------------ |
-| POST   | `/courses`               | 建課程                                                   | Session + CSRF + TeacherOrAdmin + CanCreateCourse | `{ name, description? }` |
-| GET    | `/courses?page&pageSize` | 列課程（teacher 列自己 owner；admin 目前亦列自己 owner） | Session + TeacherOrAdmin                          | query                    |
-| GET    | `/courses/:id`           | 課程詳情（owner/admin 可跨讀，非 owner 404）             | Session + TeacherOrAdmin                          | —                        |
-| POST   | `/courses/:id/archive`   | 封存（draft→archived，須無 waiting/active session）      | Session + CSRF + TeacherOrAdmin                   | —                        |
+| Method | Path                     | 用途                                                | 守護                                                           | Body/Query               |
+| ------ | ------------------------ | --------------------------------------------------- | -------------------------------------------------------------- | ------------------------ |
+| POST   | `/courses`               | 建課程                                              | Web Session + CSRF，或 `X-CLI-Key`; teacher/admin + permission | `{ name, description? }` |
+| GET    | `/courses?page&pageSize` | 列課程                                              | Web Session，或 `X-CLI-Key`; teacher/admin                     | query                    |
+| GET    | `/courses/:id`           | 課程詳情（owner/admin 可跨讀，非 owner 404）        | Web Session + TeacherOrAdmin                                   | —                        |
+| POST   | `/courses/:id/archive`   | 封存（draft→archived，須無 waiting/active session） | Web Session + CSRF + TeacherOrAdmin                            | —                        |
+
+Web list/create 保持既有 owner-scoped `CourseDto`（Web list 包含 draft/archived）。CLI list 僅回 credential account 擁有的 draft Courses，且 pagination total 同樣排除 archived/foreign rows；CLI list/create 成功資料使用精簡 projection：
+
+```json
+{ "id": "UUID", "name": "string", "status": "draft" }
+```
+
+`canCreateCourse=false` 不撤銷 CLI key：CLI list 仍可用，create 回 403。CLI Course 與 CLI question-batch 操作以 `CliCredential.id` 建立 operation-specific in-process fixed-window bucket；429 為 `RATE_LIMITED` 並提供 `error.retryAfterSeconds`。Web/login bucket 不受 CLI 流量影響；multi-instance Redis sharing 留待 CP5。
 
 **CourseDto**：
 
@@ -436,21 +445,21 @@ POST /live-sessions/:id/submissions
 
 class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會先擋。CLI credential 相關操作需 step-up。
 
-| Method | Path                                                       | 用途                                      | step-up |
-| ------ | ---------------------------------------------------------- | ----------------------------------------- | ------- |
-| GET    | `/admin/accounts?page&pageSize`                            | 分頁列出帳號 metadata                     | 無      |
-| GET    | `/admin/accounts/:id`                                      | 讀取單一帳號 metadata                     | 無      |
-| POST   | `/admin/accounts`                                          | 建帳號（admin/teacher/student）           | 無      |
-| PATCH  | `/admin/accounts/:id/permissions`                          | 更新 `canCreateCourse` 權限（只改此欄位） | 無      |
+| Method | Path                                                       | 用途                                                      | step-up         |
+| ------ | ---------------------------------------------------------- | --------------------------------------------------------- | --------------- |
+| GET    | `/admin/accounts?page&pageSize`                            | 分頁列出帳號 metadata                                     | 無              |
+| GET    | `/admin/accounts/:id`                                      | 讀取單一帳號 metadata                                     | 無              |
+| POST   | `/admin/accounts`                                          | 建帳號（admin/teacher/student）                           | 無              |
+| PATCH  | `/admin/accounts/:id/permissions`                          | 更新 `canCreateCourse` 權限（只改此欄位）                 | 無              |
 | PATCH  | `/admin/accounts/:id`                                      | 更新 `displayName`/`role`/`canCreateCourse`（BE-8.2 CP2） | 提權至 admin 需 |
-| POST   | `/admin/accounts/:id/require-password-change`             | 設/清 `mustChangePassword` gate（BE-8.2 CP2） | 需      |
-| POST   | `/admin/accounts/:id/reset-password`                       | 重設密碼                                  | 需      |
-| POST   | `/admin/accounts/:id/disable`                              | 停用（撤 session/CLI/未用 token）         | 需      |
-| POST   | `/admin/accounts/:id/restore`                              | 復原                                      | 需      |
-| POST   | `/admin/accounts/:id/cli-credentials`                             | 建 CLI key（`rawKey` 只回一次）                    | 需      |
-| GET    | `/admin/accounts/:id/cli-credentials`                             | 列 CLI key metadata                                | 無      |
-| POST   | `/admin/accounts/:id/cli-credentials/:credentialId/rotate`        | 立即輪替 CLI key（successor `rawKey` 只回一次）   | 需      |
-| POST   | `/admin/accounts/:id/cli-credentials/:credentialId/revoke`        | 撤 CLI key                                         | 需      |
+| POST   | `/admin/accounts/:id/require-password-change`              | 設/清 `mustChangePassword` gate（BE-8.2 CP2）             | 需              |
+| POST   | `/admin/accounts/:id/reset-password`                       | 重設密碼                                                  | 需              |
+| POST   | `/admin/accounts/:id/disable`                              | 停用（撤 session/CLI/未用 token）                         | 需              |
+| POST   | `/admin/accounts/:id/restore`                              | 復原                                                      | 需              |
+| POST   | `/admin/accounts/:id/cli-credentials`                      | 建 CLI key（`rawKey` 只回一次）                           | 需              |
+| GET    | `/admin/accounts/:id/cli-credentials`                      | 列 CLI key metadata                                       | 無              |
+| POST   | `/admin/accounts/:id/cli-credentials/:credentialId/rotate` | 立即輪替 CLI key（successor `rawKey` 只回一次）           | 需              |
+| POST   | `/admin/accounts/:id/cli-credentials/:credentialId/revoke` | 撤 CLI key                                                | 需              |
 
 **建帳號 body**：`{ username, displayName, role, canCreateCourse, tempPassword }`。student 的 `canCreateCourse` 恆為 false。
 
@@ -480,13 +489,13 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 
 ## 6. 已知限制（前端需設計 fallback）
 
-| 限制                                                                | 影響                                      | 前端對策                                                                                  |
-| ------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 無 `GET /live-sessions/:id/results`（整場彙整）                     | teacher 全班總覽                          | 逐題呼叫 per-question results 聚合                                                        |
-| Realtime publisher/replay 受 bounded retention 與 Redis policy 約束 | dead/expired/gap 或 required Redis 不可用 | 處理 `sync.required`，採用 actor-safe snapshot；必要時顯示 retryable unavailable          |
-| auto-close scheduler 已支援 active session sweep                    | abandoned session 自動收尾                | 仍提供 teacher 手動 close/cancel，監聽 `session.closed`                                   |
-| admin account update 僅凍結 allowlist（`displayName`/`role`/`canCreateCourse`） | 帳號管理 UI | 使用 `PATCH /admin/accounts/:id`；`mustChangePassword` 走 `require-password-change`；disable/restore/CLI credential 仍走各自端點 |
-| OpenAPI 顯示內層 DTO（非 envelope）                                 | 自動產 client 型別                        | client 手動解 `data`，或自訂 transformer                                                  |
+| 限制                                                                            | 影響                                      | 前端對策                                                                                                                         |
+| ------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 無 `GET /live-sessions/:id/results`（整場彙整）                                 | teacher 全班總覽                          | 逐題呼叫 per-question results 聚合                                                                                               |
+| Realtime publisher/replay 受 bounded retention 與 Redis policy 約束             | dead/expired/gap 或 required Redis 不可用 | 處理 `sync.required`，採用 actor-safe snapshot；必要時顯示 retryable unavailable                                                 |
+| auto-close scheduler 已支援 active session sweep                                | abandoned session 自動收尾                | 仍提供 teacher 手動 close/cancel，監聽 `session.closed`                                                                          |
+| admin account update 僅凍結 allowlist（`displayName`/`role`/`canCreateCourse`） | 帳號管理 UI                               | 使用 `PATCH /admin/accounts/:id`；`mustChangePassword` 走 `require-password-change`；disable/restore/CLI credential 仍走各自端點 |
+| OpenAPI 顯示內層 DTO（非 envelope）                                             | 自動產 client 型別                        | client 手動解 `data`，或自訂 transformer                                                                                         |
 
 ---
 

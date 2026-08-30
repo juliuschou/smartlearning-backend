@@ -1996,20 +1996,20 @@ The verification agent confirmed the working tree was unchanged by these checks.
 
 #### Verification
 
-| Command / check | Result |
-| --- | --- |
-| `NODE_ENV=test npm run prisma:migrate:deploy` | PASS — applied `20260828110000_add_durable_realtime` to `smartlearning_test`; no other migration was pending. |
-| `NODE_ENV=test npm run prisma:migrate:status` (post-deploy) | PASS — 14 migrations found; database schema up to date. |
-| Read-only PostgreSQL schema probe | PASS — `live_session_event` exists; both durable columns and migration record are present. |
-| PostgreSQL runtime | PASS — `smart-learning-pg-dev` is running (no Docker healthcheck); `pg_isready` accepted connections on `localhost:5432`. |
-| Redis runtime | PASS — `smartlearning-redis` healthy; `redis-cli ping` returned `PONG`. |
-| `NODE_ENV=test npm run test:integration -- --runInBand --silent` | PASS — 3 suites / 16 tests, no skips. |
-| Targeted E2E matrix (`live-session-realtime`, close/cancel, results, archive, route matrix, CP3) | FAIL — 4 suites passed, 2 failed; 59 passed, 3 failed, 62 total; Jest did not exit because of an open handle after a failing realtime test. |
-| Isolated realtime E2E | FAIL — 1 failed / 17 passed; vote-to-reveal assertion at `test/live-session-realtime.e2e-spec.ts:655` expected `votedCount=1`, received `0`. Outbox rows were delivered in order with a teacher `session.snapshot` at seq 4 before targeted `result.updated` at seq 5, supporting a stale counts event/order defect. |
-| Isolated CP3 terminal-state E2E | FAIL — expected 409, received 401 at `test/cp3-terminal-state.e2e-spec.ts:322`; `ParticipantService.authenticate` rejects the terminal session before submission handling. |
-| Isolated close-question realtime test | PASS — 1 selected test passed; the combined-run close timeout is treated as cross-suite/open-handle interference, not a standalone failure. |
-| Full E2E suite | NOT RUN — targeted E2E failures prevented the planned expansion. |
-| `git diff --check` | PASS — no whitespace errors. |
+| Command / check                                                                                  | Result                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV=test npm run prisma:migrate:deploy`                                                    | PASS — applied `20260828110000_add_durable_realtime` to `smartlearning_test`; no other migration was pending.                                                                                                                                                                                                        |
+| `NODE_ENV=test npm run prisma:migrate:status` (post-deploy)                                      | PASS — 14 migrations found; database schema up to date.                                                                                                                                                                                                                                                              |
+| Read-only PostgreSQL schema probe                                                                | PASS — `live_session_event` exists; both durable columns and migration record are present.                                                                                                                                                                                                                           |
+| PostgreSQL runtime                                                                               | PASS — `smart-learning-pg-dev` is running (no Docker healthcheck); `pg_isready` accepted connections on `localhost:5432`.                                                                                                                                                                                            |
+| Redis runtime                                                                                    | PASS — `smartlearning-redis` healthy; `redis-cli ping` returned `PONG`.                                                                                                                                                                                                                                              |
+| `NODE_ENV=test npm run test:integration -- --runInBand --silent`                                 | PASS — 3 suites / 16 tests, no skips.                                                                                                                                                                                                                                                                                |
+| Targeted E2E matrix (`live-session-realtime`, close/cancel, results, archive, route matrix, CP3) | FAIL — 4 suites passed, 2 failed; 59 passed, 3 failed, 62 total; Jest did not exit because of an open handle after a failing realtime test.                                                                                                                                                                          |
+| Isolated realtime E2E                                                                            | FAIL — 1 failed / 17 passed; vote-to-reveal assertion at `test/live-session-realtime.e2e-spec.ts:655` expected `votedCount=1`, received `0`. Outbox rows were delivered in order with a teacher `session.snapshot` at seq 4 before targeted `result.updated` at seq 5, supporting a stale counts event/order defect. |
+| Isolated CP3 terminal-state E2E                                                                  | FAIL — expected 409, received 401 at `test/cp3-terminal-state.e2e-spec.ts:322`; `ParticipantService.authenticate` rejects the terminal session before submission handling.                                                                                                                                           |
+| Isolated close-question realtime test                                                            | PASS — 1 selected test passed; the combined-run close timeout is treated as cross-suite/open-handle interference, not a standalone failure.                                                                                                                                                                          |
+| Full E2E suite                                                                                   | NOT RUN — targeted E2E failures prevented the planned expansion.                                                                                                                                                                                                                                                     |
+| `git diff --check`                                                                               | PASS — no whitespace errors.                                                                                                                                                                                                                                                                                         |
 
 #### Results
 
@@ -2093,20 +2093,20 @@ The verification agent confirmed the working tree was unchanged by these checks.
 
 **Verification bundle (all PASS):**
 
-| Command | Result |
-| --- | --- |
-| `npm test -- --runInBand src/modules/realtime/live-session-publisher.spec.ts` | PASS — 1 suite / 11 tests (incl. 4 new lifecycle tests) |
-| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` | PASS — 1 suite / 18 tests |
-| Seven-suite Checkpoint C matrix | PASS — 7 suites / 71 tests, no `40P01`, no skips, no open handles |
-| `NODE_ENV=test npm run test:e2e -- --runInBand --silent` (full) | PASS — 26 suites / 178 tests, no `40P01`, no skips, no open handles |
-| `NODE_ENV=test npm run test:integration -- --runInBand --silent` | PASS — 3 suites / 16 tests |
-| `npm test -- --runInBand` | PASS — 30 suites / 178 tests |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `NODE_ENV=test npm run prisma:migrate:status` | PASS — 14 migrations, schema up to date |
-| `git diff --check` | PASS |
+| Command                                                                                         | Result                                                              |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `npm test -- --runInBand src/modules/realtime/live-session-publisher.spec.ts`                   | PASS — 1 suite / 11 tests (incl. 4 new lifecycle tests)             |
+| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/live-session-realtime.e2e-spec.ts` | PASS — 1 suite / 18 tests                                           |
+| Seven-suite Checkpoint C matrix                                                                 | PASS — 7 suites / 71 tests, no `40P01`, no skips, no open handles   |
+| `NODE_ENV=test npm run test:e2e -- --runInBand --silent` (full)                                 | PASS — 26 suites / 178 tests, no `40P01`, no skips, no open handles |
+| `NODE_ENV=test npm run test:integration -- --runInBand --silent`                                | PASS — 3 suites / 16 tests                                          |
+| `npm test -- --runInBand`                                                                       | PASS — 30 suites / 178 tests                                        |
+| `npm run typecheck`                                                                             | PASS                                                                |
+| `npm run lint:check`                                                                            | PASS                                                                |
+| `npm run format:check`                                                                          | PASS                                                                |
+| `npm run build`                                                                                 | PASS                                                                |
+| `NODE_ENV=test npm run prisma:migrate:status`                                                   | PASS — 14 migrations, schema up to date                             |
+| `git diff --check`                                                                              | PASS                                                                |
 
 **Result:** Checkpoint C lifecycle/realtime/archive matrix and the full authorized verification bundle are green against `smartlearning_test`. The publisher/`truncateAll()` deadlock is resolved deterministically (no fixed sleeps or broad timeouts). This does not claim a release sign-off; it records the Checkpoint C verification gate as passed.
 
@@ -2159,21 +2159,21 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 
 #### Verification（執行結果）
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm test -- --runInBand src/common/auth/session.service.spec.ts` | PASS — 1 suite / 6 tests |
+| 命令                                                                                 | 結果                                                |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| `npm test -- --runInBand src/common/auth/session.service.spec.ts`                    | PASS — 1 suite / 6 tests                            |
 | `NODE_ENV=test npm run test:e2e -- --runInBand test/auth-session-expiry.e2e-spec.ts` | PASS — 1 suite / 9 tests（8 凍結案例 + skip-guard） |
-| 既有回歸（auth-courses / auth-rate-limit / api-envelope） | PASS — 3 suites / 25 tests，無回歸 |
-| `npm run prisma:validate` | PASS |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `npm test -- --runInBand` | PASS — 31 suites / 184 tests |
-| `NODE_ENV=test npm run test:integration -- --runInBand` | PASS — 3 suites / 16 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand` | PASS — 27 suites / 187 tests |
-| `NODE_ENV=test npm run prisma:migrate:status` | PASS — 14 migrations, schema up to date |
-| `git diff --check` | PASS |
+| 既有回歸（auth-courses / auth-rate-limit / api-envelope）                            | PASS — 3 suites / 25 tests，無回歸                  |
+| `npm run prisma:validate`                                                            | PASS                                                |
+| `npm run typecheck`                                                                  | PASS                                                |
+| `npm run lint:check`                                                                 | PASS                                                |
+| `npm run format:check`                                                               | PASS                                                |
+| `npm run build`                                                                      | PASS                                                |
+| `npm test -- --runInBand`                                                            | PASS — 31 suites / 184 tests                        |
+| `NODE_ENV=test npm run test:integration -- --runInBand`                              | PASS — 3 suites / 16 tests                          |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`                                      | PASS — 27 suites / 187 tests                        |
+| `NODE_ENV=test npm run prisma:migrate:status`                                        | PASS — 14 migrations, schema up to date             |
+| `git diff --check`                                                                   | PASS                                                |
 
 #### Results
 
@@ -2214,21 +2214,21 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 
 #### Verification（執行結果）
 
-| 命令 | 結果 |
-| --- | --- |
-| `npm test -- --runInBand src/modules/identity/application/account.service.spec.ts` | PASS — 1 suite / 13 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/account-admin.e2e-spec.ts` | PASS — 1 suite / 23 tests（10 既有 + 13 新） |
-| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts` | PASS — 1 suite / 3 tests（新 path + DTO schema） |
-| `npm run prisma:validate` | PASS |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `npm test -- --runInBand` | PASS — 32 suites / 197 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand` | PASS — 27 suites / 200 tests |
-| `NODE_ENV=test npm run test:integration -- --runInBand` | PASS — 3 suites / 16 tests |
-| `npm run prisma:migrate:status` | PASS（唯讀，14 migrations up to date） |
-| `git diff --check` | PASS |
+| 命令                                                                               | 結果                                             |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `npm test -- --runInBand src/modules/identity/application/account.service.spec.ts` | PASS — 1 suite / 13 tests                        |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/account-admin.e2e-spec.ts`     | PASS — 1 suite / 23 tests（10 既有 + 13 新）     |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`           | PASS — 1 suite / 3 tests（新 path + DTO schema） |
+| `npm run prisma:validate`                                                          | PASS                                             |
+| `npm run typecheck`                                                                | PASS                                             |
+| `npm run lint:check`                                                               | PASS                                             |
+| `npm run format:check`                                                             | PASS                                             |
+| `npm run build`                                                                    | PASS                                             |
+| `npm test -- --runInBand`                                                          | PASS — 32 suites / 197 tests                     |
+| `NODE_ENV=test npm run test:e2e -- --runInBand`                                    | PASS — 27 suites / 200 tests                     |
+| `NODE_ENV=test npm run test:integration -- --runInBand`                            | PASS — 3 suites / 16 tests                       |
+| `npm run prisma:migrate:status`                                                    | PASS（唯讀，14 migrations up to date）           |
+| `git diff --check`                                                                 | PASS                                             |
 
 #### Results
 
@@ -2291,7 +2291,85 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 ### Manual Checkpoint 3 — mandatory stop
 
 - [x] Add `test/manual-cp3-verify.e2e-spec.ts` following CP2: guarded `smartlearning_test`, publisher-quiesced cleanup, direct DB inspection, one auditable scenario, raw keys memory-only。
-- [ ] Do not run it automatically. Present exactly:
-  `NODE_ENV=test npm run test:e2e -- --runInBand test/manual-cp3-verify.e2e-spec.ts`
-- [ ] Wait for explicit user confirmation of predecessor/successor behavior, DB hash-only lineage, token non-reuse, one-successor race result, and no TTL/grace/pending fields。
-- [ ] Only after confirmation record the manual result here, stop the session, and recommend a new session for CP4。
+- [x] Do not run it automatically. Presented exactly:
+      `NODE_ENV=test npm run test:e2e -- --runInBand test/manual-cp3-verify.e2e-spec.ts`
+- [x] User explicitly confirmed predecessor/successor behavior, DB hash-only lineage, token non-reuse, one-successor race result, and no TTL/grace/pending fields（2026-08-30）。
+- [x] **Manual Checkpoint 3 — verified（2026-08-30）**。User confirmed the manual evidence and authorized recording the result without rerunning the DB-backed manual suite; CP4 started in the subsequent session。
+
+## 2026-08-30 BE-8.4 CP4 — CLI courses and CLI/batch rate limit
+
+### Context and acceptance criteria
+
+- [ ] Reuse `GET/POST /api/v1/courses` as Web-or-CLI collection routes; a supplied `X-CLI-Key` selects CLI auth and never falls back to a valid Web cookie on failure. Detail/archive remain Web-only。
+- [ ] CLI list returns only caller-owned draft Courses with exact `id`/`name`/`status` projection and accurate owner/draft-filtered pagination; Web list contract remains unchanged。
+- [ ] CLI create reuses `CourseService.createCourse()` so the credential account is the immutable owner and role/`canCreateCourse` are rechecked under the account lock; CLI response is narrow, Web response remains full。
+- [ ] `canCreateCourse=false` leaves the CLI credential active and list usable while create returns 403; account disable/revoke/rotation semantics remain unchanged。
+- [ ] Add per-`CliCredential.id` in-memory fixed-window policies for courses list/create and batch validate/confirm; Web and login buckets remain untouched and each policy/key is isolated。
+- [ ] 429 uses stable `RATE_LIMITED` + positive `error.retryAfterSeconds`; real-clock expiry restores access. Rate-limited create/validate/confirm produces no prohibited DB side effects。
+- [ ] Validate pagination at the transport boundary; invalid, fractional, non-positive, or excessive values return stable 400 and never pass `NaN` to Prisma。
+- [ ] Update OpenAPI/API reference/env examples/redaction tripwires and prepare a dedicated manual CP4 spec after automated verification。
+
+### Contract freeze / working notes
+
+- Shared collection routes only; `GET /courses/:id` and archive do not accept CLI auth。
+- CLI Course projection is `id`/`name`/`status`; list filters `ownerAccountId + status=draft`; Web projection/list behavior is preserved。
+- Current supported CLI scope is `all_courses`; `single_course` has no persisted target and must fail closed rather than gain broad access。
+- Four independent policies: courses-list 60/60s, courses-create 10/60s, batch-validate 30/60s, batch-confirm 20/60s; tests override with low limits。
+- New operation limiter uses atomic consume semantics and explicit runtime `Number()` coercion. Existing login `RateLimiterService` APIs/state are unchanged。
+- Guard order is actor authentication → CLI operation limiter → conditional CSRF → controller/service. Web actors bypass CP4 buckets。
+- CP4 is single-process/in-memory; restart clears counters and multi-instance consistency remains CP5 Redis scope。
+- No schema change or migration is expected。
+
+### Risk & rollback
+
+- **Risk: high** — authentication channel selection, credential-scoped abuse control, actor-dependent public DTOs, and batch write/token/idempotency boundaries。
+- **Rollback:** restore Web-only Course collection guards, remove CLI projections/policies/env/docs, and restart to clear ephemeral buckets. No schema/data rollback; committed Courses/questions remain ordinary domain data。
+- **Database boundary:** only `NODE_ENV=test` resolving exactly to guarded `smartlearning_test`; existing test setup migration/truncate boundary is authorized. Never use migrate reset/db push/development cleanup/down migration/direct key reactivation。
+- **Stop conditions:** DB target unclear; any DB suite silently skips; raw key/hash/token leaks; invalid CLI key falls back to Web; Web CSRF/auth behavior regresses; limiter window does not expire in real time; or a 429 request reaches prohibited DB side effects。
+
+### Implementation checklist
+
+- [x] Add generic operation limiter, four typed policies, env validation/examples, decorator/guard, and string-config/expiry/isolation unit tests。
+- [x] Add Course actor/conditional CSRF boundary, validated pagination DTO, CLI draft-summary query, and hybrid list/create controller behavior。
+- [x] Apply CLI-only validate/confirm policies to question batches before service execution。
+- [x] Add focused CLI courses E2E (`test/cli-courses.e2e-spec.ts`); DB-backed execution was attempted only against the guarded test target and is recorded below。
+- [x] Add CLI/batch rate-limit E2E, plus Web/login/credential lifecycle regression assertions in the targeted bundle。
+- [x] Update OpenAPI, `docs/frontend-api-reference.md`, env examples, and redaction tests。
+- [ ] Run targeted → full DB-backed verification and record command/suite/test/skip evidence; current targeted DB run is BLOCKED/FAIL because the guarded test database was unavailable。
+- [ ] Create and run Manual Checkpoint 4 only after automated DB-backed verification is green; stop and wait for explicit user confirmation before CP5。
+
+### Results — focused CLI courses E2E (2026-08-31)
+
+- Added `test/cli-courses.e2e-spec.ts` covering CLI create/list ownership and projection boundaries, permission independence, invalid-key fail-closed behavior, and Web collection-route regression.
+- Reused the guarded `smartlearning_test` setup pattern and `withQuiescedLiveSessionPublisher` cleanup wrapper.
+- Verification: Prettier, repository typecheck, targeted ESLint, targeted Prettier check, and `git diff --check` passed. The full `npm run lint:check` remains blocked by four Prettier diagnostics in pre-existing CP4 production files, which were not edited for this test-only task. DB-backed E2E execution was intentionally not run in this session.
+
+### CP4 focused E2E slice — 2026-08-31
+
+- [x] Add `test/cli-batch-rate-limit.e2e-spec.ts` with low per-policy env overrides applied before app creation and exact environment restoration in teardown.
+- [x] Cover per-`CliCredential.id` isolation, policy isolation, Web bypass, stable 429 `RATE_LIMITED` responses with positive `retryAfterSeconds`, and no DB side effects from rate-limited create/validate/confirm requests.
+- [x] Cover real-clock expiry/recovery with a reserved validation token and idempotency key; use publisher-quiesced cleanup between DB-backed cases.
+- [x] Static verification: Prettier, ESLint, and TypeScript typecheck passed for the current tree.
+- [x] DB-backed execution intentionally not run per request; the suite remains guarded to `smartlearning_test` through existing test setup.
+
+#### Results
+
+- **Changed:** Added the focused DB-backed E2E suite at `test/cli-batch-rate-limit.e2e-spec.ts`; no production files were edited for this slice.
+- **Verified:** `npx prettier --write test/cli-batch-rate-limit.e2e-spec.ts`, `npx eslint test/cli-batch-rate-limit.e2e-spec.ts`, `npx prettier --check test/cli-batch-rate-limit.e2e-spec.ts`, and `npx tsc --noEmit --pretty false` all passed.
+- **Not run:** DB-backed E2E tests, including implicit test-database migration/truncation, were intentionally not executed.
+
+### CP4 targeted DB-backed verification — 2026-08-31
+
+- **Command:** `NODE_ENV=test npm run test:e2e -- --runInBand test/cli-courses.e2e-spec.ts test/cli-batch-rate-limit.e2e-spec.ts test/auth-courses.e2e-spec.ts test/question-batches.e2e-spec.ts test/auth-rate-limit.e2e-spec.ts test/cli-credential.e2e-spec.ts test/openapi.e2e-spec.ts`
+- **Authorization:** user explicitly authorized `NODE_ENV=test`, guarded `smartlearning_test`, and the existing test setup migration/truncation boundary; no reset/db push/development DB operation was used。
+- **Result:** **BLOCKED** for both new CP4 DB-backed suites because the guarded PostgreSQL target was unavailable; combined process exited 1. Existing suites: 5 passed; OpenAPI passed。
+- **Counts:** 7 suites total; 5 passed, 2 blocked suites reported as failed by Jest; 37 tests passed, 13 blocked test cases; 0 snapshots。Captured diagnostics were the suites' explicit `BLOCKED: PostgreSQL migration/schema is unavailable` messages; no lower-level connection error was retained。
+- **Required follow-up:** restore/verify availability of guarded `smartlearning_test`, then rerun the exact targeted command before Manual Checkpoint 4. Blocked tests are not green。
+
+### Focused rate-limit unit coverage — 2026-08-31
+
+- [x] Added service coverage for max+1, FakeClock expiry, policy/credential isolation, and string config coercion.
+- [x] Added guard coverage for Web bypass, CLI `RATE_LIMITED` error, missing actor, and missing credential fail-closed behavior.
+- [x] Added env validation coverage for all eight CLI rate-limit fields, including valid string coercion and invalid lower bounds.
+- [x] Verification: `npx prettier --check src/config/env.validation.spec.ts src/modules/rate-limit/operation-rate-limiter.service.spec.ts src/modules/rate-limit/operation-rate-limit.guard.spec.ts` passed; `npm test -- --runInBand modules/rate-limit/operation-rate-limiter.service.spec.ts modules/rate-limit/operation-rate-limit.guard.spec.ts config/env.validation.spec.ts` passed (3 suites, 21 tests).
+- [x] No production code changed; no DB-backed tests were run.

@@ -87,6 +87,47 @@ export class EnvConfig {
   @Min(1000)
   LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS?: number;
 
+  // Per-CLI-credential operation limits (CP4, in-memory single instance).
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  CLI_COURSES_LIST_RATE_LIMIT_MAX?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1000)
+  CLI_COURSES_LIST_RATE_LIMIT_WINDOW_MS?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  CLI_COURSES_CREATE_RATE_LIMIT_MAX?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1000)
+  CLI_COURSES_CREATE_RATE_LIMIT_WINDOW_MS?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  CLI_BATCH_VALIDATE_RATE_LIMIT_MAX?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1000)
+  CLI_BATCH_VALIDATE_RATE_LIMIT_WINDOW_MS?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  CLI_BATCH_CONFIRM_RATE_LIMIT_MAX?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1000)
+  CLI_BATCH_CONFIRM_RATE_LIMIT_WINDOW_MS?: number;
+
   // Active LiveSession hard limit and maintenance sweep interval.
   @IsNumber()
   @Min(1)
@@ -111,6 +152,8 @@ export function validateEnv(
   // process.env so explicit process env wins and defaults apply.
   const num = (v: string | undefined, fallback: number): number =>
     v != null && v !== '' ? Number(v) : fallback;
+  const optionalNum = (v: string | undefined): number | undefined =>
+    v != null && v !== '' ? Number(v) : undefined;
   const bool = (v: string | undefined): boolean | undefined =>
     v == null || v === '' ? undefined : v === 'true' || v === '1';
 
@@ -129,6 +172,30 @@ export function validateEnv(
     ),
     REALTIME_REDIS_MODE: raw.REALTIME_REDIS_MODE || RealtimeRedisMode.OFF,
     SESSION_COOKIE_SECURE: bool(raw.SESSION_COOKIE_SECURE),
+    CLI_COURSES_LIST_RATE_LIMIT_MAX: optionalNum(
+      raw.CLI_COURSES_LIST_RATE_LIMIT_MAX,
+    ),
+    CLI_COURSES_LIST_RATE_LIMIT_WINDOW_MS: optionalNum(
+      raw.CLI_COURSES_LIST_RATE_LIMIT_WINDOW_MS,
+    ),
+    CLI_COURSES_CREATE_RATE_LIMIT_MAX: optionalNum(
+      raw.CLI_COURSES_CREATE_RATE_LIMIT_MAX,
+    ),
+    CLI_COURSES_CREATE_RATE_LIMIT_WINDOW_MS: optionalNum(
+      raw.CLI_COURSES_CREATE_RATE_LIMIT_WINDOW_MS,
+    ),
+    CLI_BATCH_VALIDATE_RATE_LIMIT_MAX: optionalNum(
+      raw.CLI_BATCH_VALIDATE_RATE_LIMIT_MAX,
+    ),
+    CLI_BATCH_VALIDATE_RATE_LIMIT_WINDOW_MS: optionalNum(
+      raw.CLI_BATCH_VALIDATE_RATE_LIMIT_WINDOW_MS,
+    ),
+    CLI_BATCH_CONFIRM_RATE_LIMIT_MAX: optionalNum(
+      raw.CLI_BATCH_CONFIRM_RATE_LIMIT_MAX,
+    ),
+    CLI_BATCH_CONFIRM_RATE_LIMIT_WINDOW_MS: optionalNum(
+      raw.CLI_BATCH_CONFIRM_RATE_LIMIT_WINDOW_MS,
+    ),
   };
 
   const config = plainToInstance(EnvConfig, merged, {

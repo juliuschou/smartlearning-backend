@@ -1,4 +1,6 @@
 import { Global, Module } from '@nestjs/common';
+import { OperationRateLimitGuard } from './operation-rate-limit.guard';
+import { OperationRateLimiterService } from './operation-rate-limiter.service';
 import { RateLimiterService } from './rate-limiter.service';
 
 /**
@@ -9,7 +11,15 @@ import { RateLimiterService } from './rate-limiter.service';
  */
 @Global()
 @Module({
-  providers: [RateLimiterService],
-  exports: [RateLimiterService],
+  providers: [
+    RateLimiterService,
+    OperationRateLimiterService,
+    OperationRateLimitGuard,
+  ],
+  exports: [
+    RateLimiterService,
+    OperationRateLimiterService,
+    OperationRateLimitGuard,
+  ],
 })
 export class RateLimitModule {}
