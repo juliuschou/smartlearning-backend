@@ -40,6 +40,9 @@ describe('OpenAPI document (e2e)', () => {
     expect(paths).toContain(
       '/api/v1/admin/accounts/{id}/require-password-change',
     );
+    expect(paths).toContain(
+      '/api/v1/admin/accounts/{id}/cli-credentials/{credentialId}/rotate',
+    );
     // Health routes stay outside /api/v1 per the global-prefix exclusion.
     expect(paths).toContain('/health/live');
     expect(paths).toContain('/health/ready');
@@ -98,6 +101,42 @@ describe('OpenAPI document (e2e)', () => {
     expect(updateProps).not.toContain('username');
     expect(updateProps).not.toContain('status');
     expect(JSON.stringify(updateAccount)).not.toContain('password');
+
+    const rotatePath =
+      res.body.paths[
+        '/api/v1/admin/accounts/{id}/cli-credentials/{credentialId}/rotate'
+      ].post;
+    expect(rotatePath.requestBody).toBeUndefined();
+    expect(
+      rotatePath.responses['201'].content['application/json'].schema.$ref,
+    ).toContain('RotateCliCredentialResponseDto');
+    expect(rotatePath.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'id', in: 'path', required: true }),
+        expect.objectContaining({
+          name: 'credentialId',
+          in: 'path',
+          required: true,
+        }),
+      ]),
+    );
+
+    const cliCredential = res.body.components.schemas.CliCredentialDto;
+    const cliCredentialProps = Object.keys(cliCredential.properties ?? {});
+    expect(cliCredentialProps).toContain('rotatedFromId');
+    expect(cliCredential.properties.rotatedFromId.nullable).toBe(true);
+    expect(cliCredentialProps).not.toContain('keyHash');
+    expect(cliCredentialProps).not.toContain('expiresAt');
+    expect(cliCredentialProps).not.toContain('gracePeriod');
+    expect(cliCredentialProps).not.toContain('pendingVerification');
+
+    const rotateResponse =
+      res.body.components.schemas.RotateCliCredentialResponseDto;
+    expect(rotateResponse.properties.rawKey).toBeDefined();
+    expect(Object.keys(rotateResponse.properties)).not.toContain('keyHash');
+    expect(JSON.stringify(rotateResponse)).not.toMatch(
+      /expiresAt|ttl|grace|pending/i,
+    );
   });
 
   it('GET /api/docs → 200 Swagger UI HTML', async () => {

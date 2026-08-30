@@ -33,9 +33,17 @@ export class CliCredentialDto {
 
   @ApiProperty({ nullable: true, type: String })
   revokedAt!: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  rotatedFromId!: string | null;
 }
 
 export class CreateCliCredentialResponseDto extends CliCredentialDto {
+  @ApiProperty()
+  rawKey!: string;
+}
+
+export class RotateCliCredentialResponseDto extends CliCredentialDto {
   @ApiProperty()
   rawKey!: string;
 }

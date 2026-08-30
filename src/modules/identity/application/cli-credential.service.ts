@@ -120,6 +120,80 @@ export class CliCredentialService {
     });
   }
 
+  /**
+   * Rotate an active credential immediately. The predecessor is retained as a
+   * revoked archival row while the successor reuses its logical name.
+   */
+  async rotateCredential(
+    accountId: string,
+    credentialId: string,
+  ): Promise<{
+    credential: CliCredentialProjection;
+    rawKey: string;
+  }> {
+    const rawKey = generateToken();
+    const keyHash = hashToken(rawKey);
+
+    return this.transactions.run(async (tx) => {
+      await this.transactions.lockAccountForUpdate(tx, accountId);
+      const account = await tx.account.findUnique({
+        where: { id: accountId },
+        select: { id: true, status: true },
+      });
+      if (!account) {
+        throw new NotFoundError('Account not found', 'id');
+      }
+      if (account.status !== AccountStatus.ACTIVE) {
+        throw new ForbiddenError('Account is not active.');
+      }
+
+      const predecessor = await tx.cliCredential.findUnique({
+        where: { id: credentialId },
+        include: { rotatedTo: { select: { id: true } } },
+      });
+      if (!predecessor || predecessor.accountId !== accountId) {
+        throw new NotFoundError('CLI credential not found', 'credentialId');
+      }
+      if (
+        predecessor.status !== CliCredentialStatus.ACTIVE ||
+        predecessor.rotatedTo
+      ) {
+        throw new ConflictError(
+          'CLI credential has already been revoked or rotated.',
+          'credentialId',
+        );
+      }
+
+      const now = new Date();
+      const originalName = predecessor.name;
+      const archivalName = `${Array.from(originalName).slice(0, 18).join('')}~rotated~${predecessor.id}`;
+      await tx.cliCredential.update({
+        where: { id: predecessor.id },
+        data: {
+          name: archivalName,
+          status: CliCredentialStatus.REVOKED,
+          revokedAt: now,
+        },
+      });
+
+      const successor = await tx.cliCredential.create({
+        data: {
+          id: newId(),
+          accountId,
+          name: originalName,
+          keyHash,
+          scope: predecessor.scope,
+          status: CliCredentialStatus.ACTIVE,
+          rotatedFromId: predecessor.id,
+          createdAt: now,
+        },
+      });
+      const { keyHash: _omit, ...projection } = successor;
+      void _omit;
+      return { credential: projection, rawKey };
+    });
+  }
+
   /** Revoke a credential. Idempotent for already-revoked keys. */
   async revokeCredential(
     accountId: string,

@@ -414,14 +414,18 @@ model CliCredential {
   scope      String    @default("all_courses")
   /// 狀態：active | revoked（CHECK 由 migration 補）
   status     String    @default("active")
-  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz
+  lastUsedAt    DateTime? @map("last_used_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz
+  rotatedFromId String?   @map("rotated_from_id") @db.Uuid
 
   account          Account                   @relation(fields: [accountId], references: [id], onDelete: Cascade)
   validationTokens QuestionValidationToken[]
+  rotatedFrom     CliCredential?            @relation("CliCredentialRotation", fields: [rotatedFromId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  rotatedTo       CliCredential?            @relation("CliCredentialRotation")
 
   @@unique([accountId, name], map: "uq_cli_credential_account_name")
+  @@unique([rotatedFromId], map: "uq_cli_credential_rotated_from")
   @@index([accountId], map: "idx_cli_credential_account")
   @@map("cli_credential")
 }

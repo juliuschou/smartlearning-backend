@@ -10,7 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiExtraModels, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ValidationError } from '../../../common/errors';
 import {
   AdminGuard,
@@ -33,6 +33,7 @@ import {
   CreateCliCredentialDto,
   CliCredentialDto,
   CreateCliCredentialResponseDto,
+  RotateCliCredentialResponseDto,
 } from './dto/cli-credential.dto';
 
 /**
@@ -43,6 +44,7 @@ import {
  * CLI key create/revoke are high-risk and require step-up (M2 紅卡).
  */
 @ApiTags('admin')
+@ApiExtraModels(CliCredentialDto, RotateCliCredentialResponseDto)
 @Controller({ path: 'admin', version: '1' })
 @UseGuards(SessionGuard, CsrfGuard, AdminGuard)
 export class AdminController {
@@ -204,6 +206,20 @@ export class AdminController {
     return credentials.map((c) => toCliCredentialDto(c));
   }
 
+  @Post('accounts/:id/cli-credentials/:credentialId/rotate')
+  @ApiResponse({ status: 201, type: RotateCliCredentialResponseDto })
+  @UseGuards(StepUpGuard)
+  async rotateCliCredential(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('credentialId', new ParseUUIDPipe()) credentialId: string,
+  ): Promise<RotateCliCredentialResponseDto> {
+    const { credential, rawKey } = await this.cliCredentials.rotateCredential(
+      id,
+      credentialId,
+    );
+    return { ...toCliCredentialDto(credential), rawKey };
+  }
+
   @Post('accounts/:id/cli-credentials/:credentialId/revoke')
   @UseGuards(StepUpGuard)
   @HttpCode(200)
@@ -225,6 +241,7 @@ function toCliCredentialDto(credential: {
   lastUsedAt: Date | null;
   createdAt: Date;
   revokedAt: Date | null;
+  rotatedFromId: string | null;
 }): CliCredentialDto {
   return {
     id: credential.id,
@@ -235,6 +252,7 @@ function toCliCredentialDto(credential: {
     lastUsedAt: credential.lastUsedAt?.toISOString() ?? null,
     createdAt: credential.createdAt.toISOString(),
     revokedAt: credential.revokedAt?.toISOString() ?? null,
+    rotatedFromId: credential.rotatedFromId,
   };
 }
 

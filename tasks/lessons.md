@@ -210,3 +210,17 @@
 - **Detection signal:** Combined Checkpoint C execution failed in `test/setup/db.ts::truncateAll()` with SQLSTATE `40P01`, while isolated reruns could pass and publisher retry/dispatch warnings appeared around cleanup.
 - **Prevention rule:** Treat destructive fixture cleanup as a lifecycle boundary: stop wake sources, await the active publisher drain, release only the instance's outstanding leases, run cleanup, then restart exactly one subscription/timer/startup scan for realtime tests.
 - **Tripwire:** Keep deterministic deferred/fake-timer unit tests proving shutdown waits for in-flight work, restart performs a startup scan, duplicate init creates no duplicate wake sources, and repeated destroy performs lease cleanup at most once.
+
+## 2026-08-30 — Prisma client normalizer requires its generated-directory argument
+
+- **Failure mode:** Running `npm run prisma:generate && node scripts/normalize-prisma-client.mjs && npm run prisma:validate` stopped after generation because the normalizer requires an explicit generated-client directory.
+- **Detection signal:** The script printed `Usage: node scripts/normalize-prisma-client.mjs <generated-dir>` and exited 1 before schema validation.
+- **Prevention rule:** Invoke the repository normalizer with the generated output path: `node scripts/normalize-prisma-client.mjs generated/prisma`.
+- **Tripwire:** Keep the generate → normalize-with-argument → validate sequence in CP3/CI verification instructions and require a zero exit code from each command.
+
+## 2026-08-30 — Manual verification specs still cross static quality gates
+
+- **Failure mode:** The full automated bundle failed its lint and format gates because the pre-existing `test/manual-cp2-verify.e2e-spec.ts` was unformatted and contained two unused login locals, even though all behavioral suites passed.
+- **Detection signal:** `npm run format:check` reported the manual CP2 file, while `npm run lint:check` reported eight Prettier diagnostics and two unused-variable errors.
+- **Prevention rule:** Keep manual verification specs formatted and lint-clean even when they are not part of the automated behavioral run; fix static-only failures before recording the bundle as green.
+- **Tripwire:** Run `npm run lint:check` and `npm run format:check` after adding or editing any manual E2E spec, without executing the manual database scenario.

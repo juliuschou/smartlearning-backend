@@ -2236,3 +2236,62 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - 提權至 admin 的 step-up 在 service 層鎖內判定（method-level `StepUpGuard` 會誤擋 displayName 更新，故不直接掛）；self-role 403 防最後 admin 自降權。
 - 所有 revoke/lifecycle 行為留在 disable/restore/reset 專責端點；profile update 不撤 session/CLI/token（e2e 已斷言）。
 - **人工 Checkpoint 2 — verified（2026-08-30）**：新增 `test/manual-cp2-verify.e2e-spec.ts`（DB-backed，`smartlearning_test`）實測全部五項 — (1) update 前後 DB rows vs response DTO（僅 allowlist 欄位變更，username/status/hash/createdAt 未動）、(2) disabled update 403 → restore → 200、(3) 提權 step-up 403 `AUTH_STEP_UP_REQUIRED` → step-up → 200、(4) `canCreateCourse=false` 後 CLI credential 仍 active（M2 紅卡 #8）→ disable 後 revoked `CLI_CREDENTIAL_REVOKED`、(5) 三決策點（self-role 403、self displayName 200、require-password-change gate 201）。PASS — 1 suite / 1 test。
+
+## 2026-08-30 BE-8.3 CP3 — CLI key rotation / successor
+
+實作文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-3-cp3-cli-key-rotation.md`（上游 `be-8-3-cp3-cli-key-rotation-plan.md`；CP0 freeze §4；CP0 verified）。
+
+### Context and acceptance criteria
+
+- [x] 新增 admin-only `POST /api/v1/admin/accounts/:id/cli-credentials/:credentialId/rotate`；需 active Web session、CSRF/exact Origin、AdminGuard、StepUpGuard、兩個 UUID path params；無 request body；成功 HTTP 201。
+- [x] rotation 同一 transaction 內建立 active successor、立即 revoke predecessor；predecessor retained 並改 deterministic archival name；raw successor key 只回傳一次，DB 只存 SHA-256 hash。
+- [x] successor 繼承原 logical name/scope，保存 `rotatedFromId` direct lineage；predecessor 與 successor UUID/hash 均不同；list/response 不含 keyHash/raw key（除 one-time `rawKey` response）。
+- [x] missing account → 404 `NOT_FOUND` field `id`；missing/cross-account credential → existence-safe 404 field `credentialId`；inactive account → 403；revoked/already-rotated/repeated/losing concurrent request → 409 `CONFLICT`，不回 raw key。
+- [x] account row lock serializes rotate/revoke/disable/restore；same predecessor at most one successor；transaction failure rollback predecessor rename/revoke and successor insert together。
+- [x] disable leaves zero active credentials and restore revives none；`canCreateCourse=false` does not revoke successor。
+- [x] validation-token / batch-idempotency rows remain unchanged；predecessor token cannot be confirmed by successor；successor must validate again；predecessor idempotency scope remains unchanged。
+- [x] 不新增 CLI TTL/expiry/grace/pending/version fields；不在 response/list/error/log/OpenAPI/DB 暴露 raw key/hash。
+
+### Risk & rollback
+
+- **Risk: high** — authentication lifecycle, additive self-relation schema, one-time secret handling, transaction rollback, and concurrent account lifecycle writes。
+- **Rollback:** application code may be reverted；lineage column/index remain as additive schema. Do not delete lineage data or reactivate revoked predecessors. Committed successors may be revoked through the existing admin revoke endpoint。
+- **Database boundary:** only `NODE_ENV=test` resolving exactly to guarded `smartlearning_test`; test setup's existing idempotent migrate/truncate boundary is authorized. Never use `migrate reset`/`db push`/development cleanup/down migration/direct key reactivation。
+- **Stop conditions:** DB target or migration state unclear；suite silently skips；CP0 contract conflicts with implementation；raw key/hash leakage；missing migration constraints；or automated verification fails. Stop at Manual Checkpoint 3; do not begin CP4 without explicit confirmation。
+
+### Implementation checklist
+
+- [x] Add nullable `CliCredential.rotatedFromId` self-relation and unique direct-successor index in Prisma plus one additive hand-written migration; no expiry/grace/pending/version fields。
+- [x] Add atomic `CliCredentialService.rotateCredential()` using `TransactionService.run()` and `lockAccountForUpdate()`；deterministic archival name <=63 chars；hash-only persistence；explicit safe projection。
+- [x] Add `RotateCliCredentialResponseDto`/nullable lineage field and guarded admin route；retain `rawKey` property name for existing redaction。
+- [x] Add service unit coverage for success, locks, projection/hash secrecy, invalid branches, and transaction failure propagation。
+- [x] Extend CLI credential E2E for success, immediate invalidation, lineage, errors, repeat/concurrency, A→B→C, rotate/revoke/disable races, restore, and permission independence。
+- [x] Extend batch E2E for predecessor token/idempotency preservation and successor re-validation；extend OpenAPI and Pino redaction coverage。
+- [x] Create manual CP3 E2E spec only after automated verification; never include it in the normal automated bundle。
+
+### Automated verification results
+
+- [x] Format changed TypeScript before lint。
+- [x] `npm run prisma:generate` plus `node scripts/normalize-prisma-client.mjs generated/prisma`。
+- [x] `npm run prisma:validate`。
+- [x] Targeted service/redaction unit tests — PASS, 2 suites / 12 tests。
+- [x] Targeted CLI/batch/account/OpenAPI E2E against guarded `smartlearning_test` — PASS, 4 suites / 44 tests, no skips。
+- [x] Full unit — PASS, 33 suites / 207 tests, no skips。
+- [x] Full guarded E2E — PASS, 28 suites / 206 tests, no skips; manual CP3 spec was not present and was not run in this automated bundle。
+- [x] Full integration — PASS, 3 suites / 16 tests, no skips。
+- [x] `npm run typecheck` — PASS。
+- [x] `npm run lint:check` — PASS after formatting/removing two unused locals in the pre-existing CP2 manual spec。
+- [x] `npm run format:check` — PASS。
+- [x] `npm run build` — PASS。
+- [x] `NODE_ENV=test npm run prisma:migrate:status` — PASS, exact database `smartlearning_test` at `localhost:5432`, 15 migrations, schema up to date。
+- [x] `git diff --check` — PASS。
+- **Warnings:** existing Nest `LegacyRouteConverter` warnings (`health/(.*)`, `/api/*`) and expected isolated realtime publish-failure warning logs; no test failures or open-handle warnings。
+- **DB boundary:** all DB-backed checks used `NODE_ENV=test` and exact `smartlearning_test`; no reset/db push/development cleanup/down migration/direct key reactivation。
+
+### Manual Checkpoint 3 — mandatory stop
+
+- [x] Add `test/manual-cp3-verify.e2e-spec.ts` following CP2: guarded `smartlearning_test`, publisher-quiesced cleanup, direct DB inspection, one auditable scenario, raw keys memory-only。
+- [ ] Do not run it automatically. Present exactly:
+  `NODE_ENV=test npm run test:e2e -- --runInBand test/manual-cp3-verify.e2e-spec.ts`
+- [ ] Wait for explicit user confirmation of predecessor/successor behavior, DB hash-only lineage, token non-reuse, one-successor race result, and no TTL/grace/pending fields。
+- [ ] Only after confirmation record the manual result here, stop the session, and recommend a new session for CP4。

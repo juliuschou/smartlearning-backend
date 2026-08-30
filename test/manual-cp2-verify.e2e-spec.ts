@@ -78,9 +78,15 @@ describe('BE-8.2 CP2 manual Checkpoint 2 verification', () => {
 
   async function login(u: string, p: string): Promise<Agent> {
     const agent = request.agent(app.getHttpServer());
-    const res = await agent.post('/api/v1/auth/login').send({ username: u, password: p });
-    const setCookie = res.headers['set-cookie'] as unknown as string[] | undefined;
-    return { agent: agent as unknown as request.SuperAgentTest, csrf: cookieValue(setCookie, '__Host-csrf') };
+    const res = await agent
+      .post('/api/v1/auth/login')
+      .send({ username: u, password: p });
+    const setCookie = res.headers['set-cookie'] as unknown as
+      string[] | undefined;
+    return {
+      agent: agent as unknown as request.SuperAgentTest,
+      csrf: cookieValue(setCookie, '__Host-csrf'),
+    };
   }
 
   async function adminStepUp(admin: Agent): Promise<void> {
@@ -94,7 +100,9 @@ describe('BE-8.2 CP2 manual Checkpoint 2 verification', () => {
 
   function requireDatabase(): void {
     if (!dbReachable) {
-      throw new Error('BLOCKED: PostgreSQL unavailable for CP2 manual verification.');
+      throw new Error(
+        'BLOCKED: PostgreSQL unavailable for CP2 manual verification.',
+      );
     }
   }
 
@@ -125,19 +133,30 @@ describe('BE-8.2 CP2 manual Checkpoint 2 verification', () => {
       .post('/api/v1/auth/change-password')
       .set('Origin', ORIGIN)
       .set(CSRF_HEADER, temp.csrf)
-      .send({ currentPassword: TEACHER.tempPassword, newPassword: TEACHER.password });
+      .send({
+        currentPassword: TEACHER.tempPassword,
+        newPassword: TEACHER.password,
+      });
     expect(changed.status).toBe(201);
-    const teacher = await login(TEACHER.username, TEACHER.password);
+    await login(TEACHER.username, TEACHER.password);
 
     // ---- Item 1: update before/after DB rows vs response DTO ----
-    const before = await prisma.prisma.account.findUnique({ where: { id: teacherId } });
+    const before = await prisma.prisma.account.findUnique({
+      where: { id: teacherId },
+    });
     const upd = await admin.agent
       .patch(`/api/v1/admin/accounts/${teacherId}`)
       .set('Origin', ORIGIN)
       .set(CSRF_HEADER, admin.csrf)
-      .send({ displayName: 'Renamed Teacher', role: AccountRole.STUDENT, canCreateCourse: false });
+      .send({
+        displayName: 'Renamed Teacher',
+        role: AccountRole.STUDENT,
+        canCreateCourse: false,
+      });
     expect(upd.status).toBe(200);
-    const after = await prisma.prisma.account.findUnique({ where: { id: teacherId } });
+    const after = await prisma.prisma.account.findUnique({
+      where: { id: teacherId },
+    });
     expect(upd.body.data.displayName).toBe('Renamed Teacher');
     expect(upd.body.data.role).toBe('student');
     expect(upd.body.data.canCreateCourse).toBe(false);
@@ -178,7 +197,7 @@ describe('BE-8.2 CP2 manual Checkpoint 2 verification', () => {
     expect(afterRestore.body.data.displayName).toBe('Restored Name');
 
     // Disable revoked the teacher's session; re-login after restore.
-    const teacher2 = await login(TEACHER.username, TEACHER.password);
+    await login(TEACHER.username, TEACHER.password);
 
     // ---- Item 3: promotion step-up 403 → step-up → 200 ----
     // Item 2's step-up is still within its 10-minute window, so simulate an

@@ -447,9 +447,10 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 | POST   | `/admin/accounts/:id/reset-password`                       | 重設密碼                                  | 需      |
 | POST   | `/admin/accounts/:id/disable`                              | 停用（撤 session/CLI/未用 token）         | 需      |
 | POST   | `/admin/accounts/:id/restore`                              | 復原                                      | 需      |
-| POST   | `/admin/accounts/:id/cli-credentials`                      | 建 CLI key（`rawKey` 只回一次）           | 需      |
-| GET    | `/admin/accounts/:id/cli-credentials`                      | 列 CLI key metadata                       | 無      |
-| POST   | `/admin/accounts/:id/cli-credentials/:credentialId/revoke` | 撤 CLI key                                | 需      |
+| POST   | `/admin/accounts/:id/cli-credentials`                             | 建 CLI key（`rawKey` 只回一次）                    | 需      |
+| GET    | `/admin/accounts/:id/cli-credentials`                             | 列 CLI key metadata                                | 無      |
+| POST   | `/admin/accounts/:id/cli-credentials/:credentialId/rotate`        | 立即輪替 CLI key（successor `rawKey` 只回一次）   | 需      |
+| POST   | `/admin/accounts/:id/cli-credentials/:credentialId/revoke`        | 撤 CLI key                                         | 需      |
 
 **建帳號 body**：`{ username, displayName, role, canCreateCourse, tempPassword }`。student 的 `canCreateCourse` 恆為 false。
 
@@ -458,6 +459,8 @@ class-level guard：`Session + CSRF + Admin`。`mustChangePassword` 未允許會
 **更新帳號 profile（`PATCH /admin/accounts/:id`，BE-8.2 CP2）**：body allowlist 為 `{ displayName?, role?, canCreateCourse? }`，全部 optional、至少一欄（空 body → `400 VALIDATION_FAILED`）。成功回 `200` 與最新 `AccountDto`。僅 admin 可操作；`role` 提權至 `admin` 需 step-up（無近期 step-up → `403 AUTH_STEP_UP_REQUIRED`）；admin 改自己的 `role` → `403 FORBIDDEN`；disabled 帳號 → `403 FORBIDDEN`（先 restore）；student 設 `canCreateCourse=true` → `403 FORBIDDEN`。未知欄位（`username`/`passwordHash`/`status` 等）→ `400 VALIDATION_FAILED`（`forbidNonWhitelisted`）。此 mutation 不撤銷 WebSession/CLI credential/unused token、不發 lifecycle 事件；`canCreateCourse=false` 不撤銷既有 CLI credential（M2 紅卡 #8）。
 
 **設/清 mustChangePassword gate（`POST /admin/accounts/:id/require-password-change`，BE-8.2 CP2）**：body `{ mustChangePassword: boolean }`，step-up 保護。設 `true` 強制該帳號下次登入換密碼（不撤銷既有 session）；設 `false` 清除。self 目標允許（admin 清自己的旗標屬合理自救）。
+
+**CLI key rotation（BE-8.3 CP3）**：`POST /admin/accounts/:id/cli-credentials/:credentialId/rotate` 無 body，需 admin Web session + CSRF/exact Origin + step-up，成功回 `201`。同一 transaction 建立 active successor 並立即 revoke predecessor（無 grace period）；predecessor 保留但改 internal archival name，successor 保留原 logical `name`/`scope`，並回 `rotatedFromId`。response 只在這次成功 rotate 回傳一次 `rawKey`，PostgreSQL 只存 SHA-256 hash；list、error、log 與後續 response 不會回 raw key 或 `keyHash`。重複/並發同 predecessor 至多一個 successor，loser 回 `409 CONFLICT`。missing/cross-account credential 回 existence-safe `404 NOT_FOUND`；disabled account 回 `403 FORBIDDEN`；old key 在 commit 後立即回 `401 CLI_CREDENTIAL_REVOKED`。既有 predecessor-issued validation token 與 `cli:<credentialId>` idempotency rows 不轉移；successor 必須重新 validate。CP3 不含 CLI TTL/expiry/grace/pending 欄位，key valid until revoke。
 
 **AccountDto**：`{ id, username, displayName, role, status, canCreateCourse, mustChangePassword, disabledAt, createdAt }`。
 

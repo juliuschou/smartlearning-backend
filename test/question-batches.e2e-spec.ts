@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { BootstrapService } from '../src/modules/identity/application/bootstrap.service';
+import { hashToken } from '../src/common/crypto';
 import { AccountRole } from '../src/modules/identity/domain/roles';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { CSRF_HEADER } from '../src/common/security';
@@ -124,6 +125,15 @@ describe('Question batches (validate/confirm) (e2e)', () => {
       });
     expect(changed.status).toBe(201);
     return loginAs(TEACHER.username, TEACHER.password);
+  }
+
+  async function adminStepUp(admin: AuthenticatedAgent): Promise<void> {
+    const res = await admin.agent
+      .post('/api/v1/auth/step-up')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ password: ADMIN.password });
+    expect(res.status).toBe(201);
   }
 
   function requireDatabase(): void {
@@ -417,6 +427,165 @@ describe('Question batches (validate/confirm) (e2e)', () => {
       `/api/v1/courses/${courseId}/questions`,
     );
     expect(list.body.data.data).toHaveLength(0);
+  });
+
+  it('keeps batch tokens and idempotency credential-bound across CLI rotation', async () => {
+    requireDatabase();
+    const teacher = await createTeacher();
+    const courseId = await createCourse(teacher);
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacherAccount = await prisma.prisma.account.findUnique({
+      where: { username: TEACHER.username },
+      select: { id: true },
+    });
+    expect(teacherAccount).toBeTruthy();
+    await adminStepUp(admin);
+
+    const created = await admin.agent
+      .post(`/api/v1/admin/accounts/${teacherAccount!.id}/cli-credentials`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ name: 'batch-rotation' });
+    expect(created.status).toBe(201);
+    const predecessorId = created.body.data.id as string;
+    const predecessorKey = created.body.data.rawKey as string;
+
+    const firstValidate = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/validate`)
+      .set('X-CLI-Key', predecessorKey)
+      .send({ schemaVersion: 1, courseId, questions: BATCH_QUESTIONS });
+    expect(firstValidate.status).toBe(201);
+    const firstToken = firstValidate.body.data.validationToken as string;
+    const firstHash = firstValidate.body.data.payloadHash as string;
+    const firstConfirm = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/confirm`)
+      .set('X-CLI-Key', predecessorKey)
+      .set('Idempotency-Key', '01900000-0000-7000-8000-000000000006')
+      .set('X-Validation-Token', firstToken)
+      .send({
+        schemaVersion: 1,
+        courseId,
+        questions: BATCH_QUESTIONS,
+        payloadHash: firstHash,
+        confirmed: true,
+      });
+    expect(firstConfirm.status).toBe(201);
+
+    const rotationQuestions = [
+      { clientRef: 'rotation-q', type: 'open_text', prompt: 'rotation batch' },
+    ];
+    const predecessorValidate = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/validate`)
+      .set('X-CLI-Key', predecessorKey)
+      .send({ schemaVersion: 1, courseId, questions: rotationQuestions });
+    expect(predecessorValidate.status).toBe(201);
+    const predecessorToken = predecessorValidate.body.data
+      .validationToken as string;
+    const rotationHash = predecessorValidate.body.data.payloadHash as string;
+    const tokenBefore = await prisma.prisma.questionValidationToken.findUnique({
+      where: { tokenHash: hashToken(predecessorToken) },
+    });
+    expect(tokenBefore?.cliCredentialId).toBe(predecessorId);
+    expect(tokenBefore?.consumedAt).toBeNull();
+
+    const rotated = await admin.agent
+      .post(
+        `/api/v1/admin/accounts/${teacherAccount!.id}/cli-credentials/${predecessorId}/rotate`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(rotated.status).toBe(201);
+    const successorKey = rotated.body.data.rawKey as string;
+    const successorId = rotated.body.data.id as string;
+
+    const predecessorAuth = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/validate`)
+      .set('X-CLI-Key', predecessorKey)
+      .send({ schemaVersion: 1, courseId, questions: rotationQuestions });
+    expect(predecessorAuth.status).toBe(401);
+    expect(predecessorAuth.body.error.code).toBe('CLI_CREDENTIAL_REVOKED');
+
+    const oldTokenWithSuccessor = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/confirm`)
+      .set('X-CLI-Key', successorKey)
+      .set('Idempotency-Key', '01900000-0000-7000-8000-000000000007')
+      .set('X-Validation-Token', predecessorToken)
+      .send({
+        schemaVersion: 1,
+        courseId,
+        questions: rotationQuestions,
+        payloadHash: rotationHash,
+        confirmed: true,
+      });
+    expect(oldTokenWithSuccessor.status).toBe(409);
+    expect(oldTokenWithSuccessor.body.error.code).toBe(
+      'VALIDATION_TOKEN_INVALID',
+    );
+
+    const tokenAfter = await prisma.prisma.questionValidationToken.findUnique({
+      where: { tokenHash: hashToken(predecessorToken) },
+    });
+    expect(tokenAfter).toMatchObject({
+      id: tokenBefore?.id,
+      cliCredentialId: predecessorId,
+      consumedAt: null,
+    });
+
+    const successorValidate = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/validate`)
+      .set('X-CLI-Key', successorKey)
+      .send({ schemaVersion: 1, courseId, questions: rotationQuestions });
+    expect(successorValidate.status).toBe(201);
+    const successorToken = successorValidate.body.data
+      .validationToken as string;
+    const successorHash = successorValidate.body.data.payloadHash as string;
+    const successorConfirm = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/confirm`)
+      .set('X-CLI-Key', successorKey)
+      .set('Idempotency-Key', '01900000-0000-7000-8000-000000000008')
+      .set('X-Validation-Token', successorToken)
+      .send({
+        schemaVersion: 1,
+        courseId,
+        questions: rotationQuestions,
+        payloadHash: successorHash,
+        confirmed: true,
+      });
+    expect(successorConfirm.status).toBe(201);
+
+    const replayValidate = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/validate`)
+      .set('X-CLI-Key', successorKey)
+      .send({ schemaVersion: 1, courseId, questions: rotationQuestions });
+    const replayToken = replayValidate.body.data.validationToken as string;
+    const replay = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${courseId}/question-batches/confirm`)
+      .set('X-CLI-Key', successorKey)
+      .set('Idempotency-Key', '01900000-0000-7000-8000-000000000008')
+      .set('X-Validation-Token', replayToken)
+      .send({
+        schemaVersion: 1,
+        courseId,
+        questions: rotationQuestions,
+        payloadHash: successorHash,
+        confirmed: true,
+      });
+    expect(replay.status).toBe(201);
+    expect(replay.body.data.questions).toEqual(
+      successorConfirm.body.data.questions,
+    );
+    const predecessorIdempotency =
+      await prisma.prisma.questionBatchIdempotency.findUnique({
+        where: {
+          actorScope_operation_idempotencyKey: {
+            actorScope: `cli:${predecessorId}`,
+            operation: 'question-batch-confirm',
+            idempotencyKey: '01900000-0000-7000-8000-000000000006',
+          },
+        },
+      });
+    expect(predecessorIdempotency?.actorScope).toBe(`cli:${predecessorId}`);
+    expect(successorId).not.toBe(predecessorId);
   });
 
   it('requires CSRF for Web batch validate', async () => {

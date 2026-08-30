@@ -12,7 +12,10 @@ describe('Pino auth redaction', () => {
         'req.body.tempPassword',
         'req.headers.cookie',
         'req.headers["x-csrf-token"]',
+        'req.headers["x-cli-key"]',
         'res.headers["set-cookie"]',
+        'res.body.rawKey',
+        'res.body.data.rawKey',
         'res.body.data.selectedOptionRefs',
         'res.body.data.textAnswer',
         'req.handshake.auth.participantToken',
@@ -55,6 +58,7 @@ describe('Pino auth redaction', () => {
           headers: {
             cookie: '__Host-session=session-secret',
             'x-csrf-token': 'csrf-secret',
+            'x-cli-key': 'cli-key-secret',
           },
           handshake: {
             auth: {
@@ -71,12 +75,14 @@ describe('Pino auth redaction', () => {
           body: {
             data: {
               participantToken: 'participant-token-secret',
+              rawKey: 'enveloped-raw-key-secret',
               selectedOptionRefs: ['selected-option-secret'],
               textAnswer: 'text-answer-secret',
               accountId: 'account-id-safe',
               username: 'student-username-safe',
               displayName: 'Student Display Safe',
             },
+            rawKey: 'top-level-raw-key-secret',
             selectedOptionRefs: ['top-level-option-secret'],
             textAnswer: 'top-level-answer-secret',
           },
@@ -92,7 +98,10 @@ describe('Pino auth redaction', () => {
     expect(output).not.toContain('temp-secret');
     expect(output).not.toContain('session-secret');
     expect(output).not.toContain('csrf-secret');
+    expect(output).not.toContain('cli-key-secret');
     expect(output).not.toContain('response-secret');
+    expect(output).not.toContain('enveloped-raw-key-secret');
+    expect(output).not.toContain('top-level-raw-key-secret');
     expect(output).not.toContain('participant-token-secret');
     expect(output).not.toContain('selected-option-secret');
     expect(output).not.toContain('text-answer-secret');
