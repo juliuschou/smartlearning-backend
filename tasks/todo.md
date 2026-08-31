@@ -2391,12 +2391,12 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 
 ### Context and acceptance criteria
 
-- [ ] Move only login account/source fixed-window counters from process-local memory to Redis so two backend instances share count and TTL.
-- [ ] Preserve US-F7 behavior: NFKC/trim/lowercase account normalization; pre-check before account lookup/Argon2; dual-scope failure counting; generic 401 before max and 429 on the next pre-check; longest retry TTL; account-only clear on success; missing/disabled/wrong-password anti-enumeration.
-- [ ] Redis keys use versioned namespace, domain-separated HMAC-SHA-256, and no raw username/IP/reversible identifier in key/log/response/metrics.
-- [ ] Redis operations use atomic Lua scripts: pre-check, fixed-window failure recording without TTL extension, no-TTL corruption repair, and account-only clear.
-- [ ] Redis outage is fail-closed: login returns 503 `AUTH_RATE_LIMIT_UNAVAILABLE` before account lookup/Argon2; readiness 503; liveness 200; no memory fallback in `redis-required`; recovery is bounded and preserves unexpired buckets.
-- [ ] Real Redis integration and two actual backend instances prove shared account/source limits, normalization, outage/recovery, opaque positive TTLs, and no skipped required checks.
+- [x] Move only login account/source fixed-window counters from process-local memory to Redis so two backend instances share count and TTL.
+- [x] Preserve US-F7 behavior: NFKC/trim/lowercase account normalization; pre-check before account lookup/Argon2; dual-scope failure counting; generic 401 before max and 429 on the next pre-check; longest retry TTL; account-only clear on success; missing/disabled/wrong-password anti-enumeration.
+- [x] Redis keys use versioned namespace, domain-separated HMAC-SHA-256, and no raw username/IP/reversible identifier in key/log/response/metrics.
+- [x] Redis operations use atomic Lua scripts: pre-check, fixed-window failure recording without TTL extension, no-TTL corruption repair, and account-only clear.
+- [x] Redis outage is fail-closed: login returns 503 `AUTH_RATE_LIMIT_UNAVAILABLE` before account lookup/Argon2; readiness 503; liveness 200; no memory fallback in `redis-required`; recovery is bounded and preserves unexpired buckets.
+- [x] Real Redis integration and two actual backend instances prove shared account/source limits, normalization, outage/recovery, opaque positive TTLs, and no skipped required checks.
 
 ### Contract freeze / working notes
 
@@ -2423,7 +2423,7 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - [x] Update unit/regression tests and add real Redis integration coverage.
 - [x] Add dedicated CP5 Compose topology and fail-fast two-instance manual verifier.
 - [x] Run DB-free static/behavioral verification; Redis/DB-backed suites remain gated by explicit authorization.
-- [ ] Stop at Manual Checkpoint 5 and present evidence; do not self-sign-off.
+- [x] Stop at Manual Checkpoint 5, present sanitized evidence, and record the user's explicit sign-off.
 
 ### Results
 
@@ -2450,3 +2450,18 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - **Timing:** verifier completed in approximately 72.6 seconds after the dedicated 15-second fixed-window margin was applied.
 - **Safety:** only a fresh named Compose project and its dedicated database/Redis volumes were used; migration/truncation was confined to that isolated database. The named containers/network were removed with `docker compose down --remove-orphans`; volumes were retained. No unrelated Compose resource, `smartlearning_test`, `FLUSHDB`, or `FLUSHALL` was touched.
 - **Decision:** CP5 automated two-backend evidence is ready for review. Manual Checkpoint 5 remains mandatory and pending explicit user confirmation `Checkpoint 5 verified`; do not self-sign-off.
+
+### CP5 manual Checkpoint 5 execution — 2026-08-31
+
+- **AUTHORIZED:** user requested continuation of CP5 manual Checkpoint 5; execution used only a fresh named Compose project with process-only temporary credentials.
+- **Preflight:** `docker compose ... config --quiet` passed; PostgreSQL 16 and Redis 7 became healthy; the migration container completed successfully; both backend readiness probes returned 200.
+- **Bootstrap:** created the temporary admin with the compiled runtime entrypoint `node dist/src/bootstrap/bootstrap-admin.js` inside `backend-a` because the runtime image intentionally omits the dev-only `tsx` binary.
+- **Command:** `npm run test:cp5:e2e -- --runInBand`
+- **RESULT:** PASS — 1 suite / 4 tests. Shared account/source limits, normalization and anti-enumeration, account-only clear after successful login, Redis outage fail-closed behavior, readiness 503/liveness 200, recovery with preserved buckets, opaque keys, and positive TTLs all passed in approximately 73 seconds.
+- **Safety:** only `smartlearning-cp5-manual-r3` containers, network, and retained named volumes were used; cleanup removed the containers/network with `docker compose down --remove-orphans`. No unrelated containers, `smartlearning_test`, `FLUSHDB`, or `FLUSHALL` were touched.
+- **Decision:** sanitized automated evidence was reviewed and accepted by the user through the explicit confirmation `Checkpoint 5 verified`.
+
+### Manual Checkpoint 5 sign-off — 2026-08-31
+
+- **USER CONFIRMATION:** User explicitly confirmed `Checkpoint 5 verified` after reviewing the sanitized multi-instance and Redis-outage evidence.
+- **STATUS:** BE-8.5 CP5 acceptance criteria and Manual Checkpoint 5 are complete.

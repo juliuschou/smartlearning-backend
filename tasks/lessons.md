@@ -1,5 +1,12 @@
 # Lessons learned
 
+## 2026-08-31 — CP5 bootstrap must use the compiled runtime entrypoint
+
+- **Failure mode:** The CP5 runtime image prunes dev dependencies, so invoking `npm run bootstrap:admin` inside `backend-a` failed with `sh: 1: tsx: not found`; a host-side `tsx` invocation also failed during Nest DI startup with `UndefinedDependencyException` for `RateLimiterService`.
+- **Detection signal:** The verifier's three rate-limit tests passed, but the successful-login assertion returned `401` because no admin had been created.
+- **Prevention rule:** For the built CP5 runtime, bootstrap with `node dist/src/bootstrap/bootstrap-admin.js` inside a running backend container; keep bootstrap output free of passwords and tokens.
+- **Tripwire:** Require a successful `Bootstrapped first admin` line before starting `npm run test:cp5:e2e -- --runInBand`, and treat any bootstrap non-zero exit as a hard stop.
+
 ## 2026-08-31 — CP5 manual verifier timeout must cover real-clock expiry waits
 
 - **Failure mode:** The CP5 two-backend verifier used 5.5-second real-clock expiry waits while Jest's default per-test timeout remained 5 seconds, so every manual test timed out before completing.
