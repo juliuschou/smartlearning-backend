@@ -11,6 +11,9 @@ const password = required('CP5_ADMIN_PASSWORD');
 
 const sourceLimit = 5;
 const accountLimit = 3;
+const rateLimitWindowMs = 15_000;
+
+jest.setTimeout(45_000);
 
 describe('BE-8.5 CP5 manual two-instance verifier', () => {
   let redis: RedisClientType | undefined;
@@ -19,6 +22,7 @@ describe('BE-8.5 CP5 manual two-instance verifier', () => {
     if (backendA === backendB)
       throw new Error('CP5 backends must be distinct URLs');
     redis = createClient({ url: redisUrl });
+    redis.on('error', () => undefined);
     await redis.connect();
     await expectHealth(backendA, 200, 'ok');
     await expectHealth(backendB, 200, 'ok');
@@ -76,14 +80,23 @@ describe('BE-8.5 CP5 manual two-instance verifier', () => {
       ).toBe(401);
     }
     const existing = await login(backendA, username, 'wrong-password');
-    const missing = await login(
+    const missingUsername = `cp5-missing-${Date.now()}`;
+    const missing = await login(backendB, missingUsername, 'wrong-password');
+    const missingAgain = await login(
+      backendA,
+      missingUsername,
+      'wrong-password',
+    );
+    const missingLimited = await login(
       backendB,
-      `cp5-missing-${Date.now()}`,
+      missingUsername,
       'wrong-password',
     );
     expect(existing.status).toBe(429);
-    expect(missing.status).toBe(429);
-    expect(safeError(existing)).toEqual(safeError(missing));
+    expect(missing.status).toBe(401);
+    expect(missingAgain.status).toBe(401);
+    expect(missingLimited.status).toBe(429);
+    expect(safeError(existing)).toEqual(safeError(missingLimited));
   });
 
   it('clears account state on successful login while source history remains', async () => {
@@ -188,7 +201,7 @@ async function waitForReady(baseUrl: string): Promise<void> {
 }
 
 async function waitForExpiry(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 5_500));
+  await new Promise((resolve) => setTimeout(resolve, rateLimitWindowMs + 500));
 }
 
 function safeError(response: { body: Record<string, unknown> }): unknown {

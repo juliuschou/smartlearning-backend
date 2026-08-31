@@ -1,5 +1,19 @@
 # Lessons learned
 
+## 2026-08-31 — CP5 manual verifier timeout must cover real-clock expiry waits
+
+- **Failure mode:** The CP5 two-backend verifier used 5.5-second real-clock expiry waits while Jest's default per-test timeout remained 5 seconds, so every manual test timed out before completing.
+- **Detection signal:** `npm run test:cp5:e2e -- --runInBand` failed all four tests with `Exceeded timeout of 5000 ms` at `test/manual-cp5-verify.e2e-spec.ts`.
+- **Prevention rule:** Manual verification specs that intentionally wait beyond Jest's default timeout must set an explicit suite timeout with margin for network and outage-recovery polling.
+- **Tripwire:** Keep an explicit Jest timeout in the CP5 verifier and rerun the complete four-test manual suite after changes.
+
+## 2026-08-31 — CP5 outage proof needs an unexpired fixed window
+
+- **Failure mode:** The outage/recovery case used a 5-second Redis window, but the pre-check, three Argon2 login attempts, Redis restart, and readiness polling could exceed that window; the recovered login then correctly returned 401 because the bucket had expired.
+- **Detection signal:** The CP5 verifier passed the outage 503/liveness checks but received `Expected: 429, Received: 401` after Redis recovery.
+- **Prevention rule:** Give the dedicated manual topology enough fixed-window margin for the outage sequence and derive the test expiry wait from the same explicit window.
+- **Tripwire:** Keep the CP5 Compose account/source windows and manual `rateLimitWindowMs` synchronized, then rerun the complete verifier.
+
 ## 2026-08-29 — Quiesce the shared publisher before every destructive truncate, not just the realtime suite
 
 - **Failure mode:** `LiveSessionPublisher` is a shared singleton across the whole Jest process. Wrapping only the realtime suite's `truncateAll()` left every other DB-backed suite truncating while the publisher was active, so the `40P01` deadlock recurred in `route-matrix`, `close-cancel`, `results`, `enrollments`, and `archive-governance` — intermittently, depending on whether the publisher had in-flight work at cleanup time.

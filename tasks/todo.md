@@ -2430,3 +2430,23 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - Implemented async login limiter façade with memory and dedicated Redis stores, HMAC-opaque namespaced keys, atomic Lua fixed-window scripts, bounded fail-closed Redis lifecycle, stable outage error, readiness reporting, auth orchestration, CP5 Compose topology, and dedicated integration/manual verification entrypoints.
 - DB-free verification passed: 5 focused contract suites (51 tests), auth limiter boundary suite (3 tests), and full unit suite (38 suites / 246 tests); typecheck, format check, lint check, build, Prisma validation, Compose config topology, and `git diff --check` passed.
 - Real Redis integration and two-backend DB-backed verifier were not run: they require explicit Redis/Compose and guarded database authorization. `npm run prisma:migrate:status` was attempted read-only but blocked because `smartlearning_dev` PostgreSQL at `localhost:5432` was unreachable; no DB mutation occurred. Manual Checkpoint 5 remains pending user evidence review.
+
+### CP5 Redis integration verification — 2026-08-31
+
+- **AUTHORIZED:** user explicitly authorized CP5 Redis integration verification.
+- **Scope:** dedicated Redis 7 service only, isolated Compose project `smartlearning-cp5-redis-it`, host port `6381`, hard-coded test prefix cleanup only. PostgreSQL, migrations, backend instances, and manual two-instance verification were not run.
+- **Command:** `RUN_LOGIN_RATE_LIMIT_REDIS_TESTS=1 LOGIN_RATE_LIMIT_TEST_REDIS_URL=redis://127.0.0.1:6381 npm run test:login-rate-limit:redis -- --runInBand`
+- **RESULT:** PASS — 1 suite / 6 tests. Atomic shared buckets and positive TTL; fixed-window TTL non-extension; concurrent increments and account-only clearing; no-TTL repair and corrupt-bucket fail-closed behavior; real TTL expiry recovery all passed.
+- **Safety:** Redis service started healthy, then the named container/network were removed with `docker compose down --remove-orphans`; the isolated Redis volume was retained. No `FLUSHDB`/`FLUSHALL`, PostgreSQL migration, DB truncation, or product source change was performed.
+- **Decision:** Redis store integration evidence is complete for this slice. Manual Checkpoint 5 remains pending and must not be self-signed-off; the two-backend DB-backed verifier still requires a separate authorized run and sanitized evidence review.
+
+### CP5 two-backend verifier — 2026-08-31
+
+- **AUTHORIZED:** user explicitly authorized the two-backend CP5 verifier and approved process-only temporary credentials plus scoped cleanup.
+- **Preflight:** fresh isolated Compose project was built from the current checkout; PostgreSQL and Redis were healthy, both backend instances were healthy and reachable, and the migration container exited `0`.
+- **Test harness corrections:** increased the dedicated verifier window to 15 seconds so the outage/recovery sequence tests an unexpired bucket; set an explicit 45-second Jest timeout; added a Redis client error listener; and made the anti-enumeration test reach the source limit without asserting a premature 429.
+- **Command:** `npm run test:cp5:e2e -- --runInBand`
+- **RESULT:** PASS — 1 suite / 4 tests. Shared account/source limits, normalization and anti-enumeration, account-only clear after successful login, Redis outage fail-closed behavior, readiness 503/liveness 200, recovery with preserved buckets, opaque keys, and positive TTLs all passed.
+- **Timing:** verifier completed in approximately 72.6 seconds after the dedicated 15-second fixed-window margin was applied.
+- **Safety:** only a fresh named Compose project and its dedicated database/Redis volumes were used; migration/truncation was confined to that isolated database. The named containers/network were removed with `docker compose down --remove-orphans`; volumes were retained. No unrelated Compose resource, `smartlearning_test`, `FLUSHDB`, or `FLUSHALL` was touched.
+- **Decision:** CP5 automated two-backend evidence is ready for review. Manual Checkpoint 5 remains mandatory and pending explicit user confirmation `Checkpoint 5 verified`; do not self-sign-off.
