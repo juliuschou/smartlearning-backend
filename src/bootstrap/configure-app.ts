@@ -12,6 +12,7 @@ import {
 import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from '../common/observability';
 import { AppModule } from '../app.module';
 import { configureWebSocket } from './configure-websocket';
+import { RateLimiterService } from '../modules/rate-limit/rate-limiter.service';
 
 export const API_PREFIX = 'api';
 export const API_VERSION = 'v1';
@@ -70,6 +71,11 @@ export async function configureApplication(
   // Global response/error envelopes.
   expressApp.useGlobalInterceptors(new ApiResponseInterceptor());
   expressApp.useGlobalFilters(new GlobalExceptionFilter());
+
+  // Login limiting uses a separate Redis command client when production mode
+  // requires it. Initial failure is intentionally non-fatal; readiness and
+  // login requests fail closed until bounded reconnect succeeds.
+  await app.get(RateLimiterService).initialize();
 
   // Socket.IO adapter for the durable /live namespace. Bound here so production
   // and the e2e app factory share one websocket setup path.

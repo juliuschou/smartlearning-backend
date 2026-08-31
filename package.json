@@ -25,6 +25,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:integration": "jest --config ./test/jest-integration.json --runInBand",
+    "test:login-rate-limit:redis": "jest --config ./test/jest-redis-integration.json --runInBand",
+    "test:cp5:e2e": "jest --config ./test/jest-cp5-e2e.json --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
   },
   "dependencies": {

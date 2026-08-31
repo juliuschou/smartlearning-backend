@@ -1,7 +1,7 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
-  "testRegex": "^(?!.*manual-cp5-verify\\.e2e-spec\\.ts$).*\\.e2e-spec\\.ts$",
+  "testRegex": "login-rate-limit\\.redis\\.integration-spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },

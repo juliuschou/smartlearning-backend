@@ -1,11 +1,14 @@
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { RealtimeRedisService } from '../realtime/realtime-redis.service';
+import type { RateLimiterService } from '../rate-limit/rate-limiter.service';
 import { ReadinessService } from './readiness.service';
 
 function makeReadiness(options: {
   db?: Promise<unknown>;
   mode: 'off' | 'optional' | 'required';
   availability: 'available' | 'unavailable';
+  loginMode?: 'memory' | 'redis-required';
+  loginAvailable?: boolean;
 }): {
   readiness: ReadinessService;
   queryRaw: jest.Mock;
@@ -35,8 +38,12 @@ function makeReadiness(options: {
         options.mode !== 'required' || options.availability === 'available',
     },
   } as unknown as RealtimeRedisService;
+  const loginRateLimiter = {
+    loginRateLimitMode: options.loginMode ?? 'memory',
+    acceptsTraffic: options.loginAvailable ?? true,
+  } as unknown as RateLimiterService;
   return {
-    readiness: new ReadinessService(prisma, redis),
+    readiness: new ReadinessService(prisma, redis, loginRateLimiter),
     queryRaw,
   };
 }
@@ -88,6 +95,25 @@ describe('ReadinessService', () => {
       healthy: false,
       error: 'redis_unavailable',
       readiness: 'unready',
+    });
+  });
+
+  it('blocks required login limiting when Redis is unavailable', async () => {
+    const { readiness } = makeReadiness({
+      mode: 'off',
+      availability: 'unavailable',
+      loginMode: 'redis-required',
+      loginAvailable: false,
+    });
+
+    const result = await readiness.check();
+
+    expect(result).toMatchObject({ status: 'degraded', httpStatus: 503 });
+    expect(result.checks.loginRateLimit).toEqual({
+      healthy: false,
+      mode: 'redis-required',
+      readiness: 'unready',
+      error: 'login_rate_limit_unavailable',
     });
   });
 

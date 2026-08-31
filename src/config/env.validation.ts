@@ -6,6 +6,8 @@ import {
   IsString,
   Max,
   Min,
+  MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
@@ -65,8 +67,30 @@ export class EnvConfig {
   @IsBoolean()
   SESSION_COOKIE_SECURE?: boolean;
 
-  // Login rate limit (US-F7 / R-F7-7). In-memory single-instance MVP floor.
-  // All optional with safe defaults; tests/CI work without extra config.
+  // Login rate limit (US-F7 / R-F7-7). Production requires shared Redis;
+  // development/test retain the in-memory default for DB-free tests.
+  @IsEnum(['memory', 'redis-required'])
+  LOGIN_RATE_LIMIT_MODE: 'memory' | 'redis-required' = 'memory';
+
+  @ValidateIf((config) => config.LOGIN_RATE_LIMIT_MODE === 'redis-required')
+  @IsString()
+  LOGIN_RATE_LIMIT_REDIS_URL?: string;
+
+  @ValidateIf((config) => config.LOGIN_RATE_LIMIT_MODE === 'redis-required')
+  @IsString()
+  @MinLength(32)
+  LOGIN_RATE_LIMIT_KEY_SECRET?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS?: number;
+
   @IsOptional()
   @IsNumber()
   @Min(1)
@@ -171,6 +195,23 @@ export function validateEnv(
       60 * 1000,
     ),
     REALTIME_REDIS_MODE: raw.REALTIME_REDIS_MODE || RealtimeRedisMode.OFF,
+    LOGIN_RATE_LIMIT_MODE:
+      raw.LOGIN_RATE_LIMIT_MODE ||
+      (raw.NODE_ENV === 'production' ? 'redis-required' : 'memory'),
+    LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS: optionalNum(
+      raw.LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS,
+    ),
+    LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS: optionalNum(
+      raw.LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS,
+    ),
+    LOGIN_RATE_LIMIT_ACCOUNT_MAX: optionalNum(raw.LOGIN_RATE_LIMIT_ACCOUNT_MAX),
+    LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: optionalNum(
+      raw.LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS,
+    ),
+    LOGIN_RATE_LIMIT_SOURCE_MAX: optionalNum(raw.LOGIN_RATE_LIMIT_SOURCE_MAX),
+    LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS: optionalNum(
+      raw.LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS,
+    ),
     SESSION_COOKIE_SECURE: bool(raw.SESSION_COOKIE_SECURE),
     CLI_COURSES_LIST_RATE_LIMIT_MAX: optionalNum(
       raw.CLI_COURSES_LIST_RATE_LIMIT_MAX,
@@ -212,6 +253,30 @@ export function validateEnv(
     throw new Error(
       'SESSION_COOKIE_SECURE=false is only allowed in NODE_ENV=test',
     );
+  }
+  if (
+    config.NODE_ENV === 'production' &&
+    config.LOGIN_RATE_LIMIT_MODE !== 'redis-required'
+  ) {
+    throw new Error(
+      'LOGIN_RATE_LIMIT_MODE=memory is not allowed in NODE_ENV=production',
+    );
+  }
+  if (
+    config.LOGIN_RATE_LIMIT_MODE === 'redis-required' &&
+    config.LOGIN_RATE_LIMIT_REDIS_URL
+  ) {
+    let parsed: URL;
+    try {
+      parsed = new URL(config.LOGIN_RATE_LIMIT_REDIS_URL);
+    } catch {
+      throw new Error('LOGIN_RATE_LIMIT_REDIS_URL must be a valid Redis URL');
+    }
+    if (parsed.protocol !== 'redis:' && parsed.protocol !== 'rediss:') {
+      throw new Error(
+        'LOGIN_RATE_LIMIT_REDIS_URL must use redis:// or rediss://',
+      );
+    }
   }
   if (config.CORS_ORIGIN.split(',').some((origin) => origin.trim() === '*')) {
     throw new Error('CORS_ORIGIN must not contain a wildcard origin');

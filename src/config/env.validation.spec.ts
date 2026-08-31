@@ -34,6 +34,8 @@ describe('validateEnv', () => {
       validateEnv({
         ...baseEnv,
         NODE_ENV: 'production',
+        LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
+        LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
         SESSION_COOKIE_SECURE: 'false',
       }),
     ).toThrow('SESSION_COOKIE_SECURE=false is only allowed in NODE_ENV=test');
@@ -60,6 +62,79 @@ describe('validateEnv', () => {
         Number(value),
       );
     }
+  });
+
+  it('defaults login rate limiting to memory outside production', () => {
+    const config = validateEnv({ ...baseEnv, NODE_ENV: 'test' });
+    expect(config.LOGIN_RATE_LIMIT_MODE).toBe('memory');
+  });
+
+  it('coerces login rate-limit settings from strings', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      NODE_ENV: 'test',
+      LOGIN_RATE_LIMIT_ACCOUNT_MAX: '3',
+      LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: '1000',
+      LOGIN_RATE_LIMIT_SOURCE_MAX: '5',
+      LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS: '2000',
+      LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS: '2000',
+      LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS: '500',
+    });
+
+    expect(config.LOGIN_RATE_LIMIT_ACCOUNT_MAX).toBe(3);
+    expect(config.LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS).toBe(1000);
+    expect(config.LOGIN_RATE_LIMIT_SOURCE_MAX).toBe(5);
+    expect(config.LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS).toBe(2000);
+    expect(config.LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS).toBe(2000);
+    expect(config.LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS).toBe(500);
+  });
+
+  it('requires Redis settings for redis-required mode', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        NODE_ENV: 'test',
+        LOGIN_RATE_LIMIT_MODE: 'redis-required',
+      }),
+    ).toThrow('Invalid environment configuration:');
+  });
+
+  it('rejects memory login limiting in production', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        LOGIN_RATE_LIMIT_MODE: 'memory',
+      }),
+    ).toThrow('LOGIN_RATE_LIMIT_MODE=memory is not allowed');
+  });
+
+  it('accepts a valid production Redis login configuration', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      NODE_ENV: 'production',
+      LOGIN_RATE_LIMIT_MODE: 'redis-required',
+      LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
+      LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
+    });
+    expect(config.LOGIN_RATE_LIMIT_MODE).toBe('redis-required');
+  });
+
+  it.each([
+    ['LOGIN_RATE_LIMIT_ACCOUNT_MAX', '0'],
+    ['LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS', '999'],
+    ['LOGIN_RATE_LIMIT_SOURCE_MAX', '0'],
+    ['LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS', '999'],
+    ['LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS', '0'],
+    ['LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS', '0'],
+  ])('rejects an invalid login rate-limit bound for %s', (key, value) => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        NODE_ENV: 'test',
+        [key]: value,
+      }),
+    ).toThrow('Invalid environment configuration:');
   });
 
   it.each([

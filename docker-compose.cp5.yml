@@ -1,0 +1,132 @@
+# BE-8.5 CP5 verification topology: one PostgreSQL authority, one Redis
+# counter store, and two independent backend processes.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${CP5_DB_USERNAME:-smartlearning}
+      POSTGRES_PASSWORD: ${CP5_DB_PASSWORD:?CP5_DB_PASSWORD is required}
+      POSTGRES_DB: smartlearning_cp5_test
+    ports:
+      - '${CP5_DB_PORT:-55434}:5432'
+    volumes:
+      - cp5_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${CP5_DB_USERNAME:-smartlearning} -d smartlearning_cp5_test',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [cp5]
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    ports:
+      - '${CP5_REDIS_PORT:-6380}:6379'
+    volumes:
+      - cp5_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks: [cp5]
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: smartlearning-backend:cp5-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://${CP5_DB_USERNAME:-smartlearning}:${CP5_DB_PASSWORD:?CP5_DB_PASSWORD is required}@db:5432/smartlearning_cp5_test?schema=public
+    networks: [cp5]
+
+  backend-a:
+    build:
+      context: .
+      target: runtime
+    image: smartlearning-backend:cp5
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment: &backend-env
+      NODE_ENV: test
+      PORT: 3000
+      DATABASE_URL: postgresql://${CP5_DB_USERNAME:-smartlearning}:${CP5_DB_PASSWORD:?CP5_DB_PASSWORD is required}@db:5432/smartlearning_cp5_test?schema=public
+      CORS_ORIGIN: http://localhost:3101
+      COOKIE_SECRET: ${CP5_COOKIE_SECRET:?CP5_COOKIE_SECRET is required}
+      SESSION_COOKIE_SECURE: 'false'
+      LOGIN_RATE_LIMIT_MODE: redis-required
+      LOGIN_RATE_LIMIT_REDIS_URL: redis://redis:6379
+      LOGIN_RATE_LIMIT_KEY_SECRET: ${CP5_HMAC_SECRET:?CP5_HMAC_SECRET is required}
+      LOGIN_RATE_LIMIT_ACCOUNT_MAX: 3
+      LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: 5000
+      LOGIN_RATE_LIMIT_SOURCE_MAX: 5
+      LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS: 5000
+      LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS: 2000
+      LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS: 1000
+      REALTIME_REDIS_MODE: off
+    ports:
+      - '${CP5_BACKEND_A_PORT:-3101}:3000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [cp5]
+
+  backend-b:
+    build:
+      context: .
+      target: runtime
+    image: smartlearning-backend:cp5
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      <<: *backend-env
+      CORS_ORIGIN: http://localhost:3102
+    ports:
+      - '${CP5_BACKEND_B_PORT:-3102}:3000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [cp5]
+
+volumes:
+  cp5_pgdata:
+  cp5_redisdata:
+
+networks:
+  cp5:
+    driver: bridge

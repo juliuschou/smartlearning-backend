@@ -9,6 +9,7 @@ import {
   DomainError,
   ErrorCode,
   RateLimitedError,
+  RateLimitUnavailableError,
   ValidationError,
 } from '../errors';
 import { GlobalExceptionFilter } from './global-exception-filter';
@@ -84,6 +85,27 @@ describe('GlobalExceptionFilter', () => {
         message: 'Too many attempts. Please try again later.',
         blocking: true,
         retryAfterSeconds: 17,
+      },
+    });
+  });
+
+  it('maps login rate-limit outage to a stable 503 without retry details', () => {
+    const { host, response } = hostFor('req-rate-limit-outage');
+
+    filter.catch(new RateLimitUnavailableError(), host);
+
+    expect(response.status).toHaveBeenCalledWith(
+      HttpStatus.SERVICE_UNAVAILABLE,
+    );
+    expect(response.json).toHaveBeenCalledWith({
+      data: null,
+      meta: { schemaVersion: 1, requestId: 'req-rate-limit-outage' },
+      error: {
+        code: ErrorCode.AUTH_RATE_LIMIT_UNAVAILABLE,
+        message:
+          'Authentication is temporarily unavailable. Please try again later.',
+        blocking: true,
+        retryAfterSeconds: null,
       },
     });
   });

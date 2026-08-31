@@ -87,7 +87,10 @@ Required variables (validated at bootstrap; missing values fail fast):
 | `DATABASE_URL`  | —             | PostgreSQL connection string                                            |
 | `CORS_ORIGIN`   | —             | Comma-separated origins, or `*` (dev only)                              |
 | `COOKIE_SECRET` | —             | Cookie/session signing secret (generate with `openssl rand -base64 32`) |
-| `REDIS_URL`     | (optional)    | Redis for rate limit + Socket adapter (Phase 7/9)                       |
+| `REDIS_URL`     | (optional)    | Realtime Socket.IO Redis adapter (independent from login limiting)       |
+| `LOGIN_RATE_LIMIT_MODE` | `memory` (dev/test) | `memory` or production `redis-required` login limiter mode          |
+| `LOGIN_RATE_LIMIT_REDIS_URL` | (required in redis-required) | Dedicated Redis command URL for login buckets |
+| `LOGIN_RATE_LIMIT_KEY_SECRET` | (required in redis-required) | Independent HMAC secret, at least 32 characters |
 
 Generate secrets: `openssl rand -base64 32`
 

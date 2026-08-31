@@ -2386,3 +2386,47 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - [x] Added env validation coverage for all eight CLI rate-limit fields, including valid string coercion and invalid lower bounds.
 - [x] Verification: `npx prettier --check src/config/env.validation.spec.ts src/modules/rate-limit/operation-rate-limiter.service.spec.ts src/modules/rate-limit/operation-rate-limit.guard.spec.ts` passed; `npm test -- --runInBand modules/rate-limit/operation-rate-limiter.service.spec.ts modules/rate-limit/operation-rate-limit.guard.spec.ts config/env.validation.spec.ts` passed (3 suites, 21 tests).
 - [x] No production code changed; no DB-backed tests were run.
+
+## 2026-08-31 BE-8.5 CP5 — Redis multi-instance login rate limit
+
+### Context and acceptance criteria
+
+- [ ] Move only login account/source fixed-window counters from process-local memory to Redis so two backend instances share count and TTL.
+- [ ] Preserve US-F7 behavior: NFKC/trim/lowercase account normalization; pre-check before account lookup/Argon2; dual-scope failure counting; generic 401 before max and 429 on the next pre-check; longest retry TTL; account-only clear on success; missing/disabled/wrong-password anti-enumeration.
+- [ ] Redis keys use versioned namespace, domain-separated HMAC-SHA-256, and no raw username/IP/reversible identifier in key/log/response/metrics.
+- [ ] Redis operations use atomic Lua scripts: pre-check, fixed-window failure recording without TTL extension, no-TTL corruption repair, and account-only clear.
+- [ ] Redis outage is fail-closed: login returns 503 `AUTH_RATE_LIMIT_UNAVAILABLE` before account lookup/Argon2; readiness 503; liveness 200; no memory fallback in `redis-required`; recovery is bounded and preserves unexpired buckets.
+- [ ] Real Redis integration and two actual backend instances prove shared account/source limits, normalization, outage/recovery, opaque positive TTLs, and no skipped required checks.
+
+### Contract freeze / working notes
+
+- `LOGIN_RATE_LIMIT_MODE` is `memory|redis-required`; development/test default to memory, production must use `redis-required`.
+- Redis login settings are independent from realtime Redis: `LOGIN_RATE_LIMIT_REDIS_URL`, `LOGIN_RATE_LIMIT_KEY_SECRET`, `LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS`, and `LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS`.
+- CP4 `OperationRateLimiterService` remains in-memory and unchanged; PostgreSQL remains Account/Session/domain authority.
+- Redis command timeout or mutation state uncertainty is not retried. A post-commit account-clear failure does not fail an already-successful login; the account bucket expires naturally.
+- Manual Checkpoint 5 is a mandatory stop. Do not record completion until the user explicitly confirms `Checkpoint 5 verified` after reviewing sanitized multi-instance and outage evidence.
+
+### Dependencies & environment
+
+- Node.js 24+, existing `redis` 6.2.1 dependency, PostgreSQL only for guarded auth E2E, and a dedicated Redis 7 test service/URL.
+- DB-backed tests may mutate only explicitly authorized `smartlearning_test`; no migration/truncate is run without explicit authorization. Redis tests require explicit opt-in, a test-only URL, unique hard-coded prefix, and prefix-scoped cleanup only.
+
+### Risk & rollback
+
+- **Risk: high** — authentication abuse prevention, multi-instance consistency, Redis dependency outage, key privacy, and timeout mutation semantics.
+- **Rollback:** revert the application image while retaining namespaced Redis keys until TTL expiry; never use `FLUSHDB`/`FLUSHALL`. Returning to memory is safe only with an explicitly approved single-instance topology, never scaled out.
+
+### Implementation checklist
+
+- [x] Add CP5 env validation, examples, store contract, memory store, HMAC key factory, Redis store, and module wiring.
+- [x] Add stable outage error and update async auth orchestration plus readiness checks.
+- [x] Update unit/regression tests and add real Redis integration coverage.
+- [x] Add dedicated CP5 Compose topology and fail-fast two-instance manual verifier.
+- [x] Run DB-free static/behavioral verification; Redis/DB-backed suites remain gated by explicit authorization.
+- [ ] Stop at Manual Checkpoint 5 and present evidence; do not self-sign-off.
+
+### Results
+
+- Implemented async login limiter façade with memory and dedicated Redis stores, HMAC-opaque namespaced keys, atomic Lua fixed-window scripts, bounded fail-closed Redis lifecycle, stable outage error, readiness reporting, auth orchestration, CP5 Compose topology, and dedicated integration/manual verification entrypoints.
+- DB-free verification passed: 5 focused contract suites (51 tests), auth limiter boundary suite (3 tests), and full unit suite (38 suites / 246 tests); typecheck, format check, lint check, build, Prisma validation, Compose config topology, and `git diff --check` passed.
+- Real Redis integration and two-backend DB-backed verifier were not run: they require explicit Redis/Compose and guarded database authorization. `npm run prisma:migrate:status` was attempted read-only but blocked because `smartlearning_dev` PostgreSQL at `localhost:5432` was unreachable; no DB mutation occurred. Manual Checkpoint 5 remains pending user evidence review.

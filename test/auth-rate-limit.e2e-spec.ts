@@ -30,6 +30,7 @@ import { setupTestDb, truncateAll } from './setup/db';
  */
 
 const RATE_ENV = {
+  LOGIN_RATE_LIMIT_MODE: 'memory',
   LOGIN_RATE_LIMIT_ACCOUNT_MAX: '3',
   LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: '1000',
   LOGIN_RATE_LIMIT_SOURCE_MAX: '5',

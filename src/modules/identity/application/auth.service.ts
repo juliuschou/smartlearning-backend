@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Account, WebSession } from '../../../../generated/prisma/client';
 import { SessionService, type SessionMeta } from '../../../common/auth';
 import { hashPassword, verifyPassword } from '../../../common/crypto';
@@ -27,6 +27,8 @@ import { AccountService } from './account.service';
  */
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly accounts: AccountService,
     private readonly sessions: SessionService,
@@ -50,7 +52,7 @@ export class AuthService {
     // (e.g. tests without a proxy), so such callers share one source budget.
     const accountKey = normalizeRateLimitAccountKey(username);
     const sourceKey = meta?.ipAddress ?? 'unknown';
-    const limit = this.rateLimiter.check(accountKey, sourceKey);
+    const limit = await this.rateLimiter.check(accountKey, sourceKey);
     if (limit.limited) {
       throw new RateLimitedError(limit.retryAfterSeconds);
     }
@@ -65,7 +67,7 @@ export class AuthService {
     // observed after that verification.
     if (!account) {
       await verifyDummy(password);
-      this.recordLoginFailure(accountKey, sourceKey);
+      await this.recordLoginFailure(accountKey, sourceKey);
       throw new InvalidCredentialsError();
     }
 
@@ -77,7 +79,7 @@ export class AuthService {
       !ok ||
       account.status !== AccountStatus.ACTIVE
     ) {
-      this.recordLoginFailure(accountKey, sourceKey);
+      await this.recordLoginFailure(accountKey, sourceKey);
       throw new InvalidCredentialsError();
     }
 
@@ -104,19 +106,31 @@ export class AuthService {
         return { token, session, account: current };
       });
       // Success: clear the account-scope counter (source scope decays via TTL).
-      this.rateLimiter.clearOnSuccess(accountKey);
+      // The session transaction has committed, so a clear failure must not turn
+      // an already-successful login into a client-visible error.
+      try {
+        await this.rateLimiter.clearOnSuccess(accountKey);
+      } catch (error) {
+        this.logger.warn(
+          { reason: error instanceof Error ? error.name : 'unknown' },
+          'Login rate-limit account clear failed after commit',
+        );
+      }
       return result;
     } catch (e) {
       if (e instanceof InvalidCredentialsError) {
-        this.recordLoginFailure(accountKey, sourceKey);
+        await this.recordLoginFailure(accountKey, sourceKey);
       }
       throw e;
     }
   }
 
   /** Record a failed login on both scopes (R-F7-7). */
-  private recordLoginFailure(accountKey: string, sourceKey: string): void {
-    this.rateLimiter.recordFailure(accountKey, sourceKey);
+  private async recordLoginFailure(
+    accountKey: string,
+    sourceKey: string,
+  ): Promise<void> {
+    await this.rateLimiter.recordFailure(accountKey, sourceKey);
   }
 
   async stepUp(

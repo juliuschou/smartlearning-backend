@@ -131,6 +131,19 @@ export class InvalidCredentialsError extends DomainError {
  * `retryAfterSeconds` is surfaced to the envelope so the client can show a
  * retry hint. The message is generic and MUST NOT reveal account existence.
  */
+export class RateLimitUnavailableError extends DomainError {
+  constructor() {
+    super(
+      'AUTH_RATE_LIMIT_UNAVAILABLE' as ErrorCode,
+      'Authentication is temporarily unavailable. Please try again later.',
+      HttpStatus.SERVICE_UNAVAILABLE,
+      undefined,
+      undefined,
+      null,
+    );
+  }
+}
+
 export class RateLimitedError extends DomainError {
   constructor(retryAfterSeconds: number) {
     super(

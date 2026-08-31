@@ -2,7 +2,7 @@
 
 後端 NestJS 11，所有 HTTP 端點在 `/api/v1` prefix 下（health probes 除外）。本文為前端開發基準，涵蓋老師出題、課堂使用（teacher）、學員課堂使用三大功能。
 
-> 生成日期：2026-08-31。對應後端 runtime：Phase B student/enrollment/account-bound participant、BE-5 closed-session archive governance、BE-7 durable realtime/replay runtime，以及 BE-8.4 CP4 CLI Course collection 與 per-credential in-process rate limit。
+> 生成日期：2026-08-31。對應後端 runtime：Phase B student/enrollment/account-bound participant、BE-5 closed-session archive governance、BE-7 durable realtime/replay runtime、BE-8.4 CP4 CLI Course collection/per-credential in-process rate limit，以及 BE-8.5 CP5 Redis login rate limit。
 
 ---
 
@@ -106,7 +106,7 @@ Web list/create 保持既有 owner-scoped `CourseDto`（Web list 包含 draft/ar
 { "id": "UUID", "name": "string", "status": "draft" }
 ```
 
-`canCreateCourse=false` 不撤銷 CLI key：CLI list 仍可用，create 回 403。CLI Course 與 CLI question-batch 操作以 `CliCredential.id` 建立 operation-specific in-process fixed-window bucket；429 為 `RATE_LIMITED` 並提供 `error.retryAfterSeconds`。Web/login bucket 不受 CLI 流量影響；multi-instance Redis sharing 留待 CP5。
+`canCreateCourse=false` 不撤銷 CLI key：CLI list 仍可用，create 回 403。CLI Course 與 CLI question-batch 操作以 `CliCredential.id` 建立 operation-specific in-process fixed-window bucket；429 為 `RATE_LIMITED` 並提供 `error.retryAfterSeconds`。Web/login bucket 不受 CLI 流量影響；login bucket 在 production `redis-required` 模式由 Redis 跨 instance 共用。Redis 暫時不可用時登入回 503 `AUTH_RATE_LIMIT_UNAVAILABLE`，readiness 503、liveness 仍 200。
 
 **CourseDto**：
 

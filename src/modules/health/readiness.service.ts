@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RealtimeRedisService } from '../realtime/realtime-redis.service';
+import { RateLimiterService } from '../rate-limit/rate-limiter.service';
 
 export interface ReadinessCheck {
   healthy: boolean;
@@ -24,6 +25,7 @@ export class ReadinessService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RealtimeRedisService,
+    private readonly loginRateLimiter: RateLimiterService,
   ) {}
 
   async check(): Promise<ReadinessResult> {
@@ -49,7 +51,18 @@ export class ReadinessService {
       ...(redisHealthy ? {} : { error: 'redis_unavailable' }),
     };
 
-    const operational = dbHealthy && policy.acceptsTraffic;
+    const loginRateLimitHealthy = this.loginRateLimiter.acceptsTraffic;
+    checks.loginRateLimit = {
+      healthy: loginRateLimitHealthy,
+      mode: this.loginRateLimiter.loginRateLimitMode,
+      readiness: loginRateLimitHealthy ? 'healthy' : 'unready',
+      ...(loginRateLimitHealthy
+        ? {}
+        : { error: 'login_rate_limit_unavailable' }),
+    };
+
+    const operational =
+      dbHealthy && policy.acceptsTraffic && loginRateLimitHealthy;
     return {
       status: operational && redisHealthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
