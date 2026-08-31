@@ -2335,8 +2335,9 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - [x] Add focused CLI courses E2E (`test/cli-courses.e2e-spec.ts`); DB-backed execution was attempted only against the guarded test target and is recorded below。
 - [x] Add CLI/batch rate-limit E2E, plus Web/login/credential lifecycle regression assertions in the targeted bundle。
 - [x] Update OpenAPI, `docs/frontend-api-reference.md`, env examples, and redaction tests。
-- [ ] Run targeted → full DB-backed verification and record command/suite/test/skip evidence; current targeted DB run is BLOCKED/FAIL because the guarded test database was unavailable。
-- [ ] Create and run Manual Checkpoint 4 only after automated DB-backed verification is green; stop and wait for explicit user confirmation before CP5。
+- [x] Run and record the targeted DB-backed verification with command/suite/test/skip evidence; the restored guarded test database rerun is green below。
+- [ ] Run the full DB-backed verification bundle; this remains deferred until the next authorized regression pass。
+- [x] Create and run Manual Checkpoint 4 after automated DB-backed verification became green; user confirmed completion and authorized recording below. CP5 remains gated pending explicit confirmation。
 
 ### Results — focused CLI courses E2E (2026-08-31)
 
@@ -2365,6 +2366,18 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - **Result:** **BLOCKED** for both new CP4 DB-backed suites because the guarded PostgreSQL target was unavailable; combined process exited 1. Existing suites: 5 passed; OpenAPI passed。
 - **Counts:** 7 suites total; 5 passed, 2 blocked suites reported as failed by Jest; 37 tests passed, 13 blocked test cases; 0 snapshots。Captured diagnostics were the suites' explicit `BLOCKED: PostgreSQL migration/schema is unavailable` messages; no lower-level connection error was retained。
 - **Required follow-up:** restore/verify availability of guarded `smartlearning_test`, then rerun the exact targeted command before Manual Checkpoint 4. Blocked tests are not green。
+
+#### Restored-database rerun — 2026-08-31
+
+- **Command:** `NODE_ENV=test npm run test:e2e -- --runInBand test/cli-courses.e2e-spec.ts test/cli-batch-rate-limit.e2e-spec.ts test/auth-courses.e2e-spec.ts test/question-batches.e2e-spec.ts test/auth-rate-limit.e2e-spec.ts test/cli-credential.e2e-spec.ts test/openapi.e2e-spec.ts`
+- **Result:** **PASS** — 7/7 suites, 50/50 tests, 0 skipped, 0 snapshots; duration 88.845s; no failures。
+- **Verification confidence:** integration-level targeted E2E against guarded `smartlearning_test`。
+
+### Manual Checkpoint 4 — verified（2026-08-31）
+
+- [x] **BE-8.4 CP4 — CLI courses 與 CLI/batch rate limit 人工 Checkpoint 4 完成。** User confirmed the manual checkpoint evidence and authorized recording the result。
+- [x] Automated prerequisite targeted E2E is green: 7 suites / 50 tests passed, with no skips or failures。
+- [ ] CP5 not started; explicit user confirmation remains required before proceeding。
 
 ### Focused rate-limit unit coverage — 2026-08-31
 
