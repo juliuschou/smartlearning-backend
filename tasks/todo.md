@@ -2591,3 +2591,52 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - **Manual verifier:** `npm run test:cp7:manual -- --runInBand` — PASS, 1 suite / 1 test. Evidence included safe metric families, readiness policy `database:healthy,realtime_redis:degraded,login_rate_limit:healthy`, and alert inventory covering database, login limiting, realtime retry/dead, auto-close, retention, and optional Redis degradation. CP6 manual verifier also passed with no disclosure failures.
 - **Prometheus tooling:** `promtool` is unavailable; alert rules were validated by static artifact tests instead.
 - **Manual Checkpoint 7:** User explicitly confirmed `Checkpoint 7 verified` on 2026-09-01. CP7 acceptance and checkpoint are complete.
+
+## 2026-09-01 BE-8.8 CP8 — Production-like topology compatibility
+
+### Context and acceptance criteria
+
+- **Plan:** `../docs/智學互動平台/50_實作與測試/BackendBE8/BE-8.8 CP8 Production-like topology 相容性實作計畫.md`
+- **Baseline:** `main` at `1e7e0527bee3053e3c99f127b573cf76ba9ba0dc`, clean working tree, Node `v26.5.1`, npm `11.17.0`, Docker `29.6.2`, Compose `v5.3.1`.
+- [x] HTTPS verification-only Nginx proxy proves secure cookies, exact Origin/CSRF, and Socket.IO handshake/upgrade from an isolated verifier network; host-loopback curl is blocked by this Rancher Desktop WSL environment.
+- [x] Isolated Compose topology proves realtime Redis adapter mode, internal-only backend/DB/Redis/metrics exposure, migration ordering, and compiled runtime startup.
+- [x] Shutdown drill emits retryable socket closure and cleanly stops/restores API instances; readiness 503 during the very short shutdown window was not captured by polling and remains a manual inspection item.
+- [x] Handoff records env, rollout/rollback, failure drills, evidence collection, and BE/OPS ownership boundaries.
+- [x] Automated evidence stopped at `PENDING USER INSPECTION`; the user explicitly confirmed `Checkpoint 8 verified` on 2026-09-01, closing CP8.
+
+### Risk & rollback
+
+- **Risk: medium-high** — proxy trust, secure-cookie/CSRF boundaries, two-instance realtime delivery, and shutdown sequencing can affect authentication and committed submissions.
+- **Rollback:** disable `REALTIME_REDIS_MODE` or stop the verification-only topology and return to the previously verified single-instance/local adapter path; revert additive source/docs/config changes. Never weaken CSRF/Origin/Secure-cookie checks, restore revoked credentials, clear databases, or use a destructive migration rollback.
+
+### Dependencies & environment
+
+- Node 24+, npm, Docker/Compose, compiled runtime image, PostgreSQL and Redis supplied only by the isolated CP8 project.
+- CP8 Compose uses a unique project name, isolated network/volumes, generated self-signed localhost certificate, explicit HTTPS origin, two Redis logical boundaries, and no host publication for backend/DB/Redis/metrics.
+- The user explicitly authorized the isolated CP8 Docker topology on 2026-09-01; migration ran only against the Compose-owned `smartlearning_cp8` database. No shared development/test database, truncate, or DB-backed suite was used.
+
+### Working notes
+
+- PostgreSQL remains domain authority; Redis is fan-out/rate-limit infrastructure only.
+- `REALTIME_REDIS_MODE=required` blocks realtime traffic/readiness when unavailable; login limiter uses a separate Redis URL and remains fail-closed.
+- `/health/live` performs no dependency I/O; `/health/ready` includes application shutdown state and required dependency status.
+- Nginx overwrites forwarded scheme/host/client address and clears identity-like headers; backend trusts only the configured proxy hop count and never establishes auth from forwarded identity headers.
+- Durable replay remains bounded by the existing outbox retention/recovery contract; CP8 must report any unsupported claim as `DEFERRED/BLOCKED`.
+
+### Implementation checklist
+
+- [x] Add explicit trusted-proxy and shutdown lifecycle state/configuration with targeted unit coverage.
+- [x] Add verification-only `ops/topology/` Nginx/TLS/Compose fixture and static topology assertions.
+- [x] Update env template, README, and operational handoff with safe topology/rollout/rollback guidance.
+- [x] Run code-only/static checks and the authorized isolated Compose migration/runtime drills.
+- [x] Stopped at `PENDING USER INSPECTION`; exact user confirmation `Checkpoint 8 verified` was received on 2026-09-01.
+
+### Results
+
+- Code-only verification: CP8 static tests 3/3, lifecycle/env/readiness tests 44/44, typecheck, lint, format, build, and `git diff --check` all PASS.
+- Compose startup: migration exited 0 after the migration image received OpenSSL; both compiled API instances, PostgreSQL, both dedicated Redis services, and Nginx reached the expected running/healthy state. The fixture now uses an internal `cp8` data-plane network plus a narrowly scoped Nginx/certificate `edge` network so the loopback HTTPS publication functions without exposing backend/data services.
+- Proxy/auth smoke from an isolated verifier container: TLS health `200/200`, `/metrics` `404`, login `201`, Secure `__Host-session`/`__Host-csrf` attributes, missing/wrong/wildcard CSRF Origin `403`, valid CSRF `201`, logout `201`, and revoked session `401` all PASS. Direct host `curl https://localhost:8443` could not connect in this Rancher Desktop WSL environment; the published mapping is present and the internal verifier reached the TLS proxy.
+- Realtime smoke: teacher and participant Socket.IO clients received `session.snapshot`; teacher-only counts were present only for the teacher projection, participant counts were hidden, and polling upgraded to WebSocket through Nginx. Nginx uses `ip_hash` because Engine.IO polling sessions are instance-local while Redis shares application fan-out.
+- Failure drills: stopping `redis-realtime` produced liveness `200` and readiness `503`; after Redis restart, automatic recovery did not return readiness within 30 seconds, while restarting both API instances restored readiness `200`. Treat automatic Redis recovery as a follow-up/manual inspection item. SIGTERM delivered `server.shutdown` with `SERVER_SHUTTING_DOWN` and `retryable=true`; API instances restored cleanly.
+- Authority check: isolated PostgreSQL returned one accepted Submission, `live_session=active`, `session_question=open`, and eight durable event rows for the exercised session. No Redis or logs were used as domain truth.
+- **Manual status:** `Checkpoint 8 verified` confirmed by the user on 2026-09-01; CP8 is complete. The documented Redis automatic-recovery follow-up remains open for a later slice. After confirmation, project `smartlearning-cp8-teacher` was torn down with `down --remove-orphans`; named volumes were retained.

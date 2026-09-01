@@ -80,17 +80,19 @@ application and the Prisma CLI (`prisma.config.ts`):
 
 Required variables (validated at bootstrap; missing values fail fast):
 
-| Variable        | Default       | Description                                                             |
-| --------------- | ------------- | ----------------------------------------------------------------------- |
-| `PORT`          | `3000`        | HTTP listen port (1–65535)                                              |
-| `NODE_ENV`      | `development` | `development` \| `test` \| `production`                                 |
-| `DATABASE_URL`  | —             | PostgreSQL connection string                                            |
-| `CORS_ORIGIN`   | —             | Comma-separated origins, or `*` (dev only)                              |
-| `COOKIE_SECRET` | —             | Cookie/session signing secret (generate with `openssl rand -base64 32`) |
-| `REDIS_URL`     | (optional)    | Realtime Socket.IO Redis adapter (independent from login limiting)       |
-| `LOGIN_RATE_LIMIT_MODE` | `memory` (dev/test) | `memory` or production `redis-required` login limiter mode          |
-| `LOGIN_RATE_LIMIT_REDIS_URL` | (required in redis-required) | Dedicated Redis command URL for login buckets |
-| `LOGIN_RATE_LIMIT_KEY_SECRET` | (required in redis-required) | Independent HMAC secret, at least 32 characters |
+| Variable                      | Default                      | Description                                                             |
+| ----------------------------- | ---------------------------- | ----------------------------------------------------------------------- |
+| `PORT`                        | `3000`                       | HTTP listen port (1–65535)                                              |
+| `NODE_ENV`                    | `development`                | `development` \| `test` \| `production`                                 |
+| `DATABASE_URL`                | —                            | PostgreSQL connection string                                            |
+| `CORS_ORIGIN`                 | —                            | Comma-separated explicit origins; wildcard origins are rejected         |
+| `COOKIE_SECRET`               | —                            | Cookie/session signing secret (generate with `openssl rand -base64 32`) |
+| `TRUST_PROXY_HOPS`            | `0`                          | Number of trusted proxy hops; use `1` only behind one controlled proxy  |
+| `SHUTDOWN_TIMEOUT_MS`         | `10000`                      | Maximum HTTP drain window during graceful shutdown                      |
+| `REDIS_URL`                   | (optional)                   | Realtime Socket.IO Redis adapter (independent from login limiting)      |
+| `LOGIN_RATE_LIMIT_MODE`       | `memory` (dev/test)          | `memory` or production `redis-required` login limiter mode              |
+| `LOGIN_RATE_LIMIT_REDIS_URL`  | (required in redis-required) | Dedicated Redis command URL for login buckets                           |
+| `LOGIN_RATE_LIMIT_KEY_SECRET` | (required in redis-required) | Independent HMAC secret, at least 32 characters                         |
 
 Generate secrets: `openssl rand -base64 32`
 
@@ -158,6 +160,22 @@ and only touches relative (`./`, `../`) specifiers.
 > preserved under `outDir`). The Docker `CMD` uses `node dist/src/main`. If you
 > run `npm run start:prod` directly, use `node dist/src/main` instead.
 
+### CP8 production-like proxy verification
+
+The repository includes a verification-only two-instance topology at
+`docker-compose.cp8.yml`. It starts PostgreSQL, separate realtime/login Redis
+services, two compiled backend containers, a generated localhost certificate,
+and Nginx. Only Nginx publishes a loopback HTTPS port; the backend, database,
+Redis, and raw `/metrics` endpoint remain internal. This fixture is not the
+OPS-1 production Nginx/Next.js stack and does not certify the OPS-2 W1–W8 load
+budget.
+
+See [`ops/topology/README.md`](ops/topology/README.md) for the sanitized env
+matrix, render-before-up procedure, proxy/Socket.IO checks, authority queries,
+failure drills, ownership matrix, and rollback steps. CP8 runtime evidence
+must stop at `PENDING USER INSPECTION` until a human confirms `Checkpoint 8
+verified`.
+
 ## Available scripts
 
 | Script                          | Purpose                                                                                                                                                                  |
@@ -178,6 +196,7 @@ and only touches relative (`./`, `../`) specifiers.
 | `npm test`                      | Jest unit tests (`src/**/*.spec.ts`)                                                                                                                                     |
 | `npm run test:integration`      | Jest integration tests (DB-backed; `*.integration-spec.ts`)                                                                                                              |
 | `npm run test:e2e`              | Jest e2e tests (`*.e2e-spec.ts`)                                                                                                                                         |
+| `npm run test:cp8:static`       | Static CP8 topology contract tests (no database or containers)                                                                                                           |
 | `npm run test:cov`              | Coverage report                                                                                                                                                          |
 
 ## Project layout

@@ -4,6 +4,7 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { Server, ServerOptions } from 'socket.io';
 import { RealtimeRedisService } from '../modules/realtime/realtime-redis.service';
+import { ApplicationLifecycleService } from '../common/lifecycle';
 
 /**
  * Socket.IO adapter that injects a CORS allowlist read from `ConfigService`
@@ -19,6 +20,7 @@ export class CorsIoAdapter extends IoAdapter {
   constructor(
     app: INestApplication,
     private readonly redis: RealtimeRedisService,
+    private readonly lifecycle: ApplicationLifecycleService,
   ) {
     super(app);
     const configService = app.get(ConfigService);
@@ -41,6 +43,7 @@ export class CorsIoAdapter extends IoAdapter {
       },
     });
     this.redis.bindServer(server);
+    this.lifecycle.registerSocketServer(server);
     return server;
   }
 }
@@ -52,8 +55,9 @@ export class CorsIoAdapter extends IoAdapter {
  */
 export async function configureWebSocket(app: INestApplication): Promise<void> {
   const redis = app.get(RealtimeRedisService);
+  const lifecycle = app.get(ApplicationLifecycleService);
   await redis.initialize();
   (app as NestExpressApplication).useWebSocketAdapter(
-    new CorsIoAdapter(app, redis),
+    new CorsIoAdapter(app, redis, lifecycle),
   );
 }

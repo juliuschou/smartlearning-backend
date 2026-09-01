@@ -162,6 +162,26 @@ describe('ReadinessService', () => {
     });
   });
 
+  it('reports shutdown as unready without probing dependencies', async () => {
+    const { readiness, queryRaw } = makeReadiness({
+      mode: 'required',
+      availability: 'available',
+    });
+    (
+      readiness as unknown as { lifecycle: { isShuttingDown: boolean } }
+    ).lifecycle = { isShuttingDown: true };
+
+    const result = await readiness.check();
+
+    expect(result).toMatchObject({ status: 'degraded', httpStatus: 503 });
+    expect(result.checks.application).toEqual({
+      healthy: false,
+      readiness: 'unready',
+      error: 'shutting_down',
+    });
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
+
   it('blocks readiness when PostgreSQL is unavailable', async () => {
     const { readiness, queryRaw } = makeReadiness({
       mode: 'off',

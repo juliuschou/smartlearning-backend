@@ -157,6 +157,19 @@ export class RateLimitedError extends DomainError {
   }
 }
 
+export class ServerShuttingDownError extends DomainError {
+  constructor() {
+    super(
+      'SERVER_SHUTTING_DOWN' as ErrorCode,
+      'The service is shutting down. Retry the request.',
+      HttpStatus.SERVICE_UNAVAILABLE,
+      undefined,
+      'Retry after the service is healthy.',
+      null,
+    );
+  }
+}
+
 export class ForbiddenError extends DomainError {
   constructor(message = 'Forbidden') {
     super('FORBIDDEN' as ErrorCode, message, HttpStatus.FORBIDDEN);

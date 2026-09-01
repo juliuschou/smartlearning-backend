@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RealtimeRedisService } from '../realtime/realtime-redis.service';
 import { RateLimiterService } from '../rate-limit/rate-limiter.service';
 import { MetricsService } from '../metrics/metrics.service';
+import { ApplicationLifecycleService } from '../../common/lifecycle';
 
 export interface ReadinessCheck {
   healthy: boolean;
@@ -28,10 +29,24 @@ export class ReadinessService {
     private readonly redis: RealtimeRedisService,
     private readonly loginRateLimiter: RateLimiterService,
     @Optional() private readonly metrics?: MetricsService,
+    @Optional() private readonly lifecycle?: ApplicationLifecycleService,
   ) {}
 
   async check(): Promise<ReadinessResult> {
     const checks: Record<string, ReadinessCheck> = {};
+    if (this.lifecycle?.isShuttingDown) {
+      checks.application = {
+        healthy: false,
+        readiness: 'unready',
+        error: 'shutting_down',
+      };
+      return {
+        status: 'degraded',
+        timestamp: new Date().toISOString(),
+        checks,
+        httpStatus: 503,
+      };
+    }
     let dbHealthy = true;
     const dbStart = Date.now();
     try {

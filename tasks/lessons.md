@@ -1,5 +1,19 @@
 # Lessons learned
 
+## 2026-09-01 — Prisma migration images must expose the bundled OpenSSL ABI
+
+- **Failure mode:** The isolated CP8 `migrate` container omitted OpenSSL, so Prisma defaulted to `debian-openssl-1.1.x` and attempted a network download that failed inside the internal Compose network (`getaddrinfo EAI_AGAIN binaries.prisma.sh`), even though the image contained the OpenSSL 3 schema engine.
+- **Detection signal:** Migration logs warned that Prisma could not detect libssl/OpenSSL and then failed fetching the 1.1 engine; inspecting `/app/node_modules/@prisma/engines` showed `schema-engine-debian-openssl-3.0.x` was already present.
+- **Prevention rule:** Install the runtime OpenSSL package in every Docker stage that invokes Prisma CLI; keep the CP8 network internal and do not make migration depend on runtime downloads.
+- **Tripwire:** In the migration image, assert `openssl version` and the bundled `schema-engine-debian-openssl-3.0.x` path before running `prisma migrate deploy`, then require migration exit 0.
+
+## 2026-09-01 — Required Redis recovery needs an explicit liveness probe
+
+- **Failure mode:** Stopping and restarting the required realtime Redis service left the existing API clients reporting `redis_unavailable`; readiness stayed 503 for 30 seconds until the API instances were restarted.
+- **Detection signal:** Runtime probe observed liveness 200/readiness 503 during outage, but no readiness recovery within the bounded 30-second post-restart window; API restart restored readiness 200.
+- **Prevention rule:** Treat required Redis recovery as an explicit runtime acceptance case; add a bounded connection-health/reconnect probe or restart policy that proves the existing API process re-enters the available state after Redis returns.
+- **Tripwire:** CP8 outage drill must stop/restart `redis-realtime`, require readiness 503 during outage and readiness 200 without API restart within the agreed recovery budget, or record `DEFERRED/BLOCKED`.
+
 ## 2026-08-31 — CP5 bootstrap must use the compiled runtime entrypoint
 
 - **Failure mode:** The CP5 runtime image prunes dev dependencies, so invoking `npm run bootstrap:admin` inside `backend-a` failed with `sh: 1: tsx: not found`; a host-side `tsx` invocation also failed during Nest DI startup with `UndefinedDependencyException` for `RateLimiterService`.

@@ -48,6 +48,7 @@ export class RealtimeRedisService implements OnModuleDestroy {
   private socketServer?: Server;
   private localAdapter?: SocketIoAdapterFactory;
   private activeAdapter: 'local' | 'redis' = 'local';
+  private readonly adapterClosePromises = new Set<Promise<void>>();
 
   constructor(private readonly config: ConfigService) {
     this.mode = parseRealtimeRedisMode(
@@ -113,6 +114,7 @@ export class RealtimeRedisService implements OnModuleDestroy {
     const clients = [this.publisher, this.subscriber];
     this.publisher = undefined;
     this.subscriber = undefined;
+    await Promise.all([...this.adapterClosePromises]);
     await Promise.all(
       clients.map(async (client) => {
         if (!client?.isOpen) return;
@@ -254,19 +256,19 @@ export class RealtimeRedisService implements OnModuleDestroy {
 
   private closeAdapter(adapter: SocketIoAdapterLifecycle): void {
     if (typeof adapter.close !== 'function') return;
-    try {
-      void Promise.resolve(adapter.close()).catch((error: unknown) => {
+    const closePromise = Promise.resolve()
+      .then(() => adapter.close?.())
+      .catch((error: unknown) => {
         this.logger.debug(
           { err: error instanceof Error ? error.name : 'unknown' },
           'Socket.IO adapter close failed',
         );
-      });
-    } catch (error) {
-      this.logger.debug(
-        { err: error instanceof Error ? error.name : 'unknown' },
-        'Socket.IO adapter close failed',
-      );
-    }
+      })
+      .then(() => undefined);
+    this.adapterClosePromises.add(closePromise);
+    void closePromise.finally(() =>
+      this.adapterClosePromises.delete(closePromise),
+    );
   }
 
   private logUnavailable(reason: string): void {

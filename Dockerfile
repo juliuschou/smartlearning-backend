@@ -63,6 +63,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      openssl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /app/package.json /app/package-lock.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts

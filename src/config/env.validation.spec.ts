@@ -50,6 +50,32 @@ describe('validateEnv', () => {
     ).toThrow('CORS_ORIGIN must not contain a wildcard origin');
   });
 
+  it('coerces proxy and shutdown settings from strings', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      NODE_ENV: 'production',
+      LOGIN_RATE_LIMIT_MODE: 'redis-required',
+      LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
+      LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
+      TRUST_PROXY_HOPS: '1',
+      SHUTDOWN_TIMEOUT_MS: '15000',
+    });
+
+    expect(config.TRUST_PROXY_HOPS).toBe(1);
+    expect(config.SHUTDOWN_TIMEOUT_MS).toBe(15000);
+  });
+
+  it.each([
+    ['TRUST_PROXY_HOPS', '-1'],
+    ['TRUST_PROXY_HOPS', '11'],
+    ['SHUTDOWN_TIMEOUT_MS', '999'],
+    ['SHUTDOWN_TIMEOUT_MS', '120001'],
+  ])('rejects an invalid topology setting for %s', (key, value) => {
+    expect(() => validateEnv({ ...baseEnv, [key]: value })).toThrow(
+      'Invalid environment configuration:',
+    );
+  });
+
   it('coerces all eight CLI rate-limit env fields to numbers', () => {
     const config = validateEnv({
       ...baseEnv,

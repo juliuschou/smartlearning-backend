@@ -13,6 +13,8 @@ import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from '../common/observability';
 import { AppModule } from '../app.module';
 import { configureWebSocket } from './configure-websocket';
 import { RateLimiterService } from '../modules/rate-limit/rate-limiter.service';
+import { LiveSessionPublisher } from '../modules/realtime/live-session-publisher';
+import { ApplicationLifecycleService } from '../common/lifecycle';
 
 export const API_PREFIX = 'api';
 export const API_VERSION = 'v1';
@@ -29,6 +31,11 @@ export async function configureApplication(
 ): Promise<void> {
   const expressApp = app as NestExpressApplication;
   const configService = app.get(ConfigService);
+
+  // Trust only the explicitly configured reverse-proxy hop. The proxy fixture
+  // overwrites forwarded headers; direct backend access is not a public path.
+  const trustProxyHops = configService.get<number>('TRUST_PROXY_HOPS', 0);
+  expressApp.set('trust proxy', trustProxyHops);
 
   // Global prefix + URI versioning → /api/v1/...
   expressApp.setGlobalPrefix(API_PREFIX, {
@@ -81,7 +88,12 @@ export async function configureApplication(
   // and the e2e app factory share one websocket setup path.
   await configureWebSocket(expressApp);
 
-  // Graceful shutdown: SIGTERM/SIGINT trigger module destroy hooks (Prisma disconnect).
+  // Graceful shutdown: fence new requests before module destroy hooks, close
+  // live sockets with a retryable signal, and drain the durable publisher first.
+  const lifecycle = app.get(ApplicationLifecycleService);
+  lifecycle.registerShutdownDrain(() =>
+    app.get(LiveSessionPublisher).onModuleDestroy(),
+  );
   expressApp.enableShutdownHooks();
 }
 

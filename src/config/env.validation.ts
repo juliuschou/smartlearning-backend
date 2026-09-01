@@ -41,6 +41,17 @@ export class EnvConfig {
   @IsString()
   COOKIE_SECRET!: string;
 
+  // Explicit deployment boundary: 0 for direct access, 1 for one Nginx hop.
+  @IsNumber()
+  @Min(0)
+  @Max(10)
+  TRUST_PROXY_HOPS = 0;
+
+  @IsNumber()
+  @Min(1000)
+  @Max(120_000)
+  SHUTDOWN_TIMEOUT_MS = 10_000;
+
   // Redis is optional for single-instance realtime; the explicit mode controls
   // whether an unavailable adapter is healthy, degraded, or traffic-blocking.
   @IsOptional()
@@ -184,6 +195,8 @@ export function validateEnv(
   const merged: Record<string, unknown> = {
     ...raw,
     PORT: num(raw.PORT, 3000),
+    TRUST_PROXY_HOPS: num(raw.TRUST_PROXY_HOPS, 0),
+    SHUTDOWN_TIMEOUT_MS: num(raw.SHUTDOWN_TIMEOUT_MS, 10_000),
     SESSION_IDLE_MS: num(raw.SESSION_IDLE_MS, 30 * 60 * 1000),
     SESSION_ABSOLUTE_MS: num(raw.SESSION_ABSOLUTE_MS, 8 * 60 * 60 * 1000),
     LIVE_SESSION_AUTO_CLOSE_MS: num(

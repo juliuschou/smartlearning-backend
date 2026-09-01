@@ -18,6 +18,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RateLimitModule } from './modules/rate-limit/rate-limit.module';
 import { GovernanceModule } from './modules/governance/governance.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import {
+  ApplicationLifecycleMiddleware,
+  ApplicationLifecycleModule,
+} from './common/lifecycle';
 
 /**
  * Resolve env file by NODE_ENV so application runtime and the Prisma CLI
@@ -43,6 +47,7 @@ const isProduction = process.env.NODE_ENV === 'production';
       envFilePath: envFilePath(),
       validate: validateEnv,
     }),
+    ApplicationLifecycleModule,
     LoggerModule.forRoot({
       pinoHttp: {
         level: isProduction ? 'info' : 'debug',
@@ -78,13 +83,14 @@ const isProduction = process.env.NODE_ENV === 'production';
     MetricsModule,
   ],
   controllers: [],
-  providers: [],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    // Stamp request ID on every route (health excluded from /api prefix
-    // but still benefits from id + response header).
-    consumer.apply(RequestIdMiddleware).forRoutes('*');
+    // Stamp request IDs before the shutdown fence so rejected work still has
+    // the same diagnostic metadata as an ordinary request.
+    consumer
+      .apply(RequestIdMiddleware, ApplicationLifecycleMiddleware)
+      .forRoutes('*');
   }
 }
 

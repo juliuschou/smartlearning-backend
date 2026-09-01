@@ -1,0 +1,189 @@
+# BE-8.8 CP8 verification-only topology.
+#
+# This is not the OPS-1 production stack. It intentionally keeps the backend,
+# PostgreSQL, Redis, and metrics endpoint off the host network and exposes only
+# a loopback HTTPS Nginx listener for proxy compatibility checks.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${CP8_DB_USERNAME:-smartlearning}
+      POSTGRES_PASSWORD: ${CP8_DB_PASSWORD:?CP8_DB_PASSWORD is required}
+      POSTGRES_DB: smartlearning_cp8
+    volumes:
+      - cp8_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${CP8_DB_USERNAME:-smartlearning} -d smartlearning_cp8',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [cp8]
+
+  redis-realtime:
+    image: redis:7-alpine
+    command:
+      ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    volumes:
+      - cp8_realtime_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [cp8]
+
+  redis-login:
+    image: redis:7-alpine
+    command:
+      ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    volumes:
+      - cp8_login_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [cp8]
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: smartlearning-backend:cp8-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${CP8_DB_USERNAME:-smartlearning}:${CP8_DB_PASSWORD:?CP8_DB_PASSWORD is required}@postgres:5432/smartlearning_cp8?schema=public
+    networks: [cp8]
+
+  api-a:
+    build:
+      context: .
+      target: runtime
+    image: smartlearning-backend:cp8
+    depends_on: &api-dependencies
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis-realtime:
+        condition: service_healthy
+      redis-login:
+        condition: service_healthy
+    environment: &api-environment
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${CP8_DB_USERNAME:-smartlearning}:${CP8_DB_PASSWORD:?CP8_DB_PASSWORD is required}@postgres:5432/smartlearning_cp8?schema=public
+      CORS_ORIGIN: ${CP8_EXTERNAL_ORIGIN:-https://localhost:8443}
+      COOKIE_SECRET: ${CP8_COOKIE_SECRET:?CP8_COOKIE_SECRET is required}
+      TRUST_PROXY_HOPS: 1
+      SHUTDOWN_TIMEOUT_MS: 10000
+      SESSION_COOKIE_SECURE: 'true'
+      LOGIN_RATE_LIMIT_MODE: redis-required
+      LOGIN_RATE_LIMIT_REDIS_URL: redis://redis-login:6379/0
+      LOGIN_RATE_LIMIT_KEY_SECRET: ${CP8_HMAC_SECRET:?CP8_HMAC_SECRET is required}
+      LOGIN_RATE_LIMIT_ACCOUNT_MAX: 10
+      LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: 300000
+      LOGIN_RATE_LIMIT_SOURCE_MAX: 20
+      LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS: 300000
+      LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS: 2000
+      LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS: 500
+      REALTIME_REDIS_MODE: required
+      REDIS_URL: redis://redis-realtime:6379/0
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [cp8]
+
+  api-b:
+    build:
+      context: .
+      target: runtime
+    image: smartlearning-backend:cp8
+    depends_on: *api-dependencies
+    environment:
+      <<: *api-environment
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [cp8]
+
+  cert-init:
+    # Reuse the migration image so certificate generation has a local OpenSSL
+    # binary and does not require package downloads on the isolated network.
+    image: smartlearning-backend:cp8-migrate
+    entrypoint: ['openssl']
+    command:
+      - req
+      - -x509
+      - -nodes
+      - -newkey
+      - rsa:2048
+      - -days
+      - '1'
+      - -keyout
+      - /certs/localhost.key
+      - -out
+      - /certs/localhost.crt
+      - -subj
+      - /CN=localhost
+      - -addext
+      - subjectAltName=DNS:localhost
+    volumes:
+      - cp8_certs:/certs
+    networks: [edge]
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      api-a:
+        condition: service_healthy
+      api-b:
+        condition: service_healthy
+      cert-init:
+        condition: service_completed_successfully
+    ports:
+      - '127.0.0.1:${CP8_HTTPS_PORT:-8443}:443'
+    volumes:
+      - ./ops/topology/nginx.conf:/etc/nginx/nginx.conf:ro
+      - cp8_certs:/etc/nginx/certs:ro
+    networks:
+      - edge
+      - cp8
+
+volumes:
+  cp8_pgdata:
+  cp8_realtime_redisdata:
+  cp8_login_redisdata:
+  cp8_certs:
+
+networks:
+  # The edge network is limited to Nginx and the one-shot certificate helper so
+  # the loopback-published listener can cross the host boundary.
+  edge:
+    driver: bridge
+  cp8:
+    driver: bridge
+    internal: true
