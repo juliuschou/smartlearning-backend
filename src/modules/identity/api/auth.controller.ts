@@ -29,7 +29,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { SessionDto } from './dto/account.dto';
 import { StepUpDto } from './dto/step-up.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 /**
  * Auth endpoints under /api/v1/auth.
@@ -45,6 +45,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @ApiResponse({ status: 201, type: SessionDto })
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
@@ -75,6 +76,7 @@ export class AuthController {
   }
 
   @Post('change-password')
+  @ApiResponse({ status: 201, type: SessionDto })
   @AllowPasswordChangeRequired()
   @UseGuards(SessionGuard, CsrfGuard)
   async changePassword(
@@ -109,6 +111,7 @@ export class AuthController {
   }
 
   @Get('session')
+  @ApiResponse({ status: 200, type: SessionDto })
   @AllowPasswordChangeRequired()
   @UseGuards(SessionGuard)
   current(@CurrentAccount() auth: AuthContext): SessionDto {

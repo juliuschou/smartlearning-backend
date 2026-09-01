@@ -2,6 +2,8 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from './setup/app-factory';
 
+jest.setTimeout(30_000);
+
 describe('OpenAPI document (e2e)', () => {
   let app: INestApplication;
 
@@ -176,6 +178,79 @@ describe('OpenAPI document (e2e)', () => {
     expect(Object.keys(rotateResponse.properties)).not.toContain('keyHash');
     expect(JSON.stringify(rotateResponse)).not.toMatch(
       /expiresAt|ttl|grace|pending/i,
+    );
+  });
+
+  it('keeps sensitive properties and schema metadata within their contracts', async () => {
+    const res = await request(app.getHttpServer()).get('/api/docs-json');
+    const schemas = res.body.components.schemas as Record<
+      string,
+      {
+        properties?: Record<string, unknown>;
+        allOf?: Array<{
+          $ref?: string;
+          properties?: Record<string, unknown>;
+        }>;
+      }
+    >;
+
+    const schemaProperties = (
+      name: string,
+      visited = new Set<string>(),
+    ): Record<string, unknown> => {
+      if (visited.has(name)) return {};
+      visited.add(name);
+      const schema = schemas[name];
+      if (!schema) return {};
+      const properties = { ...(schema.properties ?? {}) };
+      for (const component of schema.allOf ?? []) {
+        const refName = component.$ref?.split('/').pop();
+        if (refName)
+          Object.assign(properties, schemaProperties(refName, visited));
+        Object.assign(properties, component.properties ?? {});
+      }
+      return properties;
+    };
+
+    const schemasWithProperty = (property: string): string[] =>
+      Object.keys(schemas).filter((name) =>
+        Object.prototype.hasOwnProperty.call(schemaProperties(name), property),
+      );
+
+    expect(schemasWithProperty('keyHash')).toEqual([]);
+    expect(schemasWithProperty('rawKey').sort()).toEqual(
+      [
+        'CreateCliCredentialResponseDto',
+        'RotateCliCredentialResponseDto',
+      ].sort(),
+    );
+    expect(schemasWithProperty('expiresAt').sort()).toEqual(
+      ['SessionDto', 'ValidateBatchResponseDto'].sort(),
+    );
+    expect(schemasWithProperty('validationToken')).toEqual([
+      'ValidateBatchResponseDto',
+    ]);
+
+    const metadata: Array<{ path: string; value: unknown }> = [];
+    const visit = (value: unknown, path: string): void => {
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => visit(item, `${path}/${index}`));
+        return;
+      }
+      if (typeof value !== 'object' || value === null) return;
+      for (const [key, child] of Object.entries(value)) {
+        const childPath = `${path}/${key}`;
+        if (key === 'example' || key === 'examples' || key === 'default') {
+          metadata.push({ path: childPath, value: child });
+        }
+        visit(child, childPath);
+      }
+    };
+    visit(res.body, '');
+
+    const serializedMetadata = JSON.stringify(metadata);
+    expect(serializedMetadata).not.toMatch(
+      /password|passwordHash|keyHash|rawKey|token|payloadHash|textAnswer|selectedOptionRefs|prompt|correctOptionRefs|answer|secret/i,
     );
   });
 

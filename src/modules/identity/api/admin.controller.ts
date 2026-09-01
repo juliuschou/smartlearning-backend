@@ -44,7 +44,11 @@ import {
  * CLI key create/revoke are high-risk and require step-up (M2 紅卡).
  */
 @ApiTags('admin')
-@ApiExtraModels(CliCredentialDto, RotateCliCredentialResponseDto)
+@ApiExtraModels(
+  CliCredentialDto,
+  CreateCliCredentialResponseDto,
+  RotateCliCredentialResponseDto,
+)
 @Controller({ path: 'admin', version: '1' })
 @UseGuards(SessionGuard, CsrfGuard, AdminGuard)
 export class AdminController {
@@ -186,6 +190,7 @@ export class AdminController {
   }
 
   @Post('accounts/:id/cli-credentials')
+  @ApiResponse({ status: 201, type: CreateCliCredentialResponseDto })
   @UseGuards(StepUpGuard)
   async createCliCredential(
     @Param('id', new ParseUUIDPipe()) id: string,

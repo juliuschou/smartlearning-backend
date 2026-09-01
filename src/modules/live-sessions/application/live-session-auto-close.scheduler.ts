@@ -3,10 +3,12 @@ import {
   Logger,
   OnModuleDestroy,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EnvConfig } from '../../../config/env.validation';
 import { LiveSessionService } from './live-session.service';
+import { MetricsService } from '../../metrics/metrics.service';
 
 @Injectable()
 export class LiveSessionAutoCloseScheduler
@@ -20,6 +22,7 @@ export class LiveSessionAutoCloseScheduler
   constructor(
     private readonly sessions: LiveSessionService,
     private readonly config: ConfigService<EnvConfig>,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   onModuleInit(): void {
@@ -43,14 +46,38 @@ export class LiveSessionAutoCloseScheduler
   async runOnce(): Promise<void> {
     if (this.destroyed || this.running) return;
     this.running = true;
+    const startedAt = process.hrtime.bigint();
+    let outcome: 'success' | 'failure' = 'failure';
     try {
-      await this.sessions.autoCloseExpiredSessions();
+      const closed = await this.sessions.autoCloseExpiredSessions();
+      outcome = 'success';
+      this.recordItems('closed', closed);
     } catch (error) {
       this.logger.error(
         `Auto-close sweep failed: ${error instanceof Error ? error.name : 'unknown'}`,
       );
     } finally {
+      const durationSeconds =
+        Number(process.hrtime.bigint() - startedAt) / 1_000_000_000;
+      try {
+        this.metrics?.recordJobRun(
+          'live_session_auto_close',
+          outcome,
+          durationSeconds,
+        );
+      } catch {
+        // Metrics must not change scheduler shutdown or error semantics.
+      }
       this.running = false;
+    }
+  }
+
+  private recordItems(result: 'closed', count: number): void {
+    if (!Number.isFinite(count) || count <= 0) return;
+    try {
+      this.metrics?.recordJobItem('live_session_auto_close', result, count);
+    } catch {
+      // Metrics must not change a successful auto-close sweep.
     }
   }
 }

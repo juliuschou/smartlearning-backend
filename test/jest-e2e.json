@@ -1,7 +1,7 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
-  "testRegex": "^(?!.*manual-cp5-verify\\.e2e-spec\\.ts$).*\\.e2e-spec\\.ts$",
+  "testRegex": "^(?!.*manual-cp[567]-verify\\.e2e-spec\\.ts$).*\\.e2e-spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },

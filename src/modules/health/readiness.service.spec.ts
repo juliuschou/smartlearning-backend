@@ -12,6 +12,7 @@ function makeReadiness(options: {
 }): {
   readiness: ReadinessService;
   queryRaw: jest.Mock;
+  metrics: { recordReadiness: jest.Mock };
 } {
   const queryRaw = jest
     .fn()
@@ -42,9 +43,16 @@ function makeReadiness(options: {
     loginRateLimitMode: options.loginMode ?? 'memory',
     acceptsTraffic: options.loginAvailable ?? true,
   } as unknown as RateLimiterService;
+  const metrics = { recordReadiness: jest.fn() };
   return {
-    readiness: new ReadinessService(prisma, redis, loginRateLimiter),
+    readiness: new ReadinessService(
+      prisma,
+      redis,
+      loginRateLimiter,
+      metrics as never,
+    ),
     queryRaw,
+    metrics,
   };
 }
 
@@ -114,6 +122,43 @@ describe('ReadinessService', () => {
       mode: 'redis-required',
       readiness: 'unready',
       error: 'login_rate_limit_unavailable',
+    });
+  });
+
+  it('records each dependency observation without changing readiness policy', async () => {
+    const { readiness, metrics } = makeReadiness({
+      mode: 'optional',
+      availability: 'unavailable',
+    });
+
+    await readiness.check();
+
+    expect(metrics.recordReadiness).toHaveBeenCalledWith('database', true);
+    expect(metrics.recordReadiness).toHaveBeenCalledWith(
+      'realtime_redis',
+      false,
+    );
+    expect(metrics.recordReadiness).toHaveBeenCalledWith(
+      'login_rate_limit',
+      true,
+    );
+  });
+
+  it('preserves the readiness result when metrics recording throws', async () => {
+    const { readiness } = makeReadiness({
+      mode: 'optional',
+      availability: 'unavailable',
+    });
+    const metrics = readiness as unknown as {
+      metrics: { recordReadiness: jest.Mock };
+    };
+    metrics.metrics.recordReadiness.mockImplementation(() => {
+      throw new Error('metrics failure');
+    });
+
+    await expect(readiness.check()).resolves.toMatchObject({
+      status: 'degraded',
+      httpStatus: 200,
     });
   });
 

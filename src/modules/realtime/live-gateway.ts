@@ -19,6 +19,7 @@ import {
 import { SessionService } from '../../common/auth/session.service';
 import { DomainError } from '../../common/errors';
 import { SESSION_COOKIE_NAME } from '../../common/security';
+import { errorType } from '../../common/observability';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RealtimeRedisService } from './realtime-redis.service';
 import {
@@ -159,7 +160,7 @@ export class LiveGateway
           this.logger.error(
             {
               accountId: signal.accountId,
-              err: error instanceof Error ? error.message : String(error),
+              errorType: errorType(error),
             },
             'Failed to handle account disabled signal',
           );
@@ -221,7 +222,7 @@ export class LiveGateway
         {
           sid: socket.id,
           code,
-          err: error instanceof Error ? error.message : String(error),
+          errorType: errorType(error),
         },
         'Socket connection rejected',
       );
@@ -477,7 +478,7 @@ export class LiveGateway
         {
           sid: socket.id,
           liveSessionId: client.liveSessionId,
-          err: error instanceof Error ? error.message : String(error),
+          errorType: errorType(error),
         },
         'Disconnected unauthorized participant socket',
       );
@@ -540,7 +541,7 @@ export class LiveGateway
       this.logger.warn(
         {
           liveSessionId,
-          err: error instanceof Error ? error.name : 'unknown',
+          errorType: errorType(error),
         },
         'Could not enumerate participant sockets for reauthorization',
       );
@@ -583,7 +584,7 @@ export class LiveGateway
       this.logger.warn(
         {
           accountId: canonicalAccountId,
-          err: error instanceof Error ? error.name : 'unknown',
+          errorType: errorType(error),
         },
         'Could not enumerate account-disabled sockets; retry scheduled',
       );
@@ -645,7 +646,7 @@ export class LiveGateway
       this.logger.warn(
         {
           liveSessionId,
-          err: error instanceof Error ? error.name : 'unknown',
+          errorType: errorType(error),
         },
         'Could not enumerate teacher sockets for account re-check',
       );
@@ -841,7 +842,7 @@ export class LiveGateway
         {
           liveSessionId,
           reason,
-          err: error instanceof Error ? error.name : 'unknown',
+          errorType: errorType(error),
         },
         'Could not read session status for realtime recovery',
       );
@@ -855,7 +856,7 @@ export class LiveGateway
         {
           liveSessionId,
           reason,
-          err: error instanceof Error ? error.name : 'unknown',
+          errorType: errorType(error),
         },
         'Could not enumerate sockets for realtime recovery',
       );
@@ -896,7 +897,7 @@ export class LiveGateway
                 liveSessionId,
                 reason,
                 sid: socket.id,
-                err: error instanceof Error ? error.name : 'unknown',
+                errorType: errorType(error),
               },
               'Realtime recovery snapshot unavailable; disconnecting socket',
             );
@@ -958,10 +959,8 @@ export class LiveGateway
       sockets = await this.server
         .in(teacherRoom(event.liveSessionId))
         .fetchSockets();
-    } catch (error) {
-      throw new Error(
-        `Could not enumerate teacher sockets: ${error instanceof Error ? error.message : String(error)}`,
-      );
+    } catch {
+      throw new Error('Could not enumerate teacher sockets.');
     }
     await Promise.all(
       sockets.map((remoteSocket) =>
@@ -1004,10 +1003,8 @@ export class LiveGateway
     let sockets;
     try {
       sockets = await this.server.in(room).fetchSockets();
-    } catch (error) {
-      throw new Error(
-        `Could not enumerate shared sockets: ${error instanceof Error ? error.name : 'unknown'}`,
-      );
+    } catch {
+      throw new Error('Could not enumerate shared sockets.');
     }
     const envelope = this.envelope(
       event.eventName as RealtimeEventName,
@@ -1047,10 +1044,8 @@ export class LiveGateway
     let sockets;
     try {
       sockets = await this.server.in(sessionRoom(liveSessionId)).fetchSockets();
-    } catch (error) {
-      throw new Error(
-        `Could not enumerate terminal sockets: ${error instanceof Error ? error.name : 'unknown'}`,
-      );
+    } catch {
+      throw new Error('Could not enumerate terminal sockets.');
     }
     await Promise.all(
       sockets.map(async (remoteSocket) => {
@@ -1066,10 +1061,8 @@ export class LiveGateway
       sockets = await this.server
         .in(sessionRoom(event.liveSessionId))
         .fetchSockets();
-    } catch (error) {
-      throw new Error(
-        `Could not enumerate closing sockets: ${error instanceof Error ? error.message : String(error)}`,
-      );
+    } catch {
+      throw new Error('Could not enumerate closing sockets.');
     }
     await Promise.all(
       sockets.map((remoteSocket) =>
@@ -1286,7 +1279,7 @@ export class LiveGateway
       this.logger.debug(
         {
           liveSessionId,
-          err: error instanceof Error ? error.name : 'unknown',
+          errorType: errorType(error),
         },
         'Skipped counts.updated (session not readable)',
       );
@@ -1296,10 +1289,8 @@ export class LiveGateway
     let sockets;
     try {
       sockets = await this.server.in(teacherRoom(liveSessionId)).fetchSockets();
-    } catch (error) {
-      throw new Error(
-        `Could not enumerate count sockets: ${error instanceof Error ? error.name : 'unknown'}`,
-      );
+    } catch {
+      throw new Error('Could not enumerate count sockets.');
     }
     const payload = {
       schemaVersion: 1,
@@ -1347,10 +1338,8 @@ export class LiveGateway
           role: 'admin',
         },
       );
-    } catch (error) {
-      throw new Error(
-        `Could not materialize teacher result: ${error instanceof Error ? error.name : 'unknown'}`,
-      );
+    } catch {
+      throw new Error('Could not materialize teacher result.');
     }
 
     let sockets;
@@ -1358,10 +1347,8 @@ export class LiveGateway
       sockets = await this.server
         .in(teacherRoom(event.liveSessionId))
         .fetchSockets();
-    } catch (error) {
-      throw new Error(
-        `Could not enumerate teacher result sockets: ${error instanceof Error ? error.name : 'unknown'}`,
-      );
+    } catch {
+      throw new Error('Could not enumerate teacher result sockets.');
     }
     const envelope = this.envelope(
       RealtimeEvent.RESULT_UPDATED,
@@ -1427,10 +1414,8 @@ export class LiveGateway
       remoteSockets = await this.server
         .in(sessionRoom(event.liveSessionId))
         .fetchSockets();
-    } catch (error) {
-      throw new Error(
-        `Could not enumerate participant sockets: ${error instanceof Error ? error.message : String(error)}`,
-      );
+    } catch {
+      throw new Error('Could not enumerate participant sockets.');
     }
     const targetParticipantId =
       event.visibility === RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT &&

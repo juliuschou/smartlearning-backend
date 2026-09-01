@@ -74,6 +74,9 @@ type Harness = {
     dispatchDurableEvent: jest.Mock;
     notifySyncRequiredForSession: jest.Mock;
   };
+  metrics: {
+    recordRealtimePublishFailure: jest.Mock;
+  };
 };
 
 function makeRow(overrides: Partial<RawRow> = {}): RawRow {
@@ -105,7 +108,10 @@ function makeRow(overrides: Partial<RawRow> = {}): RawRow {
   };
 }
 
-function makeHarness(row = makeRow()): Harness {
+function makeHarness(
+  row = makeRow(),
+  metrics = { recordRealtimePublishFailure: jest.fn() },
+): Harness {
   const transaction = { $queryRaw: jest.fn().mockResolvedValue([row]) };
   const database: FakeDatabase = {
     $queryRaw: jest.fn(),
@@ -130,8 +136,9 @@ function makeHarness(row = makeRow()): Harness {
     { prisma: database } as unknown as PrismaService,
     new LiveSessionEventBus(),
     gateway as unknown as LiveGateway,
+    metrics as never,
   );
-  return { publisher, database, transaction, gateway };
+  return { publisher, database, transaction, gateway, metrics };
 }
 
 describe('LiveSessionPublisher', () => {
@@ -171,6 +178,9 @@ describe('LiveSessionPublisher', () => {
       expect(
         harness.gateway.notifySyncRequiredForSession,
       ).not.toHaveBeenCalled();
+      expect(harness.metrics.recordRealtimePublishFailure).toHaveBeenCalledWith(
+        'retry',
+      );
     } finally {
       jest.useRealTimers();
     }
@@ -200,6 +210,9 @@ describe('LiveSessionPublisher', () => {
       expect(harness.gateway.notifySyncRequiredForSession).toHaveBeenCalledWith(
         LIVE_SESSION_ID,
         RealtimeSyncReason.DEAD,
+      );
+      expect(harness.metrics.recordRealtimePublishFailure).toHaveBeenCalledWith(
+        'dead',
       );
     },
   );

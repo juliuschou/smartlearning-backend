@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { LiveSessionEventBus } from './live-session-event-bus';
 
 describe('LiveSessionEventBus', () => {
@@ -25,6 +26,48 @@ describe('LiveSessionEventBus', () => {
 
     expect(a).toEqual(['question.opened']);
     expect(b).toEqual(['question.opened']);
+  });
+
+  it('logs only safe error metadata when listeners throw', async () => {
+    const loggerError = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const errorSentinel = 'event-bus-error-secret';
+    const stringSentinel = 'event-bus-string-secret';
+    try {
+      bus.subscribe(() => {
+        throw new Error(errorSentinel);
+      });
+      bus.subscribe(() => {
+        throw stringSentinel;
+      });
+
+      await bus.publish({
+        type: 'question.opened',
+        liveSessionId: 'safe-session-id',
+        sessionQuestionId: 'safe-question-id',
+      });
+
+      const calls = JSON.stringify(loggerError.mock.calls);
+      expect(calls).not.toContain(errorSentinel);
+      expect(calls).not.toContain(stringSentinel);
+      expect(loggerError).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          signalType: 'question.opened',
+          liveSessionId: 'safe-session-id',
+          errorType: 'Error',
+        }),
+        expect.any(String),
+      );
+      expect(loggerError).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ errorType: 'string' }),
+        expect.any(String),
+      );
+    } finally {
+      loggerError.mockRestore();
+    }
   });
 
   it('a throwing listener does not break the publish or other listeners', async () => {

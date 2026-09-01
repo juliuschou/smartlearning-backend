@@ -20,6 +20,8 @@ export const PINO_REDACT_PATHS: string[] = [
   'req.body.selectedOptionRefs',
   'req.body.textAnswer',
   'req.body.payloadHash',
+  'req.body.displayName',
+  'req.body.questions',
   // realtime handshake auth (Socket.IO `auth` payload) — raw tokens never logged
   'req.body.participantToken',
   'req.body.sessionCode',
@@ -36,6 +38,14 @@ export const PINO_REDACT_PATHS: string[] = [
   'res.body.data.selectedOptionRefs',
   'res.body.textAnswer',
   'res.body.data.textAnswer',
+  'res.body.questions',
+  'res.body.data.questions',
+  'res.body.preview',
+  'res.body.data.preview',
+  'res.body.payloadHash',
+  'res.body.data.payloadHash',
+  'res.body.expiresAt',
+  'res.body.data.expiresAt',
   // open_text results — anonymous answer texts must not appear in logs
   'res.body.responses',
   'res.body.data.responses',

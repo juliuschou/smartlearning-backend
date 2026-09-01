@@ -14,6 +14,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { AppModule } from '../app.module';
 import { BootstrapService } from '../modules/identity/application/bootstrap.service';
+import { errorType } from '../common/observability';
 
 async function main(): Promise<void> {
   // Load env the same way the app does (envFilePath by NODE_ENV) so the
@@ -36,13 +37,11 @@ async function main(): Promise<void> {
   }
 
   const admin = await bootstrap.bootstrapFromEnv();
-  console.log(
-    `Bootstrapped first admin: id=${admin.id} username=${admin.username} role=${admin.role}`,
-  );
+  console.log(`Bootstrapped first admin: id=${admin.id} role=${admin.role}`);
   await app.close();
 }
 
 void main().catch((err) => {
-  console.error('Bootstrap failed:', err instanceof Error ? err.message : err);
+  console.error(`Bootstrap failed: errorType=${errorType(err)}`);
   process.exitCode = 1;
 });

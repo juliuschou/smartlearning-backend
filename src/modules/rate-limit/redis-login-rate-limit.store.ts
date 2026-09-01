@@ -187,7 +187,7 @@ export class RedisLoginRateLimitStore
       await client.close();
     } catch (error) {
       this.logger.debug(
-        { err: error instanceof Error ? error.name : 'unknown' },
+        { errorType: error instanceof Error ? error.name : typeof error },
         'Login rate-limit Redis close failed',
       );
     }

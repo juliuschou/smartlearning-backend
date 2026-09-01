@@ -131,7 +131,7 @@ export function validateQuestion(input: unknown): QuestionValidationIssue[] {
       issue(
         'FIELD_FORBIDDEN',
         'selectionMode',
-        `selectionMode is not allowed for ${type} questions.`,
+        'selectionMode is not allowed for this question type.',
       ),
     );
   }
@@ -192,7 +192,7 @@ export function validateQuestion(input: unknown): QuestionValidationIssue[] {
       issue(
         'FIELD_FORBIDDEN',
         'correctOptionRefs',
-        `correctOptionRefs is not allowed for ${type} questions.`,
+        'correctOptionRefs is not allowed for this question type.',
       ),
     );
   }
@@ -350,7 +350,7 @@ function validateCorrectOptionRefs(
         issue(
           'CORRECT_OPTION_INVALID',
           `correctOptionRefs[${index}]`,
-          `correctOptionRefs duplicates ${ref}.`,
+          'Correct option references must be unique.',
         ),
       );
       return;
@@ -361,7 +361,7 @@ function validateCorrectOptionRefs(
         issue(
           'CORRECT_OPTION_INVALID',
           `correctOptionRefs[${index}]`,
-          `Correct option reference ${ref} does not match any option optionRef.`,
+          'Correct option reference does not match any option.',
         ),
       );
     }

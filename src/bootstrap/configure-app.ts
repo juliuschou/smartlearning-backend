@@ -32,7 +32,7 @@ export async function configureApplication(
 
   // Global prefix + URI versioning → /api/v1/...
   expressApp.setGlobalPrefix(API_PREFIX, {
-    exclude: ['health/(.*)'],
+    exclude: ['health/(.*)', 'metrics'],
   });
   expressApp.enableVersioning({
     type: VersioningType.URI,

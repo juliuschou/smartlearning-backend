@@ -148,6 +148,30 @@ describe('question-contract (multi-type validation)', () => {
       );
     });
 
+    it('does not echo caller-controlled type or correct reference values', () => {
+      const secretType = 'secret-question-type';
+      const secretRef = 'secret-correct-ref';
+      const selectionIssues = validateQuestion({
+        type: 'open_text',
+        prompt: 'p',
+        selectionMode: secretType,
+      });
+      const referenceIssues = validateQuestion({
+        type: 'quiz',
+        prompt: 'p',
+        options: [
+          { optionRef: 'a', text: 'A' },
+          { optionRef: 'b', text: 'B' },
+        ],
+        correctOptionRefs: [secretRef],
+      });
+
+      expect(
+        JSON.stringify([...selectionIssues, ...referenceIssues]),
+      ).not.toContain(secretType);
+      expect(JSON.stringify(referenceIssues)).not.toContain(secretRef);
+    });
+
     it('rejects quiz with selectionMode set', () => {
       const issues = validateQuestion({
         type: 'quiz',

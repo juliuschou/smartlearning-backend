@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '../../../../generated/prisma/client';
 import { hashToken, newId, normalizeUuid } from '../../../common/crypto';
 import { ConflictError, NotFoundError } from '../../../common/errors';
+import { MetricsService } from '../../metrics/metrics.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { normalizePageRequest, toPage } from '../../../common/pagination';
@@ -20,6 +21,7 @@ export class GovernanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tx: TransactionService,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
   private get db() {
     return this.prisma.prisma;
@@ -328,23 +330,51 @@ export class GovernanceService {
   }
 
   async purgeDue(limit = 50, now = new Date()) {
-    const archives = await this.db.archivedResult.findMany({
-      where: { status: 'active', purgeAt: { lte: now } },
-      orderBy: { purgeAt: 'asc' },
-      take: Math.max(1, Math.min(100, Math.floor(limit))),
-      select: { liveSessionId: true },
-    });
-    let deleted = 0;
-    for (const archive of archives) {
-      await this.purgeOne(
-        archive.liveSessionId,
-        'retention',
-        undefined,
-        'retention',
-        now,
-      );
-      deleted += 1;
+    const startedAt = process.hrtime.bigint();
+    try {
+      const archives = await this.db.archivedResult.findMany({
+        where: { status: 'active', purgeAt: { lte: now } },
+        orderBy: { purgeAt: 'asc' },
+        take: Math.max(1, Math.min(100, Math.floor(limit))),
+        select: { liveSessionId: true },
+      });
+      this.recordItem('selected', archives.length);
+      let deleted = 0;
+      for (const archive of archives) {
+        await this.purgeOne(
+          archive.liveSessionId,
+          'retention',
+          undefined,
+          'retention',
+          now,
+        );
+        deleted += 1;
+        this.recordItem('deleted', 1);
+      }
+      this.recordRun('success', startedAt);
+      return { selected: archives.length, deleted };
+    } catch (error) {
+      this.recordRun('failure', startedAt);
+      throw error;
     }
-    return { selected: archives.length, deleted };
+  }
+
+  private recordItem(result: 'selected' | 'deleted', count: number): void {
+    if (!Number.isFinite(count) || count <= 0) return;
+    try {
+      this.metrics?.recordJobItem('retention_purge', result, count);
+    } catch {
+      // Metrics must not replace retention errors or results.
+    }
+  }
+
+  private recordRun(outcome: 'success' | 'failure', startedAt: bigint): void {
+    const durationSeconds =
+      Number(process.hrtime.bigint() - startedAt) / 1_000_000_000;
+    try {
+      this.metrics?.recordJobRun('retention_purge', outcome, durationSeconds);
+    } catch {
+      // Metrics are observational and cannot change purge semantics.
+    }
   }
 }

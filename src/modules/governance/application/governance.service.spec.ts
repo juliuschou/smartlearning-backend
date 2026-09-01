@@ -42,6 +42,82 @@ describe('GovernanceService', () => {
     );
   });
 
+  it('records retention selection, deletion, and successful run metrics', async () => {
+    const metrics = {
+      recordJobItem: jest.fn(),
+      recordJobRun: jest.fn(),
+    };
+    const service = new GovernanceService(
+      {
+        prisma: {
+          archivedResult: {
+            findMany: jest
+              .fn()
+              .mockResolvedValue([
+                archive('session-1', new Date('2026-01-01T00:00:00.000Z')),
+              ]),
+          },
+        },
+      } as never,
+      {} as never,
+      metrics as never,
+    );
+    jest.spyOn(service, 'purgeOne').mockResolvedValue({ status: 'success' });
+
+    await service.purgeDue(1, new Date('2026-02-01T00:00:00.000Z'));
+
+    expect(metrics.recordJobItem).toHaveBeenNthCalledWith(
+      1,
+      'retention_purge',
+      'selected',
+      1,
+    );
+    expect(metrics.recordJobItem).toHaveBeenNthCalledWith(
+      2,
+      'retention_purge',
+      'deleted',
+      1,
+    );
+    expect(metrics.recordJobRun).toHaveBeenCalledWith(
+      'retention_purge',
+      'success',
+      expect.any(Number),
+    );
+  });
+
+  it('records retention failure and rethrows the original purge error', async () => {
+    const original = new Error('purge sentinel');
+    const metrics = {
+      recordJobItem: jest.fn(),
+      recordJobRun: jest.fn(),
+    };
+    const service = new GovernanceService(
+      {
+        prisma: {
+          archivedResult: {
+            findMany: jest
+              .fn()
+              .mockResolvedValue([
+                archive('session-1', new Date('2026-01-01T00:00:00.000Z')),
+              ]),
+          },
+        },
+      } as never,
+      {} as never,
+      metrics as never,
+    );
+    jest.spyOn(service, 'purgeOne').mockRejectedValue(original);
+
+    await expect(
+      service.purgeDue(1, new Date('2026-02-01T00:00:00.000Z')),
+    ).rejects.toBe(original);
+    expect(metrics.recordJobRun).toHaveBeenCalledWith(
+      'retention_purge',
+      'failure',
+      expect.any(Number),
+    );
+  });
+
   it('returns a paginated owner-scoped archive page', async () => {
     const rows = [archive('session-1', new Date('2026-04-01T00:00:00.000Z'))];
     const findMany = jest.fn().mockResolvedValue(rows);

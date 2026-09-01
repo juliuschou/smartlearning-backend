@@ -9,6 +9,7 @@ import {
   UnauthorizedError,
   ValidationError,
 } from '../../../common/errors';
+import { errorType } from '../../../common/observability';
 import { TransactionService } from '../../../prisma/transaction.service';
 import {
   LiveSessionStatus,
@@ -64,7 +65,7 @@ export class SubmissionService {
         {
           signalType: signal.type,
           liveSessionId: signal.liveSessionId,
-          err: error instanceof Error ? error.message : String(error),
+          errorType: errorType(error),
         },
         'Realtime publish failed; mutation already committed',
       );

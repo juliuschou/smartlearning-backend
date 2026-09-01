@@ -8,11 +8,18 @@ import {
 function makeLimiter(
   clock: FakeClock,
   overrides?: Record<string, string | number>,
+  metrics?: { recordLoginRateLimitHit: () => void },
 ) {
   const configService = {
     get: (key: string) => overrides?.[key],
   } as unknown as ConfigService;
-  return new RateLimiterService(configService, clock);
+  return new RateLimiterService(
+    configService,
+    clock,
+    undefined,
+    undefined,
+    metrics as never,
+  );
 }
 
 describe('RateLimiterService', () => {
@@ -121,6 +128,48 @@ describe('RateLimiterService', () => {
     clock.advance(60_001);
     await expect(limiter.check('alice', '1.2.3.4')).resolves.toMatchObject({
       limited: false,
+    });
+  });
+
+  it('records only limited decisions', async () => {
+    const recordLoginRateLimitHit = jest.fn();
+    const limiter = makeLimiter(
+      new FakeClock(0),
+      {
+        LOGIN_RATE_LIMIT_ACCOUNT_MAX: 1,
+        LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: 60_000,
+        LOGIN_RATE_LIMIT_SOURCE_MAX: 100,
+        LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS: 60_000,
+      },
+      { recordLoginRateLimitHit },
+    );
+
+    await limiter.check('alice', '1.2.3.4');
+    await limiter.recordFailure('alice', '1.2.3.4');
+    await limiter.check('alice', '1.2.3.4');
+
+    expect(recordLoginRateLimitHit).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not let a metrics failure replace the rate-limit decision', async () => {
+    const limiter = makeLimiter(
+      new FakeClock(0),
+      {
+        LOGIN_RATE_LIMIT_ACCOUNT_MAX: 1,
+        LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: 60_000,
+        LOGIN_RATE_LIMIT_SOURCE_MAX: 100,
+        LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS: 60_000,
+      },
+      {
+        recordLoginRateLimitHit: () => {
+          throw new Error('metrics failure');
+        },
+      },
+    );
+
+    await limiter.recordFailure('alice', '1.2.3.4');
+    await expect(limiter.check('alice', '1.2.3.4')).resolves.toMatchObject({
+      limited: true,
     });
   });
 

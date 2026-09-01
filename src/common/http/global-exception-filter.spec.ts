@@ -140,6 +140,32 @@ describe('GlobalExceptionFilter', () => {
     });
   });
 
+  it('does not echo rejected values from marked validation issues', () => {
+    const { host, response } = hostFor('req-validation-secret');
+    const sentinel = 'constraint-secret-sentinel';
+    const exception = validationExceptionFactory([
+      {
+        property: 'displayName',
+        constraints: { custom: `rejected: ${sentinel}` },
+        children: [],
+        target: { displayName: sentinel },
+        value: sentinel,
+      },
+    ]);
+
+    filter.catch(exception, host);
+
+    const body = response.json.mock.calls[0][0];
+    expect(body.error).toEqual({
+      code: ErrorCode.VALIDATION_FAILED,
+      message: 'displayName: Invalid value.',
+      field: 'displayName',
+      blocking: true,
+      retryAfterSeconds: null,
+    });
+    expect(JSON.stringify(body)).not.toContain(sentinel);
+  });
+
   it('maps built-in HTTP exceptions without leaking response objects', () => {
     const { host, response } = hostFor('req-http');
 

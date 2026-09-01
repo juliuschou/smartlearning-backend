@@ -8,7 +8,7 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiHeader, ApiTags } from '@nestjs/swagger';
+import { ApiHeader, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OperationRateLimitGuard } from '../../rate-limit/operation-rate-limit.guard';
 import {
   OperationRateLimit,
@@ -25,7 +25,12 @@ import type {
   ValidateBatchResult,
   ConfirmBatchResult,
 } from '../application/question-batch.service';
-import { ConfirmQuestionBatchDto, ValidateQuestionBatchDto } from './dto';
+import {
+  ConfirmBatchResponseDto,
+  ConfirmQuestionBatchDto,
+  ValidateBatchResponseDto,
+  ValidateQuestionBatchDto,
+} from './dto';
 
 const VALIDATION_TOKEN_HEADER = 'x-validation-token';
 
@@ -54,6 +59,7 @@ export class QuestionBatchesController {
   constructor(private readonly batches: QuestionBatchService) {}
 
   @Post(':courseId/question-batches/validate')
+  @ApiResponse({ status: 201, type: ValidateBatchResponseDto })
   @OperationRateLimit(OperationRateLimitPolicy.CLI_BATCH_VALIDATE)
   @UseGuards(BatchActorGuard, OperationRateLimitGuard, BatchCsrfGuard)
   async validate(
@@ -75,6 +81,7 @@ export class QuestionBatchesController {
   }
 
   @Post(':courseId/question-batches/confirm')
+  @ApiResponse({ status: 201, type: ConfirmBatchResponseDto })
   @OperationRateLimit(OperationRateLimitPolicy.CLI_BATCH_CONFIRM)
   @UseGuards(BatchActorGuard, OperationRateLimitGuard, BatchCsrfGuard)
   async confirm(

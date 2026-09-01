@@ -245,3 +245,10 @@
 - **Detection signal:** `npm run format:check` reported the manual CP2 file, while `npm run lint:check` reported eight Prettier diagnostics and two unused-variable errors.
 - **Prevention rule:** Keep manual verification specs formatted and lint-clean even when they are not part of the automated behavioral run; fix static-only failures before recording the bundle as green.
 - **Tripwire:** Run `npm run lint:check` and `npm run format:check` after adding or editing any manual E2E spec, without executing the manual database scenario.
+
+## 2026-09-01 — Bind local test PostgreSQL to loopback only
+
+- **Failure mode:** Creating the test database with Docker's shorthand `--publish 5432:5432` exposed PostgreSQL on all host interfaces instead of only the required localhost endpoint.
+- **Detection signal:** `docker ps` reported `0.0.0.0:5432->5432/tcp` and `[::]:5432->5432/tcp` despite the task's localhost-only requirement.
+- **Prevention rule:** For local-only database services, always use an explicit loopback mapping (`127.0.0.1:5432:5432`) and verify the rendered mapping after startup.
+- **Tripwire:** Reject any test database startup whose `docker ps` mapping is not exactly `127.0.0.1:<host-port>->5432/tcp`.

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { errorType } from '../../common/observability';
 
 /**
  * In-process post-commit wake bus.
@@ -60,7 +61,7 @@ export class LiveSessionEventBus {
           {
             signalType: signal.type,
             liveSessionId: signal.liveSessionId,
-            err: error instanceof Error ? error.message : String(error),
+            errorType: errorType(error),
           },
           'Realtime signal listener threw; continuing remaining listeners',
         );

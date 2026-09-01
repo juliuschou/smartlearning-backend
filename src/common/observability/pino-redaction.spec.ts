@@ -16,7 +16,17 @@ describe('Pino auth redaction', () => {
         'req.headers["x-validation-token"]',
         'req.headers["idempotency-key"]',
         'req.body.payloadHash',
+        'req.body.displayName',
+        'req.body.questions',
         'res.headers["set-cookie"]',
+        'res.body.questions',
+        'res.body.data.questions',
+        'res.body.preview',
+        'res.body.data.preview',
+        'res.body.payloadHash',
+        'res.body.data.payloadHash',
+        'res.body.expiresAt',
+        'res.body.data.expiresAt',
         'res.body.rawKey',
         'res.body.data.rawKey',
         'res.body.data.selectedOptionRefs',
@@ -56,7 +66,14 @@ describe('Pino auth redaction', () => {
             newPassword: 'new-secret',
             tempPassword: 'temp-secret',
             username: 'student-username-safe',
-            displayName: 'Student Display Safe',
+            displayName: 'request-display-name-secret',
+            questions: [
+              {
+                prompt: 'question-prompt-secret',
+                options: [{ text: 'question-option-secret' }],
+                correctOptionRefs: ['question-correct-ref-secret'],
+              },
+            ],
             payloadHash: 'payload-hash-secret',
           },
           headers: {
@@ -84,10 +101,18 @@ describe('Pino auth redaction', () => {
               rawKey: 'enveloped-raw-key-secret',
               selectedOptionRefs: ['selected-option-secret'],
               textAnswer: 'text-answer-secret',
+              questions: ['enveloped-question-secret'],
+              preview: ['enveloped-preview-secret'],
+              payloadHash: 'enveloped-payload-hash-secret',
+              expiresAt: 'enveloped-expires-at-secret',
               accountId: 'account-id-safe',
               username: 'student-username-safe',
               displayName: 'Student Display Safe',
             },
+            questions: ['top-level-question-secret'],
+            preview: ['top-level-preview-secret'],
+            payloadHash: 'top-level-payload-hash-secret',
+            expiresAt: 'top-level-expires-at-secret',
             rawKey: 'top-level-raw-key-secret',
             selectedOptionRefs: ['top-level-option-secret'],
             textAnswer: 'top-level-answer-secret',
@@ -116,6 +141,18 @@ describe('Pino auth redaction', () => {
     expect(output).not.toContain('text-answer-secret');
     expect(output).not.toContain('top-level-option-secret');
     expect(output).not.toContain('top-level-answer-secret');
+    expect(output).not.toContain('request-display-name-secret');
+    expect(output).not.toContain('question-prompt-secret');
+    expect(output).not.toContain('question-option-secret');
+    expect(output).not.toContain('question-correct-ref-secret');
+    expect(output).not.toContain('enveloped-question-secret');
+    expect(output).not.toContain('enveloped-preview-secret');
+    expect(output).not.toContain('enveloped-payload-hash-secret');
+    expect(output).not.toContain('enveloped-expires-at-secret');
+    expect(output).not.toContain('top-level-question-secret');
+    expect(output).not.toContain('top-level-preview-secret');
+    expect(output).not.toContain('top-level-payload-hash-secret');
+    expect(output).not.toContain('top-level-expires-at-secret');
     expect(output).not.toContain('handshake-participant-secret');
     expect(output).not.toContain('handshake-session-secret');
     expect(output).not.toContain('handshake-cookie-secret');

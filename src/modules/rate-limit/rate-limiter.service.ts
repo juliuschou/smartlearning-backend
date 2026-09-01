@@ -8,6 +8,7 @@ import {
   type LoginRateLimitStore,
 } from './login-rate-limit-store';
 import { MemoryLoginRateLimitStore } from './memory-login-rate-limit.store';
+import { MetricsService } from '../metrics/metrics.service';
 
 export type LoginRateLimitMode = 'memory' | 'redis-required';
 
@@ -50,6 +51,7 @@ export class RateLimiterService implements OnModuleDestroy {
     @Optional()
     @Inject(REDIS_LOGIN_RATE_LIMIT_STORE)
     redisStore?: LoginRateLimitStore,
+    @Optional() private readonly metrics?: MetricsService,
   ) {
     this.mode = this.parseMode(
       this.configService.get<string>('LOGIN_RATE_LIMIT_MODE'),
@@ -107,7 +109,7 @@ export class RateLimiterService implements OnModuleDestroy {
     accountKey: string,
     sourceKey: string,
   ): Promise<RateLimitDecision> {
-    return this.run(() => {
+    const decision = await this.run(() => {
       if (!this.store) throw new RateLimitUnavailableError();
       return this.store.check(
         normalizeRateLimitAccountKey(accountKey),
@@ -115,6 +117,14 @@ export class RateLimiterService implements OnModuleDestroy {
         this.config,
       );
     });
+    if (decision.limited) {
+      try {
+        this.metrics?.recordLoginRateLimitHit();
+      } catch {
+        // Metrics must never replace the authoritative rate-limit decision.
+      }
+    }
+    return decision;
   }
 
   async recordFailure(accountKey: string, sourceKey: string): Promise<void> {

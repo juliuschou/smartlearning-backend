@@ -27,6 +27,7 @@ import {
   RealtimeEvent,
   RealtimeVisibility,
 } from '../../realtime/live-session-realtime-contract';
+import { errorType } from '../../../common/observability';
 import { AccountRole } from '../../identity/domain/roles';
 import { AccountStatus } from '../../identity/domain/account-status';
 import { EnrollmentStatus } from '../../enrollments/domain';
@@ -303,7 +304,7 @@ export class ParticipantService {
         {
           signalType: signal.type,
           liveSessionId: signal.liveSessionId,
-          err: error instanceof Error ? error.message : String(error),
+          errorType: errorType(error),
         },
         'Realtime publish failed; mutation already committed',
       );

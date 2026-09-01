@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RealtimeRedisService } from '../realtime/realtime-redis.service';
 import { RateLimiterService } from '../rate-limit/rate-limiter.service';
+import { MetricsService } from '../metrics/metrics.service';
 
 export interface ReadinessCheck {
   healthy: boolean;
@@ -26,6 +27,7 @@ export class ReadinessService {
     private readonly prisma: PrismaService,
     private readonly redis: RealtimeRedisService,
     private readonly loginRateLimiter: RateLimiterService,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   async check(): Promise<ReadinessResult> {
@@ -61,6 +63,10 @@ export class ReadinessService {
         : { error: 'login_rate_limit_unavailable' }),
     };
 
+    this.recordReadiness('database', dbHealthy);
+    this.recordReadiness('realtime_redis', redisHealthy);
+    this.recordReadiness('login_rate_limit', loginRateLimitHealthy);
+
     const operational =
       dbHealthy && policy.acceptsTraffic && loginRateLimitHealthy;
     return {
@@ -69,5 +75,16 @@ export class ReadinessService {
       checks,
       httpStatus: operational ? 200 : 503,
     };
+  }
+
+  private recordReadiness(
+    dependency: 'database' | 'realtime_redis' | 'login_rate_limit',
+    healthy: boolean,
+  ): void {
+    try {
+      this.metrics?.recordReadiness(dependency, healthy);
+    } catch {
+      // Metrics cannot change readiness policy or its HTTP status.
+    }
   }
 }

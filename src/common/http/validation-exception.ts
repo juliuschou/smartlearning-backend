@@ -21,7 +21,7 @@ export function flattenValidationErrors(
     )) {
       issues.push({
         field,
-        message: `${field}: ${message}`,
+        message: `${field}: ${safeConstraintMessage(message, error.value)}`,
       });
     }
 
@@ -61,6 +61,24 @@ export function isValidationException(
     exception !== null &&
     VALIDATION_EXCEPTION_MARKER in exception
   );
+}
+
+/**
+ * Constraint messages are normally fixed library text. If a custom validator
+ * interpolates the rejected value, replace the whole message rather than
+ * attempting to redact a guessed secret format.
+ */
+function safeConstraintMessage(message: string, value: unknown): string {
+  const rejectedValue = typeof value === 'string' ? value : undefined;
+  if (
+    message.includes('$value') ||
+    (rejectedValue !== undefined &&
+      rejectedValue.length > 0 &&
+      message.includes(rejectedValue))
+  ) {
+    return 'Invalid value.';
+  }
+  return message;
 }
 
 /** Use bracket notation for array indexes and dots for object properties. */

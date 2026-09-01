@@ -17,6 +17,7 @@ import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from './common/observability';
 import { PrismaModule } from './prisma/prisma.module';
 import { RateLimitModule } from './modules/rate-limit/rate-limit.module';
 import { GovernanceModule } from './modules/governance/governance.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
 
 /**
  * Resolve env file by NODE_ENV so application runtime and the Prisma CLI
@@ -74,6 +75,7 @@ const isProduction = process.env.NODE_ENV === 'production';
     RealtimeModule,
     EnrollmentsModule,
     GovernanceModule,
+    MetricsModule,
   ],
   controllers: [],
   providers: [],

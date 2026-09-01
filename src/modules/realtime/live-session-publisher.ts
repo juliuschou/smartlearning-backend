@@ -3,15 +3,18 @@ import {
   Logger,
   OnModuleDestroy,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
 import { newId } from '../../common/crypto';
+import { errorType } from '../../common/observability';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   LiveSessionEventBus,
   type LiveSessionSignal,
 } from './live-session-event-bus';
 import { LiveGateway } from './live-gateway';
+import { MetricsService } from '../metrics/metrics.service';
 import {
   RealtimeDeliveryState,
   RealtimeEvent,
@@ -74,6 +77,7 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly bus: LiveSessionEventBus,
     private readonly gateway: LiveGateway,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   onModuleInit(): void {
@@ -140,7 +144,7 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.error(
         {
-          err: error instanceof Error ? error.name : String(error),
+          errorType: errorType(error),
         },
         'Durable realtime publisher cycle failed',
       );
@@ -278,7 +282,17 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
         lastFailureClass: shouldDeadLetter ? failureClass : 'transient',
       },
     });
-    if (updated.count === 1 && shouldDeadLetter) {
+    const persisted = updated.count === 1;
+    if (persisted) {
+      try {
+        this.metrics?.recordRealtimePublishFailure(
+          shouldDeadLetter ? 'dead' : 'retry',
+        );
+      } catch {
+        // Metrics must never change delivery recovery behavior.
+      }
+    }
+    if (persisted && shouldDeadLetter) {
       await this.notifyDeadRecovery(row.live_session_id);
     }
     this.logger.warn(
@@ -292,7 +306,7 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
       },
       'Durable realtime event dispatch failed',
     );
-    return updated.count === 1;
+    return persisted;
   }
 
   private classifyFailure(error: unknown): 'permanent' | 'transient' {
@@ -320,7 +334,7 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
         {
           liveSessionId,
           reason,
-          err: error instanceof Error ? error.name : 'unknown',
+          errorType: errorType(error),
         },
         'Could not notify realtime recovery',
       );

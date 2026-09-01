@@ -14,6 +14,7 @@ import {
   type PageRequest,
   toPage,
 } from '../../../common/pagination';
+import { errorType } from '../../../common/observability';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { ACCOUNT_ROLES, AccountRole, isAccountRole } from '../domain/roles';
@@ -59,7 +60,7 @@ export class AccountService {
     createdBy: string;
   }): Promise<Account> {
     if (!isAccountRole(input.role)) {
-      throw new ValidationError(`Invalid role: ${input.role}`, 'role');
+      throw new ValidationError('Invalid account role.', 'role');
     }
     void ACCOUNT_ROLES;
     try {
@@ -402,7 +403,7 @@ export class AccountService {
         this.logger.error(
           {
             accountId,
-            err: error instanceof Error ? error.message : String(error),
+            errorType: errorType(error),
           },
           'Account lifecycle publish failed; mutation already committed',
         );

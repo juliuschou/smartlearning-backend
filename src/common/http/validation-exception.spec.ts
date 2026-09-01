@@ -45,6 +45,42 @@ describe('validation-exception', () => {
     ]);
   });
 
+  it('replaces constraint messages that echo the rejected value', () => {
+    const sentinel = 'validation-secret-sentinel';
+    const errors: ValidationError[] = [
+      {
+        property: 'displayName',
+        constraints: {
+          custom: `displayName contains ${sentinel}`,
+        },
+        children: [
+          {
+            property: 'nested',
+            constraints: { custom: 'rejected value: $value' },
+            children: [],
+            target: { nested: sentinel },
+            value: sentinel,
+          },
+        ],
+        target: { displayName: sentinel },
+        value: sentinel,
+      },
+    ];
+
+    const flattened = flattenValidationErrors(errors);
+    expect(JSON.stringify(flattened)).not.toContain(sentinel);
+    expect(flattened).toEqual([
+      { field: 'displayName', message: 'displayName: Invalid value.' },
+      {
+        field: 'displayName.nested',
+        message: 'displayName.nested: Invalid value.',
+      },
+    ]);
+
+    const exception = validationExceptionFactory(errors);
+    expect(JSON.stringify(exception.getResponse())).not.toContain(sentinel);
+  });
+
   it('creates a transport-safe BadRequestException', () => {
     const exception = validationExceptionFactory(errors);
     const response = exception.getResponse() as {

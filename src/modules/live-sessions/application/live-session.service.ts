@@ -9,6 +9,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from '../../../common/errors';
+import { errorType } from '../../../common/observability';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { QuestionService } from '../../questions/application/question.service';
@@ -38,6 +39,7 @@ import {
   SessionQuestionStatus,
 } from '../domain';
 import { GovernanceService } from '../../governance/application/governance.service';
+import { MetricsService } from '../../metrics/metrics.service';
 import { Clock, SystemClock } from '../../../common/clock';
 import type {
   CreateLiveSessionDto,
@@ -100,6 +102,7 @@ export class LiveSessionService {
     private readonly governance: GovernanceService,
     @Optional() private readonly config?: ConfigService,
     @Optional() private readonly clock?: Clock,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   private get lifecycleClock(): Clock {
@@ -276,8 +279,17 @@ export class LiveSessionService {
         closed += 1;
         this.publishClosedSession(candidate.id, result.closedQuestionIds);
       } catch (error) {
+        try {
+          this.metrics?.recordJobItem('live_session_auto_close', 'failed');
+        } catch {
+          // Metrics must not stop the remaining auto-close candidates.
+        }
         this.logger.error(
-          `Auto-close failed for ${candidate.id}: ${error instanceof Error ? error.name : 'unknown'}`,
+          {
+            liveSessionId: candidate.id,
+            errorType: errorType(error),
+          },
+          'Auto-close failed; continuing remaining sessions',
         );
       }
     }
@@ -322,7 +334,7 @@ export class LiveSessionService {
         {
           signalType: signal.type,
           liveSessionId: signal.liveSessionId,
-          err: error instanceof Error ? error.message : String(error),
+          errorType: errorType(error),
         },
         'Realtime publish failed; mutation already committed',
       );

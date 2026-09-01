@@ -2465,3 +2465,129 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 
 - **USER CONFIRMATION:** User explicitly confirmed `Checkpoint 5 verified` after reviewing the sanitized multi-instance and Redis-outage evidence.
 - **STATUS:** BE-8.5 CP5 acceptance criteria and Manual Checkpoint 5 are complete.
+
+## 2026-08-31 BE-8.6 CP6 — Redaction / disclosure review
+
+### Source and scope
+
+- **Plan:** `../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-cp6-redaction-review-plan.md`
+- **Scope:** CP1–CP5 sensitive-field and output-surface audit: central Pino redaction, exception/validation disclosure, generated OpenAPI schemas/examples/defaults, bootstrap console output, and login/CLI rate-limit key privacy.
+- **Non-goals:** no CP7 metrics; no API contract, Redis bucket/HMAC algorithm, permission, Prisma schema, migration, or data changes.
+
+### Acceptance criteria
+
+- [ ] Every CP1–CP5 sensitive field has a classification, sink/path, existing protection, and executable tripwire.
+- [ ] Logs, error envelopes, validation details, OpenAPI examples/defaults do not expose credentials, tokens, hashes, answer/question content, request PII, rate-limit internal keys, or arbitrary exception messages.
+- [ ] Contract-allowed `expiresAt` and one-time CLI `rawKey` remain only in their allowed API responses; logging redacts response-shaped copies.
+- [ ] Operational IDs, request IDs, fixed codes/reasons, error type metadata, and safe structured metadata remain available.
+- [ ] New sanitization/redaction rules have sentinel-based executable coverage.
+- [ ] Manual Checkpoint 6 evidence is produced and remains `PENDING USER INSPECTION` until explicit user confirmation `Checkpoint 6 verified`.
+
+### Dependencies & environment / DB boundary
+
+- Node 24+, existing npm dependencies, Pino/Nest/Swagger test setup, synthetic sentinels only.
+- DB-free unit/static checks first. DB-backed/OpenAPI E2E may run only after explicit authorization for `NODE_ENV=test` and exactly guarded `smartlearning_test`; never touch `smartlearning_dev`, never run migration/truncate without authorization, and never silently skip.
+
+### Risk & rollback
+
+- **Risk: high** — under-redaction can leak secrets; over-redaction can remove required observability or alter public responses.
+- **Rollback:** revert only source/test/documentation changes; no schema/data rollback and no credential/rate-limit state changes.
+- **Stop conditions:** unexpected Pino record shape, contract conflict, missing tripwire for a newly sensitive field, sentinel in a prohibited output, wrong DB target, silent skip, or normal suite accidentally excluded.
+
+### Working notes
+
+- Never log password/hash/cookie/auth/CSRF/token/raw CLI key/idempotency or payload hash/answers/question content/request PII/raw/composed rate-limit keys/arbitrary thrown message/value.
+- Context-sensitive: allowed API `expiresAt`/`rawKey` stay on-wire but are removed from serialized logs; `req.body.displayName` is redacted narrowly, not every `displayName` path.
+- Safe metadata: stable resource IDs, request ID, fixed reason/code, `errorType`.
+- Use complete serialized-output assertions with unique sentinels; do not blanket-redact generic `key`, `id`, `expiresAt`, or `displayName` paths.
+
+### Implementation checklist
+
+- [x] Build CP6 audit matrix and review document `../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-cp6-redaction-review.md`.
+- [x] Add failing Pino redaction tripwires, then implement exact path redaction.
+- [x] Remove arbitrary error message/value logging from listed catch paths and add logger-spy coverage.
+- [x] Harden bootstrap console output without restructuring bootstrap into Pino.
+- [x] Add validation/error disclosure tripwires and narrow normalization only after a rejected-value leak was proven.
+- [x] Add rate-limit key/privacy tripwires without changing key/bucket semantics.
+- [x] Audit generated OpenAPI schemas and examples/defaults with a recursive test-only walker (execution pending DB authorization).
+- [x] Add explicit manual CP6 verifier; keep excluded from default E2E and generate synthetic specimens.
+- [x] Run targeted DB-free tests and static searches; request DB authorization before OpenAPI/negative-disclosure E2E.
+- [x] Run authorized DB-free quality gates and record exact results/counts/skips.
+- [x] Complete Manual Checkpoint 6 after explicit user sign-off `Checkpoint 6 verified`; CP6 is now verified.
+
+### Results — 2026-09-01 implementation and DB-free verification
+
+- **Changed:** Added exact CP6 Pino redaction paths for request account/question data and batch response question/preview/hash/expiry collections; replaced arbitrary error message/value logging with fixed metadata plus `errorType`; hardened bootstrap output; sanitized rejected-value validation messages; fixed dynamic question-validation wording; added OpenAPI metadata/placement checks; added dedicated synthetic manual verifier and review ledger.
+- **Automated targeted unit:** PASS — 12 suites / 69 tests, including Pino, HTTP validation/filter, domain validation, account/bus/service/gateway logger sinks, and Redis store logging.
+- **Full unit:** PASS — `npm test -- --runInBand --silent`, 43 suites / 258 tests, 0 skipped.
+- **Manual synthetic verifier:** PASS — `npm run test:cp6:manual -- --runInBand`, 1 suite / 1 test; six sanitized specimen categories printed. The specimens are recorded in `../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-cp6-redaction-review.md`.
+- **Static quality:** PASS — `git diff --check`, `npm run prisma:validate`, `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`; disclosure `rg` searches found no `error.message` or `String(error)` in `src`.
+- **OpenAPI E2E:** authorized run reached 4/4 passing tests after adding generated response-model decorators, but exited 1 because `afterAll` timed out at 30s while the full app's background scheduler/publisher encountered database errors. Treat as BLOCKED, not green; schema/migration state needs an authorized check.
+- **Migration status:** `NODE_ENV=test npm run prisma:migrate:status` confirmed the guarded target `smartlearning_test` at `localhost:5432`, then returned `P1001` because PostgreSQL was unreachable. No mutation occurred.
+- **Not run / blocked:** default E2E and integration.
+- **Manual status:** `PENDING USER INSPECTION`; do not mark Checkpoint 6 verified until the user explicitly replies `Checkpoint 6 verified`.
+
+### Results — 2026-09-01 test database recovery
+
+- **Database service:** PASS — created isolated `smart-learning-pg-test` PostgreSQL 16 container with dedicated `pgdata_smartlearning_test` volume and loopback-only mapping `127.0.0.1:5432`; existing containers and volumes were not reused or removed.
+- **Connectivity:** PASS — read-only query confirmed `smartlearning_test`, user `smartlearning`, schema `public`.
+- **Migrations:** PASS — after explicit authorization, all 15 repository migrations applied; follow-up `NODE_ENV=test npm run prisma:migrate:status` reported `Database schema is up to date!`.
+- **Targeted verification:** PASS — `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`; 1 suite / 4 tests passed, 0 failed, 0 skipped. Pre-existing Nest `LegacyRouteConverter` warnings were emitted but did not fail the suite.
+- **Scope:** No source files or existing database volumes were changed; default E2E and integration suites remain unrun.
+
+### Manual Checkpoint 6 — verified (2026-09-01)
+
+- **USER CONFIRMATION:** User explicitly confirmed `Checkpoint 6 verified` after reviewing the six sanitized CP6 log, error-envelope, rate-limit, and OpenAPI disclosure specimens.
+- **STATUS:** BE-8.6 CP6 redaction/disclosure acceptance criteria and Manual Checkpoint 6 are complete.
+
+## 2026-09-01 BE-8.7 CP7 — Metrics and observability
+
+### Context and acceptance criteria
+
+- **Plan:** `../docs/智學互動平台/50_實作與測試/BackendBE8/BE-8.7 CP7 Metrics 與 observability 實作計畫.md`
+- **Baseline:** Preserve the uncommitted CP6 redaction/error-shape changes; CP7 is additive and must remain reviewable separately.
+- [x] Anonymous root `GET /metrics` is raw Prometheus text, `VERSION_NEUTRAL`, unwrapped, and unguarded; `/api/v1/metrics` is not an alias.
+- [x] Fixed low-cardinality HTTP, login-limit, realtime, job, and readiness metric families are exposed without sensitive values.
+- [x] Scrape performs no PostgreSQL/Redis/readiness I/O; metric failures never change application behavior.
+- [x] Alert rules, dashboard inventory, README, targeted tests, metrics E2E, and manual Checkpoint 7 verifier are delivered.
+- [x] Automated evidence is complete and the process stops at Manual Checkpoint 7 pending explicit `Checkpoint 7 verified`.
+
+### Dependencies and environment / DB boundary
+
+- Node 24+, npm, direct `prom-client`; no OpenTelemetry, Prometheus/Grafana deployment, Nginx change, schema, migration, or retention worker.
+- DB-backed E2E/integration may run only with explicit authorization against guarded `NODE_ENV=test` database `smartlearning_test`; never touch development/production DB and never silently skip.
+
+### Risk and rollback
+
+- **Risk: medium-high** — route-label cardinality/disclosure, duplicate registries, metrics exceptions crossing domain boundaries, authoritative transition miscounts, Redis readiness conflation, and CP6/CP7 diff interleaving.
+- **Rollback:** remove CP7 source/test/artifact/dependency/wiring changes only. Do not clear DB/Redis, alter credentials, change transactions, or replace `/metrics` with an application guard.
+
+### Working notes
+
+- Registry is per Nest application; no process-global registry/default collectors/module-scope collectors/`Registry.clear()`.
+- Route labels use only matched string templates from `baseUrl + req.route.path`; malformed/missing routes are `__unmatched__`; never use URL/query/params/IDs/tokens/errors.
+- Count only authoritative outcomes: limited decisions, persisted publisher retry/dead transitions, real job runs/items, and completed readiness observations.
+- Optional `realtime_redis` degradation remains distinct from required `login_rate_limit` unready behavior.
+
+### Implementation checklist
+
+- [x] Add `prom-client`, application-owned registry, typed non-throwing facade, and fixed metric contract.
+- [x] Add raw root `/metrics` controller, exact prefix exclusion, and safe finish/close HTTP middleware.
+- [x] Instrument login limiter, durable publisher, auto-close scheduler/service, retention purge, and readiness boundaries.
+- [x] Add operational alert rules, dashboard inventory, and observability README.
+- [x] Add metrics unit, integration-boundary, artifact, E2E, and manual verifier coverage.
+- [x] Run targeted and full verification; record blocked DB checks explicitly.
+- [x] Execute Manual Checkpoint 7 and await user confirmation.
+
+### Results
+
+- **Implementation:** CP7 metrics and observability delivered additively over the uncommitted CP6 changes. Added a per-application `prom-client` registry, typed non-throwing metrics facade, safe root-level raw `/metrics` endpoint, low-cardinality HTTP middleware, semantic instrumentation, operational alert/dashboard/README artifacts, and regression coverage. No schema or migration files were added.
+- **Targeted metrics verification:** `npm test -- --runInBand src/modules/metrics` — PASS, 3 suites / 10 tests. `NODE_ENV=test npm run test:e2e -- --runInBand test/metrics.e2e-spec.ts` — PASS, 1 suite / 3 tests.
+- **Instrumentation-boundary verification:** rate limiter, publisher, auto-close scheduler, governance retention, and readiness specs — PASS, 5 suites / 35 tests. Full unit suite — PASS, 47 suites / 277 tests.
+- **Static quality verification:** `npm run prisma:validate`, `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` — PASS.
+- **Full guarded E2E:** `NODE_ENV=test npm run test:e2e -- --runInBand` — PASS, 32 suites / 219 tests, 0 failed / 0 skipped; guarded `smartlearning_test` only. Jest exited normally without teardown or open-handle warnings.
+- **Integration verification:** The full `NODE_ENV=test npm run test:integration -- --runInBand` command reported 3/4 suites and 16/22 tests passed; it exited 1 because the six tests in `test/login-rate-limit.redis.integration-spec.ts` intentionally require explicit `RUN_LOGIN_RATE_LIMIT_REDIS_TESTS=1` opt-in. The non-Redis rerun, `NODE_ENV=test npm run test:integration -- --runInBand --testPathIgnorePatterns=login-rate-limit.redis.integration-spec.ts`, passed 3/3 suites and 16/16 tests against guarded `smartlearning_test`. No migration was run and no files were edited by the verifiers. This is recorded as a blocked/guarded Redis integration subset, not a CP7 failure.
+- **Database status:** read-only `NODE_ENV=test npm run prisma:migrate:status` — PASS; `smartlearning_test` is up to date with 15 migrations. CP7 added no migration.
+- **Manual verifier:** `npm run test:cp7:manual -- --runInBand` — PASS, 1 suite / 1 test. Evidence included safe metric families, readiness policy `database:healthy,realtime_redis:degraded,login_rate_limit:healthy`, and alert inventory covering database, login limiting, realtime retry/dead, auto-close, retention, and optional Redis degradation. CP6 manual verifier also passed with no disclosure failures.
+- **Prometheus tooling:** `promtool` is unavailable; alert rules were validated by static artifact tests instead.
+- **Manual Checkpoint 7:** User explicitly confirmed `Checkpoint 7 verified` on 2026-09-01. CP7 acceptance and checkpoint are complete.

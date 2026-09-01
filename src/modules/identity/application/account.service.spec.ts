@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { AccountRole } from '../domain/roles';
 import { AccountStatus } from '../domain/account-status';
@@ -95,6 +96,34 @@ describe('AccountService.updateAccount / setMustChangePassword', () => {
   }
 
   const actor = { account: { id: ACTOR_ID }, sessionId: SESSION_ID };
+
+  it('does not echo an invalid caller-controlled role', async () => {
+    const { service } = setup();
+    const sentinel = 'role-secret-sentinel';
+    await expect(
+      service.createAccount({
+        username: 'new-account',
+        displayName: 'Display',
+        role: sentinel as AccountRole,
+        canCreateCourse: false,
+        tempPassword: 'safe-temporary-password-1234',
+        createdBy: ACTOR_ID,
+      }),
+    ).rejects.toMatchObject({ field: 'role' });
+
+    try {
+      await service.createAccount({
+        username: 'new-account',
+        displayName: 'Display',
+        role: sentinel as AccountRole,
+        canCreateCourse: false,
+        tempPassword: 'safe-temporary-password-1234',
+        createdBy: ACTOR_ID,
+      });
+    } catch (error) {
+      expect(JSON.stringify(error)).not.toContain(sentinel);
+    }
+  });
 
   it('updates displayName and role (teacher→student) successfully', async () => {
     const { service, txClient } = setup();
@@ -206,6 +235,47 @@ describe('AccountService.updateAccount / setMustChangePassword', () => {
       cliCredentials.revokeAllForAccountInTransaction,
     ).not.toHaveBeenCalled();
     expect(accountLifecycleBus.publish).not.toHaveBeenCalled();
+  });
+
+  it('redacts lifecycle publish failures without changing fire-and-forget behavior', async () => {
+    const loggerError = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const sentinel = 'account-publish-secret';
+    const { service, accountLifecycleBus } = setup();
+    accountLifecycleBus.publish
+      .mockRejectedValueOnce(new Error(sentinel))
+      .mockRejectedValueOnce(sentinel);
+
+    try {
+      (
+        service as unknown as {
+          publishAccountDisabled: (accountId: string) => void;
+        }
+      ).publishAccountDisabled(ACCOUNT_ID);
+      (
+        service as unknown as {
+          publishAccountDisabled: (accountId: string) => void;
+        }
+      ).publishAccountDisabled(ACCOUNT_ID);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const calls = JSON.stringify(loggerError.mock.calls);
+      expect(calls).not.toContain(sentinel);
+      expect(loggerError).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ accountId: ACCOUNT_ID, errorType: 'Error' }),
+        expect.any(String),
+      );
+      expect(loggerError).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ accountId: ACCOUNT_ID, errorType: 'string' }),
+        expect.any(String),
+      );
+    } finally {
+      loggerError.mockRestore();
+    }
   });
 
   it('setMustChangePassword sets the flag and short-circuits a no-op', async () => {

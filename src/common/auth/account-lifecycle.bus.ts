@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { errorType } from '../observability';
 
 /**
  * In-process account lifecycle signal bus (US-F8).
@@ -41,7 +42,7 @@ export class AccountLifecycleBus {
           {
             signalType: signal.type,
             accountId: signal.accountId,
-            err: error instanceof Error ? error.message : String(error),
+            errorType: errorType(error),
           },
           'Account lifecycle listener threw; continuing remaining listeners',
         );
