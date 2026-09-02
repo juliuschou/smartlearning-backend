@@ -2180,7 +2180,7 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - `SessionExpiredError` 落地：idle/absolute timeout → 401 `AUTH_SESSION_EXPIRED`；`revokedAt`／disabled／缺 cookie／malformed → 401 `UNAUTHORIZED`（凍結契約，不拆 idle/absolute 為兩 code）。
 - `GET /auth/session` 未登入 → 401（不回 200 + 空字串）；envelope 形狀不變，僅 additive forward-fix。
 - 全域 stop condition 未觸發：`AUTH_SESSION_EXPIRED` 未誤用於其他未認證情境。
-- 人工 Checkpoint 1 待使用者抽查（各案例 status/`error.code`、`expiresAt` 語意、後端 code 區分語意）。
+- **人工 Checkpoint 1 — verified（2026-08-30）**：依 `../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-1-cp1-session-expiry.md:169` 所記錄的使用者確認，各案例 status/`error.code`、`expiresAt` 語意與後端 code 區分語意均符合凍結契約；CP1 完成。
 
 ## 2026-08-30 BE-8.2 CP2 — Account management update（8.3）
 
@@ -2640,3 +2640,120 @@ Freeze 文件：`../docs/智學互動平台/50_實作與測試/BackendBE8/be-8-c
 - Failure drills: stopping `redis-realtime` produced liveness `200` and readiness `503`; after Redis restart, automatic recovery did not return readiness within 30 seconds, while restarting both API instances restored readiness `200`. Treat automatic Redis recovery as a follow-up/manual inspection item. SIGTERM delivered `server.shutdown` with `SERVER_SHUTTING_DOWN` and `retryable=true`; API instances restored cleanly.
 - Authority check: isolated PostgreSQL returned one accepted Submission, `live_session=active`, `session_question=open`, and eight durable event rows for the exercised session. No Redis or logs were used as domain truth.
 - **Manual status:** `Checkpoint 8 verified` confirmed by the user on 2026-09-01; CP8 is complete. The documented Redis automatic-recovery follow-up remains open for a later slice. After confirmation, project `smartlearning-cp8-teacher` was torn down with `down --remove-orphans`; named volumes were retained.
+
+## 2026-09-01 BE-8.9 CP9 — Final release evidence
+
+### Context and acceptance criteria
+
+- **Plan:** `../docs/智學互動平台/50_實作與測試/BackendBE8/BE-8.9 CP9 Final release evidence 實作計畫.md`。
+- **Scope:** release-evidence/documentation plus the separately reviewed realtime adapter fix required to unblock the release gate. No schema, migration, or runtime-configuration change was made.
+- [x] Capture the actual execution baseline, sanitized test DB target, and read-only migration status.
+- [x] Create the BE-8.1–BE-8.10 evidence matrix with permitted classifications and historical/current evidence separation.
+- [x] Complete current-HEAD verification with zero failures/skips after the adapter fix; the initial interrupted attempt is retained below as historical evidence.
+- [x] Complete final quality gates and current-HEAD manual CP6/CP7 evidence generators; all required authorized checks passed in the rerun.
+- [x] **Manual Final sign-off:** approved by the user on 2026-09-02 with BE-8.7 and BE-8.10 blockers retained; no broader release or production certification is inferred.
+
+### Authorization boundary
+
+- **Authorized:** `NODE_ENV=test` against exactly `localhost:5432/smartlearning_test`, including `test/setup/db.ts`'s guarded idempotent `npx prisma migrate deploy` and non-migration-table `TRUNCATE ... RESTART IDENTITY CASCADE` behavior if reached by a DB-backed suite.
+- **Not authorized:** `smartlearning_dev`, production databases, `migrate reset`, `db push`, arbitrary SQL cleanup, credential restoration, volume deletion, Compose/Redis runtime drills, or real-Redis integration. The rerun used only the authorized `smartlearning_test` setup boundary.
+- **Evidence rule:** retain no passwords, full connection URLs, cookies, session/CSRF/participant/CLI tokens, Redis keys, hashes, answer content, or raw credentials.
+
+### Baseline and working notes
+
+- **Initial interrupted attempt UTC:** `2026-09-01T15:50:29Z`; **CP9 rerun baseline UTC:** `2026-09-01T16:28:14Z`; **final gate/status recapture UTC:** `2026-09-01T17:26:39Z`.
+- **Branch/HEAD:** `main`, `37bcbe02312f1e44b3bf458f201b929b82f5a2ef` (`37bcbe0`).
+- **Working tree:** the initial interrupted attempt was clean; the rerun included the reviewed adapter source/test fix plus existing `tasks/lessons.md` and `tasks/todo.md` edits. The external CP9 packet is outside this backend Git repository.
+- **Tool versions:** Node `v26.5.1`; npm `11.17.0`; Prisma CLI/client `7.9.1`.
+- **Sanitized DB target:** host `localhost`, port `5432`, database `smartlearning_test`.
+- **Migration status:** read-only `NODE_ENV=test npm run prisma:migrate:status` passed; 15 migrations found and schema up to date.
+- **CP1 reconciliation:** the stale pending line was corrected from the explicit confirmation recorded in `be-8-1-cp1-session-expiry.md:169`; no new confirmation was invented.
+- **Initial stop condition:** full unit verification failed before CP8 static, DB-backed, manual, and final quality-gate commands could run. The subsequent CP9 rerun completed after the adapter fix.
+
+### Initial interrupted attempt (historical) — verification results
+
+| Command | Exit | Result / counts | Notes |
+| --- | ---: | --- | --- |
+| `git diff --check` (baseline) | 0 | PASS | Clean baseline; no output. |
+| `NODE_ENV=test npm run prisma:migrate:status` | 0 | PASS | Exact target `smartlearning_test`; 15 migrations; up to date; read-only. |
+| `npm run prisma:validate` | 0 | PASS | Schema valid. |
+| `npm test -- --runInBand` | 1 | **FAIL — 49 suites / 291 tests; 48 passed, 1 failed; 0 skipped reported** | `src/modules/realtime/realtime-redis.service.spec.ts:76`, “closes the replaced Redis adapter while preserving room membership”: expected `redisAdapters[0].close` once, received 0. No Jest teardown/open-handle warning. |
+| `npm run test:cp8:static -- --runInBand` | — | NOT RUN | Stopped after unit failure. |
+| `NODE_ENV=test npm run test:e2e -- --runInBand` | — | NOT RUN | Stopped after unit failure; no DB mutation. |
+| `NODE_ENV=test npm run test:integration -- --runInBand --testPathIgnorePatterns=login-rate-limit.redis.integration-spec.ts` | — | NOT RUN | Stopped after unit failure; no DB mutation. |
+| `NODE_ENV=test npm run test:cp6:manual -- --runInBand` | — | NOT RUN | Stopped after unit failure. |
+| `NODE_ENV=test npm run test:cp7:manual -- --runInBand` | — | NOT RUN | Stopped after unit failure. |
+| `npm run typecheck` | — | NOT RUN | Stopped after unit failure. |
+| `npm run lint:check` | — | NOT RUN | Stopped after unit failure. |
+| `npm run format:check` | — | NOT RUN | Stopped after unit failure. |
+| `npm run build` | — | NOT RUN | Stopped after unit failure. |
+| `git diff --check` (final) | — | NOT RUN | Must be rerun after blocker remediation and full inventory. |
+| `NODE_ENV=test npm run prisma:migrate:status` (final) | — | NOT RUN | Preflight status passed; final status must be recaptured after a complete rerun. |
+
+The initial diagnostic implementation made `close()` synchronous and passed the isolated lifecycle test, then was replaced by the reviewed fix now present in the working tree. The final rerun covers synchronous invocation, retained-adapter recovery, async shutdown draining, and sync/async failure isolation.
+
+### BE-8.1–BE-8.10 matrix summary
+
+| Item | Frozen scope | Implementation / evidence | Evidence commit(s) | Classification | Manual checkpoint | Open limitation / CP9 note |
+| --- | --- | --- | --- | --- | --- | --- |
+| BE-8.1 | `/auth/session` returns real UTC `expiresAt`; absent session remains 401 | `src/common/auth/session.service.ts`; `test/auth-session-expiry.e2e-spec.ts`; CP1 evidence doc | `6131140` | `runtime verified` | CP1 verified 2026-08-30 (explicit record at CP1 evidence `:169`) | Initial CP9 attempt stopped at the unit regression; the 2026-09-02 rerun passed. |
+| BE-8.2 | Expired session uses `AUTH_SESSION_EXPIRED`; missing/malformed/revoked/disabled auth uses `UNAUTHORIZED` | `src/common/errors/domain-error.ts`; `src/common/errors/error-codes.ts`; session unit/E2E specs | `6131140` | `runtime verified` | CP1 verified 2026-08-30 | Initial CP9 attempt did not reach this suite; the 2026-09-02 rerun passed. |
+| BE-8.3 | Admin account update allowlist and must-change-password gate | `src/modules/identity/application/account.service.ts`; `test/account-admin.e2e-spec.ts`; `test/manual-cp2-verify.e2e-spec.ts` | `1f48655`, `e0b53ba` | `runtime verified` | CP2 verified 2026-08-30 | Historical targeted/full evidence remains the available executable proof; the 2026-09-02 current-HEAD rerun passed. |
+| BE-8.4 | CLI credential rotation creates one active successor, immediately revokes predecessor, and persists only hashes | `src/modules/identity/application/cli-credential.service.ts`; `test/cli-credential.e2e-spec.ts`; `test/manual-cp3-verify.e2e-spec.ts`; additive Prisma migration | `4d906e0` | `runtime verified` | CP3 verified 2026-08-30 | Current-HEAD E2E rerun passed; no raw key/hash retained. |
+| BE-8.5 | CLI-owned course list/create routes preserve ownership and Web behavior | `src/modules/courses/api/courses.controller.ts`; `src/modules/courses/application/course.service.ts`; `test/cli-courses.e2e-spec.ts` | `36be9bb`, `0261327` | `runtime verified` | CP4 verified 2026-08-31 | Historical restored-DB targeted evidence is cited; current CP9 E2E rerun passed. |
+| BE-8.6 | CLI/batch fixed-window limits are credential-scoped, isolated, and expire with stable 429 response | `src/modules/rate-limit/operation-rate-limiter.service.ts`; `test/cli-batch-rate-limit.e2e-spec.ts`; `test/question-batches.e2e-spec.ts` | `36be9bb`, `0261327` | `runtime verified` | CP4 verified 2026-08-31 | Historical full E2E superseded the earlier local full-suite deferral; current CP9 E2E rerun passed. |
+| BE-8.7 | Redis-backed account/source login limits, multi-instance sharing, fail-closed outage, and opaque keys | `src/modules/rate-limit/redis-login-rate-limit.store.ts`; `test/login-rate-limit.redis.integration-spec.ts`; CP5 verifier | `7403f45`, `5c71f6f`, `56b67dc` | `BLOCKED (current-head Redis proof not rerun; depends on separately authorized Redis/Compose verification)` | CP5 verified 2026-08-31 | Historical 1-suite/6-test Redis and 1-suite/4-test two-backend evidence is not current-HEAD output; no Redis runtime authorization in this CP9 run. |
+| BE-8.8 | Sensitive fields and exception/OpenAPI output do not disclose credentials, tokens, hashes, or payload content | `src/common/observability/pino-redaction.ts`; `test/manual-cp6-verify.e2e-spec.ts`; CP6 review doc | `1e7e052` | `runtime verified` | CP6 verified 2026-09-01 | Current CP6 generator passed in the rerun: 1 suite / 1 test, with sanitized disclosure evidence. |
+| BE-8.9 | Raw low-cardinality `/metrics`, semantic instrumentation, alerts/dashboard handoff, and readiness semantics | `src/modules/metrics/*`; `ops/observability/*`; `test/metrics.e2e-spec.ts`; `test/manual-cp7-verify.e2e-spec.ts` | `1e7e052` | `runtime verified` | CP7 verified 2026-09-01 | Current CP7 generator passed in the rerun: 1 suite / 1 test. Prometheus/Grafana deployment and tuning remain OPS-owned; `promtool` was historically unavailable. |
+| BE-8.10 | Nginx/TLS proxy compatibility, trusted forwarded headers, secure cookies/CSRF, Socket.IO upgrade, Redis adapter, and shutdown behavior | `docker-compose.cp8.yml`; `ops/topology/nginx.conf`; `ops/topology/README.md`; `test/cp8-topology.spec.ts`; `src/modules/realtime/realtime-redis.service.ts` | `37bcbe0` plus current working-tree fix | `BLOCKED (current-head CP8 Compose runtime not rerun; depends on separately authorized topology verification)` | CP8 verified 2026-09-01 | Adapter lifecycle regression is fixed and CP8 static/unit evidence passed; readiness recovered only after API restart, not automatically within 30 seconds; no production Nginx/Next or W1–W8 certification. |
+
+`runtime verified` above refers to signed executable evidence applicable to the reviewed working tree. The 2026-09-02 rerun completed the authorized command inventory; `BLOCKED (...)` is reserved for proof requiring separate Redis/Compose authorization. There is no “partial pass” classification.
+
+### Known limitations and ownership boundaries
+
+- CP8's required realtime Redis did not restore readiness within 30 seconds in the existing API processes; only recovery after restarting both API instances was demonstrated. Keep this as a follow-up.
+- CP8 is a verification-only topology. It does not certify production Nginx/Next.js deployment, TLS certificate operations, Prometheus/Grafana deployment, or OPS-2 W1–W8 load/capacity targets.
+- Durable replay must not be inferred from snapshot/reconnect evidence; unsupported replay claims remain `DEFERRED/BLOCKED`.
+- CP5 real-Redis and two-instance results are historical and separately identified; this CP9 run did not perform a Redis/Compose drill.
+- BE owns backend metrics/readiness/proxy compatibility contracts; OPS-1 owns production ingress/frontend/scrape deployment; OPS-2 owns capacity/load certification.
+
+### Risk, rollback, and required next action
+
+- **Risk:** high — CP9 depends on guarded DB fixtures and release evidence for auth, credential, Redis, disclosure, observability, and topology behavior.
+- **Rollback:** discard only the CP9 documentation edits. Do not restore credentials, clear databases/Redis, delete volumes, or use destructive migration rollback. The discovered realtime adapter fix must be handled as a separately reviewed change.
+- **Required next action:** obtain separate authorization for real-Redis and CP8 Compose runtime evidence if required for BE-8 closure. Keep WBS CP9 checkboxes unchanged until explicit final sign-off.
+
+### Final approval state
+
+**MANUAL FINAL SIGN-OFF RECORDED — BLOCKERS RETAINED**
+
+The user approved the CP9 final matrix on 2026-09-02 with BE-8.7 current-head real-Redis proof and BE-8.10 current-head CP8 Compose/runtime proof retained as blocked limitations. The packet is not a production certification: BE-8 remains incomplete for those blocked runtime items, and no W1–W8 capacity certification is inferred.
+
+## 2026-09-02 Adapter regression remediation and CP9 rerun
+
+- [x] Fix `RealtimeRedisService.closeAdapter()` synchronous invocation while preserving async shutdown draining.
+- [x] Add focused sync/async adapter lifecycle regression coverage.
+- [x] Run targeted adapter tests, full unit/static/compiler/quality gates, and the authorized current-HEAD CP9 DB-backed/manual evidence sequence.
+- [x] Update the CP9 evidence packet and this ledger with the fresh baseline and exact results; keep real-Redis proof separately blocked unless explicitly authorized.
+- [x] Record the user's manual CP9 final sign-off with BE-8.7 and BE-8.10 blockers retained; do not imply production certification.
+
+**Risk & Rollback:** High — realtime adapter failover and release evidence. Revert the focused source/test change; do not reset databases, restore credentials, delete volumes, or alter WBS closure state.
+
+**Dependencies & Environment:** Node/npm/Prisma installed; DB-backed verification was limited to `NODE_ENV=test` and exactly `localhost:5432/smartlearning_test`, including guarded setup migration/truncation. Real Redis and Compose drills were not run because they require separate authorization.
+
+**Working Notes:** CP8 introduced `Promise.resolve().then(() => adapter.close())`, deferring invocation past `applyAdapter()`. The fix invokes `close()` synchronously, uses the shared `errorType()` classifier, retains the Redis adapter across availability-only failover to avoid overlapping unsubscribe/subscribe races, and closes it during shutdown. Existing edits in `tasks/lessons.md` and prior CP9 records were preserved.
+
+### Results
+
+- **Adapter fix:** `closeAdapter()` now invokes adapter cleanup synchronously, uses shared `errorType()` logging, tracks asynchronous completion/rejection for shutdown draining, and reuses the Redis adapter across availability-only failover so unsubscribe cleanup cannot race a new subscription. No schema, migration, runtime configuration, Redis, or Compose source changes.
+- **Targeted adapter test:** PASS — 1 suite / 3 tests, including synchronous transition ordering, async shutdown drain, and failure isolation.
+- **Full unit:** PASS — 49 suites / 293 tests; 0 failures, 0 skips.
+- **CP8 static:** PASS — 1 suite / 3 tests; 0 failures, 0 skips.
+- **Authorized E2E:** PASS — 32 suites / 219 tests; 0 failures, 0 skips; normal teardown and no open-handle warning.
+- **Authorized integration (real-Redis file excluded):** PASS — 3 suites / 16 tests; 0 failures, 0 skips; target `localhost:5432/smartlearning_test`.
+- **CP6 manual:** PASS — 1 suite / 1 test; sanitized disclosure/redaction evidence generated.
+- **CP7 manual:** PASS — 1 suite / 1 test; sanitized metrics/readiness/alert evidence generated.
+- **Quality gates:** `prisma:validate`, `typecheck`, `lint:check`, `format:check`, `build`, `git diff --check`, and read-only migration status all PASS. Migration status: 15 migrations, `smartlearning_test` up to date.
+- **Not run:** real-Redis integration and CP5/CP8 Compose runtime drills; classify current Redis/runtime proof as separately blocked, not as a non-Redis pass.
+- **Final status:** CP9 manual final sign-off recorded on 2026-09-02 with BE-8.7 and BE-8.10 blockers retained; BE-8 is not a production certification.
+- **Fresh authorization recapture:** 2026-09-01T23:04:29Z UTC; the same 14-command sequence was rerun against only `localhost:5432/smartlearning_test`, all exit codes were 0, and tracked status was unchanged. Real-Redis, CP5, CP8 Compose/runtime, and volume operations remained excluded.

@@ -266,3 +266,17 @@
 - **Detection signal:** `docker ps` reported `0.0.0.0:5432->5432/tcp` and `[::]:5432->5432/tcp` despite the task's localhost-only requirement.
 - **Prevention rule:** For local-only database services, always use an explicit loopback mapping (`127.0.0.1:5432:5432`) and verify the rendered mapping after startup.
 - **Tripwire:** Reject any test database startup whose `docker ps` mapping is not exactly `127.0.0.1:<host-port>->5432/tcp`.
+
+## 2026-09-01 — Adapter replacement must invoke close synchronously
+
+- **Failure mode:** `RealtimeRedisService.closeAdapter()` deferred `adapter.close()` to a promise microtask, so the lifecycle unit assertion observed the replacement before `close()` had been invoked.
+- **Detection signal:** `npm test -- --runInBand` failed `src/modules/realtime/realtime-redis.service.spec.ts` with expected `redisAdapters[0].close` once, received 0 calls at line 76; a temporary synchronous-invocation patch made the isolated test pass.
+- **Prevention rule:** Invoke Socket.IO adapter cleanup synchronously when an adapter is actually retired, track its returned promise for shutdown draining, and retain the Redis adapter across availability-only failover so shared-client unsubscribe work cannot race recovery.
+- **Tripwire:** Keep the room-preserving Redis→local→Redis reuse test, shutdown-drain coverage, and require the full unit suite to pass before release evidence proceeds.
+
+## 2026-09-02 — Adapter lifecycle test doubles must model availability transitions
+
+- **Failure mode:** A strengthened adapter test double always returned a Redis factory, so the simulated outage never switched the namespace back to the local adapter; a weak assertion had hidden the invalid fixture.
+- **Detection signal:** Replacing a weak `toBeDefined()` assertion with identity verification exposed the test helper's unconditional Redis factory.
+- **Prevention rule:** Test doubles for availability-driven failover must derive adapter selection from the same availability state as production, and assertions must verify the concrete replacement target.
+- **Tripwire:** In adapter transition tests, assert both Redis→local and local→Redis identity after toggling availability; do not use presence-only assertions for lifecycle state.

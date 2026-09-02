@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createAdapter } from '@socket.io/redis-adapter';
+import { errorType } from '../../common/observability/error-type';
 import { createClient, type RedisClientType } from 'redis';
 import type { Server } from 'socket.io';
 import {
@@ -47,6 +48,7 @@ export class RealtimeRedisService implements OnModuleDestroy {
   private stopped = false;
   private socketServer?: Server;
   private localAdapter?: SocketIoAdapterFactory;
+  private redisAdapter?: SocketIoAdapterLifecycle;
   private activeAdapter: 'local' | 'redis' = 'local';
   private readonly adapterClosePromises = new Set<Promise<void>>();
 
@@ -111,6 +113,9 @@ export class RealtimeRedisService implements OnModuleDestroy {
   async close(): Promise<void> {
     this.available = false;
     this.applyAdapter();
+    const redisAdapter = this.redisAdapter;
+    this.redisAdapter = undefined;
+    if (redisAdapter) this.closeAdapter(redisAdapter);
     const clients = [this.publisher, this.subscriber];
     this.publisher = undefined;
     this.subscriber = undefined;
@@ -232,9 +237,8 @@ export class RealtimeRedisService implements OnModuleDestroy {
 
   private applyAdapter(): void {
     if (!this.socketServer || !this.localAdapter) return;
-    const redisAdapter = this.getAdapterFactory();
-    const nextAdapter = redisAdapter ?? this.localAdapter;
-    const nextKind = redisAdapter ? 'redis' : 'local';
+    const redisFactory = this.getAdapterFactory();
+    const nextKind = redisFactory ? 'redis' : 'local';
     if (this.activeAdapter === nextKind) return;
 
     const liveNamespace = this.socketServer.of('/live');
@@ -245,9 +249,20 @@ export class RealtimeRedisService implements OnModuleDestroy {
       }),
     );
     const previousAdapter = liveNamespace.adapter as SocketIoAdapterLifecycle;
-    this.closeAdapter(previousAdapter);
-    this.socketServer.adapter(nextAdapter);
-    liveNamespace.adapter = createSocketIoAdapter(nextAdapter, liveNamespace);
+    let nextAdapter: SocketIoAdapter;
+    if (redisFactory) {
+      nextAdapter =
+        this.redisAdapter ?? createSocketIoAdapter(redisFactory, liveNamespace);
+      this.redisAdapter = nextAdapter as SocketIoAdapterLifecycle;
+    } else {
+      // Keep the Redis adapter attached to its subscriber clients while the
+      // local adapter serves traffic; recovery can then reuse its subscription
+      // instead of racing a new subscribe against the old unsubscribe.
+      this.redisAdapter = previousAdapter;
+      nextAdapter = createSocketIoAdapter(this.localAdapter, liveNamespace);
+    }
+    this.socketServer.adapter(redisFactory ?? this.localAdapter);
+    liveNamespace.adapter = nextAdapter;
     for (const membership of roomMemberships) {
       liveNamespace.adapter.addAll(membership.socketId, membership.rooms);
     }
@@ -256,15 +271,26 @@ export class RealtimeRedisService implements OnModuleDestroy {
 
   private closeAdapter(adapter: SocketIoAdapterLifecycle): void {
     if (typeof adapter.close !== 'function') return;
-    const closePromise = Promise.resolve()
-      .then(() => adapter.close?.())
-      .catch((error: unknown) => {
+
+    let closeResult: Promise<void> | void;
+    try {
+      closeResult = adapter.close();
+    } catch (error: unknown) {
+      this.logger.debug(
+        { err: errorType(error) },
+        'Socket.IO adapter close failed',
+      );
+      return;
+    }
+
+    const closePromise = Promise.resolve(closeResult).catch(
+      (error: unknown) => {
         this.logger.debug(
-          { err: error instanceof Error ? error.name : 'unknown' },
+          { err: errorType(error) },
           'Socket.IO adapter close failed',
         );
-      })
-      .then(() => undefined);
+      },
+    );
     this.adapterClosePromises.add(closePromise);
     void closePromise.finally(() =>
       this.adapterClosePromises.delete(closePromise),
