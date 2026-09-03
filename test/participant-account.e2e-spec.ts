@@ -529,6 +529,7 @@ describe('Account-bound participants (B3 e2e)', () => {
       `/api/v1/live-sessions/${session.liveSessionId}/snapshot`,
     );
     expect(snapshotAfterRemoval.status).toBe(403);
+    expect(snapshotAfterRemoval.body.error.code).toBe('ENROLLMENT_REMOVED');
 
     const submittedAfterRemoval = await student.auth.agent
       .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
@@ -540,6 +541,7 @@ describe('Account-bound participants (B3 e2e)', () => {
         selectedOptionRefs: ['a'],
       });
     expect(submittedAfterRemoval.status).toBe(403);
+    expect(submittedAfterRemoval.body.error.code).toBe('ENROLLMENT_REMOVED');
   });
 
   it('rejects a cookie submission after the account is disabled (account lock guard)', async () => {
@@ -695,6 +697,7 @@ describe('Account-bound participants (B3 e2e)', () => {
       .set(CSRF_HEADER, student.auth.csrfToken)
       .send({});
     expect(joined.status).toBe(403);
+    expect(joined.body.error.code).toBe('ENROLLMENT_REQUIRED');
 
     // The rejected join must not create a participant row.
     const count = await prisma.prisma.participant.count({
@@ -704,6 +707,51 @@ describe('Account-bound participants (B3 e2e)', () => {
       },
     });
     expect(count).toBe(0);
+  });
+
+  it('classifies a disabled account cookie at the participant boundary', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await provisionAndLogin(admin, {
+      ...TEACHER,
+      role: AccountRole.TEACHER,
+    });
+    const student = await provisionAndLogin(admin, {
+      ...STUDENT,
+      role: AccountRole.STUDENT,
+    });
+    const session = await setupActiveSession(teacher.auth);
+
+    await teacher.auth.agent
+      .post(`/api/v1/courses/${session.courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId })
+      .expect(201);
+
+    // Mutate only the account row so the already-issued cookie reaches the
+    // participant-specific session classifier. The production disable route
+    // also revokes sessions, which is covered by participant-revocation e2e.
+    await prisma.prisma.account.update({
+      where: { id: student.accountId },
+      data: { status: 'disabled' },
+    });
+
+    const joined = await student.auth.agent
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.auth.csrfToken)
+      .send({});
+    expect(joined.status).toBe(401);
+    expect(joined.body.error.code).toBe('AUTH_ACCOUNT_DISABLED');
+    expect(
+      await prisma.prisma.participant.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          accountId: student.accountId,
+        },
+      }),
+    ).toBe(0);
   });
 
   // BE-1.1.6: the student cookie results projection is participant-safe. For a

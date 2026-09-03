@@ -6,7 +6,11 @@ import { TransactionService } from '../../prisma/transaction.service';
 import { AccountStatus } from '../../modules/identity/domain/account-status';
 import { AccountRole } from '../../modules/identity/domain/roles';
 import { SessionService } from './session.service';
-import { SessionExpiredError, UnauthorizedError } from '../errors';
+import {
+  AccountDisabledError,
+  SessionExpiredError,
+  UnauthorizedError,
+} from '../errors';
 
 /**
  * Unit tests for SessionService.loadActiveSession — the frozen BE-8.1 CP1
@@ -157,6 +161,24 @@ describe('SessionService.loadActiveSession', () => {
         code: 'UNAUTHORIZED',
       },
     );
+  });
+
+  it('classifies disabled accounts for participant-bound callers only', async () => {
+    prisma.prisma.webSession.findUnique.mockResolvedValue(
+      sessionRow({
+        account: { ...account, status: AccountStatus.DISABLED },
+      }),
+    );
+
+    await expect(
+      sessions.loadActiveSession('raw-token', { exposeDisabled: true }),
+    ).rejects.toBeInstanceOf(AccountDisabledError);
+    await expect(
+      sessions.loadActiveSession('raw-token', { exposeDisabled: true }),
+    ).rejects.toMatchObject({
+      code: 'AUTH_ACCOUNT_DISABLED',
+      httpStatus: 401,
+    });
   });
 
   it('throws UnauthorizedError when no session matches the token hash', async () => {

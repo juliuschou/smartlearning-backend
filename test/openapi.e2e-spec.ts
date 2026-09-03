@@ -178,6 +178,29 @@ describe('OpenAPI document (e2e)', () => {
     expect(res.body.components.schemas.EnrollmentDto).toBeDefined();
     expect(res.body.components.schemas.EnrollmentStudentDto).toBeDefined();
     expect(res.body.components.schemas.MyCourseDto).toBeDefined();
+    const currentJoinableSession =
+      res.body.components.schemas.CurrentJoinableSessionDto;
+    expect(currentJoinableSession).toBeDefined();
+    expect(Object.keys(currentJoinableSession.properties ?? {})).toEqual([
+      'id',
+      'sessionCode',
+      'status',
+    ]);
+    expect(currentJoinableSession.properties.status.enum).toEqual([
+      'waiting',
+      'active',
+    ]);
+    expect(currentJoinableSession.required).toEqual([
+      'id',
+      'sessionCode',
+      'status',
+    ]);
+    expect(
+      res.body.components.schemas.MyCourseDto.properties.currentJoinableSession,
+    ).toMatchObject({ nullable: true });
+    expect(res.body.components.schemas.MyCourseDto.required).toContain(
+      'currentJoinableSession',
+    );
 
     // BE-8.2 CP2 — UpdateAccountDto allowlist has no sensitive fields/examples.
     const updateAccount = res.body.components.schemas.UpdateAccountDto;

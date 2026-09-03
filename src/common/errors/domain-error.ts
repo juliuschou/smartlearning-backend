@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { type ErrorCode } from './error-codes';
+import { ErrorCode as ErrorCodes, type ErrorCode } from './error-codes';
 
 /**
  * Error envelope shape — the only error shape clients receive over HTTP/Socket.
@@ -127,6 +127,21 @@ export class InvalidCredentialsError extends DomainError {
 }
 
 /**
+ * A previously issued session belongs to an account that is now disabled.
+ * This distinction is exposed only by participant-bound session guards; the
+ * ordinary SessionGuard keeps the existing disabled-to-UNAUTHORIZED contract.
+ */
+export class AccountDisabledError extends DomainError {
+  constructor() {
+    super(
+      ErrorCodes.AUTH_ACCOUNT_DISABLED,
+      'Account is disabled',
+      HttpStatus.UNAUTHORIZED,
+    );
+  }
+}
+
+/**
  * Login rate limit exceeded (R-F7-7). Stable `RATE_LIMITED` code, HTTP 429.
  * `retryAfterSeconds` is surfaced to the envelope so the client can show a
  * retry hint. The message is generic and MUST NOT reveal account existence.
@@ -173,6 +188,26 @@ export class ServerShuttingDownError extends DomainError {
 export class ForbiddenError extends DomainError {
   constructor(message = 'Forbidden') {
     super('FORBIDDEN' as ErrorCode, message, HttpStatus.FORBIDDEN);
+  }
+}
+
+export class EnrollmentRequiredError extends DomainError {
+  constructor() {
+    super(
+      ErrorCodes.ENROLLMENT_REQUIRED,
+      'Active course enrollment required',
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
+export class EnrollmentRemovedError extends DomainError {
+  constructor() {
+    super(
+      ErrorCodes.ENROLLMENT_REMOVED,
+      'Course enrollment has been removed',
+      HttpStatus.FORBIDDEN,
+    );
   }
 }
 

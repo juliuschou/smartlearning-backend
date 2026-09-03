@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { newId } from '../src/common/crypto';
 import { CSRF_COOKIE_NAME, CSRF_HEADER } from '../src/common/security';
 import { AccountRole } from '../src/modules/identity/domain/roles';
 import { BootstrapService } from '../src/modules/identity/application/bootstrap.service';
@@ -190,6 +191,24 @@ describe('Course enrollments (B2 e2e)', () => {
     return response.body.data.id as string;
   }
 
+  async function createLiveSession(
+    courseId: string,
+    status: 'waiting' | 'active' | 'closed' | 'cancelled',
+    sessionCode: string,
+    createdAt: Date,
+  ) {
+    return prisma.prisma.liveSession.create({
+      data: {
+        id: newId(),
+        courseId,
+        status,
+        sessionCode,
+        createdAt,
+        updatedAt: createdAt,
+      },
+    });
+  }
+
   it('adds, lists, removes idempotently, and reactivates a student roster row', async () => {
     if (!dbReachable) return;
     const admin = await loginAs(ADMIN.username, ADMIN.password);
@@ -303,6 +322,76 @@ describe('Course enrollments (B2 e2e)', () => {
         where: { courseId, studentAccountId: student.accountId },
       }),
     ).toBe(1);
+  });
+
+  it('excludes terminal sessions and exposes the current session per course', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await createTeacher(admin);
+    const student = await createStudent(admin);
+    const courseId = await createCourse(teacher.auth);
+
+    await teacher.auth.agent
+      .post(`/api/v1/courses/${courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId })
+      .expect(201);
+
+    const withoutSession = await student.auth.agent.get('/api/v1/me/courses');
+    expect(withoutSession.status).toBe(200);
+    expect(withoutSession.body.data.data[0].currentJoinableSession).toBeNull();
+
+    const terminalAt = new Date('2026-09-01T00:00:00.000Z');
+    await createLiveSession(courseId, 'closed', 'CLSDAB23', terminalAt);
+    await createLiveSession(courseId, 'cancelled', 'CANCEL23', terminalAt);
+    const terminalOnly = await student.auth.agent.get('/api/v1/me/courses');
+    const terminalCourse = terminalOnly.body.data.data.find(
+      (row: { courseId: string }) => row.courseId === courseId,
+    );
+    expect(terminalCourse).toBeDefined();
+    expect(terminalCourse.currentJoinableSession).toBeNull();
+
+    const activeSession = await createLiveSession(
+      courseId,
+      'active',
+      'ACTVAB23',
+      new Date('2026-09-02T00:00:00.000Z'),
+    );
+    const waitingCourseId = await createCourse(teacher.auth);
+    await teacher.auth.agent
+      .post(`/api/v1/courses/${waitingCourseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: student.accountId })
+      .expect(201);
+    const waitingSession = await createLiveSession(
+      waitingCourseId,
+      'waiting',
+      'WATNGH23',
+      new Date('2026-09-03T00:00:00.000Z'),
+    );
+
+    const currentSessions = await student.auth.agent.get('/api/v1/me/courses');
+    const activeCourse = currentSessions.body.data.data.find(
+      (row: { courseId: string }) => row.courseId === courseId,
+    );
+    const waitingCourse = currentSessions.body.data.data.find(
+      (row: { courseId: string }) => row.courseId === waitingCourseId,
+    );
+    expect(activeCourse?.currentJoinableSession).toEqual({
+      id: activeSession.id,
+      sessionCode: 'ACTVAB23',
+      status: 'active',
+    });
+    expect(waitingCourse?.currentJoinableSession).toEqual({
+      id: waitingSession.id,
+      sessionCode: 'WATNGH23',
+      status: 'waiting',
+    });
+    expect(
+      Object.keys(activeCourse?.currentJoinableSession ?? {}).sort(),
+    ).toEqual(['id', 'sessionCode', 'status']);
   });
 
   it('searches active students with course-relative enrollment status', async () => {

@@ -15,6 +15,7 @@ import {
 } from '../../modules/identity/domain/session-limits';
 import { AccountStatus } from '../../modules/identity/domain/account-status';
 import {
+  AccountDisabledError,
   SessionExpiredError,
   StepUpRequiredError,
   UnauthorizedError,
@@ -203,7 +204,10 @@ export class SessionService {
    * revoked, or the account is no longer active. Touches lastSeenAt on
    * success.
    */
-  async loadActiveSession(rawToken: string): Promise<{
+  async loadActiveSession(
+    rawToken: string,
+    options: { exposeDisabled?: boolean } = {},
+  ): Promise<{
     session: WebSession;
     account: Account;
   }> {
@@ -218,6 +222,9 @@ export class SessionService {
 
     const account = session.account;
     if (account.status !== AccountStatus.ACTIVE) {
+      if (options.exposeDisabled && account.status === AccountStatus.DISABLED) {
+        throw new AccountDisabledError();
+      }
       throw new UnauthorizedError();
     }
     if (session.revokedAt) {

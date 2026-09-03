@@ -44,7 +44,7 @@ export class OptionalStudentSessionGuard implements CanActivate {
     const rawSession = request.cookies?.[SESSION_COOKIE_NAME];
     if (!rawSession) return true;
 
-    await this.sessions.canActivate(context);
+    await this.sessions.canActivateForParticipant(context);
     if (request.authContext?.account.role !== AccountRole.STUDENT) {
       throw new ForbiddenError('Student role required for cookie join');
     }
@@ -81,7 +81,8 @@ export class ParticipantOrSessionGuard implements CanActivate {
       return true;
     }
 
-    const authenticated = await this.sessions.canActivate(context);
+    const authenticated =
+      await this.sessions.canActivateForParticipant(context);
     // CsrfGuard is a no-op for GETs, but protects cookie-backed submission
     // mutations before participant resolution can create a row.
     this.csrf.canActivate(context);

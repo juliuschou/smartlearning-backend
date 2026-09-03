@@ -9,6 +9,8 @@ import {
 } from '../../../common/crypto';
 import {
   DomainError,
+  EnrollmentRemovedError,
+  EnrollmentRequiredError,
   ForbiddenError,
   UnauthorizedError,
   ValidationError,
@@ -248,7 +250,13 @@ export class ParticipantService {
         },
         select: { status: true },
       });
-      if (!enrollment || enrollment.status !== EnrollmentStatus.ACTIVE) {
+      if (!enrollment) {
+        throw new EnrollmentRequiredError();
+      }
+      if (enrollment.status === EnrollmentStatus.REMOVED) {
+        throw new EnrollmentRemovedError();
+      }
+      if (enrollment.status !== EnrollmentStatus.ACTIVE) {
         throw new ForbiddenError('Active course enrollment required');
       }
 

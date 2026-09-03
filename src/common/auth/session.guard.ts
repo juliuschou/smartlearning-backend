@@ -24,6 +24,21 @@ export class SessionGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    return this.activate(ctx, false);
+  }
+
+  /**
+   * Participant routes may disclose the disabled state of an already-issued
+   * cookie without changing the generic SessionGuard contract used elsewhere.
+   */
+  async canActivateForParticipant(ctx: ExecutionContext): Promise<boolean> {
+    return this.activate(ctx, true);
+  }
+
+  private async activate(
+    ctx: ExecutionContext,
+    exposeDisabled: boolean,
+  ): Promise<boolean> {
     const req = ctx
       .switchToHttp()
       .getRequest<Request & { authContext?: AuthContext }>();
@@ -31,7 +46,9 @@ export class SessionGuard implements CanActivate {
     if (!raw || typeof raw !== 'string') {
       throw new UnauthorizedError();
     }
-    const { session, account } = await this.sessions.loadActiveSession(raw);
+    const { session, account } = await this.sessions.loadActiveSession(raw, {
+      exposeDisabled,
+    });
     const allowPasswordChangeRequired =
       this.reflector.getAllAndOverride<boolean>(
         ALLOW_PASSWORD_CHANGE_REQUIRED,

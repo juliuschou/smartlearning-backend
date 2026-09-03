@@ -4,11 +4,14 @@ import type {
   Account,
   Course,
   CourseEnrollment,
+  LiveSession,
 } from '../../../../generated/prisma/client';
 import { isUuid, newId, normalizeUuid } from '../../../common/crypto';
 import {
   ConflictError,
   DomainError,
+  EnrollmentRemovedError,
+  EnrollmentRequiredError,
   ErrorCode,
   ForbiddenError,
   NotFoundError,
@@ -27,6 +30,10 @@ import { AccountRole, isTeacherOrAdmin } from '../../identity/domain/roles';
 import { AccountStatus } from '../../identity/domain/account-status';
 import { CourseStatus } from '../../courses/domain/course-status';
 import {
+  isJoinableLiveSessionStatus,
+  LiveSessionStatus,
+} from '../../live-sessions/domain';
+import {
   EnrollmentStatus,
   isEnrollmentStatus,
 } from '../domain/enrollment-status';
@@ -35,8 +42,14 @@ export type EnrollmentRosterRow = CourseEnrollment & {
   studentAccount: Pick<Account, 'id' | 'username' | 'displayName'>;
 };
 
+export type JoinableSessionProjection = Pick<
+  LiveSession,
+  'id' | 'sessionCode' | 'status' | 'createdAt'
+>;
+
 export type EnrolledCourseRow = CourseEnrollment & {
   course: Course;
+  currentJoinableSession: JoinableSessionProjection | null;
 };
 
 export interface StudentSearchRow {
@@ -58,6 +71,22 @@ const rosterStudentSelect = {
   username: true,
   displayName: true,
 } as const;
+
+function isPreferredJoinableSession(
+  candidate: JoinableSessionProjection,
+  current: JoinableSessionProjection,
+): boolean {
+  const candidateIsActive = candidate.status === LiveSessionStatus.ACTIVE;
+  const currentIsActive = current.status === LiveSessionStatus.ACTIVE;
+  if (candidateIsActive !== currentIsActive) return candidateIsActive;
+
+  const candidateCreatedAt = candidate.createdAt.getTime();
+  const currentCreatedAt = current.createdAt.getTime();
+  if (candidateCreatedAt !== currentCreatedAt) {
+    return candidateCreatedAt > currentCreatedAt;
+  }
+  return candidate.id > current.id;
+}
 
 /**
  * Course enrollment application service.
@@ -322,13 +351,48 @@ export class EnrollmentService {
       }),
       this.db.courseEnrollment.count({ where }),
     ]);
-    return toPage(data, total, req);
+
+    const courseIds = data.map((row) => row.course.id);
+    const joinableSessions = courseIds.length
+      ? await this.db.liveSession.findMany({
+          where: {
+            courseId: { in: courseIds },
+            status: {
+              in: [LiveSessionStatus.WAITING, LiveSessionStatus.ACTIVE],
+            },
+          },
+          select: {
+            id: true,
+            courseId: true,
+            sessionCode: true,
+            status: true,
+            createdAt: true,
+          },
+        })
+      : [];
+    const currentSessionByCourse = new Map<string, JoinableSessionProjection>();
+    for (const session of joinableSessions) {
+      if (!isJoinableLiveSessionStatus(session.status)) continue;
+      const current = currentSessionByCourse.get(session.courseId);
+      if (!current || isPreferredJoinableSession(session, current)) {
+        currentSessionByCourse.set(session.courseId, session);
+      }
+    }
+
+    return toPage(
+      data.map((row) => ({
+        ...row,
+        currentJoinableSession:
+          currentSessionByCourse.get(row.course.id) ?? null,
+      })),
+      total,
+      req,
+    );
   }
 
   /**
    * Shared authorization primitive for cookie-bound participant identity.
-   * It deliberately returns a generic forbidden error so a student cannot use
-   * this check to probe whether another course has a roster row.
+   * It exposes stable enrollment-state codes required by the participant API.
    */
   async assertActiveEnrollment(
     courseId: string,
@@ -347,7 +411,13 @@ export class EnrollmentService {
         },
       },
     });
-    if (!enrollment || enrollment.status !== EnrollmentStatus.ACTIVE) {
+    if (!enrollment) {
+      throw new EnrollmentRequiredError();
+    }
+    if (enrollment.status === EnrollmentStatus.REMOVED) {
+      throw new EnrollmentRemovedError();
+    }
+    if (enrollment.status !== EnrollmentStatus.ACTIVE) {
       throw new ForbiddenError('Active course enrollment required');
     }
     return enrollment;

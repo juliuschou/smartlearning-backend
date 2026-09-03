@@ -373,19 +373,23 @@ PostgreSQL 仍是順序、授權與 domain projection 的 authority。
 
 兩者 HTTP status 皆 401；`expiresAt` 為絕對到期（UTC ISO 8601），不應以它判斷「是否已登入」，只作顯示用。
 
-**MyCourseDto**：`{ enrollmentId, courseId, name, description, status, ownerAccountId, enrolledAt, createdAt, updatedAt }`
+Participant join/snapshot routes additionally classify an already-issued cookie whose account is now disabled as `401 AUTH_ACCOUNT_DISABLED`. This code is scoped to the participant session boundary; ordinary SessionGuard routes preserve the BE-8 behavior above. Fresh login for a disabled account remains generic `AUTH_INVALID_CREDENTIALS`.
+
+**MyCourseDto**：`{ enrollmentId, courseId, name, description, status, ownerAccountId, enrolledAt, createdAt, updatedAt, currentJoinableSession }`
+
+`currentJoinableSession` is always present and is either `{ id, sessionCode, status }` or `null`. It is a discovery-only projection: `status` is restricted to `waiting | active`; `closed`, `cancelled`, and unknown future statuses are excluded. When inconsistent data contains multiple candidates for one course, selection is deterministic: `active` before `waiting`, then `createdAt DESC`, then `id DESC`. The value is `null` when the course has no currently joinable session. It contains no participant, question, result, count, token, or account-linkage fields.
 
 **StudentSearchResultDto**：`{ id, username, displayName, enrollmentStatus }`，其中 `enrollmentStatus` 為 target course 的 `active`、`removed` 或未加選時的 `null`；只搜尋 `role=student,status=active` 帳號，不回傳密碼、hash、session、token 或其他 account 管理欄位。
 
 ### 3.2 我的課程與名冊
 
-| Method | Path                                                 | 用途                           | 守護                                        | 排序/語意                                                                                                                          |
-| ------ | ---------------------------------------------------- | ------------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/me/courses?page&pageSize`                          | 學員有效課程                   | Session + Student                           | active only；`enrolledAt DESC, id DESC`                                                                                            |
-| GET    | `/courses/:courseId/students/search?q&page&pageSize` | owner/admin 搜尋可加選 student | Session + TeacherOrAdmin                    | q 必填；NFC→trim；2–100 Unicode code points；username/displayName case-insensitive contains；`username ASC, id ASC`；archived 可讀 |
-| POST   | `/courses/:courseId/enrollments`                     | owner/admin 加選 student       | Session + CSRF + exact Origin + owner/admin | active duplicate 回同一 row；removed row reactivation；archived 拒絕                                                               |
-| GET    | `/courses/:courseId/enrollments?page&pageSize`       | owner/admin 看 roster          | Session + owner/admin                       | active + removed；`createdAt ASC, id ASC`；non-owner teacher 404                                                                   |
-| DELETE | `/courses/:courseId/enrollments/:studentAccountId`   | owner/admin 移除 student       | Session + CSRF + exact Origin + owner/admin | idempotent；student 403                                                                                                            |
+| Method | Path                                                 | 用途                                   | 守護                                        | 排序/語意                                                                                                                          |
+| ------ | ---------------------------------------------------- | -------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/me/courses?page&pageSize`                          | 學員有效課程與目前可加入課堂 discovery | Session + Student                           | active only；`enrolledAt DESC, id DESC`；`currentJoinableSession` is nullable and waiting/active only                              |
+| GET    | `/courses/:courseId/students/search?q&page&pageSize` | owner/admin 搜尋可加選 student         | Session + TeacherOrAdmin                    | q 必填；NFC→trim；2–100 Unicode code points；username/displayName case-insensitive contains；`username ASC, id ASC`；archived 可讀 |
+| POST   | `/courses/:courseId/enrollments`                     | owner/admin 加選 student               | Session + CSRF + exact Origin + owner/admin | active duplicate 回同一 row；removed row reactivation；archived 拒絕                                                               |
+| GET    | `/courses/:courseId/enrollments?page&pageSize`       | owner/admin 看 roster                  | Session + owner/admin                       | active + removed；`createdAt ASC, id ASC`；non-owner teacher 404                                                                   |
+| DELETE | `/courses/:courseId/enrollments/:studentAccountId`   | owner/admin 移除 student               | Session + CSRF + exact Origin + owner/admin | idempotent；student 403                                                                                                            |
 
 Student search defaults to `page=1&pageSize=20` and caps `pageSize` at 100. Course authorization occurs before the account search: a non-owner teacher or nonexistent course receives generic `404 NOT_FOUND` with `field=courseId`; a student receives `403 FORBIDDEN`; no session receives `401 UNAUTHORIZED`. Invalid search input receives `400 VALIDATION_ERROR` with `field=q` (existing generic pagination errors use the same endpoint validation contract).
 
@@ -399,6 +403,8 @@ POST /live-sessions/:sessionCode/join
 - **有 student cookie** → account-bound Participant；`displayName` 忽略；`participantToken=null`；需 CSRF
 
 回應：`{ participantId, participantToken: string|null, liveSession: { id, status, sessionCode }, currentQuestion: SessionQuestion|null }`
+
+Account-bound student join/snapshot failures use stable codes: no enrollment row is `403 ENROLLMENT_REQUIRED`, a removed enrollment is `403 ENROLLMENT_REMOVED`, and a valid persisted participant-route cookie for a disabled account is `401 AUTH_ACCOUNT_DISABLED`. Wrong role remains `403 FORBIDDEN`; missing/malformed/revoked session remains `401 UNAUTHORIZED`; expired session remains `401 AUTH_SESSION_EXPIRED`; unknown/closed/cancelled session code remains `409 SESSION_NOT_JOINABLE`. These codes are machine-readable; clients must not parse `message`.
 
 ### 3.4 Snapshot（隱藏正解）
 

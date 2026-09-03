@@ -32,6 +32,7 @@ import { type Page } from '../../../common/pagination';
 import { EnrollmentService } from '../application/enrollment.service';
 import {
   CreateEnrollmentDto,
+  CurrentJoinableSessionDto,
   EnrollmentDto,
   EnrollmentStudentDto,
   MyCourseDto,
@@ -47,6 +48,7 @@ import type {
 @ApiTags('enrollments')
 @ApiExtraModels(
   CreateEnrollmentDto,
+  CurrentJoinableSessionDto,
   EnrollmentDto,
   EnrollmentStudentDto,
   MyCourseDto,
@@ -311,5 +313,12 @@ function toMyCourseDto(row: EnrolledCourseRow): MyCourseDto {
     enrolledAt: row.enrolledAt.toISOString(),
     createdAt: row.course.createdAt.toISOString(),
     updatedAt: row.course.updatedAt.toISOString(),
+    currentJoinableSession: row.currentJoinableSession
+      ? {
+          id: row.currentJoinableSession.id,
+          sessionCode: row.currentJoinableSession.sessionCode,
+          status: row.currentJoinableSession.status as 'waiting' | 'active',
+        }
+      : null,
   };
 }

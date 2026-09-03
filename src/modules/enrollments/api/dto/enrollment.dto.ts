@@ -49,6 +49,18 @@ export class EnrollmentDto {
   student!: EnrollmentStudentDto;
 }
 
+/** Minimal current classroom projection for student course discovery. */
+export class CurrentJoinableSessionDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty()
+  sessionCode!: string;
+
+  @ApiProperty({ enum: ['waiting', 'active'] })
+  status!: 'waiting' | 'active';
+}
+
 /** Course projection returned for an authenticated student's active roster. */
 export class MyCourseDto {
   @ApiProperty()
@@ -77,6 +89,9 @@ export class MyCourseDto {
 
   @ApiProperty()
   updatedAt!: string;
+
+  @ApiProperty({ type: () => CurrentJoinableSessionDto, nullable: true })
+  currentJoinableSession!: CurrentJoinableSessionDto | null;
 }
 
 /** Query contract for the teacher/admin course-scoped student search. */
