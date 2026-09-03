@@ -30,6 +30,7 @@ describe('OpenAPI document (e2e)', () => {
     const paths = Object.keys(res.body.paths);
     expect(paths).toContain('/api/v1/courses');
     expect(paths).toContain('/api/v1/courses/{courseId}/enrollments');
+    expect(paths).toContain('/api/v1/courses/{courseId}/students/search');
     expect(paths).toContain(
       '/api/v1/courses/{courseId}/enrollments/{studentAccountId}',
     );
@@ -78,6 +79,53 @@ describe('OpenAPI document (e2e)', () => {
       roster.post.responses['201'].content['application/json'].schema.$ref,
     ).toContain('EnrollmentDto');
     expect(roster.post.responses['409'].description).toMatch(/Archived course/);
+
+    const studentSearch =
+      res.body.paths['/api/v1/courses/{courseId}/students/search'].get;
+    expect(studentSearch.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'courseId',
+          in: 'path',
+          required: true,
+        }),
+        expect.objectContaining({
+          name: 'q',
+          in: 'query',
+          required: true,
+          schema: expect.objectContaining({
+            minLength: 2,
+            maxLength: 100,
+          }),
+        }),
+        expect.objectContaining({ name: 'page', in: 'query' }),
+        expect.objectContaining({
+          name: 'pageSize',
+          in: 'query',
+          schema: expect.objectContaining({ minimum: 1, maximum: 100 }),
+        }),
+      ]),
+    );
+    expect(
+      studentSearch.responses['200'].content['application/json'].schema,
+    ).toEqual(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          data: expect.objectContaining({
+            items: expect.objectContaining({
+              $ref: expect.stringContaining('StudentSearchResultDto'),
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(res.body.components.schemas.StudentSearchQueryDto).toBeDefined();
+    expect(res.body.components.schemas.StudentSearchResultDto).toBeDefined();
+    expect(
+      Object.keys(
+        res.body.components.schemas.StudentSearchResultDto.properties,
+      ),
+    ).toEqual(['id', 'username', 'displayName', 'enrollmentStatus']);
 
     const courses = res.body.paths['/api/v1/courses'];
     for (const operation of [courses.get, courses.post]) {

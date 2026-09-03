@@ -35,10 +35,13 @@ import {
   EnrollmentDto,
   EnrollmentStudentDto,
   MyCourseDto,
+  StudentSearchQueryDto,
+  StudentSearchResultDto,
 } from './dto';
 import type {
   EnrolledCourseRow,
   EnrollmentRosterRow,
+  StudentSearchRow,
 } from '../application/enrollment.service';
 
 @ApiTags('enrollments')
@@ -47,10 +50,78 @@ import type {
   EnrollmentDto,
   EnrollmentStudentDto,
   MyCourseDto,
+  StudentSearchQueryDto,
+  StudentSearchResultDto,
 )
 @Controller({ path: '', version: '1' })
 export class EnrollmentsController {
   constructor(private readonly enrollments: EnrollmentService) {}
+
+  @Get('courses/:courseId/students/search')
+  @ApiOperation({
+    summary: 'Search active student accounts for a course roster',
+  })
+  @ApiParam({ name: 'courseId', format: 'uuid' })
+  @ApiQuery({
+    name: 'q',
+    required: true,
+    type: String,
+    minLength: 2,
+    maxLength: 100,
+    description: 'NFC-normalized, trimmed username/display-name search text',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    minimum: 1,
+    default: 1,
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: MAX_PAGE_SIZE,
+    default: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: getSchemaPath(StudentSearchResultDto) },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            page: { type: 'integer' },
+            pageSize: { type: 'integer' },
+            total: { type: 'integer' },
+            totalPages: { type: 'integer' },
+          },
+        },
+      },
+    },
+  })
+  @UseGuards(SessionGuard, TeacherOrAdminGuard)
+  async searchStudents(
+    @Param('courseId', new ParseUUIDPipe()) courseId: string,
+    @Query() query: StudentSearchQueryDto,
+    @CurrentAccount() auth: AuthContext,
+  ): Promise<Page<StudentSearchResultDto>> {
+    const result = await this.enrollments.searchStudents(
+      courseId,
+      { id: auth.account.id, role: auth.account.role },
+      query,
+    );
+    return {
+      data: result.data.map(toStudentSearchDto),
+      meta: result.meta,
+    };
+  }
 
   @Post('courses/:courseId/enrollments')
   @ApiOperation({ summary: 'Add or reactivate a student enrollment' })
@@ -217,6 +288,15 @@ function toStudentDto(student: {
     id: student.id,
     username: student.username,
     displayName: student.displayName,
+  };
+}
+
+function toStudentSearchDto(row: StudentSearchRow): StudentSearchResultDto {
+  return {
+    id: row.id,
+    username: row.username,
+    displayName: row.displayName,
+    enrollmentStatus: row.enrollmentStatus,
   };
 }
 

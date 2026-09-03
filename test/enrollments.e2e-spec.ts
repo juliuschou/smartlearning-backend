@@ -305,6 +305,92 @@ describe('Course enrollments (B2 e2e)', () => {
     ).toBe(1);
   });
 
+  it('searches active students with course-relative enrollment status', async () => {
+    if (!dbReachable) return;
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const teacher = await createTeacher(admin);
+    const enrolledStudent = await createStudent(admin);
+    const removedStudentId = await createAccount(admin, {
+      username: 'enrollment-e2e-removed-student',
+      displayName: 'Enrollment E2E Removed Student',
+      role: AccountRole.STUDENT,
+      tempPassword: 'enrollment-e2e-removed-student-temp-1234',
+    });
+    const absentStudentId = await createAccount(admin, {
+      username: 'enrollment-e2e-absent-student',
+      displayName: 'Enrollment E2E Absent Student',
+      role: AccountRole.STUDENT,
+      tempPassword: 'enrollment-e2e-absent-student-temp-1234',
+    });
+    const courseId = await createCourse(teacher.auth);
+
+    await teacher.auth.agent
+      .post(`/api/v1/courses/${courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: enrolledStudent.accountId })
+      .expect(201);
+    await teacher.auth.agent
+      .post(`/api/v1/courses/${courseId}/enrollments`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .send({ studentAccountId: removedStudentId })
+      .expect(201);
+    await teacher.auth.agent
+      .delete(`/api/v1/courses/${courseId}/enrollments/${removedStudentId}`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken)
+      .expect(200);
+
+    const result = await teacher.auth.agent.get(
+      `/api/v1/courses/${courseId}/students/search?q=enrollment-e2e&page=1&pageSize=100`,
+    );
+    expect(result.status).toBe(200);
+    expect(result.body.data.meta).toMatchObject({
+      page: 1,
+      pageSize: 100,
+      total: 3,
+      totalPages: 1,
+    });
+    expect(result.body.data.data).toEqual([
+      {
+        id: absentStudentId,
+        username: 'enrollment-e2e-absent-student',
+        displayName: 'Enrollment E2E Absent Student',
+        enrollmentStatus: null,
+      },
+      {
+        id: removedStudentId,
+        username: 'enrollment-e2e-removed-student',
+        displayName: 'Enrollment E2E Removed Student',
+        enrollmentStatus: 'removed',
+      },
+      {
+        id: enrolledStudent.accountId,
+        username: 'enrollment-e2e-student',
+        displayName: 'Enrollment E2E Student',
+        enrollmentStatus: 'active',
+      },
+    ]);
+    for (const row of result.body.data.data) {
+      expect(Object.keys(row).sort()).toEqual([
+        'displayName',
+        'enrollmentStatus',
+        'id',
+        'username',
+      ]);
+    }
+
+    const archived = await teacher.auth.agent
+      .post(`/api/v1/courses/${courseId}/archive`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.auth.csrfToken);
+    expect(archived.status).toBe(201);
+    await teacher.auth.agent
+      .get(`/api/v1/courses/${courseId}/students/search?q=student`)
+      .expect(200);
+  });
+
   it('hides cross-owner courses and rejects non-student or archived targets', async () => {
     if (!dbReachable) return;
     const admin = await loginAs(ADMIN.username, ADMIN.password);
@@ -339,6 +425,21 @@ describe('Course enrollments (B2 e2e)', () => {
       `/api/v1/courses/${otherCourseId}/enrollments`,
     );
     expect(hiddenList.status).toBe(404);
+
+    const hiddenSearch = await teacher.auth.agent.get(
+      `/api/v1/courses/${otherCourseId}/students/search?q=x`,
+    );
+    expect(hiddenSearch.status).toBe(404);
+    expect(hiddenSearch.body.error.field).toBe('courseId');
+
+    const missingSearchQuery = await teacher.auth.agent.get(
+      `/api/v1/courses/${ownCourseId}/students/search`,
+    );
+    expect(missingSearchQuery.status).toBe(400);
+    expect(missingSearchQuery.body.error).toMatchObject({
+      code: 'VALIDATION_ERROR',
+      field: 'q',
+    });
 
     const hiddenAdd = await teacher.auth.agent
       .post(`/api/v1/courses/${otherCourseId}/enrollments`)

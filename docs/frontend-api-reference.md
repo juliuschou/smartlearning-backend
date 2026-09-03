@@ -375,14 +375,19 @@ PostgreSQL 仍是順序、授權與 domain projection 的 authority。
 
 **MyCourseDto**：`{ enrollmentId, courseId, name, description, status, ownerAccountId, enrolledAt, createdAt, updatedAt }`
 
+**StudentSearchResultDto**：`{ id, username, displayName, enrollmentStatus }`，其中 `enrollmentStatus` 為 target course 的 `active`、`removed` 或未加選時的 `null`；只搜尋 `role=student,status=active` 帳號，不回傳密碼、hash、session、token 或其他 account 管理欄位。
+
 ### 3.2 我的課程與名冊
 
-| Method | Path                                               | 用途                     | 守護                                        | 排序/語意                                                            |
-| ------ | -------------------------------------------------- | ------------------------ | ------------------------------------------- | -------------------------------------------------------------------- |
-| GET    | `/me/courses?page&pageSize`                        | 學員有效課程             | Session + Student                           | active only；`enrolledAt DESC, id DESC`                              |
-| POST   | `/courses/:courseId/enrollments`                   | owner/admin 加選 student | Session + CSRF + exact Origin + owner/admin | active duplicate 回同一 row；removed row reactivation；archived 拒絕 |
-| GET    | `/courses/:courseId/enrollments?page&pageSize`     | owner/admin 看 roster    | Session + owner/admin                       | active + removed；`createdAt ASC, id ASC`；non-owner teacher 404     |
-| DELETE | `/courses/:courseId/enrollments/:studentAccountId` | owner/admin 移除 student | Session + CSRF + exact Origin + owner/admin | idempotent；student 403                                              |
+| Method | Path                                                 | 用途                           | 守護                                        | 排序/語意                                                                                                                          |
+| ------ | ---------------------------------------------------- | ------------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/me/courses?page&pageSize`                          | 學員有效課程                   | Session + Student                           | active only；`enrolledAt DESC, id DESC`                                                                                            |
+| GET    | `/courses/:courseId/students/search?q&page&pageSize` | owner/admin 搜尋可加選 student | Session + TeacherOrAdmin                    | q 必填；NFC→trim；2–100 Unicode code points；username/displayName case-insensitive contains；`username ASC, id ASC`；archived 可讀 |
+| POST   | `/courses/:courseId/enrollments`                     | owner/admin 加選 student       | Session + CSRF + exact Origin + owner/admin | active duplicate 回同一 row；removed row reactivation；archived 拒絕                                                               |
+| GET    | `/courses/:courseId/enrollments?page&pageSize`       | owner/admin 看 roster          | Session + owner/admin                       | active + removed；`createdAt ASC, id ASC`；non-owner teacher 404                                                                   |
+| DELETE | `/courses/:courseId/enrollments/:studentAccountId`   | owner/admin 移除 student       | Session + CSRF + exact Origin + owner/admin | idempotent；student 403                                                                                                            |
+
+Student search defaults to `page=1&pageSize=20` and caps `pageSize` at 100. Course authorization occurs before the account search: a non-owner teacher or nonexistent course receives generic `404 NOT_FOUND` with `field=courseId`; a student receives `403 FORBIDDEN`; no session receives `401 UNAUTHORIZED`. Invalid search input receives `400 VALIDATION_ERROR` with `field=q` (existing generic pagination errors use the same endpoint validation contract).
 
 ### 3.3 課堂加入
 

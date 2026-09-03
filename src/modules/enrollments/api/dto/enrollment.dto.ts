@@ -1,5 +1,7 @@
+import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
+import { Allow, IsUUID } from 'class-validator';
+import { MAX_PAGE_SIZE } from '../../../../common/pagination';
 
 /** Add or reactivate one student in a course roster. */
 export class CreateEnrollmentDto {
@@ -75,4 +77,43 @@ export class MyCourseDto {
 
   @ApiProperty()
   updatedAt!: string;
+}
+
+/** Query contract for the teacher/admin course-scoped student search. */
+export class StudentSearchQueryDto {
+  /**
+   * `q` is validated after course authorization in the application service so
+   * hidden courses cannot be probed with malformed search input.
+   */
+  @ApiProperty({ minLength: 2, maxLength: 100 })
+  @Allow()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.normalize('NFC').trim() : value,
+  )
+  q!: unknown;
+
+  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @Allow()
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: MAX_PAGE_SIZE, default: 20 })
+  @Allow()
+  @Type(() => Number)
+  pageSize?: number;
+}
+
+/** Safe account + course-relative enrollment projection for student search. */
+export class StudentSearchResultDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  username!: string;
+
+  @ApiProperty()
+  displayName!: string;
+
+  @ApiProperty({ enum: ['active', 'removed'], nullable: true })
+  enrollmentStatus!: 'active' | 'removed' | null;
 }

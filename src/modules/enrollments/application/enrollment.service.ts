@@ -39,6 +39,20 @@ export type EnrolledCourseRow = CourseEnrollment & {
   course: Course;
 };
 
+export interface StudentSearchRow {
+  id: string;
+  username: string;
+  displayName: string;
+  enrollmentStatus: EnrollmentStatus | null;
+}
+
+type StudentSearchAccountRow = Pick<
+  Account,
+  'id' | 'username' | 'displayName'
+> & {
+  courseEnrollments: Array<Pick<CourseEnrollment, 'status'>>;
+};
+
 const rosterStudentSelect = {
   id: true,
   username: true,
@@ -224,6 +238,68 @@ export class EnrollmentService {
     return toPage(data, total, req);
   }
 
+  async searchStudents(
+    courseId: string,
+    caller: { id: string; role: string },
+    raw: { q?: unknown; page?: number; pageSize?: number },
+  ): Promise<Page<StudentSearchRow>> {
+    const canonicalCourseId = this.requireUuid(courseId, 'courseId');
+    this.assertTeacherOrAdmin(caller.role);
+
+    // Authorize the course before normalizing/validating q or querying accounts.
+    const course = await this.db.course.findUnique({
+      where: { id: canonicalCourseId },
+      select: { id: true, ownerAccountId: true },
+    });
+    this.assertCourseAccess(course, caller);
+
+    const q = this.normalizeSearchQuery(raw.q);
+    const req = this.normalizeSearchRequest(raw);
+    const where: Prisma.AccountWhereInput = {
+      role: AccountRole.STUDENT,
+      status: AccountStatus.ACTIVE,
+      OR: [
+        { username: { contains: q, mode: 'insensitive' } },
+        { displayName: { contains: q, mode: 'insensitive' } },
+      ],
+    };
+    const [accounts, total] = await Promise.all([
+      this.db.account.findMany({
+        where,
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          courseEnrollments: {
+            where: { courseId: canonicalCourseId },
+            select: { status: true },
+            take: 1,
+          },
+        },
+        orderBy: [{ username: 'asc' }, { id: 'asc' }],
+        skip: (req.page - 1) * req.pageSize,
+        take: req.pageSize,
+      }),
+      this.db.account.count({ where }),
+    ]);
+
+    return toPage(
+      (accounts as StudentSearchAccountRow[]).map((account) => ({
+        id: account.id,
+        username: account.username,
+        displayName: account.displayName,
+        enrollmentStatus:
+          account.courseEnrollments[0]?.status === EnrollmentStatus.ACTIVE
+            ? EnrollmentStatus.ACTIVE
+            : account.courseEnrollments[0]?.status === EnrollmentStatus.REMOVED
+              ? EnrollmentStatus.REMOVED
+              : null,
+      })),
+      total,
+      req,
+    );
+  }
+
   async listMyCourses(
     caller: { id: string; role: string },
     raw: { page?: number; pageSize?: number },
@@ -294,9 +370,9 @@ export class EnrollmentService {
   }
 
   private assertCourseAccess(
-    course: Course | null,
+    course: Pick<Course, 'id' | 'ownerAccountId'> | null,
     caller: { id: string; role: string },
-  ): asserts course is Course {
+  ): asserts course is Pick<Course, 'id' | 'ownerAccountId'> {
     if (
       !course ||
       (course.ownerAccountId !== caller.id && caller.role !== AccountRole.ADMIN)
@@ -316,6 +392,53 @@ export class EnrollmentService {
       throw new ValidationError('Invalid UUID', field);
     }
     return normalizeUuid(value);
+  }
+
+  private normalizeSearchQuery(value: unknown): string {
+    if (typeof value !== 'string') {
+      throw new DomainError(
+        ErrorCode.VALIDATION_ERROR,
+        'Search query is required',
+        HttpStatus.BAD_REQUEST,
+        'q',
+      );
+    }
+    const normalized = value.normalize('NFC').trim();
+    const length = Array.from(normalized).length;
+    if (length < 2 || length > 100) {
+      throw new DomainError(
+        ErrorCode.VALIDATION_ERROR,
+        'Search query must contain 2 to 100 Unicode code points',
+        HttpStatus.BAD_REQUEST,
+        'q',
+      );
+    }
+    return normalized;
+  }
+
+  private normalizeSearchRequest(raw: {
+    page?: number;
+    pageSize?: number;
+  }): PageRequest {
+    const page = raw.page ?? 1;
+    const pageSize = raw.pageSize ?? 20;
+    if (!Number.isInteger(page) || page < 1) {
+      throw new DomainError(
+        ErrorCode.VALIDATION_ERROR,
+        'Page must be a positive integer',
+        HttpStatus.BAD_REQUEST,
+        'page',
+      );
+    }
+    if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+      throw new DomainError(
+        ErrorCode.VALIDATION_ERROR,
+        'Page size must be an integer between 1 and 100',
+        HttpStatus.BAD_REQUEST,
+        'pageSize',
+      );
+    }
+    return { page, pageSize };
   }
 
   private normalizeListRequest(raw: {
