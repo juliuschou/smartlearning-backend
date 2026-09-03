@@ -5,9 +5,12 @@ import { isUuid, newId, normalizeUuid } from '../../../common/crypto';
 import {
   ConflictError,
   DomainError,
+  EnrollmentRemovedError,
+  EnrollmentRequiredError,
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
+  ValidationError,
 } from '../../../common/errors';
 import { errorType } from '../../../common/observability';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -1097,6 +1100,92 @@ export class LiveSessionService {
         };
       },
       { isolationLevel },
+    );
+  }
+
+  /**
+   * Student-only lifecycle receipt for an enrolled, active student account.
+   *
+   * Deliberately independent from the polymorphic participant snapshot: this
+   * read never touches Participant, Submission, ArchivedResult, or question
+   * projections, so a terminal session stays readable after close-time
+   * participant anonymization. Status reads serialize with close/cancel,
+   * enrollment removal, and account disable through the same
+   * liveSession -> course -> account row locks (READ COMMITTED).
+   */
+  async getStudentLiveSessionStatus(
+    sessionId: string,
+    accountId: string,
+  ): Promise<{
+    id: string;
+    status: LiveSessionStatus;
+    startedAt: Date | null;
+    closedAt: Date | null;
+  }> {
+    if (!isUuid(accountId)) {
+      throw new ValidationError('Account ID must be a UUID.', 'accountId');
+    }
+    const canonicalSessionId = normalizeUuid(sessionId);
+    const canonicalAccountId = normalizeUuid(accountId);
+    return this.transactions.run(
+      async (tx) => {
+        await this.lockAccountBoundRealtimeRows(
+          tx,
+          canonicalSessionId,
+          canonicalAccountId,
+        );
+        const session = await tx.liveSession.findUnique({
+          where: { id: canonicalSessionId },
+          select: {
+            id: true,
+            status: true,
+            startedAt: true,
+            closedAt: true,
+            courseId: true,
+          },
+        });
+        if (!session) {
+          throw new NotFoundError('LiveSession not found', 'liveSessionId');
+        }
+        const [account, enrollment] = await Promise.all([
+          tx.account.findUnique({
+            where: { id: canonicalAccountId },
+            select: { role: true, status: true },
+          }),
+          tx.courseEnrollment.findUnique({
+            where: {
+              courseId_studentAccountId: {
+                courseId: session.courseId,
+                studentAccountId: canonicalAccountId,
+              },
+            },
+            select: { status: true },
+          }),
+        ]);
+        if (
+          !account ||
+          account.role !== AccountRole.STUDENT ||
+          account.status !== AccountStatus.ACTIVE
+        ) {
+          throw new ForbiddenError('Active student account required');
+        }
+        if (!enrollment) {
+          throw new EnrollmentRequiredError();
+        }
+        if (enrollment.status === EnrollmentStatus.REMOVED) {
+          throw new EnrollmentRemovedError();
+        }
+        if (enrollment.status !== EnrollmentStatus.ACTIVE) {
+          throw new ForbiddenError('Active course enrollment required');
+        }
+        return {
+          id: session.id,
+          status: session.status as LiveSessionStatus,
+          startedAt: session.startedAt,
+          closedAt: session.closedAt,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
     );
   }
 

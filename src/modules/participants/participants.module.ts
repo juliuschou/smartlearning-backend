@@ -4,6 +4,7 @@ import { LiveSessionsModule } from '../live-sessions/live-sessions.module';
 import { ParticipantService } from './application/participant.service';
 import { ParticipantsController } from './api/participants.controller';
 import {
+  AuthenticatedStudentSessionGuard,
   ParticipantOrSessionGuard,
   ParticipantTokenGuard,
 } from './api/participant-token.guard';
@@ -15,11 +16,13 @@ import {
     ParticipantService,
     ParticipantTokenGuard,
     ParticipantOrSessionGuard,
+    AuthenticatedStudentSessionGuard,
   ],
   exports: [
     ParticipantService,
     ParticipantTokenGuard,
     ParticipantOrSessionGuard,
+    AuthenticatedStudentSessionGuard,
   ],
 })
 export class ParticipantsModule {}

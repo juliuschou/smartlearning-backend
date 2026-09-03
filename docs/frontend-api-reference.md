@@ -417,6 +417,20 @@ GET /live-sessions/:id/snapshot
 - participant（匿名 token / student cookie）→ participant projection：**只含 open 的 sessionQuestions + `hasSubmitted`**，隱藏 questionSelections 與正解；回應另含 actor-safe `watermark` 與已可 reveal 的 `results` map
 - teacher/admin cookie → teacher projection（完整 snapshot、joined/voted counts、watermark 與匿名 results）
 
+### 3.4a 學員課堂狀態（FE-4.1）
+
+```
+GET /live-sessions/:liveSessionId/student-status
+```
+
+認證：**僅限** active student 的 Web Session（不受理 `X-Participant-Token`）；需要該課堂所屬課程的 active enrollment。
+
+- 授權：`SessionGuard`（participant 邊界分類）+ student-only guard；teacher/admin 為 `403 FORBIDDEN`，匿名/撤銷 session 為 `401 UNAUTHORIZED`，過期為 `401 AUTH_SESSION_EXPIRED`，停用帳號的既有 cookie 為 `401 AUTH_ACCOUNT_DISABLED`。
+- 無 enrollment 為 `403 ENROLLMENT_REQUIRED`；已移除為 `403 ENROLLMENT_REMOVED`；未知 session 為 `404 NOT_FOUND`。
+- **回應（exact allowlist，四種 lifecycle 狀態全部 HTTP 200）**：`{ id, status, startedAt, closedAt }`，其中 `status ∈ waiting | active | closed | cancelled`，`startedAt`/`closedAt` 為 ISO-8601 或 `null`（`waiting`/`cancelled` 兩者皆 `null`；`closed` 兩者皆有值）。
+- Terminal（closed/cancelled）是**唯讀 lifecycle receipt**，不是歷史 participant snapshot：query 只讀取 LiveSession/Course/Account/Enrollment 鎖定列，不讀寫 Participant/Submission/ArchivedResult，也不建立 Participant，因此 close 後即使 participant 已匿名化，仍可由現役 enrolled student 讀取。
+- 與 `/snapshot` 的分界：`/snapshot` 保留既有行為（participant 對 terminal session 維持 `409 SESSION_NOT_JOINABLE`；teacher/admin 得 teacher projection）；本 route 不回傳任何題目、結果、計數或 watermark。Socket.IO 對 terminal session 的 handshake/reconnect 拒絕行為不變。
+
 ### 3.5 作答
 
 ```

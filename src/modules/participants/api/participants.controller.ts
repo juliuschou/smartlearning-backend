@@ -8,7 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AccountRole } from '../../identity/domain/roles';
 import { UnauthorizedError } from '../../../common/errors';
 import { JoinLiveSessionDto, JoinLiveSessionResponseDto } from './dto';
@@ -16,6 +16,7 @@ import type {
   LiveSessionDto,
   SessionQuestionResultsDto,
 } from '../../live-sessions/api/dto';
+import { StudentLiveSessionStatusDto } from '../../live-sessions/api/dto';
 import { SessionQuestionStatus } from '../../live-sessions/domain';
 import { ParticipantService } from '../application/participant.service';
 import {
@@ -23,9 +24,12 @@ import {
   type ParticipantRequest,
 } from './participant-context';
 import {
+  AuthenticatedStudentSessionGuard,
   OptionalStudentSessionGuard,
   ParticipantOrSessionGuard,
 } from './participant-token.guard';
+import { CurrentAccount } from '../../../common/auth';
+import type { AuthContext } from '../../../common/auth';
 import type { ParticipantContext } from '../application/participant.service';
 import {
   LiveSessionService,
@@ -149,5 +153,35 @@ export class ParticipantsController {
           role: request.authContext!.account.role,
         } as const);
     return this.sessions.getResults(liveSessionId, sessionQuestionId, actor);
+  }
+
+  /**
+   * Student-only lifecycle receipt (FE-4.1). Unlike the polymorphic snapshot,
+   * this route accepts only an active student Web Session with an active
+   * enrollment, ignores X-Participant-Token entirely, and never resolves or
+   * creates a Participant. All four lifecycle states return 200.
+   */
+  @Get(':liveSessionId/student-status')
+  @ApiOperation({
+    summary:
+      'Read the lifecycle status of a live session as an enrolled student',
+  })
+  @ApiParam({ name: 'liveSessionId', format: 'uuid' })
+  @ApiResponse({ status: 200, type: StudentLiveSessionStatusDto })
+  @UseGuards(AuthenticatedStudentSessionGuard)
+  async studentStatus(
+    @Param('liveSessionId', new ParseUUIDPipe()) liveSessionId: string,
+    @CurrentAccount() auth: AuthContext,
+  ): Promise<StudentLiveSessionStatusDto> {
+    const status = await this.sessions.getStudentLiveSessionStatus(
+      liveSessionId,
+      auth.account.id,
+    );
+    return {
+      id: status.id,
+      status: status.status,
+      startedAt: status.startedAt ? status.startedAt.toISOString() : null,
+      closedAt: status.closedAt ? status.closedAt.toISOString() : null,
+    };
   }
 }

@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { CsrfGuard, SessionGuard } from '../../../common/auth';
+import { CsrfGuard, SessionGuard, StudentGuard } from '../../../common/auth';
 import { SESSION_COOKIE_NAME } from '../../../common/security';
 import { AccountRole } from '../../identity/domain/roles';
 import { ForbiddenError, UnauthorizedError } from '../../../common/errors';
@@ -96,5 +96,25 @@ export class ParticipantOrSessionGuard implements CanActivate {
         );
     }
     return authenticated;
+  }
+}
+
+/**
+ * Student-only Web Session boundary for lifecycle status reads. Reuses the
+ * participant-bound session classification (disabled account exposes
+ * AUTH_ACCOUNT_DISABLED) and then enforces the shared StudentGuard role
+ * semantics. Never resolves or accepts a participant token: status discovery
+ * must not touch the Participant table.
+ */
+@Injectable()
+export class AuthenticatedStudentSessionGuard implements CanActivate {
+  constructor(
+    private readonly sessions: SessionGuard,
+    private readonly students: StudentGuard,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    await this.sessions.canActivateForParticipant(context);
+    return this.students.canActivate(context);
   }
 }

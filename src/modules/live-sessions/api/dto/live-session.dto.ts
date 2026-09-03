@@ -109,6 +109,26 @@ export class SessionQuestionOptionDto {
   position!: number;
 }
 
+/**
+ * Student-only lifecycle receipt. It is intentionally narrower than the
+ * teacher LiveSessionDto: no session code, questions, results, counts, or
+ * watermark. All four lifecycle states return 200 so an enrolled student can
+ * observe a terminal session even after archive anonymization.
+ */
+export class StudentLiveSessionStatusDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ enum: ['waiting', 'active', 'closed', 'cancelled'] })
+  status!: string;
+
+  @ApiProperty({ nullable: true, type: String })
+  startedAt!: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  closedAt!: string | null;
+}
+
 export class SessionQuestionDto {
   id!: string;
   liveSessionId!: string;

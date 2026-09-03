@@ -512,6 +512,11 @@ export class LiveGateway
         'NOT_FOUND',
         'SESSION_NOT_JOINABLE',
         'UNAUTHORIZED',
+        // Stable enrollment-bound codes from the shared participant resolver:
+        // a removed/missing enrollment must disconnect the socket, not crash
+        // the shared broadcast batch.
+        'ENROLLMENT_REQUIRED',
+        'ENROLLMENT_REMOVED',
       ].includes(error.code)
     );
   }

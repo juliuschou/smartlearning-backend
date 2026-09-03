@@ -202,6 +202,52 @@ describe('OpenAPI document (e2e)', () => {
       'currentJoinableSession',
     );
 
+    // FE-4.1 — student-only lifecycle receipt contract.
+    const studentStatusPath =
+      res.body.paths['/api/v1/live-sessions/{liveSessionId}/student-status'];
+    expect(studentStatusPath).toBeDefined();
+    const studentStatusGet = studentStatusPath.get;
+    expect(studentStatusPath.get).toBeDefined();
+    expect(studentStatusPath.post).toBeUndefined();
+    expect(studentStatusPath.put).toBeUndefined();
+    expect(studentStatusPath.delete).toBeUndefined();
+    expect(studentStatusPath.patch).toBeUndefined();
+    expect(studentStatusGet.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'liveSessionId',
+          in: 'path',
+          required: true,
+        }),
+      ]),
+    );
+    expect(
+      studentStatusGet.responses['200'].content['application/json'].schema.$ref,
+    ).toContain('StudentLiveSessionStatusDto');
+    // Error entries follow the shared envelope contract asserted elsewhere;
+    // only the success schema is declared per-route (matching sibling routes).
+    expect(Object.keys(studentStatusGet.responses)).toEqual(['200']);
+    const studentStatusDto =
+      res.body.components.schemas.StudentLiveSessionStatusDto;
+    expect(studentStatusDto).toBeDefined();
+    expect(Object.keys(studentStatusDto.properties ?? {}).sort()).toEqual([
+      'closedAt',
+      'id',
+      'startedAt',
+      'status',
+    ]);
+    expect(studentStatusDto.properties.status.enum).toEqual([
+      'waiting',
+      'active',
+      'closed',
+      'cancelled',
+    ]);
+    expect(studentStatusDto.properties.startedAt.nullable).toBe(true);
+    expect(studentStatusDto.properties.closedAt.nullable).toBe(true);
+    expect(studentStatusDto.required).toEqual(
+      expect.arrayContaining(['id', 'status', 'startedAt', 'closedAt']),
+    );
+
     // BE-8.2 CP2 — UpdateAccountDto allowlist has no sensitive fields/examples.
     const updateAccount = res.body.components.schemas.UpdateAccountDto;
     expect(updateAccount).toBeDefined();
