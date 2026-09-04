@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CLOCK, SystemClock } from '../../common/clock';
 import { OperationRateLimitGuard } from './operation-rate-limit.guard';
 import { OperationRateLimiterService } from './operation-rate-limiter.service';
 import {
@@ -14,6 +15,7 @@ import { RateLimiterService } from './rate-limiter.service';
 @Global()
 @Module({
   providers: [
+    { provide: CLOCK, useClass: SystemClock },
     {
       provide: LoginRateLimitKeyFactory,
       inject: [ConfigService],

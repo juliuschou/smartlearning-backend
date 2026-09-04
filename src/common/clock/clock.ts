@@ -3,6 +3,8 @@
  * retention 90d) depends on an injectable clock and tests can fake it.
  * All timestamps are UTC milliseconds (epoch).
  */
+export const CLOCK = Symbol('CLOCK');
+
 export interface Clock {
   now(): Date;
   nowMs(): number;

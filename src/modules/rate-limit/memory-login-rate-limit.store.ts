@@ -1,6 +1,6 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Clock, SystemClock } from '../../common/clock';
+import { CLOCK, type Clock, SystemClock } from '../../common/clock';
 import type {
   LoginRateLimitAvailability,
   LoginRateLimitStore,
@@ -20,7 +20,10 @@ export class MemoryLoginRateLimitStore implements LoginRateLimitStore {
   private readonly clock: Clock;
   private readonly buckets = new Map<string, Bucket>();
 
-  constructor(_config: ConfigService, @Optional() clock?: Clock) {
+  constructor(
+    @Inject(ConfigService) _config: ConfigService,
+    @Optional() @Inject(CLOCK) clock?: Clock,
+  ) {
     this.clock = clock ?? new SystemClock();
   }
 

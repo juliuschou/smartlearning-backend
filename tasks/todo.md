@@ -2848,3 +2848,8 @@ FE-4.1 CP0 is blocked until the student course response can discover a current j
 ### Results
 
 Implemented the backend transport failpoint in `src/common/http/test-response-loss-failpoint.ts`, gated by `NODE_ENV=test` and `FE42_RESPONSE_LOSS_TOKEN`, and wired it through shared bootstrap. Added the FE42 browser spec under the UI repository using isolated actor contexts and existing aggregate cleanup patterns. Runtime E2E remains pending until isolated services and fixtures are provisioned.
+
+- [x] Fix Nest DI resolution for the test bootstrap rate limiter clock/config dependencies.
+- [ ] Retry FE-4.2 browser acceptance with a dedicated, non-conflicting UI/API port pair.
+
+Latest verification: isolated PostgreSQL migration and compiled admin bootstrap succeeded; browser execution was stopped because port 3001 was already occupied by another Next dev server. Temporary database container was removed; no shared data was modified.

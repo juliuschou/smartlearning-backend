@@ -22,7 +22,8 @@ export function installTestResponseLossFailpoint(
     const token = request.header(FAILPOINT_HEADER);
     const target =
       request.method === 'POST' &&
-      SUBMISSION_PATH.test(request.path) &&
+      (SUBMISSION_PATH.test(request.path) ||
+        SUBMISSION_PATH.test(request.originalUrl ?? '')) &&
       token === options.token;
 
     if (!target || consumed) {

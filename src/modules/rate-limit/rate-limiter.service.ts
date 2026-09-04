@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Clock } from '../../common/clock';
+import { CLOCK, type Clock } from '../../common/clock';
 import { RateLimitUnavailableError } from '../../common/errors';
 import {
   MEMORY_LOGIN_RATE_LIMIT_STORE,
@@ -43,8 +43,8 @@ export class RateLimiterService implements OnModuleDestroy {
   private readonly memoryStore?: MemoryLoginRateLimitStore;
 
   constructor(
-    private readonly configService: ConfigService,
-    @Optional() clock?: Clock,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+    @Optional() @Inject(CLOCK) clock?: Clock,
     @Optional()
     @Inject(MEMORY_LOGIN_RATE_LIMIT_STORE)
     memoryStore?: LoginRateLimitStore,
