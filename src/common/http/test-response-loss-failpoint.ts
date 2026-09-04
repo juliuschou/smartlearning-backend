@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 const FAILPOINT_HEADER = 'x-fe42-response-loss';
-const SUBMISSION_PATH = /^\/api\/v1\/live-sessions\/[0-9a-f-]+\/submissions$/iu;
+const SUBMISSION_PATH = /\/live-sessions\/[0-9a-f-]+\/submissions$/iu;
 
 /**
  * Test-only transport failpoint. It aborts exactly one submission response after
@@ -20,10 +20,10 @@ export function installTestResponseLossFailpoint(
   let consumed = false;
   app.use((request, response, next) => {
     const token = request.header(FAILPOINT_HEADER);
+    const requestPath = (request.originalUrl ?? request.path).split('?')[0];
     const target =
       request.method === 'POST' &&
-      (SUBMISSION_PATH.test(request.path) ||
-        SUBMISSION_PATH.test(request.originalUrl ?? '')) &&
+      SUBMISSION_PATH.test(requestPath) &&
       token === options.token;
 
     if (!target || consumed) {

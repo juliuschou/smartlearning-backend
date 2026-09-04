@@ -51,9 +51,15 @@ export async function configureApplication(
   expressApp.use(helmet());
   expressApp.use(cookieParser(configService.get<string>('COOKIE_SECRET')));
 
+  const responseLossToken =
+    process.env.FE42_RESPONSE_LOSS_TOKEN ??
+    configService.get<string>('FE42_RESPONSE_LOSS_TOKEN') ??
+    '';
   installTestResponseLossFailpoint(expressApp, {
-    enabled: configService.get<string>('NODE_ENV') === 'test',
-    token: configService.get<string>('FE42_RESPONSE_LOSS_TOKEN') ?? '',
+    enabled:
+      process.env.NODE_ENV === 'test' ||
+      configService.get<string>('NODE_ENV') === 'test',
+    token: responseLossToken,
   });
 
   // CORS — explicit origin allowlist from env; dev allows the configured origin.
