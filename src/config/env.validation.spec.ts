@@ -90,6 +90,18 @@ describe('validateEnv', () => {
     }
   });
 
+  it('preserves the optional response-loss token in test configuration', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      NODE_ENV: 'test',
+      FE42_RESPONSE_LOSS_TOKEN: 'test-only-response-loss-token',
+    });
+
+    expect(config.FE42_RESPONSE_LOSS_TOKEN).toBe(
+      'test-only-response-loss-token',
+    );
+  });
+
   it('defaults login rate limiting to memory outside production', () => {
     const config = validateEnv({ ...baseEnv, NODE_ENV: 'test' });
     expect(config.LOGIN_RATE_LIMIT_MODE).toBe('memory');

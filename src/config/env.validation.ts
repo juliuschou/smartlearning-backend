@@ -78,6 +78,11 @@ export class EnvConfig {
   @IsBoolean()
   SESSION_COOKIE_SECURE?: boolean;
 
+  // Test-only transport failpoint token; bootstrap still gates activation on NODE_ENV=test.
+  @IsOptional()
+  @IsString()
+  FE42_RESPONSE_LOSS_TOKEN?: string;
+
   // Login rate limit (US-F7 / R-F7-7). Production requires shared Redis;
   // development/test retain the in-memory default for DB-free tests.
   @IsEnum(['memory', 'redis-required'])

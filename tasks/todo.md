@@ -2837,3 +2837,14 @@ FE-4.1 CP0 is blocked until the student course response can discover a current j
 - **PASS — migration status:** `NODE_ENV=test npm run prisma:migrate:status` found 15 migrations and reported `smartlearning_test` schema up to date. No development database was touched; no migration or schema change was made.
 - **Coverage/result:** `/me/courses` now exposes a batched, allowlisted nullable current-session projection; participant authorization has stable missing/removed enrollment codes and participant-local disabled-account classification. Existing ordinary authentication semantics remain unchanged. The enrollment fixture was corrected to use valid eight-character codes and to respect the persisted one-open-session-per-course index; no production fix was required.
 - **Boundary:** backend slice is complete and verified. FE-4.1 frontend transport/UI work intentionally remains stopped pending explicit follow-up scope.
+
+
+## FE-4.2 CP5 response-loss fixture addendum (2026-09-05)
+
+- [x] Add test-only, one-shot post-commit response-loss middleware and focused unit coverage.
+- [x] Add frontend FE42 browser fixture/spec with fail-closed preflight and same-key replay probe.
+- [ ] Run real FE42 browser acceptance against an isolated migrated backend with FE42_* fixtures.
+
+### Results
+
+Implemented the backend transport failpoint in `src/common/http/test-response-loss-failpoint.ts`, gated by `NODE_ENV=test` and `FE42_RESPONSE_LOSS_TOKEN`, and wired it through shared bootstrap. Added the FE42 browser spec under the UI repository using isolated actor contexts and existing aggregate cleanup patterns. Runtime E2E remains pending until isolated services and fixtures are provisioned.

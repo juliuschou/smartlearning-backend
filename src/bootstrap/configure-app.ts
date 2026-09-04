@@ -7,6 +7,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import {
   ApiResponseInterceptor,
   GlobalExceptionFilter,
+  installTestResponseLossFailpoint,
   validationExceptionFactory,
 } from '../common/http';
 import { PINO_REDACT_PATHS, PINO_REDACT_REMOVE } from '../common/observability';
@@ -49,6 +50,11 @@ export async function configureApplication(
   // Security headers + cookie parsing.
   expressApp.use(helmet());
   expressApp.use(cookieParser(configService.get<string>('COOKIE_SECRET')));
+
+  installTestResponseLossFailpoint(expressApp, {
+    enabled: configService.get<string>('NODE_ENV') === 'test',
+    token: configService.get<string>('FE42_RESPONSE_LOSS_TOKEN') ?? '',
+  });
 
   // CORS — explicit origin allowlist from env; dev allows the configured origin.
   const corsOrigin = configService.get<string>('CORS_ORIGIN') ?? '';
