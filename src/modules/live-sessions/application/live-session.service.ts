@@ -732,6 +732,9 @@ export class LiveSessionService {
             !participant ||
             participant.liveSessionId !== canonicalSessionId
           ) {
+            if (actor.accountId !== undefined) {
+              throw new EnrollmentRequiredError();
+            }
             throw new NotFoundError('Participant not found', 'participantId');
           }
           if (actor.accountId !== undefined) {
@@ -763,7 +766,9 @@ export class LiveSessionService {
               account.status !== AccountStatus.ACTIVE ||
               enrollment?.status !== EnrollmentStatus.ACTIVE
             ) {
-              throw new ForbiddenError('Active course enrollment required');
+              throw enrollment
+                ? new ForbiddenError('Active course enrollment required')
+                : new EnrollmentRequiredError();
             }
           }
           // Participant snapshots expose open questions plus closed results;
@@ -1054,7 +1059,9 @@ export class LiveSessionService {
             account.status !== AccountStatus.ACTIVE ||
             enrollment?.status !== EnrollmentStatus.ACTIVE
           ) {
-            throw new ForbiddenError('Active course enrollment required');
+            throw enrollment
+              ? new ForbiddenError('Active course enrollment required')
+              : new EnrollmentRequiredError();
           }
         }
         const submissions = await tx.submission.findMany({
@@ -1320,7 +1327,9 @@ export class LiveSessionService {
               account.status !== AccountStatus.ACTIVE ||
               enrollment?.status !== EnrollmentStatus.ACTIVE
             ) {
-              throw new ForbiddenError('Active course enrollment required');
+              throw enrollment
+                ? new ForbiddenError('Active course enrollment required')
+                : new EnrollmentRequiredError();
             }
           }
           // Participants see correct answers only after the question is closed.
