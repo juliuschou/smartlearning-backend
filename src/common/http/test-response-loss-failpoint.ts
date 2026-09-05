@@ -17,24 +17,26 @@ export function installTestResponseLossFailpoint(
 ): void {
   if (!options.enabled || options.token.trim().length === 0) return;
 
-  let consumed = false;
+  const consumedKeys = new Set<string>();
   app.use((request, response, next) => {
     const token = request.header(FAILPOINT_HEADER);
+    const idempotencyKey = request.header('idempotency-key')?.trim();
     const requestPath = (request.originalUrl ?? request.path).split('?')[0];
     const target =
       request.method === 'POST' &&
       SUBMISSION_PATH.test(requestPath) &&
-      token === options.token;
+      token === options.token &&
+      Boolean(idempotencyKey);
 
-    if (!target || consumed) {
+    if (!target || consumedKeys.has(idempotencyKey!)) {
       next();
       return;
     }
 
     const originalEnd = response.end.bind(response);
     response.end = ((...args: Parameters<Response['end']>) => {
-      if (!consumed) {
-        consumed = true;
+      if (!consumedKeys.has(idempotencyKey!)) {
+        consumedKeys.add(idempotencyKey!);
         response.socket?.destroy();
         return response;
       }

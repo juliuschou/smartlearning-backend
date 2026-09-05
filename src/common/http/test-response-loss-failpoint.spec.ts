@@ -36,8 +36,11 @@ describe('test response-loss failpoint', () => {
     const request = {
       method: 'POST',
       path: '/api/v1/live-sessions/123e4567-e89b-12d3-a456-426614174000/submissions',
-      header: (name: string) =>
-        name === TEST_RESPONSE_LOSS_HEADER ? 'secret' : undefined,
+      header: (name: string) => {
+        if (name === TEST_RESPONSE_LOSS_HEADER) return 'secret';
+        if (name === 'idempotency-key') return 'first-key';
+        return undefined;
+      },
     } as unknown as Request;
 
     middleware(request, response, next);

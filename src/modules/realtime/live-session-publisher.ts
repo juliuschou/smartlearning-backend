@@ -163,8 +163,21 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
     await this.cleanupExpiredDeliveredRows(now);
     const claimed = await this.claimDueRows(now);
     this.outstandingLeaseCount += claimed.length;
+    if (claimed.length > 0) {
+      this.logger.log(
+        {
+          claimedCount: claimed.length,
+          eventNames: claimed.map((row) => row.event_name),
+        },
+        'Durable realtime publisher claimed events',
+      );
+    }
     for (const row of claimed) {
       try {
+        this.logger.log(
+          { eventName: row.event_name, liveSessionId: row.live_session_id },
+          'Durable realtime publisher dispatching event',
+        );
         await this.gateway.dispatchDurableEvent(this.toEvent(row));
         if (await this.markDelivered(row.id, new Date())) {
           this.outstandingLeaseCount -= 1;
@@ -206,10 +219,6 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
                   ${RealtimeDeliveryState.PENDING},
                   ${RealtimeDeliveryState.RETRY},
                   ${RealtimeDeliveryState.PROCESSING}
-                )
-                OR (
-                  previous.delivery_state = ${RealtimeDeliveryState.DEAD}
-                  AND COALESCE(previous.last_failure_class, '') <> ${RECOVERY_NOTIFIED}
                 )
               )
           )

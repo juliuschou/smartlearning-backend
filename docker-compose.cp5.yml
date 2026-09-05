@@ -24,7 +24,8 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    command:
+      ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
     ports:
       - '${CP5_REDIS_PORT:-6380}:6379'
     volumes:
@@ -63,6 +64,7 @@ services:
         condition: service_healthy
     environment: &backend-env
       NODE_ENV: test
+      FE42_RESPONSE_LOSS_TOKEN: ${FE42_RESPONSE_LOSS_TOKEN:?FE42_RESPONSE_LOSS_TOKEN is required}
       PORT: 3000
       DATABASE_URL: postgresql://${CP5_DB_USERNAME:-smartlearning}:${CP5_DB_PASSWORD:?CP5_DB_PASSWORD is required}@db:5432/smartlearning_cp5_test?schema=public
       CORS_ORIGIN: http://localhost:3101

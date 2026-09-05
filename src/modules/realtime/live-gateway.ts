@@ -1035,6 +1035,8 @@ export class LiveGateway
               return;
             }
           } else if (
+            event.eventName !== RealtimeEvent.QUESTION_CLOSED &&
+            data.status !== 'closed' &&
             !(await this.reauthorizeParticipant(remoteSocket, client))
           ) {
             return;
@@ -1099,7 +1101,7 @@ export class LiveGateway
               event.serverTimestamp.toISOString(),
             ),
           );
-          socket.disconnect(true);
+          setImmediate(() => socket.disconnect(true));
         }),
       ),
     );
@@ -1170,7 +1172,8 @@ export class LiveGateway
             event.serverTimestamp.toISOString(),
           ),
         );
-        socket.disconnect(true);
+        // Let Socket.IO flush the terminal packet before closing the transport.
+        setImmediate(() => socket.disconnect(true));
         return;
       case RealtimeEvent.SYNC_REQUIRED:
         return;

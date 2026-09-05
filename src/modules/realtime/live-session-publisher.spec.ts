@@ -247,8 +247,7 @@ describe('LiveSessionPublisher', () => {
     expect(query).toContain('SKIP LOCKED');
     expect(query).toContain('lease_expires_at');
     expect(query).toContain('previous.event_seq < event.event_seq');
-    expect(query).toContain('previous.delivery_state = ');
-    expect(parameters).toContain('recovery_notified');
+    expect(query).not.toContain('previous.delivery_state = ');
   });
 
   it('bounds expiry, dead-letter recovery, and coalescing maintenance', async () => {
