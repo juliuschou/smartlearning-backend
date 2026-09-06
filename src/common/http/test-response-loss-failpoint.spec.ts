@@ -21,17 +21,19 @@ describe('test response-loss failpoint', () => {
     };
     installTestResponseLossFailpoint(app, { enabled, token: 'secret' });
     const socket = { destroy: jest.fn() };
+    const destroy = jest.fn();
     const response = Object.assign(new EventEmitter(), {
       socket,
+      destroy,
       end: jest.fn(function end(this: Response) {
         return this;
       }),
     }) as unknown as Response;
-    return { middleware: middlewares[0], response, socket };
+    return { middleware: middlewares[0], response, socket, destroy };
   }
 
   it('aborts one matching submission response and leaves later responses alone', () => {
-    const { middleware, response, socket } = setup();
+    const { middleware, response, socket, destroy } = setup();
     const next = jest.fn();
     const request = {
       method: 'POST',
@@ -46,7 +48,8 @@ describe('test response-loss failpoint', () => {
     middleware(request, response, next);
     expect(next).toHaveBeenCalledTimes(1);
     response.end('body' as never);
-    expect(socket.destroy).toHaveBeenCalledTimes(1);
+    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(socket.destroy).not.toHaveBeenCalled();
 
     const laterSocket = { destroy: jest.fn() };
     const laterResponse = Object.assign(new EventEmitter(), {

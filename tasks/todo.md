@@ -2838,12 +2838,12 @@ FE-4.1 CP0 is blocked until the student course response can discover a current j
 - **Coverage/result:** `/me/courses` now exposes a batched, allowlisted nullable current-session projection; participant authorization has stable missing/removed enrollment codes and participant-local disabled-account classification. Existing ordinary authentication semantics remain unchanged. The enrollment fixture was corrected to use valid eight-character codes and to respect the persisted one-open-session-per-course index; no production fix was required.
 - **Boundary:** backend slice is complete and verified. FE-4.1 frontend transport/UI work intentionally remains stopped pending explicit follow-up scope.
 
-
 ## FE-4.2 CP5 response-loss fixture addendum (2026-09-05)
 
 - [x] Add test-only, one-shot post-commit response-loss middleware and focused unit coverage.
 - [x] Add frontend FE42 browser fixture/spec with fail-closed preflight and same-key replay probe.
 - [ ] Run real FE42 browser acceptance against an isolated migrated backend with FE42_* fixtures.
+- [x] Instrument the failpoint boundary and prove target matching plus `response.destroy()` in an isolated runtime.
 
 ### Results
 
@@ -2853,3 +2853,11 @@ Implemented the backend transport failpoint in `src/common/http/test-response-lo
 - [ ] Retry FE-4.2 browser acceptance with a dedicated, non-conflicting UI/API port pair.
 
 Latest verification: isolated PostgreSQL migration and compiled admin bootstrap succeeded; browser execution was stopped because port 3001 was already occupied by another Next dev server. Temporary database container was removed; no shared data was modified.
+
+### 2026-09-06 response-loss boundary instrumentation
+
+- **PASS:** rebuilt the isolated `smartlearning-fe51-cp3` backend with `NODE_ENV=test`, a fresh response-loss token, and diagnostic instrumentation that records only boolean match fields (no token, key, payload, or credential values).
+- **PASS:** real submission request reached the failpoint with `methodMatches=true`, `pathMatches=true`, `tokenMatches=true`, `keyPresent=true`, `target=true`; `response.destroy()` was invoked.
+- **OBSERVED:** a later same-key request was classified `alreadyConsumed=true` and the browser received the authoritative successful result. The controlled browser payload-permutation comparison was not completed, so FE-5.1 CP3 response-loss/permutation acceptance remains **PARTIALLY VERIFIED**, not closed.
+- **Cleanup:** the disposable Compose project, database/Redis volumes, network, temporary UI server, and diagnostic fixture were removed. No shared/dev database was touched.
+- **Source changes:** `test-response-loss-failpoint.ts` now prefers `response.destroy()` with socket fallback and has opt-in test-only boundary diagnostics; focused failpoint tests and backend typecheck pass.
