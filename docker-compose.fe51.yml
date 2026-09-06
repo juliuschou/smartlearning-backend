@@ -1,0 +1,68 @@
+# FE-5.1 disposable real-backend browser acceptance topology.
+# Run with a unique Compose project name and a local-only DB port.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${FE51_DB_USERNAME:-smartlearning}
+      POSTGRES_PASSWORD: ${FE51_DB_PASSWORD:?FE51_DB_PASSWORD is required}
+      POSTGRES_DB: smartlearning_fe51_test
+    ports:
+      - '127.0.0.1:${FE51_DB_PORT:-55451}:5432'
+    volumes:
+      - fe51_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${FE51_DB_USERNAME:-smartlearning} -d smartlearning_fe51_test']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [fe51]
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: smartlearning-backend:fe51-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://${FE51_DB_USERNAME:-smartlearning}:${FE51_DB_PASSWORD:?FE51_DB_PASSWORD is required}@db:5432/smartlearning_fe51_test?schema=public
+    networks: [fe51]
+
+  backend:
+    build:
+      context: .
+      target: runtime
+    image: smartlearning-backend:fe51
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      DATABASE_URL: postgresql://${FE51_DB_USERNAME:-smartlearning}:${FE51_DB_PASSWORD:?FE51_DB_PASSWORD is required}@db:5432/smartlearning_fe51_test?schema=public
+      CORS_ORIGIN: ${FE51_CORS_ORIGIN:-https://localhost:3443}
+      COOKIE_SECRET: ${FE51_COOKIE_SECRET:?FE51_COOKIE_SECRET is required}
+      SESSION_COOKIE_SECURE: 'true'
+      FE42_RESPONSE_LOSS_TOKEN: ${FE51_RESPONSE_LOSS_TOKEN:?FE51_RESPONSE_LOSS_TOKEN is required}
+      FE42_RESPONSE_LOSS_DIAGNOSTIC: ${FE51_RESPONSE_LOSS_DIAGNOSTIC:-0}
+      REALTIME_REDIS_MODE: off
+    ports:
+      - '127.0.0.1:${FE51_BACKEND_PORT:-3000}:3000'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [fe51]
+
+volumes:
+  fe51_pgdata:
+
+networks:
+  fe51:
+    driver: bridge
