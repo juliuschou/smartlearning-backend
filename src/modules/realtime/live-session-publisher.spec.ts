@@ -241,8 +241,10 @@ describe('LiveSessionPublisher', () => {
     await harness.publisher.processBatch(new Date('2026-08-28T00:03:00.000Z'));
 
     expect(harness.database.$transaction).toHaveBeenCalledTimes(1);
-    const [queryFragments, ...parameters] = harness.transaction.$queryRaw.mock
-      .calls[0] as [readonly string[], ...unknown[]];
+    const [queryFragments] = harness.transaction.$queryRaw.mock.calls[0] as [
+      readonly string[],
+      ...unknown[],
+    ];
     const query = queryFragments.join('');
     expect(query).toContain('SKIP LOCKED');
     expect(query).toContain('lease_expires_at');
