@@ -146,7 +146,7 @@ Web list/create 保持既有 owner-scoped `CourseDto`（Web list 包含 draft/ar
     // poll 必填 2–10 個；open_text 禁
     { "optionRef": "string?", "text": "string (≤250)" }
   ],
-  "correctOptionRefs": ["string"] // quiz 必填恰一；poll/open_text 禁
+  "correctOptionRefs": ["string"] // quiz 必填至少一（exact-set，可多正解）；poll/open_text 禁
 }
 ```
 
@@ -443,7 +443,7 @@ POST /live-sessions/:id/submissions
 **body**（依題型）：
 
 - poll：`{ sessionQuestionId, selectedOptionRefs: string[] }`（single 恰一、multiple 至少一且不超過選項數）
-- quiz：`{ sessionQuestionId, selectedOptionRefs: [單一正解] }`
+- quiz：`{ sessionQuestionId, selectedOptionRefs: string[] }`（**exact-set**：可多正解、至少一且不超過選項數；順序無關，permuted replay = same submission；refs 會 canonicalize 成正式 option UUID，前端以 ID 比對）
 - open_text：`{ sessionQuestionId, textAnswer: string }`（禁 selectedOptionRefs）
 
 **回應**：`{ id, liveSessionId, sessionQuestionId, participantId, selectedOptionRefs: string[]|null, textAnswer: string|null, submittedAt }`。refs 會 canonicalize 成正式 option UUID。首筆不可更新；同 key+同 payload replay。
@@ -454,7 +454,7 @@ POST /live-sessions/:id/submissions
 
 - **open 題**：須本人已 submit 才 reveal aggregate，否則 `409 RESULTS_NOT_REVEALED`
 - **closed 題**：全班可看
-- quiz correctness 僅 closed 後顯示
+- quiz correctness 僅 closed 後顯示：open 期間已作答者可見 option-level counts 與 `totalResponses`，但 projection **不含** `isCorrect`/`correctCount`/`incorrectCount`/`correctnessRate`；close 後才 reveal option-level `isCorrect` 與 aggregate correctness 指標。backend 無 per-submission correctness 欄位，client 不得推斷個人答對/答錯。
 
 ### 3.7 學員即時推送
 
