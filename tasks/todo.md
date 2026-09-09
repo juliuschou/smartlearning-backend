@@ -3030,3 +3030,19 @@ Freeze the archive-history backend contract required by FE-6. This checkpoint is
 - `npm run format:check` — PASS.
 - `git diff --check` — PASS.
 - Safety: only guarded `smartlearning_test` was mutated; no external provider, network upload, or real credentials were used.
+
+### 2026-09-09 CP2 review hardening
+
+- [x] Classify only `InvalidDeletionManifestError` as permanent; provider `TypeError`/`RangeError` failures remain retryable.
+- [x] Generate a unique lease token per export batch and fence acknowledgements/failures with the claimed row token, preventing stale overlapping runs from sharing a worker token.
+
+#### Verification
+
+- Focused exporter/domain tests — PASS, 2 suites / 7 tests.
+- `NODE_ENV=test npm run test:integration -- test/deletion-manifest-exporter.integration-spec.ts` — PASS, 1 suite / 4 tests, 0 failures.
+- `npm run typecheck`, `npm run lint:check`, `npm run format:check`, and `git diff --check` — PASS.
+
+#### Boundary
+
+- Controlled local-provider delivery is evidenced only on guarded `smartlearning_test`.
+- External immutable object-store delivery, production-like alert firing, and full restore rehearsal remain intentionally unrun; no external credentials or uploads were used.

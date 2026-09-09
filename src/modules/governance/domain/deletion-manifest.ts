@@ -1,5 +1,12 @@
 export const DELETION_MANIFEST_VERSION = 'deletion-manifest.v1' as const;
 
+export class InvalidDeletionManifestError extends TypeError {
+  constructor() {
+    super('Invalid deletion manifest');
+    this.name = 'InvalidDeletionManifestError';
+  }
+}
+
 export type DeletionManifest = {
   contractVersion: typeof DELETION_MANIFEST_VERSION;
   deletionEventId: string;
@@ -13,7 +20,7 @@ export type DeletionManifest = {
 
 export function parseDeletionManifest(value: unknown): DeletionManifest {
   if (!value || typeof value !== 'object')
-    throw new TypeError('Invalid deletion manifest');
+    throw new InvalidDeletionManifestError();
   const v = value as Record<string, unknown>;
   const required = [
     'deletionEventId',
@@ -27,17 +34,16 @@ export function parseDeletionManifest(value: unknown): DeletionManifest {
     v.contractVersion !== DELETION_MANIFEST_VERSION ||
     required.some((k) => typeof v[k] !== 'string')
   ) {
-    throw new TypeError('Invalid deletion manifest');
+    throw new InvalidDeletionManifestError();
   }
   if (
     !Array.isArray(v.categories) ||
     v.categories.some((x) => typeof x !== 'string')
   ) {
-    throw new TypeError('Invalid deletion manifest');
+    throw new InvalidDeletionManifestError();
   }
   const date = new Date(v.deletedAt as string);
-  if (Number.isNaN(date.getTime()))
-    throw new TypeError('Invalid deletion manifest');
+  if (Number.isNaN(date.getTime())) throw new InvalidDeletionManifestError();
   return {
     contractVersion: DELETION_MANIFEST_VERSION,
     deletionEventId: v.deletionEventId as string,

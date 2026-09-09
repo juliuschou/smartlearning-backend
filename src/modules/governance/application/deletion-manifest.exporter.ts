@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { newId } from '../../../common/crypto/uuid';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
+  InvalidDeletionManifestError,
   parseDeletionManifest,
   type DeletionManifest,
 } from '../domain/deletion-manifest';
@@ -39,12 +40,16 @@ const MAX_ATTEMPTS = 8;
 const INITIAL_BACKOFF_MS = 1_000;
 const MAX_BACKOFF_MS = 5 * 60_000;
 
-type OutboxRow = { id: string; manifest: unknown; attempts: number };
+type OutboxRow = {
+  id: string;
+  manifest: unknown;
+  attempts: number;
+  leaseToken: string;
+};
 
 @Injectable()
 export class DeletionManifestExporter {
   private readonly logger = new Logger(DeletionManifestExporter.name);
-  private readonly workerId = newId();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -56,21 +61,37 @@ export class DeletionManifestExporter {
     max = 50,
     now = new Date(),
   ): Promise<{ selected: number; exported: number; failed: number }> {
+    const leaseToken = newId();
     const rows = await this.claimDueRows(
       Math.max(1, Math.min(100, Math.floor(max))),
       now,
+      leaseToken,
     );
     let exported = 0;
     let failed = 0;
     for (const row of rows) {
       try {
-        await this.provider.put(parseDeletionManifest(row.manifest));
+        let parsed: DeletionManifest;
+        try {
+          parsed = parseDeletionManifest(row.manifest);
+        } catch (error) {
+          failed += Number(
+            await this.markFailure(
+              row,
+              error,
+              now,
+              error instanceof InvalidDeletionManifestError,
+            ),
+          );
+          continue;
+        }
+        await this.provider.put(parsed);
         const result =
           await this.prisma.prisma.deletionManifestOutbox.updateMany({
             where: {
               id: row.id,
               status: 'processing',
-              leaseToken: this.workerId,
+              leaseToken: row.leaseToken,
             },
             data: {
               status: 'exported',
@@ -88,7 +109,11 @@ export class DeletionManifestExporter {
     return { selected: rows.length, exported, failed };
   }
 
-  private async claimDueRows(limit: number, now: Date): Promise<OutboxRow[]> {
+  private async claimDueRows(
+    limit: number,
+    now: Date,
+    leaseToken: string,
+  ): Promise<OutboxRow[]> {
     return this.prisma.prisma.$transaction(
       async (tx) => tx.$queryRaw<OutboxRow[]>`
       WITH eligible AS (
@@ -99,9 +124,10 @@ export class DeletionManifestExporter {
       )
       UPDATE deletion_manifest_outbox o
       SET status = 'processing', attempts = o.attempts + 1,
-          lease_token = ${this.workerId}::uuid,
+          lease_token = ${leaseToken}::uuid,
           lease_expires_at = ${new Date(now.getTime() + LEASE_MS)}
-      FROM eligible WHERE o.id = eligible.id RETURNING o.id, o.manifest, o.attempts
+      FROM eligible WHERE o.id = eligible.id
+      RETURNING o.id, o.manifest, o.attempts, o.lease_token AS "leaseToken"
     `,
     );
   }
@@ -110,17 +136,15 @@ export class DeletionManifestExporter {
     row: OutboxRow,
     error: unknown,
     now: Date,
+    permanent = false,
   ): Promise<boolean> {
-    const dead =
-      row.attempts >= MAX_ATTEMPTS ||
-      error instanceof TypeError ||
-      error instanceof RangeError;
+    const dead = row.attempts >= MAX_ATTEMPTS || permanent;
     const backoff = Math.min(
       MAX_BACKOFF_MS,
       INITIAL_BACKOFF_MS * 2 ** Math.max(0, row.attempts - 1),
     );
     const result = await this.prisma.prisma.deletionManifestOutbox.updateMany({
-      where: { id: row.id, status: 'processing', leaseToken: this.workerId },
+      where: { id: row.id, status: 'processing', leaseToken: row.leaseToken },
       data: {
         status: dead ? 'failed' : 'retry',
         nextAttemptAt: new Date(now.getTime() + (dead ? 0 : backoff)),
