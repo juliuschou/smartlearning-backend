@@ -3059,7 +3059,7 @@ The checkpoint is not closed: external immutable object-store delivery, producti
 - **Authorization state:** provider class selected, but execution authorization is not yet actionable until the exact isolated endpoint/bucket and credential scope are supplied.
 - **Required setup:** dedicated disposable bucket/prefix; write-only credential scoped to that prefix; no production account or existing-data access; short-lived credential; provider endpoint/region; explicit cleanup/retention policy; confirmation that network upload is permitted for this rehearsal.
 - **Credential handling:** do not paste secrets into chat or commit them. Materialize them only in a gitignored local env file or approved secret store, then run the guarded rehearsal with the exact target recorded.
-- **Current status:** **BLOCKED — awaiting sandbox target details and safely injected credentials.** No provider connection or upload has been attempted.
+- **Current status:** **DEFERRED — external sandbox setup and delivery verification skipped by user.** No provider connection or upload was attempted.
 
 
 ### FE-6 S3-compatible provider adapter — 2026-09-09
