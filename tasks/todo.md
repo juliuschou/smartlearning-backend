@@ -3070,3 +3070,18 @@ The checkpoint is not closed: external immutable object-store delivery, producti
 - [x] Run focused config/governance verification after the dependency was installed.
 
 **Deferred gaps:** no credentials, external endpoint, scheduler activation, or manifest-export command was used.
+
+### Final FE-6 verification — 2026-09-09
+
+- `npm run prisma:validate` — PASS.
+- `npm run typecheck` — PASS.
+- `npm run lint:check` — PASS.
+- `npm run format:check` — PASS.
+- `npm run build` — PASS.
+- Focused unit tests — PASS, 3 suites / 39 tests.
+- Exporter integration — PASS, 1 suite / 4 tests, 0 failures.
+- `NODE_ENV=test npm run prisma:migrate:status` — PASS; `smartlearning_test`, 18 migrations, schema up to date.
+- `git diff --check` — PASS; backend working tree clean before this status-only update.
+- Non-blocking Nest `LegacyRouteConverter` warnings and intentional exporter failure-path warning logs only.
+
+**Final disposition:** FE-6 remains **PARTIALLY COMPLETE / OPEN**. Controlled local-provider evidence and S3 adapter/config implementation are verified; real S3 sandbox upload, production-like alert firing, and full restore/restart rehearsal remain deferred.
