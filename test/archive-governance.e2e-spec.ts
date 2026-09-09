@@ -10,6 +10,8 @@ import {
   withQuiescedLiveSessionPublisher,
 } from './setup/app-factory';
 import { GovernanceService } from '../src/modules/governance/application/governance.service';
+import { RealtimeVisibility } from '../src/modules/realtime/live-session-realtime-contract';
+import { Prisma } from '../generated/prisma/client';
 import { setupTestDb, truncateAll } from './setup/db';
 
 describe('LiveSession close/cancel (e2e)', () => {
@@ -148,6 +150,7 @@ describe('LiveSession close/cancel (e2e)', () => {
   }
 
   async function createStartedSession(teacher: AuthenticatedAgent): Promise<{
+    courseId: string;
     liveSessionId: string;
     sessionCode: string;
     sessionQuestionId: string;
@@ -192,7 +195,7 @@ describe('LiveSession close/cancel (e2e)', () => {
     expect(startResponse.status).toBe(201);
     const sessionQuestionId = startResponse.body.data.sessionQuestions[0]
       .id as string;
-    return { liveSessionId, sessionCode, sessionQuestionId };
+    return { courseId, liveSessionId, sessionCode, sessionQuestionId };
   }
 
   function requireDatabase(): void {
@@ -337,7 +340,11 @@ describe('LiveSession close/cancel (e2e)', () => {
       .post(`/api/v1/admin/results/${session.liveSessionId}/deletion`)
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, admin.csrfToken)
-      .send({ confirmed: true, reason: 'privacy' });
+      .send({
+        deletionRequestId: first.body.data.id,
+        confirmed: true,
+        reason: 'privacy',
+      });
     expect(noStep.status).toBe(403);
     expectErrorEnvelope(noStep, 'AUTH_STEP_UP_REQUIRED');
     const step = await admin.agent
@@ -350,13 +357,21 @@ describe('LiveSession close/cancel (e2e)', () => {
       .post(`/api/v1/admin/results/${session.liveSessionId}/deletion`)
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, admin.csrfToken)
-      .send({ confirmed: false, reason: 'privacy' });
-    expect(unconfirmed.status).toBe(409);
+      .send({
+        deletionRequestId: first.body.data.id,
+        confirmed: false,
+        reason: 'privacy',
+      });
+    expect(unconfirmed.status).toBe(400);
     const deleted = await admin.agent
       .post(`/api/v1/admin/results/${session.liveSessionId}/deletion`)
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, admin.csrfToken)
-      .send({ confirmed: true, reason: 'privacy' });
+      .send({
+        deletionRequestId: first.body.data.id,
+        confirmed: true,
+        reason: 'privacy',
+      });
     expect(deleted.status).toBe(201);
     const tombstone = await admin.agent.get(
       `/api/v1/results/${session.liveSessionId}`,
@@ -380,6 +395,598 @@ describe('LiveSession close/cancel (e2e)', () => {
         select: { status: true, closedAt: true },
       }),
     ).toMatchObject({ status: 'closed' });
+  });
+
+  it('filters archive pages before pagination and uses deterministic tie ordering', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const other = await provisionTeacher(
+      OTHER_TEACHER.username,
+      OTHER_TEACHER.displayName,
+      OTHER_TEACHER.tempPassword,
+      OTHER_TEACHER.password,
+    );
+    const first = await createStartedSession(teacher);
+    const second = await createStartedSession(teacher);
+    const foreign = await createStartedSession(other);
+    for (const session of [first, second, foreign]) {
+      expect(
+        (
+          await (session === foreign ? other : teacher).agent
+            .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+            .set('Origin', TEST_ORIGIN)
+            .set(CSRF_HEADER, (session === foreign ? other : teacher).csrfToken)
+        ).status,
+      ).toBe(201);
+    }
+    const tiedAt = new Date('2026-09-08T00:00:00.000Z');
+    await prisma.prisma.archivedResult.updateMany({
+      where: {
+        liveSessionId: { in: [first.liveSessionId, second.liveSessionId] },
+      },
+      data: { closedAt: tiedAt },
+    });
+
+    const page = await teacher.agent.get('/api/v1/results').query({
+      page: 1,
+      pageSize: 20,
+      status: 'active',
+    });
+    expect(page.status).toBe(200);
+    expect(page.body.data.data.map((row: { id: string }) => row.id)).toEqual(
+      [...page.body.data.data.map((row: { id: string }) => row.id)]
+        .sort()
+        .reverse(),
+    );
+    expect(
+      page.body.data.data.some(
+        (row: { liveSessionId: string }) =>
+          row.liveSessionId === foreign.liveSessionId,
+      ),
+    ).toBe(false);
+
+    const byCourse = await teacher.agent
+      .get('/api/v1/results')
+      .query({ courseId: first.courseId, status: 'active' });
+    expect(byCourse.status).toBe(200);
+    expect(byCourse.body.data.data).toHaveLength(1);
+    expect(byCourse.body.data.data[0].liveSessionId).toBe(first.liveSessionId);
+
+    const foreignFilter = await teacher.agent
+      .get('/api/v1/results')
+      .query({ courseId: foreign.courseId });
+    expect(foreignFilter.status).toBe(200);
+    expect(foreignFilter.body.data).toMatchObject({
+      data: [],
+      meta: { total: 0 },
+    });
+  });
+
+  it('exposes a private admin queue and preserves one request receipt under concurrency', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    expect(
+      (
+        await teacher.agent
+          .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, teacher.csrfToken)
+      ).status,
+    ).toBe(201);
+    const path = `/api/v1/results/${session.liveSessionId}/deletion-requests`;
+    const first = await teacher.agent
+      .post(path)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ reason: 'privacy' });
+    const concurrent = await Promise.all([
+      teacher.agent
+        .post(path)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.csrfToken)
+        .send({ reason: 'support' }),
+      teacher.agent
+        .post(path)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.csrfToken)
+        .send({ reason: 'support' }),
+    ]);
+    expect(first.status).toBe(201);
+    for (const replay of concurrent) {
+      expect(replay.status).toBe(201);
+      expect(replay.body.data).toEqual(first.body.data);
+    }
+    expect(first.body.data.reason).toBe('privacy');
+
+    const teacherQueue = await teacher.agent.get(
+      '/api/v1/admin/results/deletion-requests',
+    );
+    expect(teacherQueue.status).toBe(403);
+    const anonymousQueue = await request(app.getHttpServer()).get(
+      '/api/v1/admin/results/deletion-requests',
+    );
+    expect(anonymousQueue.status).toBe(401);
+
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const queue = await admin.agent.get(
+      '/api/v1/admin/results/deletion-requests',
+    );
+    expect(queue.status).toBe(200);
+    expect(queue.body.data.data).toHaveLength(1);
+    expect(queue.body.data.data[0]).toMatchObject({
+      id: first.body.data.id,
+      liveSessionId: session.liveSessionId,
+      status: 'requested',
+    });
+    expect(JSON.stringify(queue.body.data)).not.toMatch(
+      /requesterId|executorId|displayName|username|token|payload|prompt|submission/i,
+    );
+  });
+
+  it('binds confirmation to its request, replays canonically, and reconciles retention races', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const firstSession = await createStartedSession(teacher);
+    const secondSession = await createStartedSession(teacher);
+    for (const session of [firstSession, secondSession]) {
+      expect(
+        (
+          await teacher.agent
+            .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+            .set('Origin', TEST_ORIGIN)
+            .set(CSRF_HEADER, teacher.csrfToken)
+        ).status,
+      ).toBe(201);
+    }
+    const requestFor = async (liveSessionId: string) =>
+      teacher.agent
+        .post(`/api/v1/results/${liveSessionId}/deletion-requests`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.csrfToken)
+        .send({ reason: 'privacy' });
+    const firstRequest = await requestFor(firstSession.liveSessionId);
+    const secondRequest = await requestFor(secondSession.liveSessionId);
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    expect(
+      (
+        await admin.agent
+          .post('/api/v1/auth/step-up')
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, admin.csrfToken)
+          .send({ password: ADMIN.password })
+      ).status,
+    ).toBe(201);
+    const confirmPath = `/api/v1/admin/results/${firstSession.liveSessionId}/deletion`;
+    const mismatch = await admin.agent
+      .post(confirmPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        deletionRequestId: secondRequest.body.data.id,
+        confirmed: true,
+        reason: 'privacy',
+      });
+    expect(mismatch.status).toBe(404);
+
+    const body = {
+      deletionRequestId: firstRequest.body.data.id,
+      confirmed: true,
+      reason: 'privacy',
+    };
+    const deleted = await admin.agent
+      .post(confirmPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send(body);
+    const replay = await admin.agent
+      .post(confirmPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send(body);
+    expect(deleted.status).toBe(201);
+    expect(replay.status).toBe(201);
+    expect(replay.body.data).toEqual(deleted.body.data);
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: firstSession.liveSessionId,
+          trigger: { in: ['early_delete', 'retention'] },
+          status: 'success',
+        },
+      }),
+    ).toBe(1);
+
+    const governance = app.get(GovernanceService);
+    const secondArchive = await prisma.prisma.archivedResult.update({
+      where: { liveSessionId: secondSession.liveSessionId },
+      data: { purgeAt: new Date('2026-01-01T00:00:00.000Z') },
+    });
+    const raceBody = {
+      deletionRequestId: secondRequest.body.data.id,
+      confirmed: true,
+      reason: 'support',
+    };
+    const outcomes = await Promise.allSettled([
+      governance.purgeOne(
+        secondSession.liveSessionId,
+        'retention',
+        undefined,
+        'retention',
+        new Date(secondArchive.purgeAt.getTime() + 1),
+      ),
+      admin.agent
+        .post(`/api/v1/admin/results/${secondSession.liveSessionId}/deletion`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, admin.csrfToken)
+        .send(raceBody),
+    ]);
+    expect(outcomes.some((outcome) => outcome.status === 'fulfilled')).toBe(
+      true,
+    );
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: secondSession.liveSessionId,
+          trigger: { in: ['early_delete', 'retention'] },
+          status: 'success',
+        },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          id: secondRequest.body.data.id,
+          status: 'requested',
+        },
+      }),
+    ).toBe(0);
+    const queue = await admin.agent.get(
+      '/api/v1/admin/results/deletion-requests',
+    );
+    expect(
+      queue.body.data.data.some(
+        (row: { id: string }) => row.id === secondRequest.body.data.id,
+      ),
+    ).toBe(false);
+  });
+
+  it('purges a bounded oldest-first batch from the database', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-bounded`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const sessions = await Promise.all([
+      createStartedSession(teacher),
+      createStartedSession(teacher),
+      createStartedSession(teacher),
+    ]);
+    for (const session of sessions) {
+      const closed = await teacher.agent
+        .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.csrfToken);
+      expect(closed.status).toBe(201);
+    }
+    const now = new Date('2026-09-09T00:00:00.000Z');
+    const archives = await prisma.prisma.archivedResult.findMany({
+      where: { liveSessionId: { in: sessions.map((s) => s.liveSessionId) } },
+      orderBy: { id: 'asc' },
+    });
+    expect(archives).toHaveLength(3);
+    for (const [index, archive] of archives.entries()) {
+      await prisma.prisma.archivedResult.update({
+        where: { id: archive.id },
+        data: { purgeAt: new Date(now.getTime() - (3 - index) * 1000) },
+      });
+    }
+    const governance = app.get(GovernanceService);
+    const firstBatch = await governance.purgeDue(2, now);
+    expect(firstBatch).toEqual({ selected: 2, deleted: 2, failed: 0 });
+    const firstRemaining = await prisma.prisma.archivedResult.findMany({
+      where: { liveSessionId: { in: sessions.map((s) => s.liveSessionId) } },
+      orderBy: { purgeAt: 'asc' },
+      select: { liveSessionId: true, status: true },
+    });
+    expect(firstRemaining).toEqual([
+      { liveSessionId: sessions[0].liveSessionId, status: 'deleted' },
+      { liveSessionId: sessions[1].liveSessionId, status: 'deleted' },
+      { liveSessionId: sessions[2].liveSessionId, status: 'active' },
+    ]);
+
+    await expect(governance.purgeDue(2, now)).resolves.toEqual({
+      selected: 1,
+      deleted: 1,
+      failed: 0,
+    });
+    const remaining = await prisma.prisma.archivedResult.findMany({
+      where: { liveSessionId: { in: sessions.map((s) => s.liveSessionId) } },
+      select: { status: true },
+    });
+    expect(remaining.every((row) => row.status === 'deleted')).toBe(true);
+  });
+
+  it('serializes concurrent purgeDue workers with database row locks', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-workers`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const sessions = await Promise.all([
+      createStartedSession(teacher),
+      createStartedSession(teacher),
+    ]);
+    for (const session of sessions) {
+      const closed = await teacher.agent
+        .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.csrfToken);
+      expect(closed.status).toBe(201);
+    }
+    const now = new Date('2026-09-09T00:00:00.000Z');
+    await prisma.prisma.archivedResult.updateMany({
+      where: { liveSessionId: { in: sessions.map((s) => s.liveSessionId) } },
+      data: { purgeAt: new Date(now.getTime() - 1) },
+    });
+    const governance = app.get(GovernanceService);
+    const results = await Promise.all([
+      governance.purgeDue(2, now),
+      governance.purgeDue(2, now),
+    ]);
+    expect(results.reduce((sum, result) => sum + result.selected, 0)).toBe(2);
+    expect(results.reduce((sum, result) => sum + result.deleted, 0)).toBe(2);
+    expect(results.reduce((sum, result) => sum + result.failed, 0)).toBe(0);
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: { in: sessions.map((s) => s.liveSessionId) },
+          trigger: 'retention',
+          status: 'success',
+        },
+      }),
+    ).toBe(2);
+  });
+
+  it('rejects resurrection by applying a run-scoped deletion manifest idempotently', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-no-resurrection`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Manifest participant' });
+    expect(joined.status).toBe(201);
+    const participantId = joined.body.data.participantId as string;
+    const participantToken = joined.body.data.participantToken as string;
+    expect(
+      (
+        await teacher.agent
+          .post(
+            `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+          )
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, teacher.csrfToken)
+      ).status,
+    ).toBe(201);
+    const submitted = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('X-Participant-Token', participantToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expect(submitted.status).toBe(201);
+    expect(
+      (
+        await teacher.agent
+          .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, teacher.csrfToken)
+      ).status,
+    ).toBe(201);
+
+    const archive = await prisma.prisma.archivedResult.findUniqueOrThrow({
+      where: { liveSessionId: session.liveSessionId },
+    });
+    const question = await prisma.prisma.sessionQuestion.findUniqueOrThrow({
+      where: { id: session.sessionQuestionId },
+    });
+    const options = await prisma.prisma.sessionQuestionOption.findMany({
+      where: { sessionQuestionId: question.id },
+      orderBy: { position: 'asc' },
+    });
+    const participant = await prisma.prisma.participant.findUniqueOrThrow({
+      where: { id: participantId },
+    });
+    const submission = await prisma.prisma.submission.findUniqueOrThrow({
+      where: { id: submitted.body.data.id as string },
+    });
+    const liveSession = await prisma.prisma.liveSession.findUniqueOrThrow({
+      where: { id: session.liveSessionId },
+      select: { realtimeEventSeq: true },
+    });
+    const serverEvent = await prisma.prisma.liveSessionEvent.create({
+      data: {
+        id: newId(),
+        liveSessionId: session.liveSessionId,
+        sessionQuestionId: question.id,
+        targetParticipantId: participant.id,
+        eventName: 'result.updated',
+        eventSeq: liveSession.realtimeEventSeq + 1n,
+        aggregateVersion: question.aggregateVersion,
+        visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
+        projectionInput: { sessionQuestionId: question.id },
+      },
+    });
+    const governance = app.get(GovernanceService);
+    const purgeNow = new Date('2026-09-09T01:02:03.000Z');
+    await prisma.prisma.archivedResult.update({
+      where: { id: archive.id },
+      data: { purgeAt: new Date('2026-09-09T01:02:02.000Z') },
+    });
+    const purgeResult = await governance.purgeDue(1, purgeNow);
+    expect(purgeResult.failed).toBe(0);
+    expect(purgeResult.selected).toBeLessThanOrEqual(1);
+    expect(purgeResult.deleted).toBeLessThanOrEqual(1);
+    let outbox = await prisma.prisma.deletionManifestOutbox.findUnique({
+      where: { archivedResultId: archive.id },
+    });
+    if (!outbox) {
+      await governance.purgeOne(
+        session.liveSessionId,
+        'retention',
+        undefined,
+        'retention',
+        purgeNow,
+      );
+      outbox = await prisma.prisma.deletionManifestOutbox.findUniqueOrThrow({
+        where: { archivedResultId: archive.id },
+      });
+    }
+    const pendingOutboxCount = await prisma.prisma.deletionManifestOutbox.count(
+      {
+        where: { archivedResultId: archive.id, status: 'pending' },
+      },
+    );
+    expect(pendingOutboxCount).toBe(1);
+    const manifest = outbox.manifest as {
+      contractVersion: 'deletion-manifest.v1';
+      deletionEventId: string;
+      archivedResultId: string;
+      liveSessionId: string;
+      trigger: 'retention';
+      reason: 'retention';
+      deletedAt: string;
+      categories: string[];
+    };
+    const deletedAt = new Date(manifest.deletedAt);
+    const purgeEvent = await prisma.prisma.deletionEvent.findUniqueOrThrow({
+      where: { id: manifest.deletionEventId },
+    });
+    expect({
+      id: purgeEvent.id,
+      archivedResultId: purgeEvent.archivedResultId,
+      liveSessionId: purgeEvent.liveSessionId,
+      trigger: purgeEvent.trigger,
+      reason: purgeEvent.reason,
+      completedAt: purgeEvent.completedAt?.toISOString(),
+      deletedCategories: Array.isArray(purgeEvent.deletedCategories)
+        ? [...purgeEvent.deletedCategories].sort()
+        : purgeEvent.deletedCategories,
+    }).toEqual({
+      id: manifest.deletionEventId,
+      archivedResultId: manifest.archivedResultId,
+      liveSessionId: manifest.liveSessionId,
+      trigger: manifest.trigger,
+      reason: manifest.reason,
+      completedAt: manifest.deletedAt,
+      deletedCategories: [...manifest.categories].sort(),
+    });
+
+    await prisma.prisma.sessionQuestion.create({ data: question });
+    await prisma.prisma.sessionQuestionOption.createMany({ data: options });
+    await prisma.prisma.participant.create({ data: participant });
+    await prisma.prisma.submission.create({
+      data: {
+        ...submission,
+        selectedOptionRefs:
+          submission.selectedOptionRefs === null
+            ? Prisma.DbNull
+            : (submission.selectedOptionRefs as Prisma.InputJsonValue),
+      },
+    });
+    await prisma.prisma.liveSessionEvent.create({
+      data: {
+        ...serverEvent,
+        projectionInput:
+          serverEvent.projectionInput === null
+            ? Prisma.DbNull
+            : (serverEvent.projectionInput as Prisma.InputJsonValue),
+      },
+    });
+
+    const applied = await prisma.prisma.$transaction((t) =>
+      governance.applyDeletionManifestInTransaction(t, manifest),
+    );
+    expect(applied.status).toBe('deleted');
+    const tombstone = await prisma.prisma.archivedResult.findUniqueOrThrow({
+      where: { id: archive.id },
+    });
+    expect(tombstone.status).toBe('deleted');
+    expect(tombstone.payload).toBeNull();
+    expect(
+      await prisma.prisma.submission.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.participant.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.sessionQuestion.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.sessionQuestionOption.count({
+        where: { sessionQuestionId: question.id },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.liveSessionEvent.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
+        },
+      }),
+    ).toBe(0);
+    const event = await prisma.prisma.deletionEvent.findUniqueOrThrow({
+      where: { id: manifest.deletionEventId },
+    });
+    expect(event.completedAt?.toISOString()).toBe(deletedAt.toISOString());
+    expect(event.id).toBe(manifest.deletionEventId);
+    expect(
+      await prisma.prisma.deletionManifestOutbox.count({
+        where: { archivedResultId: archive.id, status: 'pending' },
+      }),
+    ).toBe(pendingOutboxCount);
+    await expect(
+      prisma.prisma.$transaction((t) =>
+        governance.applyDeletionManifestInTransaction(t, manifest),
+      ),
+    ).resolves.toMatchObject({ status: 'deleted' });
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: { id: manifest.deletionEventId },
+      }),
+    ).toBe(1);
   });
 
   it('purges due archives and leaves an idempotent tombstone', async () => {
@@ -447,9 +1054,18 @@ describe('LiveSession close/cancel (e2e)', () => {
         'retention',
         undefined,
         'retention',
-        now,
+        archive.purgeAt,
       ),
-    ).resolves.toEqual({ status: 'success' });
+    ).resolves.toMatchObject({ status: 'deleted' });
+    const manifestOutbox =
+      await prisma.prisma.deletionManifestOutbox.findUniqueOrThrow({
+        where: { archivedResultId: archive.id },
+      });
+    expect(manifestOutbox).toMatchObject({
+      status: 'pending',
+      attempts: 0,
+      contractVersion: 'deletion-manifest.v1',
+    });
     await expect(
       governance.purgeOne(
         session.liveSessionId,
@@ -458,7 +1074,7 @@ describe('LiveSession close/cancel (e2e)', () => {
         'retention',
         now,
       ),
-    ).resolves.toEqual({ status: 'success' });
+    ).resolves.toMatchObject({ status: 'deleted' });
     expect(
       await prisma.prisma.deletionEvent.count({
         where: {

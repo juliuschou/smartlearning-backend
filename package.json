@@ -30,6 +30,7 @@
     "test:cp6:manual": "jest --config ./test/jest-cp6-e2e.json --runInBand",
     "test:cp7:manual": "jest --config ./test/jest-cp7-e2e.json --runInBand",
     "test:cp8:static": "jest --config ./test/jest-cp8-static.json --runInBand",
+    "test:retention:artifacts": "jest --config ./test/jest-retention-artifacts.json --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
   },
   "dependencies": {

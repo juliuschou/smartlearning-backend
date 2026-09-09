@@ -16,6 +16,12 @@ The registry is process-local and application-owned. A scrape serializes the reg
 
 CP7 provides fixed low-cardinality metrics, alert-rule examples, this dashboard inventory, and safe application instrumentation. OPS owns Prometheus/Grafana deployment, scrape authentication/network isolation, threshold tuning, recording rules, retention, routing, and incident response. `dashboard-inventory.md` is the handoff; no Grafana JSON or deployment service is part of CP7.
 
+## Retention operations handoff
+
+`retention-runbook.md` documents the disabled-by-default gates, read-only inspection commands, explicit approval requirements, immutable object-store prerequisites, stop/rollback behavior, and production gaps for Checkpoint 2. The retention alert and dashboard entries include oldest-due age, due backlog, manifest lag/dead records, repeated purge failures, and reconciliation failures. These metric families are operational contracts/placeholders until provider-backed retention instrumentation is separately approved and implemented.
+
+Run `npm run test:retention:artifacts` to verify the local alert, dashboard, and runbook assertions. This test reads files only and performs no database mutation or network access.
+
 ## Manual Checkpoint 7
 
 Run the targeted metrics tests and `npm run test:cp7:manual -- --runInBand`. Inspect the selected raw metric lines, dependency/readiness evidence, safe route labels, alert inventory, and the promtool/static validation result. Confirm that no account, IP, request/resource ID, URL/query, token/hash, question/answer content, or error message appears in serialized metrics. CP7 is not complete until the user explicitly confirms `Checkpoint 7 verified`.

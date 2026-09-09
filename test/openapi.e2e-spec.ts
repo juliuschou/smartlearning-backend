@@ -371,6 +371,37 @@ describe('OpenAPI document (e2e)', () => {
     );
   });
 
+  it('freezes the archive governance paths and safe DTOs', async () => {
+    const res = await request(app.getHttpServer()).get('/api/docs-json');
+    expect(res.body.paths).toHaveProperty('/api/v1/results');
+    expect(res.body.paths).toHaveProperty('/api/v1/results/{liveSessionId}');
+    expect(res.body.paths).toHaveProperty(
+      '/api/v1/results/{liveSessionId}/deletion-requests',
+    );
+    expect(res.body.paths).toHaveProperty(
+      '/api/v1/admin/results/deletion-requests',
+    );
+    expect(res.body.paths).toHaveProperty(
+      '/api/v1/admin/results/{liveSessionId}/deletion',
+    );
+    const schemas = res.body.components.schemas;
+    expect(schemas.ArchiveSummaryDto.properties).toEqual(
+      expect.objectContaining({
+        course: expect.any(Object),
+        sessionLabel: expect.any(Object),
+        startedAt: expect.any(Object),
+        deletionRequest: expect.any(Object),
+        deletion: expect.any(Object),
+      }),
+    );
+    expect(schemas.DeletedArchiveDetailDto.properties ?? {}).not.toHaveProperty(
+      'payload',
+    );
+    expect(JSON.stringify(schemas.ArchiveSummaryDto)).not.toMatch(
+      /sessionCode|requesterId|executorId|tokenHash|submissionId/,
+    );
+  });
+
   it('GET /api/docs → 200 Swagger UI HTML', async () => {
     const res = await request(app.getHttpServer()).get('/api/docs');
     expect(res.status).toBe(200);

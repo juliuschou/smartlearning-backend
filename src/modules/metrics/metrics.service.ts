@@ -31,6 +31,8 @@ export class MetricsService {
   private readonly jobItems: Counter<string>;
   private readonly readinessDependencyStatus: Gauge<string>;
   private readonly readinessChecks: Counter<string>;
+  private readonly retentionDueBacklog: Gauge<string>;
+  private readonly retentionOldestDueAgeSeconds: Gauge<string>;
 
   constructor(@Inject(METRICS_REGISTRY) private readonly registry: Registry) {
     this.httpRequests = new Counter({
@@ -86,6 +88,16 @@ export class MetricsService {
       name: METRIC_NAMES.readinessChecks,
       help: 'Readiness checks by dependency and observed outcome.',
       labelNames: ['dependency', 'outcome'],
+      registers: [registry],
+    });
+    this.retentionDueBacklog = new Gauge({
+      name: METRIC_NAMES.retentionDueBacklog,
+      help: 'Current count of active archives due for retention purge.',
+      registers: [registry],
+    });
+    this.retentionOldestDueAgeSeconds = new Gauge({
+      name: METRIC_NAMES.retentionOldestDueAgeSeconds,
+      help: 'Age in seconds of the oldest archive due for retention purge.',
       registers: [registry],
     });
   }
@@ -146,6 +158,18 @@ export class MetricsService {
     )
       return;
     this.tryRecord(() => this.jobItems.inc({ job, result }, count));
+  }
+
+  recordRetentionDueBacklog(count: number, oldestDueAgeSeconds: number): void {
+    if (
+      !isNonNegativeFinite(count) ||
+      !isNonNegativeFinite(oldestDueAgeSeconds)
+    )
+      return;
+    this.tryRecord(() => {
+      this.retentionDueBacklog.set(Math.floor(count));
+      this.retentionOldestDueAgeSeconds.set(oldestDueAgeSeconds);
+    });
   }
 
   recordReadiness(dependency: ReadinessDependency, healthy: boolean): void {

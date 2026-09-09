@@ -12,6 +12,9 @@ export const METRIC_NAMES = {
   jobItems: 'smartlearning_job_items_total',
   readinessDependencyStatus: 'smartlearning_readiness_dependency_status',
   readinessChecks: 'smartlearning_readiness_checks_total',
+  retentionDueBacklog: 'smartlearning_retention_due_backlog',
+  retentionOldestDueAgeSeconds:
+    'smartlearning_retention_oldest_due_age_seconds',
 } as const;
 
 export const HTTP_METHODS = [

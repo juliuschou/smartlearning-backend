@@ -364,6 +364,8 @@ model ArchivedResult {
   id             String          @id @db.Uuid
   liveSessionId  String          @unique @map("live_session_id") @db.Uuid
   courseId       String          @map("course_id") @db.Uuid
+  sessionLabel   String          @map("session_label")
+  startedAt      DateTime        @map("started_at") @db.Timestamptz
   closedAt       DateTime        @map("closed_at") @db.Timestamptz
   purgeAt        DateTime        @map("purge_at") @db.Timestamptz
   status         String          @default("active")
@@ -372,6 +374,7 @@ model ArchivedResult {
   liveSession    LiveSession     @relation(fields: [liveSessionId], references: [id], onDelete: Restrict)
   course         Course          @relation(fields: [courseId], references: [id], onDelete: Restrict)
   deletionEvents DeletionEvent[]
+  manifestOutbox DeletionManifestOutbox?
 
   @@index([courseId, closedAt], map: "idx_archived_result_course_closed")
   @@index([purgeAt, status], map: "idx_archived_result_purge_status")
@@ -393,10 +396,37 @@ model DeletionEvent {
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
   completedAt       DateTime?       @map("completed_at") @db.Timestamptz
   errorCode         String?         @map("error_code")
+  resolvedByEventId String?         @unique(map: "uq_deletion_event_resolved_by") @map("resolved_by_event_id") @db.Uuid
   archivedResult    ArchivedResult? @relation(fields: [archivedResultId], references: [id], onDelete: SetNull)
+  resolvedByEvent   DeletionEvent?  @relation("DeletionEventResolution", fields: [resolvedByEventId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  resolvedRequests  DeletionEvent[] @relation("DeletionEventResolution")
+  manifestOutbox    DeletionManifestOutbox?
 
   @@index([liveSessionId, trigger], map: "idx_deletion_event_session_trigger")
+  @@index([status, createdAt, id], map: "idx_deletion_event_pending_queue")
   @@map("deletion_event")
+}
+
+/// Transactional, provider-neutral deletion manifest outbox.
+model DeletionManifestOutbox {
+  id              String        @id @db.Uuid
+  archivedResultId String       @unique @map("archived_result_id") @db.Uuid
+  deletionEventId String        @unique @map("deletion_event_id") @db.Uuid
+  contractVersion String        @map("contract_version")
+  manifest        Json
+  status          String        @default("pending")
+  attempts        Int           @default(0)
+  nextAttemptAt   DateTime      @default(now()) @map("next_attempt_at") @db.Timestamptz
+  lastError       String?       @map("last_error")
+  leaseToken      String?       @map("lease_token") @db.Uuid
+  leaseExpiresAt  DateTime?     @map("lease_expires_at") @db.Timestamptz
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  exportedAt      DateTime?     @map("exported_at") @db.Timestamptz
+  archivedResult  ArchivedResult @relation(fields: [archivedResultId], references: [id], onDelete: Restrict)
+  deletionEvent   DeletionEvent @relation(fields: [deletionEventId], references: [id], onDelete: Restrict)
+
+  @@index([status, nextAttemptAt, id], map: "idx_deletion_manifest_outbox_pending")
+  @@map("deletion_manifest_outbox")
 }
 
 /// CLI 憑證 — 與 Web Session 分離的獨立認證路徑。raw key 只在簽發時回傳一次，

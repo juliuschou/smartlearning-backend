@@ -1,116 +1,86 @@
 import { GovernanceService } from './governance.service';
 
+type GovernanceInternals = {
+  purgeOneInTransaction: (...args: unknown[]) => Promise<unknown>;
+};
+
 describe('GovernanceService', () => {
   const archive = (id: string, purgeAt: Date) => ({
     id: `archive-${id}`,
     liveSessionId: id,
     courseId: 'course-1',
+    sessionLabel: '2026-01-01T00:00:00.000Z',
+    startedAt: new Date('2026-01-01T00:00:00.000Z'),
     closedAt: new Date('2026-01-01T00:00:00.000Z'),
     purgeAt,
     status: 'active',
+    payload: { schemaVersion: 1, questions: [] },
+    course: { id: 'course-1', name: 'Course' },
+    deletionEvents: [],
   });
-
-  it('clamps purge batches and processes due archives oldest first', async () => {
-    const rows = [
-      archive('older', new Date('2026-01-01T00:00:00.000Z')),
-      archive('newer', new Date('2026-01-02T00:00:00.000Z')),
-    ];
-    const service = new GovernanceService(
-      {
-        prisma: {
-          archivedResult: {
-            findMany: jest.fn().mockResolvedValue(rows),
-          },
-        },
-      } as never,
-      {} as never,
-    );
-    const purgeOne = jest
-      .spyOn(service, 'purgeOne')
-      .mockResolvedValue({ status: 'success' });
-
-    await expect(
-      service.purgeDue(1000, new Date('2026-02-01T00:00:00.000Z')),
-    ).resolves.toEqual({ selected: 2, deleted: 2 });
-    expect(purgeOne).toHaveBeenNthCalledWith(
-      1,
-      'older',
-      'retention',
-      undefined,
-      'retention',
-      new Date('2026-02-01T00:00:00.000Z'),
-    );
-  });
-
-  it('records retention selection, deletion, and successful run metrics', async () => {
-    const metrics = {
-      recordJobItem: jest.fn(),
-      recordJobRun: jest.fn(),
+  const serviceWithClaims = (
+    claims: Array<Array<{ liveSessionId: string }>>,
+    metrics?: object,
+  ) => {
+    const queryRaw = jest.fn();
+    for (const claim of claims) queryRaw.mockResolvedValueOnce(claim);
+    queryRaw.mockResolvedValue([]);
+    const tx = {
+      run: jest.fn((fn: (t: unknown) => unknown) =>
+        fn({ $queryRaw: queryRaw }),
+      ),
     };
     const service = new GovernanceService(
-      {
-        prisma: {
-          archivedResult: {
-            findMany: jest
-              .fn()
-              .mockResolvedValue([
-                archive('session-1', new Date('2026-01-01T00:00:00.000Z')),
-              ]),
-          },
-        },
-      } as never,
-      {} as never,
+      { prisma: {} } as never,
+      tx as never,
       metrics as never,
     );
-    jest.spyOn(service, 'purgeOne').mockResolvedValue({ status: 'success' });
+    return { service, queryRaw };
+  };
 
-    await service.purgeDue(1, new Date('2026-02-01T00:00:00.000Z'));
+  it('claims due sessions oldest first with a bounded limit and stable now', async () => {
+    const { service } = serviceWithClaims([
+      [{ liveSessionId: 'older' }],
+      [{ liveSessionId: 'newer' }],
+    ]);
+    const purgeOneInTransaction = jest
+      .spyOn(service as unknown as GovernanceInternals, 'purgeOneInTransaction')
+      .mockResolvedValue({ status: 'deleted' } as never);
+    const now = new Date('2026-02-01T00:00:00.000Z');
 
-    expect(metrics.recordJobItem).toHaveBeenNthCalledWith(
-      1,
-      'retention_purge',
-      'selected',
-      1,
-    );
-    expect(metrics.recordJobItem).toHaveBeenNthCalledWith(
-      2,
-      'retention_purge',
-      'deleted',
-      1,
-    );
-    expect(metrics.recordJobRun).toHaveBeenCalledWith(
-      'retention_purge',
-      'success',
-      expect.any(Number),
-    );
+    await expect(service.purgeDue(1000, now)).resolves.toEqual({
+      selected: 2,
+      deleted: 2,
+      failed: 0,
+    });
+    expect(
+      purgeOneInTransaction.mock.calls.map((call) => call.slice(1)),
+    ).toEqual([
+      ['older', 'retention', undefined, 'retention', now],
+      ['newer', 'retention', undefined, 'retention', now],
+    ]);
   });
 
-  it('records retention failure and rethrows the original purge error', async () => {
-    const original = new Error('purge sentinel');
-    const metrics = {
-      recordJobItem: jest.fn(),
-      recordJobRun: jest.fn(),
-    };
-    const service = new GovernanceService(
-      {
-        prisma: {
-          archivedResult: {
-            findMany: jest
-              .fn()
-              .mockResolvedValue([
-                archive('session-1', new Date('2026-01-01T00:00:00.000Z')),
-              ]),
-          },
-        },
-      } as never,
-      {} as never,
-      metrics as never,
+  it('continues after a failed item and excludes its id from later claims', async () => {
+    const metrics = { recordJobItem: jest.fn(), recordJobRun: jest.fn() };
+    const { service, queryRaw } = serviceWithClaims(
+      [[{ liveSessionId: 'failed' }], [{ liveSessionId: 'continued' }]],
+      metrics,
     );
-    jest.spyOn(service, 'purgeOne').mockRejectedValue(original);
+    jest
+      .spyOn(service as unknown as GovernanceInternals, 'purgeOneInTransaction')
+      .mockRejectedValueOnce(new Error('purge sentinel'))
+      .mockResolvedValue({ status: 'deleted' } as never);
 
     await expect(
-      service.purgeDue(1, new Date('2026-02-01T00:00:00.000Z')),
-    ).rejects.toBe(original);
+      service.purgeDue(3, new Date('2026-02-01T00:00:00.000Z')),
+    ).resolves.toEqual({ selected: 2, deleted: 1, failed: 1 });
+    expect(queryRaw).toHaveBeenCalledTimes(3);
+    expect(metrics.recordJobItem).toHaveBeenCalledWith(
+      'retention_purge',
+      'failed',
+      1,
+    );
     expect(metrics.recordJobRun).toHaveBeenCalledWith(
       'retention_purge',
       'failure',

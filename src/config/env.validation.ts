@@ -189,6 +189,19 @@ export class EnvConfig {
   @IsNumber()
   @Min(1000)
   LIVE_SESSION_AUTO_CLOSE_TICK_MS = 60 * 1000;
+
+  @IsBoolean()
+  RETENTION_PURGE_ENABLED = false;
+
+  @IsNumber()
+  @Min(60_000)
+  @Max(24 * 60 * 60 * 1000)
+  RETENTION_PURGE_TICK_MS = 15 * 60 * 1000;
+
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  RETENTION_PURGE_BATCH_SIZE = 50;
 }
 
 /**
@@ -225,6 +238,9 @@ export function validateEnv(
       raw.LIVE_SESSION_AUTO_CLOSE_TICK_MS,
       60 * 1000,
     ),
+    RETENTION_PURGE_ENABLED: bool(raw.RETENTION_PURGE_ENABLED) ?? false,
+    RETENTION_PURGE_TICK_MS: num(raw.RETENTION_PURGE_TICK_MS, 15 * 60 * 1000),
+    RETENTION_PURGE_BATCH_SIZE: num(raw.RETENTION_PURGE_BATCH_SIZE, 50),
     REALTIME_REDIS_MODE: raw.REALTIME_REDIS_MODE || RealtimeRedisMode.OFF,
     LOGIN_RATE_LIMIT_MODE:
       raw.LOGIN_RATE_LIMIT_MODE ||

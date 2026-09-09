@@ -28,6 +28,39 @@ export interface ArchivedResultProjection {
 }
 
 /** Build an identity-free archive from immutable snapshots and submissions. */
+export function parseArchivedResult(value: unknown): ArchivedResultProjection {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 1 ||
+    !Array.isArray(value.questions)
+  ) {
+    throw new Error('Invalid archived result payload');
+  }
+  const questions = value.questions.map((question) => {
+    if (
+      !isRecord(question) ||
+      typeof question.id !== 'string' ||
+      !Number.isInteger(question.position) ||
+      typeof question.prompt !== 'string' ||
+      !isRecord(question.result) ||
+      !['poll', 'quiz', 'open_text'].includes(
+        String(question.result.snapshotType),
+      )
+    ) {
+      throw new Error('Invalid archived question payload');
+    }
+    return question as unknown as ArchivedQuestionProjection;
+  });
+  return {
+    schemaVersion: 1,
+    questions: [...questions].sort((a, b) => a.position - b.position),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function projectArchive(
   questions: ArchiveQuestionInput[],
 ): ArchivedResultProjection {

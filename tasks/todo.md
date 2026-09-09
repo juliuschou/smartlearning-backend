@@ -2861,3 +2861,157 @@ Latest verification: isolated PostgreSQL migration and compiled admin bootstrap 
 - **OBSERVED:** a later same-key request was classified `alreadyConsumed=true` and the browser received the authoritative successful result. The controlled browser payload-permutation comparison was not completed, so FE-5.1 CP3 response-loss/permutation acceptance remains **PARTIALLY VERIFIED**, not closed.
 - **Cleanup:** the disposable Compose project, database/Redis volumes, network, temporary UI server, and diagnostic fixture were removed. No shared/dev database was touched.
 - **Source changes:** `test-response-loss-failpoint.ts` now prefers `response.destroy()` with socket fallback and has opt-in test-only boundary diagnostics; focused failpoint tests and backend typecheck pass.
+
+## 2026-09-08 — FE-6 Checkpoint 1 BE-5 contract freeze
+
+### Context and acceptance criteria
+
+Freeze the archive-history backend contract required by FE-6. This checkpoint is backend-only and must stop for human review before retention operations, Checkpoint 2, or frontend work.
+
+- [x] Archive list supports validated course/status filters, owner scope before pagination, deterministic ordering, and safe concrete DTOs/OpenAPI.
+- [x] Archive detail is an active/deleted discriminated union; deleted tombstones never expose payload content.
+- [x] One outstanding teacher deletion request is idempotent and visible in list/detail; admin has a safe pending queue.
+- [x] Admin confirmation is bound to a specific request and returns a canonical result on retry.
+- [x] Early deletion and retention share one locked transition, create one canonical event, and reconcile pending requests.
+- [x] Additive Prisma migration enforces archive/request/tombstone consistency without rewriting invalid existing data.
+- [x] Targeted unit, OpenAPI, DB-backed authorization/privacy/concurrency tests and static/build gates pass.
+- [x] Frontend API reference and review evidence match the tested runtime contract.
+
+### Risk & rollback
+
+- **Risk:** high — archive governance destructively removes answer-bearing data.
+- **Safety:** destructive verification is limited to run-scoped fixtures in guarded `smartlearning_test`; never operate on development, staging, production, or pre-existing session IDs.
+- **Rollback:** application changes are revertible before deletion. Keep additive production constraints/linkage in place; removing them cannot restore deleted data and may permit invalid states. After any real deletion, preserve the tombstone and forward-fix.
+
+### Dependencies & environment
+
+- Node.js 24+, Prisma 7 generated client, migrated PostgreSQL `smartlearning_test`, existing `TransactionService` LiveSession lock order, UUID-v7 app IDs, and `TEXT + CHECK` states.
+- No new dependency. No frontend files, retention runner/scheduler, operational dry run, staging purge, or production purge.
+
+### Working notes
+
+- `sessionLabel` is immutable and generated server-side from `startedAt` using a locale-independent timestamp representation.
+- Public reasons are `privacy|support` for teacher/admin early deletion and system-owned `retention` for retention tombstones.
+- Teacher foreign-course filters return an empty page; detail/request retain existence-hiding 404 behavior.
+- Request resolution links the original teacher request to exactly one canonical `early_delete|retention` event.
+
+### Checklist
+
+- [x] Read lessons, authoritative FE-6 plan, current governance implementation, and reusable result/pagination patterns.
+- [x] Add concrete DTO/OpenAPI contract and additive schema/migration constraints.
+- [x] Implement safe projectors, list/detail filters, request queue/idempotency, request-bound deletion, and retention reconciliation.
+- [x] Add focused unit, DB-backed E2E, privacy/authorization/concurrency, and OpenAPI regressions.
+- [x] Update frontend API reference from the tested frozen contract.
+- [x] Run targeted verification and final Prisma/static/build gates.
+- [x] Prepare the Checkpoint 1 human review package and stop.
+
+### Results
+
+- **PASS — Prisma contract:** `npm run prisma:generate`, `node scripts/normalize-prisma-client.mjs generated/prisma`, and `npm run prisma:validate` completed successfully.
+- **PASS — targeted units:** `npm test -- --runInBand src/modules/governance/domain/archive-projection.spec.ts src/modules/governance/application/governance.service.spec.ts` — 2 suites / 6 tests, 0 failures.
+- **PASS — OpenAPI E2E:** `npx jest --config ./test/jest-e2e.json --runInBand test/openapi.e2e-spec.ts` — 1 suite / 5 tests, 0 failures.
+- **PASS — authorized DB migration:** `NODE_ENV=test npm run prisma:migrate:deploy` applied `20260908090000_freeze_archive_governance_contract` only to database `smartlearning_test`.
+- **PASS — DB-backed archive governance E2E:** `NODE_ENV=test npx jest --config ./test/jest-e2e.json --runInBand test/archive-governance.e2e-spec.ts` — 1 suite / 6 tests, 0 failures, 0 skips. Coverage includes ownership/privacy, filtered deterministic pagination, concurrent request idempotency, admin queue, request-bound replay, retention/admin race reconciliation, and idempotent tombstoning.
+- **PASS — static/build gates:** `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` completed successfully.
+- **PASS — migration status:** `NODE_ENV=test npm run prisma:migrate:status` found 16 migrations and reported `Database schema is up to date!` for `smartlearning_test`.
+- **Scope:** changed backend governance DTO/controller/service/domain, Prisma schema/additive migration, focused tests, frontend API reference, and this task record. No `smartLearning-ui` files, retention runner/scheduler, staging/production data, or Checkpoint 2 work were touched.
+- **Checkpoint stop:** Checkpoint 1 implementation and evidence are ready for human review. No BE-5 operational closeout, retention run, Checkpoint 2 work, or frontend work will begin without explicit approval.
+
+## 2026-09-09 — Checkpoint 2 local-only retention operations
+
+- [x] Add compiled `src/bootstrap/retention.ts` command parser and Nest application-context wiring with explicit operation gates.
+- [x] Add strict local deletion-manifest watermark parsing and provider-neutral reconciliation inspect/apply service.
+- [x] Keep run-once and manifest-export-once non-mutating/non-networked; preserve existing SKIP LOCKED and outbox/exporter changes.
+- [x] Add focused parser and reconciliation unit tests.
+- [x] Run Prettier, typecheck, and targeted tests.
+- [ ] Remaining gap: operational DB purge and external/object-store export are intentionally not wired; require a separately approved provider-backed implementation and destructive verification.
+
+### Results
+
+- **PASS:** `npx prettier --write` on four new files.
+- **PASS:** `npm run typecheck`.
+- **PASS:** `npm test -- --runInBand src/bootstrap/retention.spec.ts src/modules/governance/application/retention-reconciliation.spec.ts` — 2 suites / 8 tests.
+- **Safety:** `run-once` and `manifest-export-once` require explicit gates but report not executed; no DB-mutating command, undelete path, API route, network call, or object-store call was added.
+
+### Checkpoint 2 operational artifact closeout
+
+- [x] Add Prometheus alert rules for oldest-due age, due backlog, repeated purge failures, manifest lag/dead records, and reconciliation failures.
+- [x] Add dashboard inventory panels for the same retention signals and document placeholder/provider boundaries.
+- [x] Add artifact assertions covering alert names, metric families, dashboard entries, and runbook safety gates.
+- [x] Add retention runbook covering disabled defaults, safe inspect, explicit approval gates, immutable object-store prerequisites, stop/rollback, and blocked production gaps.
+- [x] Update observability README and package script for the artifact-only verification command.
+- [x] Run focused artifact test, lint, format, and typecheck without DB mutation or network access.
+
+#### Results
+
+- Added `ops/observability/retention-runbook.md`, expanded `prometheus-alerts.yml` and `dashboard-inventory.md`, and linked the handoff from `ops/observability/README.md`.
+- Added `test/retention-operations-artifacts.spec.ts` with a dedicated Jest config/script. Assertions are local file reads only.
+- Production purge/export/reconciliation remain blocked and gates remain disabled by default.
+
+### Checkpoint 2 verification report (2026-09-09)
+
+- **PASS — static/schema:** `npm run prisma:validate`, `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check`.
+- **PASS — focused local tests:** 4 suites / 12 tests for governance/bootstrap/reconciliation paths; deletion-manifest closest available spec 1 suite / 5 tests; retention artifact command 1 suite / 2 tests.
+- **PASS — guarded DB evidence:** `NODE_ENV=test npm run test:e2e -- test/archive-governance.e2e-spec.ts` — 1 suite / 8 tests, 0 failures, 0 skips; includes exact deadline, manifest-outbox creation, bounded oldest-first `purgeDue(2)`, and concurrent `purgeDue()` workers with exactly two canonical retention events.
+- **BLOCKED — required operational evidence:** scheduler application spec, DB-backed failure/retry injection, outbox claim/ack delivery, external immutable object-store upload, production-like alert firing, and restore-apply no-resurrection exercise remain unavailable or intentionally unrun.
+- **Safety boundary:** all DB evidence targeted only the guarded `smartlearning_test`; no external network call, object-store credential, development/staging/production purge, or restore apply was performed.
+- **PASS — scheduler unit coverage:** `retention.scheduler.spec.ts` — 6 tests; disabled mode, startup/interval, overlap, shutdown drain, failed-count logging, and safe error logging.
+- **PASS — final non-mutating gates:** Prisma validate, typecheck, lint, format, build, and `git diff --check`.
+- **PASS — final focused tests:** 6 suites / 23 tests across governance, scheduler, manifest, CLI, and reconciliation; retention artifact config 1 suite / 2 tests.
+- **BLOCKED — operational closeout:** direct default Jest invocation cannot discover `test/retention-operations-artifacts.spec.ts` because package rootDir is `src` (repo-provided retention config passes); DB-backed failure/retry and outbox delivery E2E, external immutable object-store delivery, production-like alert firing, and restore-apply no-resurrection remain unavailable/unrun.
+- **Disposition:** code-validation and selected guarded DB evidence are complete, but operational closeout remains incomplete. Do not claim Checkpoint 2 complete or begin Checkpoint 3 until provider-backed implementation and explicitly authorized remaining evidence are available.
+
+## 2026-09-09 — Checkpoint 2 atomic retention claim slice
+
+### What changed
+
+- [x] Extract `purgeOneInTransaction()` so public early-delete and retention paths share the destructive transaction authority.
+- [x] Keep retention selection and purge in one transaction, retaining the `LiveSession` `FOR UPDATE ... SKIP LOCKED` lock through tombstone, canonical event, and manifest-outbox creation.
+- [x] Change `purgeDue()` to claim one oldest-due row at a time, exclude poison rows for the remainder of the run, and preserve `selected = deleted + failed`.
+- [x] Align governance unit tests with the one-row transactional claim seam.
+
+### Verification
+
+- `npm run typecheck` — PASS.
+- `npm test -- --runInBand src/modules/governance/application/governance.service.spec.ts` — PASS, 1 suite / 3 tests.
+
+### Remaining gap
+
+- DB-backed lock-retention, rollback/restart, exporter delivery, provider-backed immutable storage, and restore no-resurrection evidence remain pending; no destructive or external-storage verification was run in this slice.
+
+### 2026-09-09 isolated database verification follow-up
+
+- `NODE_ENV=test npm run prisma:migrate:status` — PASS; guarded `smartlearning_test`, 17 migrations, schema up to date.
+- `NODE_ENV=test npm run test:e2e -- test/archive-governance.e2e-spec.ts` — PASS; 1 suite / 8 tests, 0 failures, 0 skips.
+- Evidence covered bounded purge, worker locking, retention reconciliation, concurrent receipt idempotency, and tombstone behavior.
+- No external upload, real object-store credential, or non-test environment operation was performed.
+
+### 2026-09-09 combined verification after provider delivery slice
+
+- `npm run prisma:generate` — PASS; generated client current.
+- `node scripts/normalize-prisma-client.mjs generated/prisma` — PASS; no normalization changes.
+- `npm run prisma:validate` — PASS.
+- `NODE_ENV=test npm run prisma:migrate:deploy` — PASS; applied `20260909100000_add_manifest_outbox_lease` to guarded `smartlearning_test`.
+- `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, `git diff --check` — PASS.
+- Focused unit/artifact verification — PASS; 7 suites / 28 tests, 0 failures.
+- `NODE_ENV=test npm run test:e2e -- test/archive-governance.e2e-spec.ts` — PASS; 1 suite / 8 tests, 0 failures, 0 skips.
+- `NODE_ENV=test npm run prisma:migrate:status` — PASS; 18 migrations, schema up to date.
+- No external provider upload or real object-store credentials were used. Restore apply/no-resurrection DB executor and full provider retry E2E remain incomplete.
+
+### 2026-09-09 restore no-resurrection evidence
+
+- [x] Add guarded E2E coverage that captures a real purge-created deletion manifest, recreates answer-bearing rows, applies reconciliation, and verifies no resurrection.
+- [x] Make matching successful manifest replay re-run governed cleanup without creating a duplicate deletion event or pending outbox row.
+
+#### Verification
+
+- `npm run typecheck` — PASS.
+- `npm test -- --runInBand src/modules/governance/application/governance.service.spec.ts` — PASS, 1 suite / 3 tests.
+- `npm run test:e2e -- --runInBand test/archive-governance.e2e-spec.ts -t 'rejects resurrection'` — PASS, 1 suite / 1 test; 8 tests skipped by name filter.
+- `npx prettier --write test/archive-governance.e2e-spec.ts src/modules/governance/application/governance.service.ts` — PASS.
+- `git diff --check` — PASS.
+
+#### Status
+
+- Guarded restore no-resurrection evidence is complete for `smartlearning_test`.
+- Checkpoint 2 remains open for provider retry/lease/restart E2E, external immutable object-store delivery, production-like alert firing, and full restore rehearsal.

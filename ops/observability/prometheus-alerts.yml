@@ -99,3 +99,48 @@ groups:
         annotations:
           summary: SmartLearning retention purge job is repeatedly failing
           description: Inspect retention errors and the remaining archive backlog.
+
+      - alert: SmartLearningRetentionOldestDueAgeHigh
+        expr: smartlearning_retention_oldest_due_age_seconds > 86400
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning retention oldest-due age exceeds one day
+          description: Inspect due archives and confirm the purge worker remains disabled or healthy.
+
+      - alert: SmartLearningRetentionDueBacklogHigh
+        expr: smartlearning_retention_due_backlog > 1000
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning retention due backlog is high
+          description: Review backlog growth before any explicitly approved purge operation.
+
+      - alert: SmartLearningRetentionManifestLagHigh
+        expr: smartlearning_retention_manifest_lag_seconds > 3600
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning deletion manifest export is lagging
+          description: Inspect the export watermark and immutable object-store delivery state.
+
+      - alert: SmartLearningRetentionManifestDeadRecords
+        expr: smartlearning_retention_manifest_dead_records > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning deletion manifest has dead records
+          description: Stop retries and investigate durable export failures and scope before proceeding.
+
+      - alert: SmartLearningRetentionReconciliationFailing
+        expr: increase(smartlearning_retention_reconciliation_failures_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning retention reconciliation is failing
+          description: Preserve the inspection report and stop any apply workflow until the cause is reviewed.
