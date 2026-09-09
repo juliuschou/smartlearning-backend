@@ -3060,3 +3060,13 @@ The checkpoint is not closed: external immutable object-store delivery, producti
 - **Required setup:** dedicated disposable bucket/prefix; write-only credential scoped to that prefix; no production account or existing-data access; short-lived credential; provider endpoint/region; explicit cleanup/retention policy; confirmation that network upload is permitted for this rehearsal.
 - **Credential handling:** do not paste secrets into chat or commit them. Materialize them only in a gitignored local env file or approved secret store, then run the guarded rehearsal with the exact target recorded.
 - **Current status:** **BLOCKED — awaiting sandbox target details and safely injected credentials.** No provider connection or upload has been attempted.
+
+
+### FE-6 S3-compatible provider adapter — 2026-09-09
+- [x] Add provider-neutral manifest errors and deterministic canonical JSON.
+- [x] Add S3 adapter contract: conditional immutable write, SHA-256 checksum, SSE-S3, and compliance object lock.
+- [x] Preserve local provider as the default and add S3 env validation/templates.
+- [ ] Install/lock `@aws-sdk/client-s3` after registry access is explicitly authorized; no network upload was attempted.
+- [ ] Run focused provider tests once the dependency is installed.
+
+**Deferred gaps:** no credentials, external endpoint, scheduler activation, or manifest-export command was used.

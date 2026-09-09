@@ -147,6 +147,31 @@ describe('validateEnv', () => {
     ).toThrow('LOGIN_RATE_LIMIT_MODE=memory is not allowed');
   });
 
+  it('requires complete S3 manifest settings when selected', () => {
+    expect(() =>
+      validateEnv({ ...baseEnv, DELETION_MANIFEST_PROVIDER: 's3' }),
+    ).toThrow('Invalid environment configuration:');
+  });
+
+  it('preserves local manifest provider as the safe default', () => {
+    expect(validateEnv({ ...baseEnv }).DELETION_MANIFEST_PROVIDER).toBe(
+      'local',
+    );
+  });
+
+  it('accepts a complete S3 manifest configuration', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      DELETION_MANIFEST_PROVIDER: 's3',
+      S3_ENDPOINT: 'http://localhost:9000',
+      S3_REGION: 'us-east-1',
+      S3_BUCKET: 'manifests',
+      S3_ACCESS_KEY_ID: 'access',
+      S3_SECRET_ACCESS_KEY: 'secret',
+    });
+    expect(config.DELETION_MANIFEST_PROVIDER).toBe('s3');
+  });
+
   it('accepts a valid production Redis login configuration', () => {
     const config = validateEnv({
       ...baseEnv,

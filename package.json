@@ -41,6 +41,7 @@
     "@nestjs/platform-socket.io": "^11.2.1",
     "@nestjs/swagger": "11.4.6",
     "@nestjs/websockets": "^11.2.1",
+    "@aws-sdk/client-s3": "^3.862.0",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@socket.io/redis-adapter": "8.3.0",

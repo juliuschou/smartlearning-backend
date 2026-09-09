@@ -202,6 +202,40 @@ export class EnvConfig {
   @Min(1)
   @Max(100)
   RETENTION_PURGE_BATCH_SIZE = 50;
+
+  @IsEnum(['local', 's3'])
+  DELETION_MANIFEST_PROVIDER: 'local' | 's3' = 'local';
+
+  @ValidateIf((config) => config.DELETION_MANIFEST_PROVIDER === 's3')
+  @IsString()
+  S3_ENDPOINT?: string;
+
+  @ValidateIf((config) => config.DELETION_MANIFEST_PROVIDER === 's3')
+  @IsString()
+  S3_REGION?: string;
+
+  @ValidateIf((config) => config.DELETION_MANIFEST_PROVIDER === 's3')
+  @IsString()
+  S3_BUCKET?: string;
+
+  @IsOptional()
+  @IsString()
+  S3_PREFIX = 'deletion-manifests';
+
+  @ValidateIf((config) => config.DELETION_MANIFEST_PROVIDER === 's3')
+  @IsString()
+  @MinLength(1)
+  S3_ACCESS_KEY_ID?: string;
+
+  @ValidateIf((config) => config.DELETION_MANIFEST_PROVIDER === 's3')
+  @IsString()
+  @MinLength(1)
+  S3_SECRET_ACCESS_KEY?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  S3_OBJECT_LOCK_DAYS = 90;
 }
 
 /**
@@ -241,6 +275,9 @@ export function validateEnv(
     RETENTION_PURGE_ENABLED: bool(raw.RETENTION_PURGE_ENABLED) ?? false,
     RETENTION_PURGE_TICK_MS: num(raw.RETENTION_PURGE_TICK_MS, 15 * 60 * 1000),
     RETENTION_PURGE_BATCH_SIZE: num(raw.RETENTION_PURGE_BATCH_SIZE, 50),
+    DELETION_MANIFEST_PROVIDER: raw.DELETION_MANIFEST_PROVIDER || 'local',
+    S3_PREFIX: raw.S3_PREFIX || 'deletion-manifests',
+    S3_OBJECT_LOCK_DAYS: num(raw.S3_OBJECT_LOCK_DAYS, 90),
     REALTIME_REDIS_MODE: raw.REALTIME_REDIS_MODE || RealtimeRedisMode.OFF,
     LOGIN_RATE_LIMIT_MODE:
       raw.LOGIN_RATE_LIMIT_MODE ||
