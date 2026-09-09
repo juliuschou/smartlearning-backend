@@ -3052,3 +3052,11 @@ Freeze the archive-history backend contract required by FE-6. This checkpoint is
 **PARTIALLY COMPLETE / OPEN.** The controlled local-provider retry, lease recovery, malformed-manifest dead-lettering, acknowledgement-loss recovery, and restore no-resurrection evidence are complete and verified on guarded `smartlearning_test`. Lease fencing and permanent-error classification were hardened and committed in `4d044a9` (`fix(governance): harden manifest exporter leases`).
 
 The checkpoint is not closed: external immutable object-store delivery, production-like alert firing, and full restore/restart rehearsal still require separately authorized infrastructure and evidence. No external upload or production-like operation has been performed.
+
+### External provider delivery authorization/setup — 2026-09-09
+
+- **Selected target:** S3-compatible sandbox (non-production), per user selection.
+- **Authorization state:** provider class selected, but execution authorization is not yet actionable until the exact isolated endpoint/bucket and credential scope are supplied.
+- **Required setup:** dedicated disposable bucket/prefix; write-only credential scoped to that prefix; no production account or existing-data access; short-lived credential; provider endpoint/region; explicit cleanup/retention policy; confirmation that network upload is permitted for this rehearsal.
+- **Credential handling:** do not paste secrets into chat or commit them. Materialize them only in a gitignored local env file or approved secret store, then run the guarded rehearsal with the exact target recorded.
+- **Current status:** **BLOCKED — awaiting sandbox target details and safely injected credentials.** No provider connection or upload has been attempted.
