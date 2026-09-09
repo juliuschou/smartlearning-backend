@@ -3066,7 +3066,7 @@ The checkpoint is not closed: external immutable object-store delivery, producti
 - [x] Add provider-neutral manifest errors and deterministic canonical JSON.
 - [x] Add S3 adapter contract: conditional immutable write, SHA-256 checksum, SSE-S3, and compliance object lock.
 - [x] Preserve local provider as the default and add S3 env validation/templates.
-- [ ] Install/lock `@aws-sdk/client-s3` after registry access is explicitly authorized; no network upload was attempted.
-- [ ] Run focused provider tests once the dependency is installed.
+- [x] Install and lock `@aws-sdk/client-s3`; no network upload was attempted.
+- [x] Run focused config/governance verification after the dependency was installed.
 
 **Deferred gaps:** no credentials, external endpoint, scheduler activation, or manifest-export command was used.
