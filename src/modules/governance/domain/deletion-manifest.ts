@@ -13,7 +13,7 @@ export type DeletionManifest = {
 
 export function parseDeletionManifest(value: unknown): DeletionManifest {
   if (!value || typeof value !== 'object')
-    throw new Error('Invalid deletion manifest');
+    throw new TypeError('Invalid deletion manifest');
   const v = value as Record<string, unknown>;
   const required = [
     'deletionEventId',
@@ -27,17 +27,17 @@ export function parseDeletionManifest(value: unknown): DeletionManifest {
     v.contractVersion !== DELETION_MANIFEST_VERSION ||
     required.some((k) => typeof v[k] !== 'string')
   ) {
-    throw new Error('Invalid deletion manifest');
+    throw new TypeError('Invalid deletion manifest');
   }
   if (
     !Array.isArray(v.categories) ||
     v.categories.some((x) => typeof x !== 'string')
   ) {
-    throw new Error('Invalid deletion manifest');
+    throw new TypeError('Invalid deletion manifest');
   }
   const date = new Date(v.deletedAt as string);
   if (Number.isNaN(date.getTime()))
-    throw new Error('Invalid deletion manifest');
+    throw new TypeError('Invalid deletion manifest');
   return {
     contractVersion: DELETION_MANIFEST_VERSION,
     deletionEventId: v.deletionEventId as string,

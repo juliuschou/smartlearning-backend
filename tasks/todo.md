@@ -3014,4 +3014,19 @@ Freeze the archive-history backend contract required by FE-6. This checkpoint is
 #### Status
 
 - Guarded restore no-resurrection evidence is complete for `smartlearning_test`.
-- Checkpoint 2 remains open for provider retry/lease/restart E2E, external immutable object-store delivery, production-like alert firing, and full restore rehearsal.
+- Provider retry/lease evidence is now complete for the controlled local provider on `smartlearning_test`.
+- Checkpoint 2 remains open for external immutable object-store delivery, production-like alert firing, and full restore rehearsal.
+
+### 2026-09-09 provider retry and lease evidence
+
+- [x] Add guarded integration coverage for partial-batch continuation, transient retry/backoff, expired-lease recovery, permanent malformed-manifest failure, attempt exhaustion, and provider-success-before-DB-ack lease loss.
+- [x] Classify malformed deletion manifests as permanent failures via `TypeError`; retain transient retry behavior for ordinary provider failures.
+
+#### Verification
+
+- `NODE_ENV=test npm run test:integration -- --runInBand test/deletion-manifest-exporter.integration-spec.ts` — PASS, 1 suite / 4 tests.
+- `npm run typecheck` — PASS.
+- `npm run lint:check -- --quiet` — PASS.
+- `npm run format:check` — PASS.
+- `git diff --check` — PASS.
+- Safety: only guarded `smartlearning_test` was mutated; no external provider, network upload, or real credentials were used.
