@@ -3046,3 +3046,9 @@ Freeze the archive-history backend contract required by FE-6. This checkpoint is
 
 - Controlled local-provider delivery is evidenced only on guarded `smartlearning_test`.
 - External immutable object-store delivery, production-like alert firing, and full restore rehearsal remain intentionally unrun; no external credentials or uploads were used.
+
+### CP2 current status — 2026-09-09
+
+**PARTIALLY COMPLETE / OPEN.** The controlled local-provider retry, lease recovery, malformed-manifest dead-lettering, acknowledgement-loss recovery, and restore no-resurrection evidence are complete and verified on guarded `smartlearning_test`. Lease fencing and permanent-error classification were hardened and committed in `4d044a9` (`fix(governance): harden manifest exporter leases`).
+
+The checkpoint is not closed: external immutable object-store delivery, production-like alert firing, and full restore/restart rehearsal still require separately authorized infrastructure and evidence. No external upload or production-like operation has been performed.
