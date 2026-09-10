@@ -3302,3 +3302,50 @@ The owner/expiry fields cannot be invented from repository evidence. Checkpoint 
 - [x] `tasks/todo.md` Prettier check after the focused formatting correction.
 
 **Results:** Checkpoint A inventory, ignore-rule correction, migration checksum manifest, and safety register are complete. Static verification passed after a documentation-only formatting correction. The clean-revision gate remains **BLOCKED** until later authorization resolves the pre-existing dirty product/test/rehearsal work and assigns cleanup owners/expiry. No evidence from this dirty tree may be described as a clean immutable CP2 revision.
+
+---
+
+# 2026-09-10 — BE-5 CP2 Checkpoint B — Fail-closed S3 replay integrity + production env safety
+
+## Scope (authorized)
+
+Checkpoint B only: fail-closed S3 replay verification + production env config safety. No DB access, no external S3/MinIO calls, no cleanup, no commit, no FE-6. All tests are non-DB mock/unit tests.
+
+## Files changed
+
+- `src/modules/governance/application/s3-manifest.provider.ts` — fail-closed 412 replay via HeadObject equality metadata; fixed equality metadata on first PUT; SSEKMSKeyId for `aws:kms`; optional injected `S3Client` test seam; removed `isAccessDenied()` success path and misleading comment.
+- `src/config/env.validation.ts` — new optional `S3_KMS_KEY_ID` field + 5 cross-field production checks.
+- `src/modules/governance/application/s3-manifest.provider.spec.ts` (new) — 8 mock-S3Client cases.
+- `src/config/env.validation.spec.ts` — extended with 7 production/S3 safety cases; fixed 2 existing production-success tests to use a durable S3 provider.
+- `src/modules/governance/application/deletion-manifest.exporter.spec.ts` — extended: provider `unavailable`/`conflict` never marks row exported.
+- `.env.example`, `.env.production.example` — document `S3_KMS_KEY_ID`; production example warns `none` is rejected.
+
+## Behavior
+
+- First PUT stores `Metadata: { manifest-sha256, deletion-event-id, contract-version }` + `ChecksumSHA256` + `If-None-Match: *` + Object Lock.
+- On 412, `HeadObject` must prove `ContentLength === body.length` AND all three equality metadata fields match. All match → idempotent replay success. Any mismatch → `ManifestProviderConflictError`. Any 403/404/error/missing metadata/unverifiable → `ManifestProviderError('unavailable')`. Never success without equality proof.
+- `DeletionManifestExporter` unchanged; its existing catch routes provider errors to retry/failed (proven by new tests).
+- Production env validation rejects: `local` provider, `none` encryption, `aws:kms` without `S3_KMS_KEY_ID`, non-https S3 endpoint, and purge enabled without a durable S3 provider.
+
+## Verification
+
+All non-DB mock/unit gates PASS (dedicated test subagent + post-fix re-run):
+
+| Command | Result |
+|---|---|
+| `npx prettier --check <5 changed files>` | PASS |
+| `npm test -- --runInBand s3-manifest.provider.spec.ts` | PASS — 8/8 |
+| `npm test -- --runInBand deletion-manifest.exporter.spec.ts` | PASS — 4/4 |
+| `npm test -- --runInBand env.validation.spec.ts` | PASS — 39/39 |
+| `npm test -- --runInBand governance.service.spec.ts` | PASS — 5/5 |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `git diff --check` | PASS |
+
+Two defects found and fixed during verification: (1) the new S3 provider spec's mock client did not structurally satisfy `S3Client` (cast to `S3Client & { send: jest.Mock }`); (2) the purge-without-durable-provider env check was unreachable because the `local`-provider guard threw first — reordered so the purge check reports its specific cause.
+
+## Boundary
+
+No DB, no `test:e2e`/`test:integration`, no external object-store call, no commit. Local provider default unchanged; `RETENTION_PURGE_ENABLED` default false. Rollback = revert this slice only.

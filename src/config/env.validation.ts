@@ -1,6 +1,7 @@
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -236,6 +237,16 @@ export class EnvConfig {
   @IsNumber()
   @Min(1)
   S3_OBJECT_LOCK_DAYS = 90;
+
+  /** 'AES256' (default) | 'aws:kms' | 'none' for stores without SSE support. */
+  @IsOptional()
+  @IsIn(['AES256', 'aws:kms', 'none'])
+  S3_SERVER_SIDE_ENCRYPTION?: 'AES256' | 'aws:kms' | 'none';
+
+  /** Required when S3_SERVER_SIDE_ENCRYPTION=aws:kms. */
+  @IsOptional()
+  @IsString()
+  S3_KMS_KEY_ID?: string;
 }
 
 /**
@@ -278,6 +289,7 @@ export function validateEnv(
     DELETION_MANIFEST_PROVIDER: raw.DELETION_MANIFEST_PROVIDER || 'local',
     S3_PREFIX: raw.S3_PREFIX || 'deletion-manifests',
     S3_OBJECT_LOCK_DAYS: num(raw.S3_OBJECT_LOCK_DAYS, 90),
+    S3_KMS_KEY_ID: raw.S3_KMS_KEY_ID || undefined,
     REALTIME_REDIS_MODE: raw.REALTIME_REDIS_MODE || RealtimeRedisMode.OFF,
     LOGIN_RATE_LIMIT_MODE:
       raw.LOGIN_RATE_LIMIT_MODE ||
@@ -364,6 +376,55 @@ export function validateEnv(
   }
   if (config.CORS_ORIGIN.split(',').some((origin) => origin.trim() === '*')) {
     throw new Error('CORS_ORIGIN must not contain a wildcard origin');
+  }
+  // Deletion-manifest durability (BE-5 CP2 Checkpoint B). The process-local
+  // provider cannot be durable across replicas, and a purge that cannot
+  // export a durable manifest must not be enabled. Enforce in code, not
+  // comments alone. The purge check runs first so a purge-without-durable-
+  // provider misconfiguration reports its specific cause rather than the
+  // generic local-provider rejection.
+  if (
+    config.NODE_ENV === 'production' &&
+    config.RETENTION_PURGE_ENABLED &&
+    config.DELETION_MANIFEST_PROVIDER !== 's3'
+  ) {
+    throw new Error(
+      'RETENTION_PURGE_ENABLED requires a durable S3 manifest provider in NODE_ENV=production',
+    );
+  }
+  if (
+    config.NODE_ENV === 'production' &&
+    config.DELETION_MANIFEST_PROVIDER === 'local'
+  ) {
+    throw new Error(
+      'DELETION_MANIFEST_PROVIDER=local is not allowed in NODE_ENV=production',
+    );
+  }
+  if (
+    config.NODE_ENV === 'production' &&
+    config.S3_SERVER_SIDE_ENCRYPTION === 'none'
+  ) {
+    throw new Error(
+      'S3_SERVER_SIDE_ENCRYPTION=none is not allowed in NODE_ENV=production',
+    );
+  }
+  if (config.S3_SERVER_SIDE_ENCRYPTION === 'aws:kms' && !config.S3_KMS_KEY_ID) {
+    throw new Error('S3_SERVER_SIDE_ENCRYPTION=aws:kms requires S3_KMS_KEY_ID');
+  }
+  if (
+    config.NODE_ENV === 'production' &&
+    config.DELETION_MANIFEST_PROVIDER === 's3' &&
+    config.S3_ENDPOINT
+  ) {
+    let parsed: URL;
+    try {
+      parsed = new URL(config.S3_ENDPOINT);
+    } catch {
+      throw new Error('S3_ENDPOINT must be a valid URL');
+    }
+    if (parsed.protocol !== 'https:') {
+      throw new Error('S3_ENDPOINT must use https: in NODE_ENV=production');
+    }
   }
   return config;
 }

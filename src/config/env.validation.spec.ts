@@ -57,6 +57,12 @@ describe('validateEnv', () => {
       LOGIN_RATE_LIMIT_MODE: 'redis-required',
       LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
       LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
+      DELETION_MANIFEST_PROVIDER: 's3',
+      S3_ENDPOINT: 'https://s3.example.com',
+      S3_REGION: 'us-east-1',
+      S3_BUCKET: 'manifests',
+      S3_ACCESS_KEY_ID: 'access',
+      S3_SECRET_ACCESS_KEY: 'secret',
       TRUST_PROXY_HOPS: '1',
       SHUTDOWN_TIMEOUT_MS: '15000',
     });
@@ -179,6 +185,12 @@ describe('validateEnv', () => {
       LOGIN_RATE_LIMIT_MODE: 'redis-required',
       LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
       LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
+      DELETION_MANIFEST_PROVIDER: 's3',
+      S3_ENDPOINT: 'https://s3.example.com',
+      S3_REGION: 'us-east-1',
+      S3_BUCKET: 'manifests',
+      S3_ACCESS_KEY_ID: 'access',
+      S3_SECRET_ACCESS_KEY: 'secret',
     });
     expect(config.LOGIN_RATE_LIMIT_MODE).toBe('redis-required');
   });
@@ -216,5 +228,105 @@ describe('validateEnv', () => {
         [key]: value,
       }),
     ).toThrow('Invalid environment configuration:');
+  });
+
+  // BE-5 CP2 Checkpoint B — production manifest durability and S3 safety.
+  const prodS3 = {
+    NODE_ENV: 'production',
+    LOGIN_RATE_LIMIT_MODE: 'redis-required',
+    LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
+    LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
+    DELETION_MANIFEST_PROVIDER: 's3',
+    S3_ENDPOINT: 'https://s3.example.com',
+    S3_REGION: 'us-east-1',
+    S3_BUCKET: 'manifests',
+    S3_ACCESS_KEY_ID: 'access',
+    S3_SECRET_ACCESS_KEY: 'secret',
+  } as const;
+
+  it('rejects the process-local manifest provider in production', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        LOGIN_RATE_LIMIT_MODE: 'redis-required',
+        LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
+        LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
+        DELETION_MANIFEST_PROVIDER: 'local',
+      }),
+    ).toThrow('DELETION_MANIFEST_PROVIDER=local is not allowed');
+  });
+
+  it('rejects none encryption in production', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        ...prodS3,
+        S3_SERVER_SIDE_ENCRYPTION: 'none',
+      }),
+    ).toThrow('S3_SERVER_SIDE_ENCRYPTION=none is not allowed');
+  });
+
+  it('requires a KMS key id when aws:kms is selected', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        ...prodS3,
+        S3_SERVER_SIDE_ENCRYPTION: 'aws:kms',
+      }),
+    ).toThrow('S3_SERVER_SIDE_ENCRYPTION=aws:kms requires S3_KMS_KEY_ID');
+  });
+
+  it('accepts aws:kms with an explicit key id', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      ...prodS3,
+      S3_SERVER_SIDE_ENCRYPTION: 'aws:kms',
+      S3_KMS_KEY_ID: 'arn:aws:kms:us-east-1:123456789012:key/abc',
+    });
+    expect(config.S3_KMS_KEY_ID).toBe(
+      'arn:aws:kms:us-east-1:123456789012:key/abc',
+    );
+  });
+
+  it('rejects a non-https S3 endpoint in production', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        ...prodS3,
+        S3_ENDPOINT: 'http://s3.example.com',
+      }),
+    ).toThrow('S3_ENDPOINT must use https: in NODE_ENV=production');
+  });
+
+  it('rejects purge enabled in production without a durable S3 provider', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        LOGIN_RATE_LIMIT_MODE: 'redis-required',
+        LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
+        LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
+        DELETION_MANIFEST_PROVIDER: 'local',
+        RETENTION_PURGE_ENABLED: 'true',
+      }),
+    ).toThrow(
+      'RETENTION_PURGE_ENABLED requires a durable S3 manifest provider',
+    );
+  });
+
+  it('allows none encryption outside production (MinIO rehearsal)', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      NODE_ENV: 'test',
+      DELETION_MANIFEST_PROVIDER: 's3',
+      S3_ENDPOINT: 'http://localhost:9000',
+      S3_REGION: 'us-east-1',
+      S3_BUCKET: 'manifests',
+      S3_ACCESS_KEY_ID: 'access',
+      S3_SECRET_ACCESS_KEY: 'secret',
+      S3_SERVER_SIDE_ENCRYPTION: 'none',
+    });
+    expect(config.S3_SERVER_SIDE_ENCRYPTION).toBe('none');
   });
 });
