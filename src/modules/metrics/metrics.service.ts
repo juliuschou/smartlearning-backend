@@ -33,6 +33,9 @@ export class MetricsService {
   private readonly readinessChecks: Counter<string>;
   private readonly retentionDueBacklog: Gauge<string>;
   private readonly retentionOldestDueAgeSeconds: Gauge<string>;
+  private readonly retentionManifestLagSeconds: Gauge<string>;
+  private readonly retentionManifestDeadRecords: Gauge<string>;
+  private readonly retentionReconciliationFailures: Counter<string>;
 
   constructor(@Inject(METRICS_REGISTRY) private readonly registry: Registry) {
     this.httpRequests = new Counter({
@@ -98,6 +101,21 @@ export class MetricsService {
     this.retentionOldestDueAgeSeconds = new Gauge({
       name: METRIC_NAMES.retentionOldestDueAgeSeconds,
       help: 'Age in seconds of the oldest archive due for retention purge.',
+      registers: [registry],
+    });
+    this.retentionManifestLagSeconds = new Gauge({
+      name: METRIC_NAMES.retentionManifestLagSeconds,
+      help: 'Seconds since the oldest un-exported deletion manifest became due.',
+      registers: [registry],
+    });
+    this.retentionManifestDeadRecords = new Gauge({
+      name: METRIC_NAMES.retentionManifestDeadRecords,
+      help: 'Deletion manifest outbox records in the dead state.',
+      registers: [registry],
+    });
+    this.retentionReconciliationFailures = new Counter({
+      name: METRIC_NAMES.retentionReconciliationFailures,
+      help: 'Retention reconciliation runs that reported a failure outcome.',
       registers: [registry],
     });
   }
@@ -170,6 +188,25 @@ export class MetricsService {
       this.retentionDueBacklog.set(Math.floor(count));
       this.retentionOldestDueAgeSeconds.set(oldestDueAgeSeconds);
     });
+  }
+
+  recordRetentionManifestLag(lagSeconds: number): void {
+    if (!isNonNegativeFinite(lagSeconds)) return;
+    this.tryRecord(() =>
+      this.retentionManifestLagSeconds.set(Math.floor(lagSeconds)),
+    );
+  }
+
+  recordRetentionManifestDeadRecords(count: number): void {
+    if (!isNonNegativeFinite(count)) return;
+    this.tryRecord(() =>
+      this.retentionManifestDeadRecords.set(Math.floor(count)),
+    );
+  }
+
+  recordRetentionReconciliationFailure(count = 1): void {
+    if (!isNonNegativeFinite(count) || count <= 0) return;
+    this.tryRecord(() => this.retentionReconciliationFailures.inc(count));
   }
 
   recordReadiness(dependency: ReadinessDependency, healthy: boolean): void {

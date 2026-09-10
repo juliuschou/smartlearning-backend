@@ -1,6 +1,6 @@
-import { projectArchive } from './archive-projection';
+import { parseArchivedResult, projectArchive } from './archive-projection';
 
-describe('projectArchive', () => {
+describe('archive projection', () => {
   it('preserves ordering and emits anonymous aggregates', () => {
     const result = projectArchive([
       {
@@ -92,5 +92,239 @@ describe('projectArchive', () => {
       incorrectCount: 0,
       correctnessRate: 1,
     });
+  });
+
+  it('deeply reconstructs persisted results through the public allowlist', () => {
+    const input = {
+      schemaVersion: 1,
+      accountId: 'root-secret',
+      questions: [
+        {
+          id: 'open',
+          position: 3,
+          prompt: 'Explain',
+          participantId: 'question-secret',
+          result: {
+            snapshotType: 'open_text',
+            status: 'closed',
+            responses: [
+              {
+                text: 'answer',
+                displayName: 'Learner',
+                submittedAt: 'secret',
+              },
+            ],
+            totalResponses: 1,
+            options: [{ participantId: 'wrong-variant' }],
+          },
+        },
+        {
+          id: 'quiz',
+          position: 2,
+          prompt: 'Quiz',
+          sessionCode: 'question-secret',
+          result: {
+            snapshotType: 'quiz',
+            status: 'closed',
+            options: [
+              {
+                optionId: 'qo',
+                optionRef: null,
+                text: 'A',
+                count: 1,
+                isCorrect: true,
+                accountId: 'option-secret',
+              },
+            ],
+            totalResponses: 1,
+            correctCount: 1,
+            incorrectCount: 0,
+            correctnessRate: 1,
+            selectionMode: 'single',
+          },
+        },
+        {
+          id: 'poll',
+          position: 1,
+          prompt: 'Poll',
+          result: {
+            snapshotType: 'poll',
+            selectionMode: 'multiple',
+            status: 'closed',
+            options: [
+              {
+                optionId: 'po',
+                optionRef: 'a',
+                text: 'A',
+                count: 1,
+                isCorrect: true,
+                participantId: 'option-secret',
+              },
+            ],
+            totalResponses: 1,
+            correctCount: 1,
+            displayName: 'result-secret',
+          },
+        },
+      ],
+    };
+
+    const result = parseArchivedResult(input);
+
+    expect(result).toEqual({
+      schemaVersion: 1,
+      questions: [
+        {
+          id: 'poll',
+          position: 1,
+          prompt: 'Poll',
+          result: {
+            snapshotType: 'poll',
+            selectionMode: 'multiple',
+            status: 'closed',
+            options: [{ optionId: 'po', optionRef: 'a', text: 'A', count: 1 }],
+            totalResponses: 1,
+          },
+        },
+        {
+          id: 'quiz',
+          position: 2,
+          prompt: 'Quiz',
+          result: {
+            snapshotType: 'quiz',
+            status: 'closed',
+            options: [
+              {
+                optionId: 'qo',
+                optionRef: null,
+                text: 'A',
+                count: 1,
+                isCorrect: true,
+              },
+            ],
+            totalResponses: 1,
+            correctCount: 1,
+            incorrectCount: 0,
+            correctnessRate: 1,
+          },
+        },
+        {
+          id: 'open',
+          position: 3,
+          prompt: 'Explain',
+          result: {
+            snapshotType: 'open_text',
+            status: 'closed',
+            responses: [{ text: 'answer' }],
+            totalResponses: 1,
+          },
+        },
+      ],
+    });
+    expect(result).not.toBe(input);
+    expect(result.questions[0]).not.toBe(input.questions[2]);
+    expect(input.questions[0].participantId).toBe('question-secret');
+    expect(JSON.stringify(result)).not.toMatch(
+      /participant|account|displayName|token|sessionCode|submittedAt|selectedOptionRefs|isCorrect.*poll/,
+    );
+  });
+
+  it.each([
+    [{ schemaVersion: 2, questions: [] }],
+    [{ schemaVersion: 1, questions: [null] }],
+    [
+      {
+        schemaVersion: 1,
+        questions: [
+          {
+            id: 'q',
+            position: 0,
+            prompt: 'Prompt',
+            result: { snapshotType: 'open_text', status: 'closed' },
+          },
+        ],
+      },
+    ],
+    [
+      {
+        schemaVersion: 1,
+        questions: [
+          {
+            id: 'q',
+            position: 1,
+            prompt: 'Prompt',
+            result: {
+              snapshotType: 'poll',
+              selectionMode: 'invalid',
+              status: 'closed',
+              options: [],
+              totalResponses: 0,
+            },
+          },
+        ],
+      },
+    ],
+    [
+      {
+        schemaVersion: 1,
+        questions: [
+          {
+            id: 'q',
+            position: 1,
+            prompt: 'Prompt',
+            result: {
+              snapshotType: 'quiz',
+              status: 'open',
+              options: [],
+              totalResponses: 0,
+              correctCount: 0,
+              incorrectCount: 0,
+              correctnessRate: 0,
+            },
+          },
+        ],
+      },
+    ],
+    [
+      {
+        schemaVersion: 1,
+        questions: [
+          {
+            id: 'q',
+            position: 1,
+            prompt: 'Prompt',
+            result: {
+              snapshotType: 'quiz',
+              status: 'closed',
+              options: [],
+              totalResponses: 0,
+              correctCount: 0,
+              incorrectCount: 0,
+              correctnessRate: Number.NaN,
+            },
+          },
+        ],
+      },
+    ],
+    [
+      {
+        schemaVersion: 1,
+        questions: [
+          {
+            id: 'q',
+            position: 1,
+            prompt: 'Prompt',
+            result: {
+              snapshotType: 'open_text',
+              status: 'closed',
+              responses: [{ text: 1 }],
+              totalResponses: 1,
+            },
+          },
+        ],
+      },
+    ],
+  ])('rejects malformed persisted archive payloads', (input) => {
+    expect(() => parseArchivedResult(input)).toThrow();
   });
 });

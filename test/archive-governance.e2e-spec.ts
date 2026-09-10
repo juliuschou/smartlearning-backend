@@ -2,7 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { BootstrapService } from '../src/modules/identity/application/bootstrap.service';
 import { AccountRole } from '../src/modules/identity/domain/roles';
-import { newId } from '../src/common/crypto';
+import { hashToken, newId } from '../src/common/crypto';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { CSRF_HEADER } from '../src/common/security';
 import {
@@ -39,10 +39,17 @@ describe('LiveSession close/cancel (e2e)', () => {
     tempPassword: 'close-cancel-e2e-other-temp-1234',
     password: 'close-cancel-e2e-other-final-1234',
   };
+  const STUDENT = {
+    username: 'archive-governance-e2e-student',
+    displayName: 'Archive Governance E2E Student',
+    tempPassword: 'archive-governance-e2e-student-temp-1234',
+    password: 'archive-governance-e2e-student-final-1234',
+  };
 
   type AuthenticatedAgent = {
     agent: request.SuperAgentTest;
     csrfToken: string;
+    sessionToken: string;
   };
 
   beforeAll(async () => {
@@ -104,14 +111,16 @@ describe('LiveSession close/cancel (e2e)', () => {
     return {
       agent: agent as unknown as request.SuperAgentTest,
       csrfToken: cookieValue(setCookie, '__Host-csrf'),
+      sessionToken: cookieValue(setCookie, '__Host-session'),
     };
   }
 
-  async function provisionTeacher(
+  async function provisionAccount(
     username: string,
     displayName: string,
     tempPassword: string,
     finalPassword: string,
+    role: AccountRole,
   ): Promise<AuthenticatedAgent> {
     const admin = await loginAs(ADMIN.username, ADMIN.password);
     const created = await admin.agent
@@ -121,8 +130,8 @@ describe('LiveSession close/cancel (e2e)', () => {
       .send({
         username,
         displayName,
-        role: AccountRole.TEACHER,
-        canCreateCourse: true,
+        role,
+        canCreateCourse: role === AccountRole.TEACHER,
         tempPassword,
       });
     expect(created.status).toBe(201);
@@ -135,6 +144,21 @@ describe('LiveSession close/cancel (e2e)', () => {
       .send({ currentPassword: tempPassword, newPassword: finalPassword });
     expect(changed.status).toBe(201);
     return loginAs(username, finalPassword);
+  }
+
+  async function provisionTeacher(
+    username: string,
+    displayName: string,
+    tempPassword: string,
+    finalPassword: string,
+  ): Promise<AuthenticatedAgent> {
+    return provisionAccount(
+      username,
+      displayName,
+      tempPassword,
+      finalPassword,
+      AccountRole.TEACHER,
+    );
   }
 
   function expectErrorEnvelope(
@@ -220,6 +244,13 @@ describe('LiveSession close/cancel (e2e)', () => {
       OTHER_TEACHER.tempPassword,
       OTHER_TEACHER.password,
     );
+    const student = await provisionAccount(
+      STUDENT.username,
+      STUDENT.displayName,
+      STUDENT.tempPassword,
+      STUDENT.password,
+      AccountRole.STUDENT,
+    );
     const session = await createStartedSession(teacher);
     const joined = await request(app.getHttpServer())
       .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
@@ -290,6 +321,19 @@ describe('LiveSession close/cancel (e2e)', () => {
     const list = await teacher.agent.get('/api/v1/results');
     expect(list.status).toBe(200);
     expect(list.body.data.data).toHaveLength(1);
+
+    for (const response of [
+      await student.agent.get('/api/v1/results'),
+      await student.agent.get(`/api/v1/results/${session.liveSessionId}`),
+      await student.agent
+        .post(`/api/v1/results/${session.liveSessionId}/deletion-requests`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, student.csrfToken)
+        .send({ reason: 'privacy' }),
+    ]) {
+      expect(response.status).toBe(403);
+      expectErrorEnvelope(response, 'FORBIDDEN');
+    }
   });
 
   it('serializes deletion requests and requires CSRF, step-up, confirmation, and request', async () => {
@@ -353,6 +397,74 @@ describe('LiveSession close/cancel (e2e)', () => {
       .set(CSRF_HEADER, admin.csrfToken)
       .send({ password: ADMIN.password });
     expect(step.status).toBe(201);
+    const otherAdmin = await loginAs(ADMIN.username, ADMIN.password);
+    const crossSession = await otherAdmin.agent
+      .post(`/api/v1/admin/results/${session.liveSessionId}/deletion`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, otherAdmin.csrfToken)
+      .send({
+        deletionRequestId: first.body.data.id,
+        confirmed: true,
+        reason: 'privacy',
+      });
+    expect(crossSession.status).toBe(403);
+    expectErrorEnvelope(crossSession, 'AUTH_STEP_UP_REQUIRED');
+
+    const steppedUpSession = await prisma.prisma.webSession.findUnique({
+      where: { cookieHash: hashToken(admin.sessionToken) },
+    });
+    await prisma.prisma.webSession.update({
+      where: { id: steppedUpSession!.id },
+      data: { stepUpAt: new Date(Date.now() - 11 * 60 * 1000) },
+    });
+    const expiredStepUp = await admin.agent
+      .post(`/api/v1/admin/results/${session.liveSessionId}/deletion`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        deletionRequestId: first.body.data.id,
+        confirmed: true,
+        reason: 'privacy',
+      });
+    expect(expiredStepUp.status).toBe(403);
+    expectErrorEnvelope(expiredStepUp, 'AUTH_STEP_UP_REQUIRED');
+    expect(
+      (
+        await admin.agent
+          .post('/api/v1/auth/step-up')
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, admin.csrfToken)
+          .send({ password: ADMIN.password })
+      ).status,
+    ).toBe(201);
+
+    const wrongReason = await admin.agent
+      .post(`/api/v1/admin/results/${session.liveSessionId}/deletion`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        deletionRequestId: first.body.data.id,
+        confirmed: true,
+        reason: 'support',
+      });
+    expect(wrongReason.status).toBe(409);
+    expectErrorEnvelope(wrongReason, 'CONFLICT');
+    expect(wrongReason.body.error.field).toBe('reason');
+    expect(
+      await prisma.prisma.archivedResult.findUnique({
+        where: { liveSessionId: session.liveSessionId },
+        select: { status: true },
+      }),
+    ).toEqual({ status: 'active' });
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          trigger: { in: ['early_delete', 'retention'] },
+        },
+      }),
+    ).toBe(0);
+
     const unconfirmed = await admin.agent
       .post(`/api/v1/admin/results/${session.liveSessionId}/deletion`)
       .set('Origin', TEST_ORIGIN)
@@ -373,12 +485,42 @@ describe('LiveSession close/cancel (e2e)', () => {
         reason: 'privacy',
       });
     expect(deleted.status).toBe(201);
+    const conflictingReplay = await admin.agent
+      .post(`/api/v1/admin/results/${session.liveSessionId}/deletion`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({
+        deletionRequestId: first.body.data.id,
+        confirmed: true,
+        reason: 'support',
+      });
+    expect(conflictingReplay.status).toBe(409);
+    expectErrorEnvelope(conflictingReplay, 'CONFLICT');
+    expect(conflictingReplay.body.error.field).toBe('reason');
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          trigger: { in: ['early_delete', 'retention'] },
+          status: 'success',
+        },
+      }),
+    ).toBe(1);
+
     const tombstone = await admin.agent.get(
       `/api/v1/results/${session.liveSessionId}`,
     );
     expect(tombstone.status).toBe(200);
     expect(tombstone.body.data.status).toBe('deleted');
     expect(tombstone.body.data).not.toHaveProperty('payload');
+    const deletedPage = await admin.agent
+      .get('/api/v1/results')
+      .query({ status: 'deleted' });
+    expect(deletedPage.status).toBe(200);
+    expect(deletedPage.body.data.data).toHaveLength(1);
+    expect(deletedPage.body.data.data[0].liveSessionId).toBe(
+      session.liveSessionId,
+    );
     expect(
       await prisma.prisma.archivedResult.findUnique({
         where: { liveSessionId: session.liveSessionId },
@@ -465,6 +607,174 @@ describe('LiveSession close/cancel (e2e)', () => {
       data: [],
       meta: { total: 0 },
     });
+
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const globalPage = await admin.agent
+      .get('/api/v1/results')
+      .query({ page: 1, pageSize: 2, status: 'active' });
+    expect(globalPage.status).toBe(200);
+    expect(globalPage.body.data).toMatchObject({
+      meta: { page: 1, pageSize: 2, total: 3, totalPages: 2 },
+    });
+    expect(globalPage.body.data.data).toHaveLength(2);
+  });
+
+  it('validates archive and deletion-request list query contracts', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    expect(
+      (
+        await teacher.agent
+          .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, teacher.csrfToken)
+      ).status,
+    ).toBe(201);
+
+    for (const query of [
+      { page: 0 },
+      { page: -1 },
+      { page: 1.5 },
+      { pageSize: 0 },
+      { pageSize: 101 },
+      { pageSize: 1.5 },
+      { courseId: 'not-a-uuid' },
+      { status: 'unknown' },
+      { unexpected: 'field' },
+    ]) {
+      const response = await teacher.agent.get('/api/v1/results').query(query);
+      expect(response.status).toBe(400);
+      expectErrorEnvelope(response, 'VALIDATION_FAILED');
+    }
+
+    const combined = await teacher.agent.get('/api/v1/results').query({
+      courseId: session.courseId,
+      status: 'active',
+      page: 1,
+      pageSize: 1,
+    });
+    expect(combined.status).toBe(200);
+    expect(combined.body.data).toMatchObject({
+      meta: { page: 1, pageSize: 1, total: 1, totalPages: 1 },
+    });
+
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    for (const query of [
+      { page: 0 },
+      { pageSize: 101 },
+      { status: 'success' },
+      { unexpected: 'field' },
+    ]) {
+      const response = await admin.agent
+        .get('/api/v1/admin/results/deletion-requests')
+        .query(query);
+      expect(response.status).toBe(400);
+      expectErrorEnvelope(response, 'VALIDATION_FAILED');
+    }
+  });
+
+  it('fails closed at the deletion-request authorization and CSRF boundary', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const other = await provisionTeacher(
+      OTHER_TEACHER.username,
+      OTHER_TEACHER.displayName,
+      OTHER_TEACHER.tempPassword,
+      OTHER_TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    expect(
+      (
+        await teacher.agent
+          .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, teacher.csrfToken)
+      ).status,
+    ).toBe(201);
+    const path = `/api/v1/results/${session.liveSessionId}/deletion-requests`;
+
+    for (const response of [
+      await teacher.agent
+        .post(path)
+        .set(CSRF_HEADER, teacher.csrfToken)
+        .send({ reason: 'privacy' }),
+      await teacher.agent
+        .post(path)
+        .set('Origin', 'http://evil.test')
+        .set(CSRF_HEADER, teacher.csrfToken)
+        .send({ reason: 'privacy' }),
+      await teacher.agent
+        .post(path)
+        .set('Origin', `${TEST_ORIGIN}.evil.test`)
+        .set(CSRF_HEADER, teacher.csrfToken)
+        .send({ reason: 'privacy' }),
+      await teacher.agent
+        .post(path)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, 'wrong-token')
+        .send({ reason: 'privacy' }),
+    ]) {
+      expect(response.status).toBe(403);
+      expectErrorEnvelope(response, 'AUTH_CSRF_INVALID');
+    }
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+
+    const foreign = await other.agent
+      .post(path)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, other.csrfToken)
+      .send({ reason: 'privacy' });
+    expect(foreign.status).toBe(404);
+    expectErrorEnvelope(foreign, 'NOT_FOUND');
+
+    const missing = await teacher.agent
+      .post(`/api/v1/results/${newId()}/deletion-requests`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ reason: 'privacy' });
+    expect(missing.status).toBe(404);
+    expectErrorEnvelope(missing, 'NOT_FOUND');
+    expect(missing.body.error).toEqual(foreign.body.error);
+
+    const malformed = await teacher.agent
+      .post('/api/v1/results/not-a-uuid/deletion-requests')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ reason: 'privacy' });
+    expect(malformed.status).toBe(400);
+    expectErrorEnvelope(malformed, 'VALIDATION_FAILED');
+
+    const invalidReason = await teacher.agent
+      .post(path)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ reason: 'unknown' });
+    expect(invalidReason.status).toBe(400);
+    expectErrorEnvelope(invalidReason, 'VALIDATION_FAILED');
+
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const adminRequest = await admin.agent
+      .post(path)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ reason: 'privacy' });
+    expect(adminRequest.status).toBe(403);
+    expectErrorEnvelope(adminRequest, 'FORBIDDEN');
   });
 
   it('exposes a private admin queue and preserves one request receipt under concurrency', async () => {
@@ -620,7 +930,7 @@ describe('LiveSession close/cancel (e2e)', () => {
     const raceBody = {
       deletionRequestId: secondRequest.body.data.id,
       confirmed: true,
-      reason: 'support',
+      reason: 'privacy',
     };
     const outcomes = await Promise.allSettled([
       governance.purgeOne(
@@ -639,23 +949,55 @@ describe('LiveSession close/cancel (e2e)', () => {
     expect(outcomes.some((outcome) => outcome.status === 'fulfilled')).toBe(
       true,
     );
+    const canonical = await prisma.prisma.deletionEvent.findMany({
+      where: {
+        liveSessionId: secondSession.liveSessionId,
+        trigger: { in: ['early_delete', 'retention'] },
+        status: 'success',
+      },
+    });
+    expect(canonical).toHaveLength(1);
+    expect(['privacy', 'retention']).toContain(canonical[0].reason);
+    const resolvedRequest = await prisma.prisma.deletionEvent.findUnique({
+      where: { id: secondRequest.body.data.id as string },
+    });
+    expect(resolvedRequest).toMatchObject({
+      status: 'success',
+      resolvedByEventId: canonical[0].id,
+      completedAt: canonical[0].completedAt,
+    });
     expect(
-      await prisma.prisma.deletionEvent.count({
-        where: {
-          liveSessionId: secondSession.liveSessionId,
-          trigger: { in: ['early_delete', 'retention'] },
-          status: 'success',
-        },
+      await prisma.prisma.archivedResult.findUnique({
+        where: { liveSessionId: secondSession.liveSessionId },
+        select: { status: true, payload: true },
+      }),
+    ).toEqual({ status: 'deleted', payload: null });
+    expect(
+      await prisma.prisma.deletionManifestOutbox.count({
+        where: { deletionEventId: canonical[0].id },
       }),
     ).toBe(1);
-    expect(
-      await prisma.prisma.deletionEvent.count({
-        where: {
-          id: secondRequest.body.data.id,
-          status: 'requested',
-        },
-      }),
-    ).toBe(0);
+
+    const canonicalReplay = await admin.agent
+      .post(`/api/v1/admin/results/${secondSession.liveSessionId}/deletion`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send(raceBody);
+    expect(canonicalReplay.status).toBe(201);
+    expect(canonicalReplay.body.data.deletion).toMatchObject({
+      trigger: canonical[0].trigger,
+      reason: canonical[0].reason,
+      deletedAt: canonical[0].completedAt?.toISOString(),
+    });
+    const conflictingReplay = await admin.agent
+      .post(`/api/v1/admin/results/${secondSession.liveSessionId}/deletion`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken)
+      .send({ ...raceBody, reason: 'support' });
+    expect(conflictingReplay.status).toBe(409);
+    expectErrorEnvelope(conflictingReplay, 'CONFLICT');
+    expect(conflictingReplay.body.error.field).toBe('reason');
+
     const queue = await admin.agent.get(
       '/api/v1/admin/results/deletion-requests',
     );

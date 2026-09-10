@@ -57,6 +57,11 @@ export class RetentionScheduler implements OnModuleInit, OnModuleDestroy {
           due.dueCount,
           due.oldestDueAgeSeconds,
         );
+        const manifest = await this.governance.inspectManifestDelivery();
+        this.metrics?.recordRetentionManifestLag(manifest.manifestLagSeconds);
+        this.metrics?.recordRetentionManifestDeadRecords(
+          manifest.manifestDeadRecords,
+        );
       })
       .catch((error: unknown) => {
         this.logger.error(

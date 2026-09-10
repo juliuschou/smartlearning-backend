@@ -15,6 +15,10 @@ export const METRIC_NAMES = {
   retentionDueBacklog: 'smartlearning_retention_due_backlog',
   retentionOldestDueAgeSeconds:
     'smartlearning_retention_oldest_due_age_seconds',
+  retentionManifestLagSeconds: 'smartlearning_retention_manifest_lag_seconds',
+  retentionManifestDeadRecords: 'smartlearning_retention_manifest_dead_records',
+  retentionReconciliationFailures:
+    'smartlearning_retention_reconciliation_failures_total',
 } as const;
 
 export const HTTP_METHODS = [

@@ -16,6 +16,11 @@ describe('MetricsService', () => {
       'smartlearning_job_items_total',
       'smartlearning_readiness_dependency_status',
       'smartlearning_readiness_checks_total',
+      'smartlearning_retention_due_backlog',
+      'smartlearning_retention_oldest_due_age_seconds',
+      'smartlearning_retention_manifest_lag_seconds',
+      'smartlearning_retention_manifest_dead_records',
+      'smartlearning_retention_reconciliation_failures_total',
     ]);
     expect(
       metrics.find(

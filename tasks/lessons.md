@@ -280,3 +280,17 @@
 - **Detection signal:** Replacing a weak `toBeDefined()` assertion with identity verification exposed the test helper's unconditional Redis factory.
 - **Prevention rule:** Test doubles for availability-driven failover must derive adapter selection from the same availability state as production, and assertions must verify the concrete replacement target.
 - **Tripwire:** In adapter transition tests, assert both Redis→local and local→Redis identity after toggling availability; do not use presence-only assertions for lifecycle state.
+
+## 2026-09-10 — Use dedicated file tools instead of shell truncation helpers
+
+- **Failure mode:** A repository search command piped `rg` output through `head`, despite the available dedicated search/read tools and harness guidance to avoid shell output-truncation helpers.
+- **Detection signal:** Command text contained `| head -20`; the result happened to work but bypassed the preferred structured file/search workflow.
+- **Prevention rule:** Use `rg` with a sufficiently narrow query and read exact files with the Read tool; do not append `head`, `tail`, `cat`, `sed`, or `awk` merely to constrain output when dedicated tools fit.
+- **Tripwire:** Before issuing a read-only Bash pipeline, check whether the same lookup can be expressed as a narrow `rg` query plus targeted Read; if yes, use those tools instead.
+
+## 2026-09-10 — Commands must target the relevant independent repository
+
+- **Failure mode:** Ran `npx prettier --write src/...` from the UI repository while editing backend files; the command failed with `No files matching the pattern were found` because this multi-project root is not a workspace.
+- **Detection signal:** Tool output named the intended backend-relative paths but found none under the active UI working directory.
+- **Prevention rule:** Before every npm/npx command, identify the owning project and use an explicit project-local binary with absolute target paths (or an explicitly approved project working directory); never assume the session CWD matches the edited repository.
+- **Tripwire:** Compare each command’s target file path with the nearest project `package.json`; if they belong to different repositories, rewrite the command with an explicit backend/UI path before execution.

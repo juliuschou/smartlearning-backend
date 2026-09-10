@@ -373,32 +373,165 @@ describe('OpenAPI document (e2e)', () => {
 
   it('freezes the archive governance paths and safe DTOs', async () => {
     const res = await request(app.getHttpServer()).get('/api/docs-json');
-    expect(res.body.paths).toHaveProperty('/api/v1/results');
-    expect(res.body.paths).toHaveProperty('/api/v1/results/{liveSessionId}');
-    expect(res.body.paths).toHaveProperty(
-      '/api/v1/results/{liveSessionId}/deletion-requests',
+    const paths = res.body.paths;
+    const methodKeys = (path: Record<string, unknown>) =>
+      Object.keys(path).filter((key) =>
+        ['get', 'post', 'put', 'patch', 'delete'].includes(key),
+      );
+
+    expect(methodKeys(paths['/api/v1/results'])).toEqual(['get']);
+    expect(methodKeys(paths['/api/v1/results/{liveSessionId}'])).toEqual([
+      'get',
+    ]);
+    expect(
+      methodKeys(paths['/api/v1/results/{liveSessionId}/deletion-requests']),
+    ).toEqual(['post']);
+    expect(
+      methodKeys(paths['/api/v1/admin/results/deletion-requests']),
+    ).toEqual(['get']);
+    expect(
+      methodKeys(paths['/api/v1/admin/results/{liveSessionId}/deletion']),
+    ).toEqual(['post']);
+    expect(paths).not.toHaveProperty('/api/v1/me/results');
+    expect(paths).not.toHaveProperty('/api/v1/student/results');
+    expect(paths).not.toHaveProperty('/api/v1/students/results');
+
+    const listParameters = paths['/api/v1/results'].get.parameters;
+    expect(listParameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'page',
+          in: 'query',
+          schema: expect.objectContaining({ type: 'integer', minimum: 1 }),
+        }),
+        expect.objectContaining({
+          name: 'pageSize',
+          in: 'query',
+          schema: expect.objectContaining({
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
+          }),
+        }),
+        expect.objectContaining({
+          name: 'courseId',
+          in: 'query',
+          schema: expect.objectContaining({ type: 'string', format: 'uuid' }),
+        }),
+        expect.objectContaining({
+          name: 'status',
+          in: 'query',
+          schema: expect.objectContaining({ enum: ['active', 'deleted'] }),
+        }),
+      ]),
     );
-    expect(res.body.paths).toHaveProperty(
-      '/api/v1/admin/results/deletion-requests',
+    expect(
+      paths['/api/v1/admin/results/deletion-requests'].get.parameters,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'status',
+          schema: expect.objectContaining({ enum: ['requested'] }),
+        }),
+      ]),
     );
-    expect(res.body.paths).toHaveProperty(
-      '/api/v1/admin/results/{liveSessionId}/deletion',
-    );
+
     const schemas = res.body.components.schemas;
-    expect(schemas.ArchiveSummaryDto.properties).toEqual(
+    expect(schemas.DeletionRequestDto.required).toEqual(['reason']);
+    expect(schemas.DeletionRequestDto.properties.reason.enum).toEqual([
+      'privacy',
+      'support',
+    ]);
+    expect(schemas.DeletionConfirmDto.required).toEqual([
+      'deletionRequestId',
+      'confirmed',
+      'reason',
+    ]);
+    expect(schemas.DeletionConfirmDto.properties).toEqual(
       expect.objectContaining({
-        course: expect.any(Object),
-        sessionLabel: expect.any(Object),
-        startedAt: expect.any(Object),
-        deletionRequest: expect.any(Object),
-        deletion: expect.any(Object),
+        deletionRequestId: expect.objectContaining({ format: 'uuid' }),
+        confirmed: expect.objectContaining({ enum: [true] }),
+        reason: expect.objectContaining({ enum: ['privacy', 'support'] }),
       }),
     );
+
+    expect(Object.keys(schemas.ArchiveSummaryDto.properties)).toEqual([
+      'id',
+      'liveSessionId',
+      'course',
+      'sessionLabel',
+      'startedAt',
+      'closedAt',
+      'status',
+      'purgeAt',
+      'deletionRequest',
+      'deletion',
+    ]);
+    expect(schemas.ArchiveSummaryDto.required).toEqual([
+      'id',
+      'liveSessionId',
+      'course',
+      'sessionLabel',
+      'startedAt',
+      'closedAt',
+      'status',
+      'purgeAt',
+      'deletionRequest',
+      'deletion',
+    ]);
+
+    const detailSchema =
+      paths['/api/v1/results/{liveSessionId}'].get.responses['200'].content[
+        'application/json'
+      ].schema;
+    expect(detailSchema).toEqual({
+      oneOf: [
+        { $ref: '#/components/schemas/ActiveArchiveDetailDto' },
+        { $ref: '#/components/schemas/DeletedArchiveDetailDto' },
+      ],
+      discriminator: { propertyName: 'status' },
+    });
+    expect(schemas.ActiveArchiveDetailDto.required).toContain('payload');
+    expect(schemas.DeletedArchiveDetailDto.required).toContain('deletion');
     expect(schemas.DeletedArchiveDetailDto.properties ?? {}).not.toHaveProperty(
       'payload',
     );
-    expect(JSON.stringify(schemas.ArchiveSummaryDto)).not.toMatch(
-      /sessionCode|requesterId|executorId|tokenHash|submissionId/,
+    expect(schemas.ArchivedQuestionDto.properties.result).toEqual(
+      expect.objectContaining({
+        oneOf: [
+          { $ref: '#/components/schemas/PollResultsDto' },
+          { $ref: '#/components/schemas/QuizResultsDto' },
+          { $ref: '#/components/schemas/OpenTextResultsDto' },
+        ],
+        discriminator: { propertyName: 'snapshotType' },
+      }),
+    );
+    expect(Object.keys(schemas.OpenTextResponseDto.properties)).toEqual([
+      'text',
+    ]);
+
+    const propertyNames: string[] = [];
+    const collectPropertyNames = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        value.forEach(collectPropertyNames);
+        return;
+      }
+      if (typeof value !== 'object' || value === null) return;
+      const record = value as Record<string, unknown>;
+      if (typeof record.properties === 'object' && record.properties !== null) {
+        propertyNames.push(...Object.keys(record.properties));
+      }
+      Object.values(record).forEach(collectPropertyNames);
+    };
+    collectPropertyNames(
+      Object.fromEntries(
+        Object.entries(schemas).filter(([name]) =>
+          /Archive|Deletion|PollResults|QuizResults|OpenText/.test(name),
+        ),
+      ),
+    );
+    expect(propertyNames.join('|')).not.toMatch(
+      /sessionCode|requesterId|executorId|tokenHash|participantId|accountId|displayName|submissionId|submittedAt|selectedOptionRefs/,
     );
   });
 

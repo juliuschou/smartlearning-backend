@@ -113,4 +113,104 @@ describe('GovernanceService', () => {
       course: { ownerAccountId: 'teacher-1' },
     });
   });
+
+  it('rejects a mismatched confirmation reason before destructive writes', async () => {
+    const destructiveMocks = [
+      jest.fn(),
+      jest.fn(),
+      jest.fn(),
+      jest.fn(),
+      jest.fn(),
+      jest.fn(),
+    ];
+    const transaction = {
+      archivedResult: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'archive-1',
+          liveSessionId: 'session-1',
+          status: 'active',
+        }),
+        update: destructiveMocks[0],
+      },
+      deletionEvent: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'request-1',
+          reason: 'privacy',
+          resolvedByEvent: null,
+        }),
+        create: destructiveMocks[1],
+        update: destructiveMocks[2],
+      },
+      submission: { deleteMany: destructiveMocks[3] },
+      sessionQuestion: { deleteMany: destructiveMocks[4] },
+      deletionManifestOutbox: { create: destructiveMocks[5] },
+    };
+    const service = new GovernanceService({ prisma: {} } as never, {} as never);
+
+    await expect(
+      (service as unknown as GovernanceInternals).purgeOneInTransaction(
+        transaction,
+        'session-1',
+        'early_delete',
+        'admin-1',
+        'support',
+        new Date('2026-02-01T00:00:00.000Z'),
+        'request-1',
+      ),
+    ).rejects.toMatchObject({ code: 'CONFLICT', field: 'reason' });
+    for (const mock of destructiveMocks) expect(mock).not.toHaveBeenCalled();
+  });
+
+  it('returns only a matching canonical replay and rejects a conflicting one', async () => {
+    const resolvedByEvent = {
+      id: 'deletion-1',
+      trigger: 'early_delete',
+      reason: 'privacy',
+      status: 'success',
+      completedAt: new Date('2026-02-01T00:00:00.000Z'),
+    };
+    const transaction = {
+      archivedResult: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'archive-1',
+          liveSessionId: 'session-1',
+          status: 'deleted',
+        }),
+      },
+      deletionEvent: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'request-1',
+          reason: 'privacy',
+          resolvedByEvent,
+        }),
+      },
+    };
+    const service = new GovernanceService({ prisma: {} } as never, {} as never);
+    const purge = (reason: 'privacy' | 'support') =>
+      (service as unknown as GovernanceInternals).purgeOneInTransaction(
+        transaction,
+        'session-1',
+        'early_delete',
+        'admin-1',
+        reason,
+        new Date('2026-02-02T00:00:00.000Z'),
+        'request-1',
+      );
+
+    await expect(purge('privacy')).resolves.toEqual({
+      archiveId: 'archive-1',
+      liveSessionId: 'session-1',
+      deletionRequestId: 'request-1',
+      status: 'deleted',
+      deletion: {
+        trigger: 'early_delete',
+        reason: 'privacy',
+        deletedAt: '2026-02-01T00:00:00.000Z',
+      },
+    });
+    await expect(purge('support')).rejects.toMatchObject({
+      code: 'CONFLICT',
+      field: 'reason',
+    });
+  });
 });

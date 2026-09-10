@@ -27,14 +27,19 @@ export type DeletionReason = (typeof DELETION_REASONS)[number];
 export type DeletionTrigger = 'early_delete' | 'retention';
 
 export class ArchiveListQueryDto {
-  @ApiPropertyOptional({ default: 1, minimum: 1 })
+  @ApiPropertyOptional({ type: 'integer', default: 1, minimum: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({
+    type: 'integer',
+    default: 20,
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -54,14 +59,19 @@ export class ArchiveListQueryDto {
 }
 
 export class DeletionRequestListQueryDto {
-  @ApiPropertyOptional({ default: 1, minimum: 1 })
+  @ApiPropertyOptional({ type: 'integer', default: 1, minimum: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({
+    type: 'integer',
+    default: 20,
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -153,13 +163,10 @@ export class ArchiveSummaryDto {
   @ApiProperty({ format: 'date-time' })
   purgeAt!: string;
 
-  @ApiPropertyOptional({
-    type: () => DeletionRequestSummaryDto,
-    nullable: true,
-  })
+  @ApiProperty({ type: () => DeletionRequestSummaryDto, nullable: true })
   deletionRequest!: DeletionRequestSummaryDto | null;
 
-  @ApiPropertyOptional({ type: () => ArchiveDeletionDto, nullable: true })
+  @ApiProperty({ type: () => ArchiveDeletionDto, nullable: true })
   deletion!: ArchiveDeletionDto | null;
 }
 

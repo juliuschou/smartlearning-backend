@@ -623,6 +623,12 @@ export class GovernanceService {
     if (trigger === 'early_delete' && !request) {
       throw new NotFoundError('Deletion request not found');
     }
+    if (trigger === 'early_delete' && request?.reason !== reason) {
+      throw new ConflictError(
+        'Deletion confirmation reason must match the request.',
+        'reason',
+      );
+    }
     if (request?.resolvedByEvent) {
       return this.deletionResult(archive, request.resolvedByEvent, request.id);
     }
@@ -740,6 +746,30 @@ export class GovernanceService {
         liveSessionId: row.liveSessionId,
         purgeAt: row.purgeAt.toISOString(),
       })),
+    };
+  }
+
+  /**
+   * Manifest export lag + dead-record counts for the retention alert rules
+   * (smartlearning_retention_manifest_lag_seconds / manifest_dead_records).
+   * Lag is measured against the oldest un-exported outbox row's creation
+   * time; dead rows are permanent failures that stopped the retry loop.
+   */
+  async inspectManifestDelivery(now = new Date()) {
+    const unexported = await this.db.deletionManifestOutbox.findFirst({
+      where: { status: { not: 'exported' } },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: { createdAt: true },
+    });
+    const deadCount = await this.db.deletionManifestOutbox.count({
+      where: { status: 'failed' },
+    });
+    return {
+      observedAt: now.toISOString(),
+      manifestLagSeconds: unexported
+        ? Math.max(0, (now.getTime() - unexported.createdAt.getTime()) / 1000)
+        : 0,
+      manifestDeadRecords: deadCount,
     };
   }
 

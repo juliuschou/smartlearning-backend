@@ -3,11 +3,13 @@ import {
   parseManifestWatermark,
 } from './retention-reconciliation';
 
+// Synthetic but well-formed UUID v7s; ids must survive the parser's UUID
+// validation. Numeric suffixes keep ordering assertions readable.
 const manifest = (id: string, deletedAt: string) => ({
   contractVersion: 'deletion-manifest.v1',
-  deletionEventId: id,
-  archivedResultId: `a-${id}`,
-  liveSessionId: `s-${id}`,
+  deletionEventId: `0198c37c-8a2f-7dd1-b2e4-3af6f4c1d00${id}`,
+  archivedResultId: `0198c37c-8a2f-7dd1-b2e4-3af6f4c1d10${id}`,
+  liveSessionId: `0198c37c-8a2f-7dd1-b2e4-3af6f4c1d20${id}`,
   trigger: 'retention',
   reason: 'retention',
   deletedAt,
@@ -103,7 +105,7 @@ describe('RetentionReconciliationService', () => {
     });
     await expect(service.apply()).resolves.toEqual({ applied: 2, skipped: 0 });
     expect(saved).toEqual({
-      deletionEventId: '2',
+      deletionEventId: '0198c37c-8a2f-7dd1-b2e4-3af6f4c1d002',
       deletedAt: '2026-01-02T00:00:00.000Z',
     });
   });

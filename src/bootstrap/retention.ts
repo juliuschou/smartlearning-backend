@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { GovernanceService } from '../modules/governance/application/governance.service';
+import { MetricsService } from '../modules/metrics/metrics.service';
 import { TransactionService } from '../prisma/transaction.service';
 import {
   RetentionReconciliationService,
@@ -111,7 +112,12 @@ async function main(): Promise<void> {
           });
         }),
       );
-      console.log(JSON.stringify(await service.apply()));
+      try {
+        console.log(JSON.stringify(await service.apply()));
+      } catch (error) {
+        app.get(MetricsService).recordRetentionReconciliationFailure();
+        throw error;
+      }
     } else if (command === 'inspect')
       console.log(JSON.stringify(await governance.inspectDue()));
     else if (command === 'run-once') {

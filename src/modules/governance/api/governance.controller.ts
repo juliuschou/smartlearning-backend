@@ -26,6 +26,13 @@ import {
   TeacherOrAdminGuard,
 } from '../../../common/auth';
 import type { AuthContext } from '../../../common/auth';
+import {
+  OpenTextResponseDto,
+  OpenTextResultsDto,
+  OptionCountDto,
+  PollResultsDto,
+  QuizResultsDto,
+} from '../../live-sessions/api/dto';
 import { GovernanceService } from '../application/governance.service';
 import {
   ActiveArchiveDetailDto,
@@ -52,6 +59,11 @@ import {
   ArchiveSummaryDto,
   ArchivedResultPayloadDto,
   ArchivedQuestionDto,
+  OptionCountDto,
+  PollResultsDto,
+  QuizResultsDto,
+  OpenTextResultsDto,
+  OpenTextResponseDto,
   ActiveArchiveDetailDto,
   DeletedArchiveDetailDto,
   DeletionRequestSummaryDto,
