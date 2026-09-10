@@ -24,7 +24,8 @@ coverage
 .env.development
 .env.test
 .env.production
+.env.sandbox-rehearsal
 /ops/topology/.env.cp8
 
 # Prisma generated client（由 prisma generate 產生，不入版控）
-/generated
+/generated/

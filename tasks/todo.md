@@ -3061,8 +3061,8 @@ The checkpoint is not closed: external immutable object-store delivery, producti
 - **Credential handling:** do not paste secrets into chat or commit them. Materialize them only in a gitignored local env file or approved secret store, then run the guarded rehearsal with the exact target recorded.
 - **Current status:** **DEFERRED — external sandbox setup and delivery verification skipped by user.** No provider connection or upload was attempted.
 
-
 ### FE-6 S3-compatible provider adapter — 2026-09-09
+
 - [x] Add provider-neutral manifest errors and deterministic canonical JSON.
 - [x] Add S3 adapter contract: conditional immutable write, SHA-256 checksum, SSE-S3, and compliance object lock.
 - [x] Preserve local provider as the default and add S3 env validation/templates.
@@ -3085,3 +3085,220 @@ The checkpoint is not closed: external immutable object-store delivery, producti
 - Non-blocking Nest `LegacyRouteConverter` warnings and intentional exporter failure-path warning logs only.
 
 **Final disposition:** FE-6 remains **PARTIALLY COMPLETE / OPEN**. Controlled local-provider evidence and S3 adapter/config implementation are verified; real S3 sandbox upload, production-like alert firing, and full restore/restart rehearsal remain deferred.
+
+## 2026-09-09 — External S3 sandbox upload, alert firing, and restore/restart rehearsal (CP2/FE-6 deferred gaps closed)
+
+### What was run (all sandbox-only, guarded `smartlearning_test`, disposable MinIO at 127.0.0.1:19000)
+
+- **S3 sandbox upload**: disposable MinIO bucket `sl-rehearsal-manifests` (versioned + object-lock enabled, COMPLIANCE default), write-only user `rehearsal-upload` (PutObject + retention actions only, prefix-scoped). New guarded integration spec `test/s3-sandbox-rehearsal.integration-spec.ts` proves: outbox row → S3 upload (canonical JSON, SHA-256 checksum, If-None-Match:'*', SSE, 90-day COMPLIANCE retention), outbox → `exported`, zero-export idempotent replay, and duplicate re-put accepted. Objects verified from an admin credential: canonical body, checksum, `COMPLIANCE` until +90d.
+- **Production-like alert firing**: implemented the three retention metrics the alert rules referenced but the service never emitted (`smartlearning_retention_manifest_lag_seconds`, `..._manifest_dead_records`, `..._reconciliation_failures_total`) plus `GovernanceService.inspectManifestDelivery()`; wired lag/dead into `RetentionScheduler`, reconciliation failures into the retention CLI. Rehearsal (MinIO stopped + seeded failed outbox + overdue archive + malformed-manifest apply) produced: oldest_due_age 260 515 s (>86 400 → `SmartLearningRetentionOldestDueAgeHigh` FIRES), dead_records 2 (>0 → `SmartLearningRetentionManifestDeadRecords` FIRES critical), reconciliation_failures 1 (increase>0 → `SmartLearningRetentionReconciliationFailing` FIRES), lag 1 314 s and backlog 3 (below thresholds as expected).
+
+### Gaps found and fixed during the rehearsal
+
+- `parseDeletionManifest` accepted non-UUID ids — malformed manifests survived parsing and only failed at the DB layer (22P02) after reconciliation committed to apply. Hardened: UUID-format validation for `deletionEventId`/`archivedResultId`/`liveSessionId` at parse time (spec fixtures updated to UUID v7 + new rejection case).
+- S3 provider: SSE-S3 rejected by MinIO without KMS → `S3_SERVER_SIDE_ENCRYPTION` env option (`AES256` default | `aws:kms` | `none`), documented in env examples. Write-only credentials cannot read-back on conflict → clean `PreconditionFailed` (403 on the verification GET) is now treated as idempotent success because `If-None-Match: '*'` already proves the key exists unchanged.
+- Fixture fidelity: fixture events used `['participants']` while the production path writes the full 5-category set — such manifests could never reconcile (apply requires exactly the full set AND identity-match with the DB event). Fixtures now use the production category set with `completed_at` aligned to manifest `deletedAt`.
+
+### Restore/restart rehearsal (no-resurrection) — PASS
+
+- Exported production-style manifest to the S3 sandbox → fetched it as the reconcile input → `reconcile-apply` applied it (archive → `deleted`, payload cleared, submissions/participants/session_questions = 0) → idempotent replay with watermark `{applied:0, skipped:1}` → archive stayed `deleted` (no resurrection), watermark advanced and visible in `reconcile-inspect`.
+- Restart durability: MinIO + Postgres containers were restarted mid-rehearsal; bucket contents and DB state survived.
+
+### Verification
+
+- `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build` — PASS.
+- `npm test -- governance|manifest|retention|metrics` — 10 suites / 41 tests passed.
+- `npm run test:integration -- test/s3-sandbox-rehearsal.integration-spec.ts` (with sandbox env) — PASS 1/1.
+- `git diff --check` — PASS. `.env.sandbox-rehearsal` (credentials) is gitignored; no secrets in code or chat.
+
+### Cleanup note
+
+- The disposable MinIO container `s3-sandbox-rehearsal` (port 19000) and its volume remain for follow-up evidence gathering; tear down with `docker rm -f s3-sandbox-rehearsal && docker volume rm minio-sandbox-data`. Rehearsal DB rows remain in `smartlearning_test` (truncateAll-covered by future suites).
+
+## 2026-09-10 — BE-5 CP1 contract remediation
+
+### Goal and acceptance criteria
+
+- [x] Replace persisted archive payload pass-through with strict nested allowlist reconstruction.
+- [x] Reject Admin confirmation when its reason differs from the Teacher request reason; conflicting replay also returns 409 before writes.
+- [x] Preserve matching canonical replay and request/session existence-hiding 404 behavior.
+- [x] Freeze the archive/deletion contract with focused unit, OpenAPI, authorization/privacy, CSRF/Origin, step-up and race tests.
+- [x] Synchronize the backend API reference and authoritative governance documentation.
+- [x] Produce machine-readable verification with 0 failed / 0 skipped and exact working-tree provenance.
+- [x] Stop for manual CP1 confirmation; do not enter CP2 or FE-6.
+
+### Scope and decisions
+
+- User authorized **CP1 remediation only** after acknowledging the blocked CP1 review.
+- User selected strict reason binding: Admin `reason` must equal the stored Teacher-request `reason`; mismatch uses stable `CONFLICT` with `field: reason`.
+- No Prisma schema or migration change.
+- Preserve unrelated dirty retention/S3/metrics/rehearsal work. In `governance.service.ts`, the pre-existing `inspectManifestDelivery()` diff is out of scope and must remain intact.
+
+### Dependencies and environment
+
+- Node.js 24+ and existing npm dependencies.
+- Non-DB unit/OpenAPI/static verification may run first through a dedicated test subagent.
+- **DB authorization（2026-09-10）：** 使用者已授權針對 guarded `NODE_ENV=test`／`smartlearning_test` 執行 migration status、既有 E2E setup 的 reset/truncate 與 suite-owned destructive fixtures。不得觸及 dev/staging/production、pre-existing non-suite data、external S3/MinIO、restore 或 upload；不手動執行 migration deploy。
+
+### Risk and rollback
+
+- **Risk:** high privacy/governance area; medium implementation risk because the fix is localized and schema-free.
+- **Rollback:** revert only this parser/reason-binding/test/documentation slice. Never restore deleted data. If historical payload compatibility fails, fail closed and forward-fix the allowlist parser rather than restoring shallow pass-through.
+
+### Working notes
+
+- **Baseline finding（fixed）：** archive parser previously validated selected fields but returned the original persisted question object, allowing unknown nested identity fields to reach active-detail HTTP responses; it now reconstructs the nested allowlist.
+- **Baseline finding（fixed）：** resolved-request replay previously returned the canonical event before comparing the incoming reason; it now performs strict reason comparison first and returns non-destructive 409 on conflict.
+- Historical CP1 test counts are not current-tree evidence; new Jest JSON artifacts must be written outside the repository.
+
+### Verification
+
+- [x] Focused archive-projection unit tests with Jest JSON artifact.
+- [x] Focused governance-service unit tests with Jest JSON artifact.
+- [x] Expanded OpenAPI contract suite with Jest JSON artifact.
+- [x] Typecheck, lint:check, format:check, build and `git diff --check`.
+- [x] Separately authorized guarded archive-governance E2E with Jest JSON artifact.
+
+### Results
+
+- Strict archive parser reconstructs root/question/result/option/open-text response through an allowlist; malformed known fields fail closed and unknown fields do not cross the HTTP projection boundary.
+- Admin confirmation reason now must match the stored Teacher request reason before canonical replay or any destructive write; mismatch returns `CONFLICT` with `field: reason`.
+- OpenAPI now freezes governance methods, query integer bounds, request required/enums, active/deleted discriminator, nested result DTOs and prohibited property names.
+- Archive governance E2E now covers 11 cases including student denial, invalid queries, Admin global list, request existence hiding, CSRF/Origin, session-bound/expired step-up, strict reason replay and stronger race reconciliation.
+- Machine-readable evidence:
+  - archive parser: `/home/user/.claude/test-results/archive-projection-20260910065124-68979.json` — 1 suite / 10 tests, 0 failed / 0 skipped.
+  - focused governance units: `/home/user/.claude/test-results/governance-focused-20260910065359-70174.json` — 2 suites / 15 tests, 0 failed / 0 skipped.
+  - OpenAPI: `/home/user/.claude/test-results/openapi-e2e-20260910-070409-75506.json` — 1 suite / 5 tests, 0 failed / 0 skipped.
+  - guarded DB E2E: `/home/user/.claude/test-results/archive-governance-20260910T174401200177123.json` — `smartlearning_test`, 1 suite / 11 tests, 0 failed / 0 skipped; migration status up to date.
+- `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` — PASS.
+- Provenance: backend branch `main`, HEAD `e880b0ef69b1116ced44fcbac639458ed5eaba9e`, with explicitly preserved pre-existing retention/S3/metrics dirty work plus this CP1 slice. No commit/stage, CP2, FE-6, production operation, external upload or restore was performed.
+- Final disposition: CP1 remediation evidence complete; STOP pending manual `BE-5 Checkpoint 1 verified; authorize CP2 operational evidence review.`
+
+## 2026-09-10 — BE-5 CP2 Checkpoint A provenance and safety baseline
+
+### Goal and acceptance criteria
+
+- [x] Inventory and classify every tracked modification and untracked path in the backend working tree without discarding existing work.
+- [x] Restore the Prisma generated-output ignore rule while retaining the independent sandbox-env secret rule.
+- [x] Freeze the current revision, package versions, migration checksums, and evidence limitations.
+- [x] Separate product/test promotion candidates from rehearsal tooling and generated output.
+- [x] Record cleanup assets and unresolved owner/expiry decisions without performing cleanup.
+- [x] Keep all behavior changes, DB/network operations, cleanup, commits, and FE-6 outside Checkpoint A.
+
+### Authorization and boundary
+
+- User authorized **CP2 Checkpoint A implementation only**.
+- Authorized changes: provenance inventory, `.gitignore` correction, and this safety-baseline record in `smartLearning-backend`.
+- Not authorized: source behavior changes, tests, package/code generation, migration application, DB access/mutation, purge, restore, reconciliation apply, S3/MinIO access, containers, credentials, cleanup, stage/commit/push, staging/production operations, or FE-6.
+- The unrelated dirty `smartLearning-ui` FE-5.4 working tree was not touched.
+
+### Risk and rollback
+
+- **Risk level:** low repository/configuration risk; high governance significance because the baseline controls what later evidence may claim.
+- **Affected paths:** `.gitignore` and `tasks/todo.md` only for this checkpoint.
+- **Rollback:** revert only the Checkpoint A `.gitignore` and task-record additions. Do not delete generated files, rehearsal tools, credentials, containers, volumes, objects, or test rows as rollback.
+
+### Frozen baseline
+
+- Repository: `smartLearning-backend`.
+- Branch/revision: `main` at `e880b0ef69b1116ced44fcbac639458ed5eaba9e`, ahead of `origin/main` by 9 commits.
+- Initial working tree: 24 tracked modified paths plus untracked generated Prisma output, three rehearsal scripts, and one S3 sandbox integration spec.
+- Package/version evidence from `package-lock.json`: backend `0.0.1`; Nest core `11.2.0`; Nest Swagger `11.4.6`; Prisma CLI/client `7.9.1`; TypeScript `5.9.3`; Jest `29.7.0`.
+- Node is not pinned in `package.json`; repository requirement remains Node.js 24+. npm is not version-pinned.
+- No migration path is modified or untracked. There are 18 tracked `migration.sql` files.
+- No historical PASS count is current Checkpoint A verification evidence; no tests were run.
+
+### Migration checksum manifest
+
+Generated read-only with:
+
+`find prisma/migrations -maxdepth 2 -name migration.sql -print0 | sort -z | xargs -0 sha256sum`
+
+- `20260815163722_init_system_setting` — `2007322e550275236e3818c32a8a2fb3b4c890ba3f315a039091903aa7b0abac`
+- `20260815174233_add_identity_and_course` — `f7e53827fe2954e9ee43135590bc426cf6c432d0523c230910185130acdbc1d4`
+- `20260816100000_add_step_up_at` — `2a150da8644b84fd4cae55cac61f983e3b59ee6a6e32b8b8f1d414396c273a37`
+- `20260816120000_add_poll_live_session_submission` — `702d55a66dcb6319cacb357c9b45c2bbf8109ca394d0bfaab6c45f8219b57a6c`
+- `20260816130000_harden_poll_constraints` — `950bca90abca45be6b5d59c1674b69c7dbe77480949d455583d96dcf0f671e59`
+- `20260816140000_add_poll_option_refs` — `b93699430ab930c8d81842acc12f04476af1c401807908d0d1fcdf195defa4dc`
+- `20260816150000_scope_live_session_question_selection` — `025a9acb952c5f7c976748fe608a1dc54976908fe181bfe7ef59bbc4b610c454`
+- `20260816160000_add_cli_credential_and_batch` — `c7eb91ca6a28cd76980a998cbbafbba6f37c6bc711e70928d6e5e72a0591adea`
+- `20260817100000_relax_submission_answer_cardinality` — `bbba6dc3834bd9e15e58321f645e6f303d89330829a431dc3abb631aa27ba33a`
+- `20260818100000_add_student_role` — `275f19e6a23e492cbfe6a84b08ccbec14ab1e22667f262c135f9b49edf91f419`
+- `20260818110000_add_course_enrollment` — `3adea185996f443deb6c278a8a672da63d7695906c766c8b6643ae55d83663b4`
+- `20260818120000_bind_participant_account` — `00e723b128e1401f3ef3acaaabe7ec2b586a6b2933883e27406208d021df3ec3`
+- `20260828090000_add_archive_governance` — `add057a28420154a26211b41c6230e031fcb144aad57170d7db5d1e02479314d`
+- `20260828110000_add_durable_realtime` — `53bd3de9941e5a99030b6209b9e67e1a4ab83f3052942525af778e3f5a58acb4`
+- `20260830100000_add_cli_credential_rotation_lineage` — `6cf78aba0df9da10bd6bc8eaed4d9054043c88858d5508e2ac85f42376218c1f`
+- `20260908090000_freeze_archive_governance_contract` — `80b4662556c51b833e84d74b17592a4344f5dabd0e97e4ad693c15faf1cd17ab`
+- `20260909090000_add_deletion_manifest_outbox` — `c324c6339c3ad38dd26637b231ef520a1ddfcf2c78c9ae2c906cc9e29cc7d1ff`
+- `20260909100000_add_manifest_outbox_lease` — `2ec3c740eebc3129abdb77ea27cac2c38bb41102ac3f2ee407f0e52aca41063d`
+
+### Working-tree classification
+
+#### Product implementation — preserve as later review/promotion candidates
+
+- `src/bootstrap/retention.ts`
+- `src/config/env.validation.ts`
+- `src/modules/governance/api/dto/governance.dto.ts`
+- `src/modules/governance/api/governance.controller.ts`
+- `src/modules/governance/application/governance.service.ts`
+- `src/modules/governance/application/retention.scheduler.ts`
+- `src/modules/governance/application/s3-manifest.provider.ts`
+- `src/modules/governance/domain/archive-projection.ts`
+- `src/modules/governance/domain/deletion-manifest.ts`
+- `src/modules/metrics/metrics.constants.ts`
+- `src/modules/metrics/metrics.service.ts`
+
+No promotion, staging, or behavioral modification is authorized by Checkpoint A. In particular, the unsafe S3 412/403 path remains for a separately authorized checkpoint.
+
+#### Test evidence — preserve as later regression/contract candidates
+
+- Colocated governance, reconciliation, archive-projection, deletion-manifest, and metrics specs.
+- `test/archive-governance.e2e-spec.ts`
+- `test/openapi.e2e-spec.ts`
+- `test/s3-sandbox-rehearsal.integration-spec.ts` is sandbox/external-provider evidence and must not be promoted or executed until its exact target, credential scope, guards, owner, expiry, and cleanup contract are reviewed.
+
+#### Rehearsal tooling — defer pending ownership and safety review
+
+- `scripts/alert-rehearsal-seed.ts` — guarded-test-DB mutation helper; no execution authorized.
+- `scripts/export-once.ts` — one-shot external exporter helper; not an approved production/operator interface.
+- `scripts/sweep-and-scrape.ts` — retention/metrics/failure rehearsal helper; no execution authorized.
+
+These files are retained unchanged. They must be promoted into a single maintained, gated operational surface or explicitly removed under later authorization; Checkpoint A makes no destructive disposition.
+
+#### Generated output — ignore and regenerate, do not promote
+
+- `generated/prisma/` is Prisma-generated output and is restored to `/generated/` ignore coverage.
+- The sandbox secret rule remains independently defined as `.env.sandbox-rehearsal`.
+- No generated file was deleted, regenerated, staged, or inspected for secret content.
+
+#### Documentation/configuration assets — preserve with corresponding implementation review
+
+- `.env.example`, `.env.production.example`, `docs/frontend-api-reference.md`, `tasks/lessons.md`, and the pre-existing portions of `tasks/todo.md` remain dirty and require review with the behavior they describe.
+- No clearly unrelated dirty backend path was found; all current paths belong to governance/retention/S3/metrics, tests, rehearsal evidence, generated output, or associated documentation/configuration.
+
+### Cleanup ownership and expiry register
+
+| Asset                                  | Current state                                         | Owner                    | Expiry                                                 | Cleanup boundary                                                                          |
+| -------------------------------------- | ----------------------------------------------------- | ------------------------ | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `.env.sandbox-rehearsal` credentials   | Gitignored; contents not inspected                    | **UNASSIGNED — blocker** | **UNSET — blocker**                                    | Rotation/revocation requires exact credential-system authorization.                       |
+| MinIO container `s3-sandbox-rehearsal` | Previously recorded as retained                       | **UNASSIGNED — blocker** | **UNSET — blocker**                                    | Stop/remove requires separate container cleanup authorization.                            |
+| MinIO volume `minio-sandbox-data`      | Previously recorded as retained                       | **UNASSIGNED — blocker** | **UNSET — blocker**                                    | Removal is destructive and separately authorized.                                         |
+| Sandbox bucket/prefix/objects          | Existence inferred from historical notes; not queried | **UNASSIGNED — blocker** | **UNSET — blocker**                                    | List/delete requires exact endpoint/bucket/prefix and separate read/delete authorization. |
+| `smartlearning_test` rehearsal rows    | Historically recorded as retained; not queried        | **UNASSIGNED — blocker** | **UNSET — blocker**                                    | Truncate/delete requires exact guarded DB and run-scoped authorization.                   |
+| Rehearsal scripts/spec                 | Retained untracked                                    | **UNASSIGNED — blocker** | Review before next CP2 implementation slice            | Removal or promotion requires explicit review; no cleanup implied.                        |
+| Generated Prisma output                | Locally present; now ignored                          | Repository build process | Regenerate when schema/client generation is authorized | No deletion or regeneration in Checkpoint A.                                              |
+
+The owner/expiry fields cannot be invented from repository evidence. Checkpoint A records them as explicit blockers; no cleanup command is approved or executed.
+
+### Verification and results
+
+- [x] Read-only revision/status inventory.
+- [x] Read-only changed/untracked path inventory.
+- [x] Read-only lockfile version extraction.
+- [x] Read-only migration count and SHA-256 manifest.
+- [x] `.gitignore` now retains `.env.sandbox-rehearsal` and separately ignores `/generated/`.
+- [x] Final `git diff --check` and focused Checkpoint A diff review.
+- [x] `tasks/todo.md` Prettier check after the focused formatting correction.
+
+**Results:** Checkpoint A inventory, ignore-rule correction, migration checksum manifest, and safety register are complete. Static verification passed after a documentation-only formatting correction. The clean-revision gate remains **BLOCKED** until later authorization resolves the pre-existing dirty product/test/rehearsal work and assigns cleanup owners/expiry. No evidence from this dirty tree may be described as a clean immutable CP2 revision.
