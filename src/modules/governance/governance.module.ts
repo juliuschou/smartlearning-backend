@@ -5,6 +5,7 @@ import {
 } from './api/governance.controller';
 import { GovernanceService } from './application/governance.service';
 import { RetentionScheduler } from './application/retention.scheduler';
+import { ManifestExportScheduler } from './application/manifest-export.scheduler';
 import { ConfigService } from '@nestjs/config';
 import {
   DELETION_MANIFEST_PROVIDER,
@@ -17,6 +18,7 @@ import { S3ManifestProvider } from './application/s3-manifest.provider';
   providers: [
     GovernanceService,
     RetentionScheduler,
+    ManifestExportScheduler,
     LocalImmutableManifestProvider,
     DeletionManifestExporter,
     {

@@ -50,6 +50,7 @@ export type PublishOutcome = (typeof PUBLISH_OUTCOMES)[number];
 export const JOB_NAMES = [
   'live_session_auto_close',
   'retention_purge',
+  'manifest_export',
 ] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 
@@ -63,6 +64,7 @@ export const JOB_ITEM_RESULTS = [
   'deleted',
   'retried',
   'quarantined',
+  'exported',
 ] as const;
 export type JobItemResult = (typeof JOB_ITEM_RESULTS)[number];
 

@@ -41,6 +41,8 @@ describe('retention operational artifacts', () => {
     }
     expect(runbook).toContain('immutable object-store');
     expect(runbook).toContain('keep all retention gates disabled');
-    expect(runbook).toContain('No production retention worker');
+    expect(runbook).toContain('not production-authorized or enabled');
+    expect(runbook).toContain('dry-run');
+    expect(runbook).toContain('RETENTION_MANIFEST_EXPORT_BATCH_SIZE');
   });
 });

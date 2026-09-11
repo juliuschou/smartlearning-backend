@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { GovernanceService } from '../modules/governance/application/governance.service';
+import { DeletionManifestExporter } from '../modules/governance/application/deletion-manifest.exporter';
 import { MetricsService } from '../modules/metrics/metrics.service';
 import { TransactionService } from '../prisma/transaction.service';
 import {
@@ -11,6 +12,7 @@ import {
 
 export type RetentionCommand =
   | 'inspect'
+  | 'dry-run'
   | 'run-once'
   | 'manifest-export-once'
   | 'reconcile-inspect'
@@ -21,6 +23,7 @@ export function parseRetentionCommand(argv: string[]): RetentionCommand {
   if (
     [
       'inspect',
+      'dry-run',
       'run-once',
       'manifest-export-once',
       'reconcile-inspect',
@@ -120,24 +123,29 @@ async function main(): Promise<void> {
       }
     } else if (command === 'inspect')
       console.log(JSON.stringify(await governance.inspectDue()));
-    else if (command === 'run-once') {
-      requireGate('RETENTION_PURGE_ENABLED');
-      console.log(
-        JSON.stringify({
-          executed: false,
-          reason:
-            'DB-mutating retention run is intentionally not wired into this local-only command',
-        }),
+    else if (command === 'dry-run') {
+      const report = await governance.purgeDue(
+        Number(process.env.RETENTION_PURGE_BATCH_SIZE || '50'),
+        new Date(),
+        true,
       );
+      console.log(JSON.stringify(report));
+    } else if (command === 'run-once') {
+      requireGate('RETENTION_PURGE_ENABLED');
+      const result = await governance.purgeDue(
+        Number(process.env.RETENTION_PURGE_BATCH_SIZE || '50'),
+        new Date(),
+      );
+      console.log(JSON.stringify(result));
+      if (result.failed > 0) process.exitCode = 1;
     } else {
       requireGate('RETENTION_MANIFEST_EXPORT_ENABLED');
-      console.log(
-        JSON.stringify({
-          executed: false,
-          reason:
-            'External manifest export is intentionally not wired into this local-only command',
-        }),
+      const exporter = app.get(DeletionManifestExporter);
+      const result = await exporter.exportDueBatch(
+        Number(process.env.RETENTION_MANIFEST_EXPORT_BATCH_SIZE || '50'),
       );
+      console.log(JSON.stringify(result));
+      if (result.failed > 0) process.exitCode = 1;
     }
   } finally {
     await app.close();

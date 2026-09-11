@@ -329,4 +329,47 @@ describe('validateEnv', () => {
     });
     expect(config.S3_SERVER_SIDE_ENCRYPTION).toBe('none');
   });
+
+  // BE-5.2 Checkpoint E — independent purge + manifest-export workers.
+  it('defaults the retention purge lease/max-attempts and export fields', () => {
+    const config = validateEnv({ ...baseEnv, NODE_ENV: 'test' });
+    expect(config.RETENTION_MANIFEST_EXPORT_ENABLED).toBe(false);
+    expect(config.RETENTION_MANIFEST_EXPORT_TICK_MS).toBe(15 * 60 * 1000);
+    expect(config.RETENTION_MANIFEST_EXPORT_BATCH_SIZE).toBe(50);
+    expect(config.RETENTION_PURGE_LEASE_MS).toBeUndefined();
+    expect(config.RETENTION_PURGE_MAX_ATTEMPTS).toBeUndefined();
+  });
+
+  it('coerces the retention worker and manifest-export fields from strings', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      NODE_ENV: 'test',
+      RETENTION_PURGE_LEASE_MS: '25000',
+      RETENTION_PURGE_MAX_ATTEMPTS: '7',
+      RETENTION_MANIFEST_EXPORT_ENABLED: '1',
+      RETENTION_MANIFEST_EXPORT_TICK_MS: '60000',
+      RETENTION_MANIFEST_EXPORT_BATCH_SIZE: '10',
+    });
+    expect(config.RETENTION_PURGE_LEASE_MS).toBe(25000);
+    expect(config.RETENTION_PURGE_MAX_ATTEMPTS).toBe(7);
+    expect(config.RETENTION_MANIFEST_EXPORT_ENABLED).toBe(true);
+    expect(config.RETENTION_MANIFEST_EXPORT_TICK_MS).toBe(60000);
+    expect(config.RETENTION_MANIFEST_EXPORT_BATCH_SIZE).toBe(10);
+  });
+
+  it('rejects manifest export enabled in production without a durable S3 provider', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        NODE_ENV: 'production',
+        LOGIN_RATE_LIMIT_MODE: 'redis-required',
+        LOGIN_RATE_LIMIT_REDIS_URL: 'redis://localhost:6379',
+        LOGIN_RATE_LIMIT_KEY_SECRET: 'a'.repeat(32),
+        DELETION_MANIFEST_PROVIDER: 'local',
+        RETENTION_MANIFEST_EXPORT_ENABLED: 'true',
+      }),
+    ).toThrow(
+      'RETENTION_MANIFEST_EXPORT_ENABLED requires a durable S3 manifest provider',
+    );
+  });
 });

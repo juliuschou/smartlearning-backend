@@ -3,6 +3,7 @@ import { parseRetentionCommand } from './retention';
 describe('retention command parser', () => {
   it.each([
     'inspect',
+    'dry-run',
     'run-once',
     'manifest-export-once',
     'reconcile-inspect',

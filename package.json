@@ -21,6 +21,7 @@
     "prisma:migrate:status": "prisma migrate status",
     "prisma:seed": "tsx prisma/seed.ts",
     "bootstrap:admin": "tsx src/bootstrap/bootstrap-admin.ts",
+    "retention": "node dist/src/bootstrap/retention.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

@@ -1,5 +1,6 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { newId } from '../../../common/crypto/uuid';
+import { MetricsService } from '../../metrics/metrics.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   InvalidDeletionManifestError,
@@ -55,18 +56,21 @@ export class DeletionManifestExporter {
     private readonly prisma: PrismaService,
     @Inject(DELETION_MANIFEST_PROVIDER)
     private readonly provider: DeletionManifestProvider,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   async exportDueBatch(
     max = 50,
     now = new Date(),
   ): Promise<{ selected: number; exported: number; failed: number }> {
+    const startedAt = process.hrtime.bigint();
     const leaseToken = newId();
     const rows = await this.claimDueRows(
       Math.max(1, Math.min(100, Math.floor(max))),
       now,
       leaseToken,
     );
+    this.recordItem('selected', rows.length);
     let exported = 0;
     let failed = 0;
     for (const row of rows) {
@@ -106,7 +110,32 @@ export class DeletionManifestExporter {
         failed += Number(await this.markFailure(row, error, now));
       }
     }
+    this.recordItem('exported', exported);
+    this.recordItem('failed', failed);
+    this.recordRun(failed === 0 ? 'success' : 'failure', startedAt);
     return { selected: rows.length, exported, failed };
+  }
+
+  private recordItem(
+    result: 'selected' | 'exported' | 'failed',
+    count: number,
+  ): void {
+    if (!Number.isFinite(count) || count <= 0) return;
+    try {
+      this.metrics?.recordJobItem('manifest_export', result, count);
+    } catch {
+      // Metrics must not replace manifest export results.
+    }
+  }
+
+  private recordRun(outcome: 'success' | 'failure', startedAt: bigint): void {
+    const durationSeconds =
+      Number(process.hrtime.bigint() - startedAt) / 1_000_000_000;
+    try {
+      this.metrics?.recordJobRun('manifest_export', outcome, durationSeconds);
+    } catch {
+      // Metrics are observational and cannot change export semantics.
+    }
   }
 
   private async claimDueRows(

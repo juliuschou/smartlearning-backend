@@ -204,6 +204,37 @@ export class EnvConfig {
   @Max(100)
   RETENTION_PURGE_BATCH_SIZE = 50;
 
+  // Retention purge worker lease/max-attempt budget (BE-5.2 Checkpoint E).
+  // Defaults mirror the pre-existing hardcoded values so existing deployments are
+  // unaffected until they opt in. A purge item whose lease exceeds this window is
+  // reclaimed by another worker; a row exceeding max attempts is quarantined.
+  @IsOptional()
+  @IsNumber()
+  @Min(1000)
+  RETENTION_PURGE_LEASE_MS?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  RETENTION_PURGE_MAX_ATTEMPTS?: number;
+
+  // Independent retention worker: manifest export. Disabled by default; durable
+  // manifest export requires a durable S3 provider in production (fail-closed rule
+  // below). The purge loop and this loop have fully independent enable/tick/batch so
+  // they can be paused, scaled, or retuned without coupling.
+  @IsBoolean()
+  RETENTION_MANIFEST_EXPORT_ENABLED = false;
+
+  @IsNumber()
+  @Min(60_000)
+  @Max(24 * 60 * 60 * 1000)
+  RETENTION_MANIFEST_EXPORT_TICK_MS = 15 * 60 * 1000;
+
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  RETENTION_MANIFEST_EXPORT_BATCH_SIZE = 50;
+
   @IsEnum(['local', 's3'])
   DELETION_MANIFEST_PROVIDER: 'local' | 's3' = 'local';
 
@@ -286,6 +317,18 @@ export function validateEnv(
     RETENTION_PURGE_ENABLED: bool(raw.RETENTION_PURGE_ENABLED) ?? false,
     RETENTION_PURGE_TICK_MS: num(raw.RETENTION_PURGE_TICK_MS, 15 * 60 * 1000),
     RETENTION_PURGE_BATCH_SIZE: num(raw.RETENTION_PURGE_BATCH_SIZE, 50),
+    RETENTION_PURGE_LEASE_MS: optionalNum(raw.RETENTION_PURGE_LEASE_MS),
+    RETENTION_PURGE_MAX_ATTEMPTS: optionalNum(raw.RETENTION_PURGE_MAX_ATTEMPTS),
+    RETENTION_MANIFEST_EXPORT_ENABLED:
+      bool(raw.RETENTION_MANIFEST_EXPORT_ENABLED) ?? false,
+    RETENTION_MANIFEST_EXPORT_TICK_MS: num(
+      raw.RETENTION_MANIFEST_EXPORT_TICK_MS,
+      15 * 60 * 1000,
+    ),
+    RETENTION_MANIFEST_EXPORT_BATCH_SIZE: num(
+      raw.RETENTION_MANIFEST_EXPORT_BATCH_SIZE,
+      50,
+    ),
     DELETION_MANIFEST_PROVIDER: raw.DELETION_MANIFEST_PROVIDER || 'local',
     S3_PREFIX: raw.S3_PREFIX || 'deletion-manifests',
     S3_OBJECT_LOCK_DAYS: num(raw.S3_OBJECT_LOCK_DAYS, 90),
@@ -390,6 +433,15 @@ export function validateEnv(
   ) {
     throw new Error(
       'RETENTION_PURGE_ENABLED requires a durable S3 manifest provider in NODE_ENV=production',
+    );
+  }
+  if (
+    config.NODE_ENV === 'production' &&
+    config.RETENTION_MANIFEST_EXPORT_ENABLED &&
+    config.DELETION_MANIFEST_PROVIDER !== 's3'
+  ) {
+    throw new Error(
+      'RETENTION_MANIFEST_EXPORT_ENABLED requires a durable S3 manifest provider in NODE_ENV=production',
     );
   }
   if (

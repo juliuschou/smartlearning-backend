@@ -3871,3 +3871,70 @@ real data) legitimately rewrite only `purge_at` backward, so pending rows with s
 | `NODE_ENV=test npm run prisma:migrate:status` | PASS — schema up to date (no new migration in D) |
 | Full unit `src/` | PASS except pre-existing `live-gateway.spec.ts:156` (Gate F, unrelated, realtime module untouched) |
 | Full e2e regression | archive-governance PASS in full-suite context; other PASS suites across account/admin/auth/realtime/enrollments/questions/live-session. Single failure `cli-batch-rate-limit` is the pre-existing `Bootstrap already completed` isolation flake (tasks/todo.md:1554) — passes isolated 3/3, unrelated to governance. |
+---
+
+# 2026-09-12 — BE-5.2 Archive Retention Plan — Checkpoint E: complete worker + operator wiring
+
+## Scope and acceptance criteria (per approved plan `inherited-wiggling-dream.md`)
+
+Checkpoint E turns the guarded Checkpoint-D foundations into a real retention capability: independent purge +
+manifest-export schedulers, validated/coerced env fields, and no-longer-no-op operator CLI commands. **No
+schema/migration is touched in E.** All destructive operations remain gated and disabled by default.
+
+- [x] Add `ManifestExportScheduler` calling `DeletionManifestExporter.exportDueBatch()`; keep `RetentionScheduler`
+      for purge. Each loop has independent enable/tick/batch, no-overlap, shutdown-drain, and redacted logs.
+- [x] Add validated/coerced env fields: `RETENTION_PURGE_LEASE_MS`, `RETENTION_PURGE_MAX_ATTEMPTS`,
+      `RETENTION_MANIFEST_EXPORT_ENABLED`, `RETENTION_MANIFEST_EXPORT_TICK_MS`,
+      `RETENTION_MANIFEST_EXPORT_BATCH_SIZE`. All disabled by default; fail-closed when production enables
+      export without a durable S3 provider.
+- [x] Make `GovernanceService` purge lease/max-attempts configurable from env (fall back to today's defaults);
+      record `manifest_export` job metrics.
+- [x] Wire `src/bootstrap/retention.ts` no-op branches: `dry-run`, `run-once`, `manifest-export-once`.
+      Non-zero exit when a destructive run reported failures/quarantine. Keep inspect + reconcile inspect/apply.
+- [x] Update `.env.example`, package scripts (`retention`), runbook, and ops artifacts test.
+- [x] Add manifest-export scheduler unit tests + env-validation tests + retention command-parser test.
+- [x] Run full verification bundle (static + unit + guarded `smartlearning_test` e2e/integration).
+
+## Checkpoint E results
+
+- Workers wired and gated: purge (`RetentionScheduler` + `run-once`) and manifest export
+  (`ManifestExportScheduler` + `manifest-export-once`) now execute their destructive/networked operations behind
+  explicit default-disabled gates + `RETENTION_OPERATIONS_ENABLED`; `dry-run` is a new read-only,
+  execution-equivalent plan command. CLI prints redacted stable JSON and exits non-zero on destructive-run failures.
+- Purge lease/max-attempts moved from hardcoded consts to `RETENTION_PURGE_LEASE_MS` / `RETENTION_PURGE_MAX_ATTEMPTS`
+  (defaults unchanged); `manifest_export` added to job metrics.
+- No schema/migration change; deletion plan/predicates untouched; production fails closed without a durable S3
+  provider when purge or export is enabled.
+
+## Risk & rollback
+
+- **Risk: HIGH** — CLI + schedulers now enable destructive purge/export. Mitigations: every destructive path keeps
+  its explicit gate (`RETENTION_PURGE_ENABLED` / `RETENTION_MANIFEST_EXPORT_ENABLED`) + the top
+  `RETENTION_OPERATIONS_ENABLED`; all default **disabled**; production fails closed without a durable S3 provider;
+  metrics failures never throw; CLI surfaces only redacted stable JSON. No schema/migration; deletion plan untouched.
+- Rollback: revert code/config/docs; no down migration; purged rows never reconstructed after purge.
+- DB boundary: DB-backed suites run only against the exact guarded `smartlearning_test`; no purge against
+  dev/staging/production.
+
+## Dependencies & environment
+
+- Runtime: Node `v26.5.1`, npm `11.17.0`. Config values are coerced with `Number()` at read time (mirroring
+  `RateLimiterService` US-F7 rule) — never raw string concatenation.
+- Prisma client unchanged; no `prisma generate` needed (no schema edit).
+- Guarded DB: `smartlearning_test` via `NODE_ENV=test` and `.env.test`.
+
+## Verification results
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `git diff --check` | PASS |
+| Targeted unit (retention parser, env validation, schedulers, governance/exporter) | PASS — 6 suites / 75 tests |
+| Full unit regression | PASS except pre-existing unrelated `live-gateway.spec.ts:156` flake (390/391) |
+| `npm run test:retention:artifacts` | PASS — 2 tests (runbook/alert invariants) |
+| `NODE_ENV=test npm run prisma:migrate:status` | PASS — no pending migration (no schema change) |
+| `NODE_ENV=test test:archive-governance.e2e-spec.ts` | PASS — 1 suite / 15 tests |
+| `NODE_ENV=test test:deletion-manifest-exporter.integration-spec.ts` | PASS — 1 suite / 4 tests |

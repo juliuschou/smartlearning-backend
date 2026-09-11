@@ -1,4 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { EnvConfig } from '../../../config/env.validation';
 import { Prisma } from '../../../../generated/prisma/client';
 import { hashToken, newId, normalizeUuid } from '../../../common/crypto';
 import {
@@ -47,9 +49,9 @@ import type { DeletionManifest } from '../domain/deletion-manifest';
 const DAY = 24 * 60 * 60 * 1000;
 const RETENTION_DAYS = 90;
 
-/** Durable lease / retry budget for the retention worker (Checkpoint D). */
-const PURGE_LEASE_MS = 10_000;
-const PURGE_MAX_ATTEMPTS = 5;
+/** Durable lease / retry budget for the retention worker (Checkpoint D/E defaults). */
+export const PURGE_LEASE_MS_DEFAULT = 10_000;
+export const PURGE_MAX_ATTEMPTS_DEFAULT = 5;
 
 const DELETED_CATEGORIES = [
   'archive_payload',
@@ -83,11 +85,25 @@ type ArchiveRow = {
 
 @Injectable()
 export class GovernanceService {
+  private readonly purgeLeaseMs: number;
+  private readonly purgeMaxAttempts: number;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly tx: TransactionService,
     @Optional() private readonly metrics?: MetricsService,
-  ) {}
+    @Optional() private readonly config?: ConfigService<EnvConfig>,
+  ) {
+    // Coerce env values to Number here (ConfigService does NOT string-convert);
+    // fall back to defaults that match the pre-Checkpoint-E hardcoded values.
+    this.purgeLeaseMs =
+      Number(this.config?.get('RETENTION_PURGE_LEASE_MS', { infer: true })) ||
+      PURGE_LEASE_MS_DEFAULT;
+    this.purgeMaxAttempts =
+      Number(
+        this.config?.get('RETENTION_PURGE_MAX_ATTEMPTS', { infer: true }),
+      ) || PURGE_MAX_ATTEMPTS_DEFAULT;
+  }
 
   private get db() {
     return this.prisma.prisma;
@@ -1045,7 +1061,7 @@ export class GovernanceService {
       LIMIT ${limit}
       FOR UPDATE OF live_session SKIP LOCKED
     `;
-    const leaseExpiresAt = new Date(now.getTime() + PURGE_LEASE_MS);
+    const leaseExpiresAt = new Date(now.getTime() + this.purgeLeaseMs);
     const claimed: Array<{
       liveSessionId: string;
       archiveId: string;
@@ -1128,7 +1144,7 @@ export class GovernanceService {
     attempts: number,
     now: Date,
   ): Promise<{ matched: boolean; quarantined: boolean }> {
-    const decision = decidePurgeFailure(code, attempts, PURGE_MAX_ATTEMPTS);
+    const decision = decidePurgeFailure(code, attempts, this.purgeMaxAttempts);
     const data = decision.quarantined
       ? {
           purgeState: 'quarantined',
