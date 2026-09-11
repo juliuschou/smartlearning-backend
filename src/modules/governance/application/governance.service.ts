@@ -278,7 +278,20 @@ export class GovernanceService {
       ...(rawPage.courseId
         ? { courseId: normalizeUuid(rawPage.courseId) }
         : {}),
+      ...(rawPage.liveSessionId
+        ? { liveSessionId: normalizeUuid(rawPage.liveSessionId) }
+        : {}),
       ...(rawPage.status ? { status: rawPage.status } : {}),
+      ...(rawPage.closedFrom || rawPage.closedTo
+        ? {
+            closedAt: {
+              ...(rawPage.closedFrom
+                ? { gte: new Date(rawPage.closedFrom) }
+                : {}),
+              ...(rawPage.closedTo ? { lte: new Date(rawPage.closedTo) } : {}),
+            },
+          }
+        : {}),
     };
     const [rows, total] = await Promise.all([
       this.db.archivedResult.findMany({

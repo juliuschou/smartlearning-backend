@@ -173,6 +173,48 @@ describe('LiveSession close/cancel (e2e)', () => {
     );
   }
 
+  async function createWaitingSession(teacher: AuthenticatedAgent): Promise<{
+    courseId: string;
+    liveSessionId: string;
+    sessionCode: string;
+  }> {
+    const courseResponse = await teacher.agent
+      .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ name: 'Close Cancel Course', description: 'slice' });
+    expect(courseResponse.status).toBe(201);
+    const courseId = courseResponse.body.data.id as string;
+
+    const questionResponse = await teacher.agent
+      .post(`/api/v1/courses/${courseId}/questions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({
+        type: 'poll',
+        prompt: '哪一個概念最想釐清？',
+        selectionMode: 'single',
+        options: [
+          { optionRef: 'a', text: '選項 A' },
+          { optionRef: 'b', text: '選項 B' },
+        ],
+      });
+    expect(questionResponse.status).toBe(201);
+    const questionId = questionResponse.body.data.id as string;
+
+    const waitingResponse = await teacher.agent
+      .post('/api/v1/live-sessions')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ courseId, questionIds: [questionId] });
+    expect(waitingResponse.status).toBe(201);
+    return {
+      courseId,
+      liveSessionId: waitingResponse.body.data.id as string,
+      sessionCode: waitingResponse.body.data.sessionCode as string,
+    };
+  }
+
   async function createStartedSession(teacher: AuthenticatedAgent): Promise<{
     courseId: string;
     liveSessionId: string;
@@ -229,6 +271,75 @@ describe('LiveSession close/cancel (e2e)', () => {
       );
     }
   }
+
+  it('does not archive a waiting session or mutate its lifecycle', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createWaitingSession(teacher);
+    const governance = app.get(GovernanceService);
+
+    await expect(
+      governance.archiveSession(session.liveSessionId),
+    ).resolves.toBe(null);
+    expect(
+      await prisma.prisma.archivedResult.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    await expect(
+      prisma.prisma.liveSession.findUniqueOrThrow({
+        where: { id: session.liveSessionId },
+        select: { status: true, closedAt: true },
+      }),
+    ).resolves.toEqual({ status: 'waiting', closedAt: null });
+  });
+
+  it('does not archive an active session or anonymize participants', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Active participant' });
+    expect(joined.status).toBe(201);
+    const participantId = joined.body.data.participantId as string;
+    const before = await prisma.prisma.participant.findUniqueOrThrow({
+      where: { id: participantId },
+      select: { accountId: true, displayName: true, tokenHash: true },
+    });
+    const governance = app.get(GovernanceService);
+
+    await expect(
+      governance.archiveSession(session.liveSessionId),
+    ).resolves.toBe(null);
+    expect(
+      await prisma.prisma.archivedResult.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    await expect(
+      prisma.prisma.liveSession.findUniqueOrThrow({
+        where: { id: session.liveSessionId },
+        select: { status: true, closedAt: true },
+      }),
+    ).resolves.toEqual({ status: 'active', closedAt: null });
+    await expect(
+      prisma.prisma.participant.findUniqueOrThrow({
+        where: { id: participantId },
+        select: { accountId: true, displayName: true, tokenHash: true },
+      }),
+    ).resolves.toEqual(before);
+  });
 
   it('finalizes an anonymous archive and enforces ownership/privacy', async () => {
     requireDatabase();
@@ -566,12 +677,20 @@ describe('LiveSession close/cancel (e2e)', () => {
         ).status,
       ).toBe(201);
     }
-    const tiedAt = new Date('2026-09-08T00:00:00.000Z');
-    await prisma.prisma.archivedResult.updateMany({
-      where: {
-        liveSessionId: { in: [first.liveSessionId, second.liveSessionId] },
-      },
-      data: { closedAt: tiedAt },
+    const firstClosedAt = new Date('2026-09-08T10:00:00.000Z');
+    const secondClosedAt = firstClosedAt;
+    const foreignClosedAt = new Date('2026-09-08T12:00:00.000Z');
+    await prisma.prisma.archivedResult.update({
+      where: { liveSessionId: first.liveSessionId },
+      data: { closedAt: firstClosedAt },
+    });
+    await prisma.prisma.archivedResult.update({
+      where: { liveSessionId: second.liveSessionId },
+      data: { closedAt: secondClosedAt },
+    });
+    await prisma.prisma.archivedResult.update({
+      where: { liveSessionId: foreign.liveSessionId },
+      data: { closedAt: foreignClosedAt },
     });
 
     const page = await teacher.agent.get('/api/v1/results').query({
@@ -591,6 +710,76 @@ describe('LiveSession close/cancel (e2e)', () => {
           row.liveSessionId === foreign.liveSessionId,
       ),
     ).toBe(false);
+    expect(page.body.data.data.map((row: { id: string }) => row.id)).toEqual(
+      [...page.body.data.data.map((row: { id: string }) => row.id)]
+        .sort()
+        .reverse(),
+    );
+
+    const byLiveSession = await teacher.agent
+      .get('/api/v1/results')
+      .query({ liveSessionId: first.liveSessionId });
+    expect(byLiveSession.status).toBe(200);
+    expect(byLiveSession.body.data).toMatchObject({
+      meta: { total: 1, totalPages: 1 },
+    });
+    expect(byLiveSession.body.data.data[0].liveSessionId).toBe(
+      first.liveSessionId,
+    );
+
+    const foreignLiveSession = await teacher.agent
+      .get('/api/v1/results')
+      .query({ liveSessionId: foreign.liveSessionId });
+    expect(foreignLiveSession.status).toBe(200);
+    expect(foreignLiveSession.body.data).toMatchObject({
+      data: [],
+      meta: { total: 0, totalPages: 0 },
+    });
+
+    const fromBoundary = await teacher.agent
+      .get('/api/v1/results')
+      .query({ closedFrom: firstClosedAt.toISOString() });
+    expect(fromBoundary.status).toBe(200);
+    expect(fromBoundary.body.data.meta.total).toBe(2);
+
+    const toBoundary = await teacher.agent
+      .get('/api/v1/results')
+      .query({ closedTo: secondClosedAt.toISOString() });
+    expect(toBoundary.status).toBe(200);
+    expect(toBoundary.body.data.meta.total).toBe(2);
+
+    const exactRange = await teacher.agent.get('/api/v1/results').query({
+      closedFrom: '2026-09-08T18:00:00.000+08:00',
+      closedTo: secondClosedAt.toISOString(),
+    });
+    expect(exactRange.status).toBe(200);
+    expect(exactRange.body.data).toMatchObject({
+      meta: { total: 2, totalPages: 1 },
+    });
+
+    const combined = await teacher.agent.get('/api/v1/results').query({
+      courseId: second.courseId,
+      liveSessionId: second.liveSessionId,
+      status: 'active',
+      closedFrom: firstClosedAt.toISOString(),
+      closedTo: secondClosedAt.toISOString(),
+      page: 1,
+      pageSize: 1,
+    });
+    expect(combined.status).toBe(200);
+    expect(combined.body.data).toMatchObject({
+      meta: { page: 1, pageSize: 1, total: 1, totalPages: 1 },
+    });
+    expect(combined.body.data.data[0].liveSessionId).toBe(second.liveSessionId);
+
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const adminForeignLiveSession = await admin.agent
+      .get('/api/v1/results')
+      .query({ liveSessionId: foreign.liveSessionId });
+    expect(adminForeignLiveSession.status).toBe(200);
+    expect(adminForeignLiveSession.body.data).toMatchObject({
+      meta: { total: 1, totalPages: 1 },
+    });
 
     const byCourse = await teacher.agent
       .get('/api/v1/results')
@@ -608,7 +797,6 @@ describe('LiveSession close/cancel (e2e)', () => {
       meta: { total: 0 },
     });
 
-    const admin = await loginAs(ADMIN.username, ADMIN.password);
     const globalPage = await admin.agent
       .get('/api/v1/results')
       .query({ page: 1, pageSize: 2, status: 'active' });
@@ -645,6 +833,11 @@ describe('LiveSession close/cancel (e2e)', () => {
       { pageSize: 101 },
       { pageSize: 1.5 },
       { courseId: 'not-a-uuid' },
+      { liveSessionId: 'not-a-uuid' },
+      { closedFrom: 'not-a-date' },
+      { closedTo: 'not-a-date' },
+      { closedFrom: '2026-09-08' },
+      { closedTo: '2026-09-08T10:00:00' },
       { status: 'unknown' },
       { unexpected: 'field' },
     ]) {
@@ -652,6 +845,14 @@ describe('LiveSession close/cancel (e2e)', () => {
       expect(response.status).toBe(400);
       expectErrorEnvelope(response, 'VALIDATION_FAILED');
     }
+
+    const reversed = await teacher.agent.get('/api/v1/results').query({
+      closedFrom: '2026-09-09T00:00:00.000Z',
+      closedTo: '2026-09-08T00:00:00.000Z',
+    });
+    expect(reversed.status).toBe(400);
+    expectErrorEnvelope(reversed, 'VALIDATION_FAILED');
+    expect(reversed.body.error.field).toBe('closedTo');
 
     const combined = await teacher.agent.get('/api/v1/results').query({
       courseId: session.courseId,

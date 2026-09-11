@@ -112,6 +112,8 @@ describe('archive projection', () => {
                 text: 'answer',
                 displayName: 'Learner',
                 submittedAt: 'secret',
+                submissionId: 'submission-secret',
+                idempotencyKey: 'idempotency-secret',
               },
             ],
             totalResponses: 1,
@@ -224,8 +226,40 @@ describe('archive projection', () => {
     expect(result).not.toBe(input);
     expect(result.questions[0]).not.toBe(input.questions[2]);
     expect(input.questions[0].participantId).toBe('question-secret');
-    expect(JSON.stringify(result)).not.toMatch(
-      /participant|account|displayName|token|sessionCode|submittedAt|selectedOptionRefs|isCorrect.*poll/,
+    const forbiddenKeys = new Set([
+      'participantId',
+      'accountId',
+      'displayName',
+      'token',
+      'tokenHash',
+      'sessionCode',
+      'submissionId',
+      'submittedAt',
+      'idempotencyKey',
+      'selectedOptionRefs',
+    ]);
+    const assertNoForbiddenKeys = (value: unknown): void => {
+      if (!value || typeof value !== 'object') return;
+      if (Array.isArray(value)) {
+        value.forEach(assertNoForbiddenKeys);
+        return;
+      }
+      for (const [key, nested] of Object.entries(value)) {
+        expect(forbiddenKeys.has(key)).toBe(false);
+        assertNoForbiddenKeys(nested);
+      }
+    };
+    assertNoForbiddenKeys(result);
+    expect(result.questions[0].result).not.toHaveProperty('isCorrect');
+    expect(result.questions[1].result).toMatchObject({
+      correctCount: 1,
+      incorrectCount: 0,
+      correctnessRate: 1,
+    });
+    expect(result.questions[2].result).toEqual(
+      expect.objectContaining({
+        responses: [{ text: 'answer' }],
+      }),
     );
   });
 

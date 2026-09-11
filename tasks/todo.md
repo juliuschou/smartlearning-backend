@@ -3331,21 +3331,248 @@ Checkpoint B only: fail-closed S3 replay verification + production env config sa
 
 All non-DB mock/unit gates PASS (dedicated test subagent + post-fix re-run):
 
-| Command | Result |
-|---|---|
-| `npx prettier --check <5 changed files>` | PASS |
-| `npm test -- --runInBand s3-manifest.provider.spec.ts` | PASS — 8/8 |
-| `npm test -- --runInBand deletion-manifest.exporter.spec.ts` | PASS — 4/4 |
-| `npm test -- --runInBand env.validation.spec.ts` | PASS — 39/39 |
-| `npm test -- --runInBand governance.service.spec.ts` | PASS — 5/5 |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
+| Command                                                      | Result       |
+| ------------------------------------------------------------ | ------------ |
+| `npx prettier --check <5 changed files>`                     | PASS         |
+| `npm test -- --runInBand s3-manifest.provider.spec.ts`       | PASS — 8/8   |
+| `npm test -- --runInBand deletion-manifest.exporter.spec.ts` | PASS — 4/4   |
+| `npm test -- --runInBand env.validation.spec.ts`             | PASS — 39/39 |
+| `npm test -- --runInBand governance.service.spec.ts`         | PASS — 5/5   |
+| `npm run typecheck`                                          | PASS         |
+| `npm run lint:check`                                         | PASS         |
+| `npm run format:check`                                       | PASS         |
+| `npm run build`                                              | PASS         |
+| `git diff --check`                                           | PASS         |
 
 Two defects found and fixed during verification: (1) the new S3 provider spec's mock client did not structurally satisfy `S3Client` (cast to `S3Client & { send: jest.Mock }`); (2) the purge-without-durable-provider env check was unreachable because the `local`-provider guard threw first — reordered so the purge check reports its specific cause.
 
 ## Boundary
 
 No DB, no `test:e2e`/`test:integration`, no external object-store call, no commit. Local provider default unchanged; `RETENTION_PURGE_ENABLED` default false. Rollback = revert this slice only.
+
+---
+
+# 2026-09-11 — BE-5.1 Archive Domain Plan — Checkpoint A
+
+## Objective
+
+建立 archive domain 的 current baseline 與 contract reconciliation；本站只完成證據盤點，完成後停在 Gate A，等待人工確認，不自動進入 Checkpoint B。
+
+## Checklist
+
+- [x] 記錄 current revision、branch、working-tree、runtime/tool baseline 與安全邊界。
+- [x] 盤點 archive source、domain projection、tests、schema 與 archive migrations。
+- [x] 由 source/call graph 確認唯一 production archive writer 與 close-to-archive transaction boundary。
+- [x] 搜尋並分類所有 `ArchivedResult` create/update 路徑：production create、BE-5.2/5.3 governed tombstone transition、test fixture。
+- [x] reconciliation Prisma model 與 archive migrations 的 unique/FK/index/check/backfill 性質。
+- [x] 凍結 same-transaction、replay、participant unlinking、projection privacy 與 application immutability 契約。
+- [x] 記錄 stale documentation、未授權 DB/provider evidence、以及不可由本 checkpoint 宣稱完成的 BE-5.2/5.3 工作。
+- [x] 只執行 read-only/static inspection；未執行 migration、seed、truncate、DB-backed tests、provider upload 或 cleanup。
+- [x] 確認本次 diff 僅修改 `tasks/todo.md`。
+- [ ] 取得 Gate A 明確人工確認後，才可進入 Checkpoint B。
+
+## Baseline / evidence
+
+- **Revision:** `main` at `1c841cacbb56b967e61abf29034588afacdd8e04`; working tree clean at capture time; timestamp `2026-09-11T10:00:28Z` UTC. Node `v26.5.1`; npm `11.17.0`。本 checkpoint 未執行 Docker、migration status 或任何 DB command。
+- **唯一 production writer / call graph:** `LiveSessionService.closeSessionInTransaction()`（`src/modules/live-sessions/application/live-session.service.ts:115`）在同一 transaction 呼叫 `GovernanceService.archiveSessionInTransaction()`（line 216）；manual close 與 auto-close 共用 close path。`GovernanceService.archiveSession()`（`src/modules/governance/application/governance.service.ts:166`）是同一 command 的 transaction wrapper，`archiveSessionInTransaction()`（line 174）內的 `t.archivedResult.create()`（line 231）是 production archive create。未發現 archive creation controller、scheduler rebuild 或第二套 aggregation path。
+- **Mutation inventory:** `governance.service.ts:538,570,672` 的 `archivedResult.update()` 僅分類為 retention/early-deletion governed tombstone transitions；直接 create/update 出現在 `test/archive-governance.e2e-spec.ts`、`test/deletion-manifest-exporter.integration-spec.ts`、`test/s3-sandbox-rehearsal.integration-spec.ts` 的 fixture/setup，不是 production writer。這些 runtime/DB claims 沒有在本 checkpoint 重新執行。
+- **Projection/privacy:** `src/modules/governance/domain/archive-projection.ts` 的 `projectArchive()`（line 189）重用 `aggregateResults()`（line 200），`parseArchivedResult()`（line 31）以 strict nested allowlist 重建 `schemaVersion: 1` payload；poll/quiz 對外為 anonymous aggregate，open-text 僅 anonymous `{ text }`。正常 API 無 active payload update；DB owner/DBA direct SQL 不在 application immutability guarantee 內。
+- **Schema/migration:** `prisma/schema.prisma:363` 的 `ArchivedResult.liveSessionId` 為 unique，保留 LiveSession FK；`purgeAt/status` index 存在。`20260828090000_add_archive_governance/migration.sql` 建立 archive table、active/deleted status constraint、course/closed 與 purge/status indexes、deletion-event relations；`20260908090000_freeze_archive_governance_contract/migration.sql` 先檢查既有 invariant，再 backfill `session_label`/`started_at`，加入 `active + payload`／`deleted + NULL payload` check 與 closed-time ordering index。後者不是 metadata-only；兩者屬 additive/backfill history。本 checkpoint 不新增 migration，也未將 test DB evidence 寫成 production deployment evidence。
+- **Atomicity contract:** PostgreSQL transaction commit 是 close state、archive creation、participant anonymization 與 transactional outbox 的 authority；projection/create/anonymization failure 必須 rollback，Socket publish 僅在 commit 後。replay 讀回既有 archive，不重建或替換 payload。Submission 可暫時保留指向已匿名化 Participant 的 FK，但 archive API 不得重建 answer-to-person linkage。
+- **Historical reconciliation:** `1c841ca` current hardening、`aec12a9` fail-closed S3/env safety、`9fc65b1` prior provenance baseline、`584e661` archive E2E matrix 均屬 provenance。歷史 completion plan 的 `after committed close` 描述與 current same-transaction call graph 不一致，應以 superseding reconciliation note forward-correct；本 checkpoint 不修改 authoritative docs。
+
+## Acceptance / gaps
+
+- **Baseline supported:** BE-5.1.1 close/archive/anonymization same transaction、唯一 production writer、replay idempotency；BE-5.1.2 schema/migration contract facts；BE-5.1.3 projection reuse、strict parser、create-once/application immutability boundary。
+- **Still pending:** BE-5.1.4 query-contract additions、BE-5.1.5 complete privacy/replay evidence matrix、BE-5.1.6 separately named waiting/active DB-backed negative tests。WBS 不因本次 static reconciliation 勾選。
+- **Not claimed:** BE-5.2 retention operational completion、BE-5.3 early deletion completion、production migration deployment、fresh DB-backed runtime rollback proof、external S3/MinIO rehearsal、cleanup/credential ownership resolution。
+
+## Risk & rollback
+
+- **Risk level: medium**：涉及 privacy、transaction authority、跨文件契約；本 checkpoint 沒有 destructive operation。
+- 主要風險是把 archive 移出 close transaction、legacy JSON pass-through、raw answer exposure、application immutability 誤當 DB tamper-proof，或把歷史 test evidence 誤宣稱為 current production/DB evidence。
+- Rollback：revert this task-only documentation section；不做 down migration、不恢復 deleted data、不修改 production code。
+
+## Dependencies / authorization boundary
+
+- Runtime/source evidence 依賴目前 backend revision 與既有 migration files；authoritative docs 在 `../docs` 另一 repository，未於本 checkpoint 修改。
+- 未授權且未執行：`prisma migrate deploy`、`prisma db push`、`prisma migrate status`、seed、任何 `test:e2e`/`test:integration`（setup 可能 deploy migration/truncate `smartlearning_test`）、provider upload/restore/apply、container/object/row cleanup。
+- 下一站 Checkpoint B 若獲明確授權，必須只針對 `NODE_ENV=test` 且 sanitized DB name 恰為 `smartlearning_test`；DB mutation、migration deploy 與 migration status 仍分開授權。
+
+## Verification
+
+| Command / evidence                                             | Result                                                               |
+| -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `date -u`, `git rev-parse --show-toplevel`, branch/HEAD/status | PASS — recorded above; clean `main` at `1c841ca`                     |
+| read-only source/schema/migration/commit inspection            | PASS — writer, schema, migration and provenance facts recorded above |
+| `git diff --check`                                             | PASS — no whitespace errors                                          |
+| DB-backed tests, migrations, provider calls, cleanup           | NOT RUN — outside Checkpoint A authorization                         |
+
+## Results / Gate A disposition
+
+Checkpoint A baseline/reconciliation record is **READY FOR REVIEW**. The only intended file change is this `tasks/todo.md` section; no production code, schema, migration, tests, generated output, database, provider, or external object was changed.
+
+Before Checkpoint B, obtain explicit confirmation that the following are accepted: (1) same-transaction close-to-archive boundary；(2) application/domain immutability versus privileged DB-role boundary；(3) Submission temporarily referencing an anonymized Participant；(4) no new migration expected for BE-5.1 reconciliation。Stop here until that confirmation is received.
+
+---
+
+# 2026-09-11 — BE-5.1 Archive Domain Plan — Checkpoint B
+
+## Scope / authorization
+
+- [x] Added only the missing BE-5.1.6 lifecycle-negative evidence: independent waiting and active archive attempts.
+- [x] User explicitly authorized DB-backed testing with `NODE_ENV=test` and database exactly `smartlearning_test`.
+- [x] Test setup's implicit `npx prisma migrate deploy` and `truncateAll()` were within that authorization; `truncateAll()` clears all non-migration public tables in the test database and resets identities.
+- [x] No development/staging/production DB, provider, S3/MinIO, cleanup, migration file, schema, API contract, WBS, or production code was changed.
+
+## Implementation / assertions
+
+- `test/archive-governance.e2e-spec.ts` adds `createWaitingSession()` and two independent tests using `GovernanceService.archiveSession(liveSessionId)`:
+  - waiting: returns `null`, creates zero `ArchivedResult` rows, leaves `status=waiting` and `closedAt=null`;
+  - active: returns `null`, creates zero `ArchivedResult` rows, leaves `status=active` and `closedAt=null`, and preserves participant `accountId`, `displayName`, and `tokenHash` exactly.
+- Existing successful close/archive, cancel/discard, privacy, retention, replay, and authorization cases were preserved.
+- No HTTP archive-creation route was introduced or used; the test targets the existing application command boundary.
+
+## Verification
+
+| Command                                                                             | Result                                                                                                      |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Sanitized `.env.test` preflight                                                     | PASS — `NODE_ENV=test`, PostgreSQL `localhost:5432`, database `smartlearning_test`; credentials not printed |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/archive-governance.e2e-spec.ts` | PASS — 1 suite, 13 passed, 0 failed, 0 skipped                                                              |
+| Test setup migration/truncation                                                     | PASS — authorized `migrate deploy` path and per-test `truncateAll()` completed against `smartlearning_test` |
+| `git diff --check`                                                                  | PASS                                                                                                        |
+
+Non-blocking warning: NestJS `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` route patterns.
+
+## Results / Gate B disposition
+
+Checkpoint B lifecycle matrix is **READY FOR REVIEW**. Waiting and active archive attempts have zero archive and zero lifecycle/anonymization side effects; existing cancelled-session discard and valid close/archive paths remain green in the focused suite. Verification confidence is focused integration-level E2E.
+
+Stop at Gate B. Do not enter Checkpoint C, modify archive query filters, update authoritative docs/WBS, run broader regression, provider operations, cleanup, or commit until separately authorized.
+
+---
+
+# 2026-09-11 — BE-5.1 Archive Domain Plan — Checkpoint C
+
+## Scope / authorization
+
+- [x] Implemented BE-5.1.4 additive archive list filters: `liveSessionId`, `closedFrom`, and `closedTo`.
+- [x] `closedFrom`/`closedTo` validate full offset-bearing ISO date-times and reject reversed instants through standard DTO validation.
+- [x] User explicitly authorized DB-backed verification only with `NODE_ENV=test` and database exactly `smartlearning_test`.
+- [x] Archive E2E setup's implicit `prisma migrate deploy`, per-test `truncateAll()` of all non-migration public tables, and run-scoped `ArchivedResult.closedAt` fixture updates were within that authorization.
+- [x] No migration, index, schema, provider, cleanup, or authoritative-document change was made.
+
+## Implementation
+
+- `src/modules/governance/api/dto/governance.dto.ts`
+  - Added UUID validation for `liveSessionId`.
+  - Added `closedFrom`/`closedTo` date-time Swagger metadata and validation requiring `Z` or an explicit numeric offset.
+  - Added class-validator range constraint enforcing `closedFrom <= closedTo` without controller-side error shaping.
+- `src/modules/governance/application/governance.service.ts`
+  - Added normalized `liveSessionId` filtering.
+  - Added inclusive `closedAt.gte`/`closedAt.lte` predicates.
+  - Preserved one shared owner/filter `where` for `findMany` and `count`, plus `closedAt DESC, id DESC` ordering.
+- `test/archive-governance.e2e-spec.ts`
+  - Added owned/foreign/admin LiveSession filtering, inclusive date boundaries, offset equivalence, combined filters, pagination/count checks, malformed/reversed range validation, and tie-order coverage.
+- `test/openapi.e2e-spec.ts`
+  - Froze the three new query parameters as UUID/date-time schemas.
+
+## Verification
+
+| Command                                                                                 | Result                                                                                                      |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Sanitized `.env.test` preflight                                                         | PASS — `NODE_ENV=test`, PostgreSQL `localhost:5432`, database `smartlearning_test`; credentials not printed |
+| `npm run typecheck`                                                                     | PASS                                                                                                        |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/archive-governance.e2e-spec.ts`     | PASS — 1 suite, 13 passed, 0 failed, 0 skipped                                                              |
+| `NODE_ENV=test npm run test:e2e -- --runInBand test/openapi.e2e-spec.ts`                | PASS — 1 suite, 5 passed, 0 failed, 0 skipped                                                               |
+| `npm test -- --runInBand src/modules/governance/application/governance.service.spec.ts` | PASS — 1 suite, 5 passed, 0 failed, 0 skipped                                                               |
+| `npm run lint:check`                                                                    | PASS                                                                                                        |
+| `npm run format:check`                                                                  | PASS                                                                                                        |
+| `git diff --check`                                                                      | PASS                                                                                                        |
+
+Non-blocking warning: NestJS `LegacyRouteConverter` warnings for `health/(.*)` and `/api/*` route patterns.
+
+## Results / Gate C disposition
+
+Checkpoint C query contract is **READY FOR REVIEW**. Teacher owner scope, admin-global scope, student denial, foreign existence hiding, inclusive `closedAt` range semantics, filter-before-pagination/count, deterministic ordering, and OpenAPI parameter schemas are covered by the focused tests. No new migration or index was required.
+
+Stop at Gate C. Do not enter Checkpoint D, update projection/privacy documents or WBS, run broader regression/provider operations/cleanup, or commit until separately authorized.
+
+### 2026-09-11 — Checkpoint D: projection, privacy, and replay evidence
+
+#### Acceptance criteria
+
+- [x] Strict `schemaVersion: 1` archive parsing preserves stable ordering and allowlists only aggregate/open-text fields.
+- [x] Nested prohibited-field evidence covers participant/account/display/token/sessionCode/submissionId/submittedAt/idempotencyKey/selectedOptionRefs.
+- [x] Existing archive replay does not create or update an archive payload and re-applies participant anonymization.
+- [x] Poll/quiz archives remain aggregate-only; open-text responses remain anonymous `{ text }`; no rollback/failure-injection API is added.
+
+#### Checklist
+
+- [x] Add structural nested negative assertions to archive projection tests.
+- [x] Add service replay regression proving no create/update and participant unlinking.
+- [x] Record same-transaction atomicity evidence and its static-proof limitation.
+- [ ] Run DB-backed archive replay verification (requires separate explicit authorization for `smartlearning_test` migration/truncation).
+- [ ] Submit Gate D evidence matrix and await confirmation before Checkpoint E documentation/WBS work.
+
+#### Working notes
+
+- `projectArchive()` continues to delegate to `aggregateResults()` with stable question/option ordering.
+- `archiveSessionInTransaction()` returns the existing archive without rebuilding or replacing `payload`; replay still anonymizes participants in the same transaction.
+- The close path uses one `Prisma.TransactionClient` for session state, archive creation, participant anonymization, and outbox writes. No failure-injection seam was introduced; atomicity is static call-graph evidence unless separately proven by DB integration.
+- Poll/quiz raw submissions remain governed source storage for later BE-5.2/BE-5.3 handling and are not persisted in archive payloads.
+
+#### Risk & rollback
+
+- Risk: medium — privacy and immutable projection contract; no schema/migration/destructive operation.
+- Rollback: revert only Checkpoint D test/task changes; do not run down migrations or attempt data restoration.
+- DB authorization boundary: DB-backed suites may deploy migrations and truncate only `smartlearning_test`; neither was run in this checkpoint without explicit authorization.
+
+#### Verification / Results
+
+| `npm test -- --runInBand src/modules/governance/domain/archive-projection.spec.ts src/modules/governance/application/governance.service.spec.ts` | PASS — 2 suites / 16 tests |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `git diff --check` | PASS |
+
+Checkpoint D changes are limited to projection/service tests and this audit trail. Atomicity is supported by the same-transaction call graph; no failure-injection runtime proof was added. DB-backed replay verification remains BLOCKED pending explicit authorization for `smartlearning_test` migration/truncation. Authoritative governance docs and WBS remain unchanged until Gate D approval.
+
+#### Gate D disposition
+
+Gate D was accepted on 2026-09-11 for documentation closeout. The final contract is poll/quiz aggregate-only, open-text anonymous `{ text }`, strict nested allowlist, replay without payload rebuild/replacement, and participant anonymization on replay. Atomicity remains shared-transaction call-graph evidence without failure-injection runtime proof. Checkpoint E documentation/WBS candidate preparation is authorized; BE-5.2/BE-5.3, production migration, commit and destructive operations remain out of scope.
+
+### 2026-09-11 — Checkpoint E: documentation and WBS closeout draft
+
+- [x] Update backend frontend API reference with archive filters, inclusive `closedAt` semantics, ownership/foreign hiding, no archive-create route, and privacy projection contract.
+- [x] Append superseding reconciliation note to authoritative result-governance, realtime-governance, and historical BE-5 completion documents.
+- [x] Add BE-5.1 per-item VERIFIED CANDIDATE evidence draft to the WBS without checking BE-5.1 boxes prematurely.
+- [x] Keep BE-5.2/BE-5.3 and FE-6 statuses unchanged.
+- [x] Gate E review: user confirmed document consistency and authorized formal BE-5.1 WBS closeout.
+
+#### Results / evidence boundary
+
+Checkpoint E documentation changes are complete across the backend API reference and docs repository. Historical records were preserved through append-only superseding notes. Backend HEAD `1c841ca` and both repositories remain dirty; no new pinned commit is claimed. BE-5.1.1–BE-5.1.6 are now checked in the WBS; BE-5.2/BE-5.3 remain unchanged. No migration, purge, restore, external upload, production operation, or frontend change was performed.
+
+### 2026-09-11 — Gate F final regression
+
+- [x] Run the authorized full verification bundle against guarded `smartlearning_test` where applicable.
+- [ ] Resolve unrelated regression failures before declaring the repository fully green.
+
+#### Verification results
+
+- PASS: `npm run prisma:validate`.
+- PASS: `npm run typecheck`.
+- PASS: `npm run lint:check`.
+- PASS: `npm run format:check`.
+- PASS: `npm run build`.
+- PASS: unit tests: 58 suites passed / 1 failed; 366 tests passed / 1 failed. Failure: `src/modules/realtime/live-gateway.spec.ts:156`, expected terminal `session.closed` replay to call `socket.disconnect(true)` but observed zero calls.
+- FAIL: E2E: 32 suites passed / 1 failed; 240 tests passed / 1 failed. `student-session-status.e2e-spec.ts` encountered PostgreSQL `40P01 deadlock detected` during test cleanup truncate in `test/setup/db.ts`.
+- FAIL/BLOCKED: integration: 4 suites passed / 2 failed; 20 tests passed / 7 failed. Redis suite requires `RUN_LOGIN_RATE_LIMIT_REDIS_TESTS=1`; S3 rehearsal requires `DELETION_MANIFEST_PROVIDER=s3` and reachable guarded DB.
+- BLOCKED: `npm run prisma:migrate:status` loaded `.env.development` and targeted `smartlearning_dev` at `localhost:5433`, which was unreachable (`P1001`). The authorized test DB identity was separately verified as exactly `smartlearning_test`.
+- PASS: `git diff --check`.
+
+#### Gate F disposition
+
+Final regression is **NOT GREEN**. Per stop-the-line rule, no further fixes or reruns were attempted. The failures are outside the BE-5.1 documentation/WBS edits except for the shared test cleanup/realtime areas; BE-5.1 WBS closeout remains recorded, but final repository-wide completion and any commit are deferred until the failures are separately diagnosed and resolved.

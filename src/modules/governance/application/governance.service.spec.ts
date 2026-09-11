@@ -114,6 +114,59 @@ describe('GovernanceService', () => {
     });
   });
 
+  it('replays an existing archive without rebuilding its payload', async () => {
+    const sessionId = '018f1f1f-1111-7111-8111-111111111111';
+    const payload = { schemaVersion: 1, questions: [] };
+    const existing = {
+      ...archive(sessionId, new Date('2026-04-01T00:00:00.000Z')),
+      payload,
+      status: 'active',
+    };
+    const session = {
+      id: sessionId,
+      status: 'closed',
+      closedAt: new Date('2026-01-01T00:00:00.000Z'),
+      course: {},
+      questions: [],
+      submissions: [],
+    };
+    const participantUpdate = jest.fn();
+    const transaction = {
+      liveSession: { findUnique: jest.fn().mockResolvedValue(session) },
+      archivedResult: {
+        findUnique: jest.fn().mockResolvedValue(existing),
+        create: jest.fn(),
+        update: jest.fn(),
+      },
+      participant: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'participant-1' }]),
+        update: participantUpdate,
+      },
+    };
+    const service = new GovernanceService(
+      { prisma: {} } as never,
+      {
+        run: jest.fn((fn: (t: unknown) => unknown) => fn(transaction)),
+        lockLiveSessionForUpdate: jest.fn(),
+      } as never,
+    );
+
+    const result = await service.archiveSession(sessionId);
+
+    expect(result).toMatchObject({ id: existing.id, liveSessionId: sessionId });
+    expect(transaction.archivedResult.create).not.toHaveBeenCalled();
+    expect(transaction.archivedResult.update).not.toHaveBeenCalled();
+    expect(transaction.participant.update).toHaveBeenCalledWith({
+      where: { id: 'participant-1' },
+      data: expect.objectContaining({
+        accountId: null,
+        displayName: 'Anonymous',
+        tokenHash: expect.any(String),
+      }),
+    });
+    expect(existing.payload).toBe(payload);
+  });
+
   it('rejects a mismatched confirmation reason before destructive writes', async () => {
     const destructiveMocks = [
       jest.fn(),

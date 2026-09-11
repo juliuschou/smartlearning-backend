@@ -423,6 +423,27 @@ describe('OpenAPI document (e2e)', () => {
           in: 'query',
           schema: expect.objectContaining({ enum: ['active', 'deleted'] }),
         }),
+        expect.objectContaining({
+          name: 'liveSessionId',
+          in: 'query',
+          schema: expect.objectContaining({ type: 'string', format: 'uuid' }),
+        }),
+        expect.objectContaining({
+          name: 'closedFrom',
+          in: 'query',
+          schema: expect.objectContaining({
+            type: 'string',
+            format: 'date-time',
+          }),
+        }),
+        expect.objectContaining({
+          name: 'closedTo',
+          in: 'query',
+          schema: expect.objectContaining({
+            type: 'string',
+            format: 'date-time',
+          }),
+        }),
       ]),
     );
     expect(

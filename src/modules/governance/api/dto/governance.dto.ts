@@ -5,6 +5,7 @@ import {
 } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsDateString,
   IsIn,
   IsInt,
   IsOptional,
@@ -12,6 +13,11 @@ import {
   Max,
   Min,
   Equals,
+  Matches,
+  Validate,
+  ValidationArguments,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
 import {
   OpenTextResultsDto,
@@ -22,6 +28,26 @@ import {
 
 export const ARCHIVE_STATUSES = ['active', 'deleted'] as const;
 export const DELETION_REASONS = ['privacy', 'support'] as const;
+const OFFSET_DATE_TIME_PATTERN = /(?:Z|[+-]\d{2}:\d{2})$/;
+
+@ValidatorConstraint({ name: 'closedRange', async: false })
+class ClosedRangeConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown, args: ValidationArguments): boolean {
+    const closedFrom = (args.object as ArchiveListQueryDto).closedFrom;
+    if (typeof closedFrom !== 'string' || typeof value !== 'string') {
+      return true;
+    }
+    const from = Date.parse(closedFrom);
+    const to = Date.parse(value);
+    if (!Number.isFinite(from) || !Number.isFinite(to)) return true;
+    return from <= to;
+  }
+
+  defaultMessage(): string {
+    return 'closedTo must be greater than or equal to closedFrom.';
+  }
+}
+
 export type ArchiveStatus = (typeof ARCHIVE_STATUSES)[number];
 export type DeletionReason = (typeof DELETION_REASONS)[number];
 export type DeletionTrigger = 'early_delete' | 'retention';
@@ -51,6 +77,24 @@ export class ArchiveListQueryDto {
   @IsOptional()
   @IsUUID()
   courseId?: string;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  liveSessionId?: string;
+
+  @ApiPropertyOptional({ format: 'date-time' })
+  @IsOptional()
+  @IsDateString({ strict: true })
+  @Matches(OFFSET_DATE_TIME_PATTERN)
+  closedFrom?: string;
+
+  @ApiPropertyOptional({ format: 'date-time' })
+  @IsOptional()
+  @IsDateString({ strict: true })
+  @Matches(OFFSET_DATE_TIME_PATTERN)
+  @Validate(ClosedRangeConstraint)
+  closedTo?: string;
 
   @ApiPropertyOptional({ enum: ARCHIVE_STATUSES })
   @IsOptional()
