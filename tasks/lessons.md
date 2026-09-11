@@ -288,9 +288,26 @@
 - **Prevention rule:** Use `rg` with a sufficiently narrow query and read exact files with the Read tool; do not append `head`, `tail`, `cat`, `sed`, or `awk` merely to constrain output when dedicated tools fit.
 - **Tripwire:** Before issuing a read-only Bash pipeline, check whether the same lookup can be expressed as a narrow `rg` query plus targeted Read; if yes, use those tools instead.
 
+## 2026-09-11 — live_session_event CHECK ties target_participant_id to participant_after_submit visibility
+
+- **Failure mode:** A BE-5.2 retention dry-run e2e fixture wrote a `teacher`-visibility `live_session_event` with a non-null `targetParticipantId`, expecting to create an out-of-scope event the executor must not delete; the INSERT was rejected with `23514` (`live_session_event_check`).
+- **Detection signal:** `PrismaClientKnownRequestError ... 23514 New row for relation "live_session_event" violates check constraint "live_session_event_check"` at create time.
+- **Root cause:** The durable-realtime migration
+  (`20260828110000_add_durable_realtime`) adds `CHECK (("visibility" = 'participant_after_submit') = ("target_participant_id" IS NOT NULL))`. Only a `participant_after_submit` event may carry a target; a `teacher`/`session` event must leave it NULL.
+- **Prevention rule:** When seeding mixed-visibility realtime events for deletion/scope tests, set `targetParticipantId` only on `participant_after_submit` events and omit it (NULL) on `teacher`, `session`, and `participant` events.
+- **Tripwire:** Before inserting a hand-authored `live_session_event`, grep the durable-realtime migration for `visibility`-related CHECK constraints, especially any `(visibility = X) = (y IS NOT NULL)` pairing.
+
 ## 2026-09-10 — Commands must target the relevant independent repository
 
 - **Failure mode:** Ran `npx prettier --write src/...` from the UI repository while editing backend files; the command failed with `No files matching the pattern were found` because this multi-project root is not a workspace.
 - **Detection signal:** Tool output named the intended backend-relative paths but found none under the active UI working directory.
 - **Prevention rule:** Before every npm/npx command, identify the owning project and use an explicit project-local binary with absolute target paths (or an explicitly approved project working directory); never assume the session CWD matches the edited repository.
-- **Tripwire:** Compare each command’s target file path with the nearest project `package.json`; if they belong to different repositories, rewrite the command with an explicit backend/UI path before execution.
+- **Tripwire:** Compare each command's target file path with the nearest project `package.json`; if they belong to different repositories, rewrite the command with an explicit backend/UI path before execution.
+
+## 2026-09-11 — Retention purge: `next_purge_attempt_at` must gate retry rows only, not pending rows
+
+- **Failure mode:** Checkpoint D claim/scan queries gated **all** eligible rows on `next_purge_attempt_at <= now`. Because archive creation sets `next_purge_attempt_at = purge_at` (Checkpoint B backfill), a pending row whose fixture/data rewrites only `purge_at` backward stayed ineligible, so `purgeDue` claimed 0 rows and skipped legitimate due archives.
+- **Detection signal:** Guarded e2e `purges a bounded oldest-first batch`, `serializes concurrent purgeDue`, and `reclaims an expired processing lease` all reported `deleted: 0 / selected: 0` after the fixture moved a pending archive's `purge_at` into the past.
+- **Root cause:** Backoff/cooldown is only meaningful for **retry** rows. A pending (first-attempt) row is due purely on `purge_at`; a `processing` row is reclaimable on lease expiry; only a `retry` row should honor `next_purge_attempt_at`.
+- **Prevention rule:** In a durable retention claim, branch the eligibility by state so `next_purge_attempt_at` constrains only `retry`, `purge_at` constrains pending, and lease expiry constrains `processing`. Do not add an unconditional `next_purge_attempt_at` filter.
+- **Tripwire:** When adding a purge-eligibility predicate, assert separately that (a) pending, (b) ready retry, (c) backoff-gated retry, and (d) expired-processing rows each have the intended eligibility, and keep pending rows driven purely by `purge_at`.

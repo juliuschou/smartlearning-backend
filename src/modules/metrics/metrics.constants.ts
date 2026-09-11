@@ -61,6 +61,8 @@ export const JOB_ITEM_RESULTS = [
   'failed',
   'selected',
   'deleted',
+  'retried',
+  'quarantined',
 ] as const;
 export type JobItemResult = (typeof JOB_ITEM_RESULTS)[number];
 

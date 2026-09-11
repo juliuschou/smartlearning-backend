@@ -3576,3 +3576,298 @@ Checkpoint E documentation changes are complete across the backend API reference
 #### Gate F disposition
 
 Final regression is **NOT GREEN**. Per stop-the-line rule, no further fixes or reruns were attempted. The failures are outside the BE-5.1 documentation/WBS edits except for the shared test cleanup/realtime areas; BE-5.1 WBS closeout remains recorded, but final repository-wide completion and any commit are deferred until the failures are separately diagnosed and resolved.
+
+# 2026-09-11 — BE-5.2 Archive Retention Plan — Checkpoint A
+
+## Context and acceptance criteria
+
+BE-5.2 Checkpoint A freezes the irreversible retention deletion contract and records a source-level baseline. It is documentation/static contract work only; no migration, generated-client change, purge, provider operation, or DB-backed verification is authorized in this checkpoint.
+
+- [x] Add and review a table-by-table inventory of all governed session data, retained archive metadata, canonical tombstone/outbox records, and explicitly retained shared records.
+- [x] Reconcile `DELETED_CATEGORIES` with the frozen contract; record the current implementation mismatch for Checkpoint C rather than silently treating it as compliant.
+- [x] Preserve `purgeAt = closedAt + 90 days` as the immutable legal deadline and use PostgreSQL as clock/coordination authority.
+- [x] Preserve `LiveSession`, Course, Account, and reusable `QuestionDefinition` data; do not reimplement BE-5.3 provider-backed restore/reconciliation.
+- [ ] **In progress:** obtain human review before Checkpoint B or any migration/DB-backed verification.
+
+## Provenance baseline
+
+- Repository root: `/home/user/projects/smartLearning/smartLearning-backend`; branch: `main`; HEAD: `56abb149d7397a6e7200b4b35aa82c4e2afa9cfd` (`56abb14`, `feat(governance): close archive domain evidence`).
+- Runtime baseline: Node `v26.5.1`; npm `11.17.0`. Working tree is modified only by this Checkpoint A task-record update; no product/source/schema/generated/database/provider/container state was changed.
+- Historical governance commits and evidence remain provenance only; this checkpoint does not claim production migration, provider, alert-routing, or clean-revision operational readiness.
+
+## Frozen deletion inventory
+
+| Data/table | Frozen BE-5.2 retention contract | Baseline disposition |
+| --- | --- | --- |
+| `Submission` | Delete every row belonging to the live session. | Governed deletion |
+| `LiveSessionEvent` | Delete every row for the session, including routing, projection, and replay state; visibility must not narrow the scope. | Governed deletion; current code only targets `participant_after_submit` and requires later correction |
+| `SessionQuestionOption` | Delete all selected-session option snapshots, after dependent answer data. | Governed deletion |
+| `SessionQuestion` | Delete all selected-session question snapshots after options. | Governed deletion |
+| `Participant` | Delete participant identity, account/token, display, and reconnect linkage. | Governed deletion |
+| Session-scoped aggregate/projection state | Delete any separate answer-bearing aggregate/projection rows represented by the schema; if represented only by submissions/events, the zero-row invariant applies to those sources. | Governed deletion; schema inventory must be rechecked in Checkpoint C |
+| `ArchivedResult` | Retain the non-answer archive shell/lifecycle metadata; set `payload` to NULL and transition status to deleted. Never move `purgeAt`. | Retained tombstone shell |
+| `DeletionEvent` | Retain exactly one canonical successful retention tombstone/event with stable categories/reason only. | Retained governance record |
+| `DeletionManifestOutbox` | Retain exactly one canonical immutable manifest outbox record for export/BE-5.3 reconciliation. | Retained governance record |
+| `LiveSession` | Retain lifecycle metadata, including `closedAt` and immutable `purgeAt`. | Explicitly retained |
+| `LiveSessionQuestionSelection` | Retain non-answer selection/lifecycle metadata; reusable question definitions remain independent. | Explicitly retained unless a later authoritative contract says otherwise |
+| Course | Retain course metadata and ownership. | Explicitly retained |
+| `CourseEnrollment` | Retain course/account roster metadata; it is not session answer data. | Explicitly retained |
+| Account | Retain account identity/lifecycle data outside participant linkage. | Explicitly retained |
+| `QuestionDefinition` | Retain reusable course question definitions. | Explicitly retained |
+| `QuestionOption` | Retain reusable options belonging to `QuestionDefinition`; only copied session options are governed. | Explicitly retained |
+
+### Category reconciliation baseline
+
+The current `DELETED_CATEGORIES` value is exactly `['archive_payload', 'submissions', 'participants', 'session_questions', 'realtime_target_routing']`. Its current meanings are: archive payload; submissions; participants; session questions/options as a broad group; and realtime target routing. The frozen contract requires those meanings to cover every governed row listed above, especially all `LiveSessionEvent` state (routing, projection, replay, and delivery), not only target routing. The current executor in `src/modules/governance/application/governance.service.ts` deletes only `participant_after_submit` events, so the current category vocabulary/predicate is recorded as nonconforming and must be reconciled/versioned in Checkpoint C without silently changing immutable historical manifests in Checkpoint A. Checkpoint A records this gap; it does not modify the deletion implementation.
+
+## Dependencies, environment, and authorization gates
+
+- PostgreSQL is the authority for retention time and worker coordination; application retries must never change `purgeAt`.
+- Required later verification environment is the guarded `smartlearning_test` database only. `test/setup/db.ts` can implicitly run migrations and truncate data; that is DB-backed/destructive activity and is not authorized here.
+- Do not run `prisma generate`, `prisma migrate deploy`, `prisma migrate status`, `prisma db push`, DB-backed E2E/integration tests, purge/early-delete/reconcile-apply, S3/provider uploads, restore rehearsals, or container operations during Checkpoint A.
+- BE-5.3 provider-backed restore filtering/reconciliation remains a separate scope; BE-5.2 only produces the canonical deletion event/outbox manifest it consumes.
+
+## Risk, stop conditions, and rollback
+
+- **Risk:** HIGH — irreversible privacy-sensitive deletion across related session tables with concurrent workers.
+- Stop immediately for any deletion before `purgeAt`, category/dry-run mismatch, unexpected retained or selected governed rows, non-atomic deletion plus tombstone/outbox, manifest immutability/checksum conflict, growing quarantine or lost lease ownership, or interactive API/realtime SLO impact.
+- Before deletion, rollback is disabling purge/export gates and reverting or forward-fixing code while leaving additive schema in place. After deletion, application rollback or backup restore must not reconstruct deleted answer-bearing data; preserve tombstones, outbox records, immutable manifests, logs, and metrics, and pause new claims for forward-fix.
+
+## Checkpoint A working notes and results
+
+- **Gate status:** awaiting human review; no implementation change has started.
+- Source baseline: `ArchivedResult` currently has status/payload/purgeAt but no durable purge claim/retry state; `purgeDue()` still uses invocation-local failure handling; `inspectDue()` is metrics-only; operator `run-once`/manifest export branches and an independent manifest scheduler remain later work.
+- **Results:** Checkpoint A baseline has been recorded in this task file. No migration, generation, DB-backed test, purge, provider upload, restore rehearsal, or container operation was performed. Await explicit human review/authorization before Checkpoint B.
+
+---
+
+# 2026-09-11 — BE-5.2 Archive Retention Plan — Checkpoint B
+
+## Scope and acceptance criteria
+
+Checkpoint B adds only the durable purge work-state foundation on `ArchivedResult`. Shared deletion planning/dry-run belongs to Checkpoint C; durable claim/execute/retry/quarantine behavior belongs to Checkpoint D; scheduler/CLI/provider wiring belongs to Checkpoint E; provider-backed restore/reconciliation remains BE-5.3.
+
+- [x] Add `purgeState`, `purgeAttempts`, `nextPurgeAttemptAt`, purge lease fields, stable failure metadata, and `quarantinedAt` to the Prisma model.
+- [x] Add one hand-written additive migration with preflight, active/deleted backfill, state/lease/quarantine/payload coherence checks, stable failure-code allowlist, and a bounded due/lease-recovery index.
+- [x] Keep new archive rows pending with `nextPurgeAttemptAt = purgeAt`; make all existing tombstone transitions set `purgeState = deleted` and clear transient work state without moving `purgeAt`.
+- [x] Run only the authorized `smartlearning_test` migration/status and focused archive verification; do not touch other databases or invoke purge/provider/restore operations.
+- [ ] **In progress:** obtain human review before Checkpoint C (shared deletion plan/dry-run).
+
+## Dependencies, environment, and authorization
+
+- PostgreSQL remains the clock and coordination authority. `purgeAt` is immutable and exactly `closedAt + 90 days`; retries and backoff state must not modify it.
+- Runtime baseline: Node `v26.5.1`, npm `11.17.0`; target database is exactly `smartlearning_test` through `NODE_ENV=test` and `.env.test`.
+- **Authorized:** user confirmed entry into Checkpoint B and authorized `smartlearning_test` DB validation. This includes the guarded test setup’s documented idempotent migration check and `truncateAll()` fixture cleanup for the focused suite; no development/staging/production DB is in scope.
+- Prisma 7 generated client must be regenerated and normalized with `node scripts/normalize-prisma-client.mjs generated/prisma` after the schema edit. Do not edit an already-applied migration or add a down migration.
+
+## Files and symbols
+
+- `prisma/schema.prisma` — `ArchivedResult` durable work-state fields and mappings.
+- `prisma/migrations/20260911100000_add_archive_purge_worker_state/migration.sql` — additive SQL, preflight/backfill/checks/index.
+- `src/modules/governance/application/governance.service.ts` — archive creation and tombstone state writes.
+- `test/archive-governance.e2e-spec.ts` — focused guarded archive verification.
+- `tasks/lessons.md:119-124` — CHECK constraints must not use subqueries; use scalar predicates only.
+
+## Migration contract
+
+- Preflight must fail loudly before mutation on active/payload or deleted/NULL violations. The initial draft also preflighted `purge_at <> closed_at + 90 days`; this was **superseded during verification** (see results): e2e fixtures legitimately rewrite `purge_at` to simulate due archives, and `purgeAt` provenance is an application invariant enforced at `archiveSessionInTransaction()`, not a migration precondition. The deployed migration preflights only the status/payload invariant and never modifies `purge_at` itself.
+- Existing active rows become `pending`; deleted rows become `deleted`; attempts start at zero; `next_purge_attempt_at` is backfilled from `purge_at`; lease/failure/quarantine fields start NULL.
+- Allowed states are `pending`, `processing`, `retry`, `quarantined`, `deleted`. Attempts are non-negative. `processing` requires both lease fields; all other states have neither. `quarantined` requires `quarantined_at`; other states do not. Failure code/time are paired and failure code is a fixed low-cardinality class.
+- Active/deleted state must remain coherent with the existing payload check. The partial work index covers active pending/retry/processing rows ordered for due work and lease recovery.
+
+## Risk, stop conditions, and rollback
+
+- **Risk level: HIGH:** this adds durable state and database constraints used by a future irreversible privacy deletion worker.
+- Stop immediately on wrong database identity, preflight mismatch, migration failure, failed invariant check, unexpected data mutation, lock/resource impact, or any production/source behavior outside this checkpoint.
+- Before purge is enabled, rollback is disable/forward-fix or application revert while retaining the additive migration history. There is no normal down migration. Never reconstruct deleted answer-bearing data through rollback or backup restore.
+
+## Verification results
+
+| Command | Result |
+| --- | --- |
+| `npm run prisma:validate` | PASS — schema valid |
+| `npm run prisma:generate` + `node scripts/normalize-prisma-client.mjs generated/prisma` | PASS — client regenerated, CJS-normalized (0 files changed, idempotent) |
+| `npm run typecheck` | PASS |
+| `npm run format:check` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run build` | PASS |
+| `git diff --check` | PASS |
+| Focused unit: `governance.service.spec.ts` | PASS — 1 suite / 6 tests |
+| Focused unit: governance 4-suite bundle (service/scheduler/reconciliation/exporter) | PASS — 4 suites / 22 tests |
+| Sanitized preflight: `.env.test` DB name + no exported `DATABASE_URL` | PASS — exactly `smartlearning_test@localhost:5432`, credentials not printed |
+| Pre-deploy `NODE_ENV=test npm run prisma:migrate:status` | PASS — only `20260911100000_add_archive_purge_worker_state` pending |
+| `NODE_ENV=test npm run prisma:migrate:deploy` | PASS after one fail-loud preflight iteration (below) |
+| Post-deploy `NODE_ENV=test npm run prisma:migrate:status` | PASS — 19 migrations, schema up to date |
+| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` | PASS — 1 suite / 13 tests, 0 failed, 0 skipped |
+
+### Fail-loud preflight event (forward-fixed)
+
+1. The first deploy aborted on the draft's `purge_at <> closed_at + 90 days` preflight (`P0001 archive purge deadline invariant violated`). This was the preflight working as designed: guarded test fixtures deliberately rewrite `purge_at` to model due archives, and `purgeAt` provenance is enforced in the application writer, not at migration time.
+2. The migration was corrected to preflight only the status/payload invariant (additive columns/backfill never touch `purge_at`), the failed migration record was marked rolled back via `NODE_ENV=test npx prisma migrate resolve --rolled-back` (authorized DB-state repair for exactly `smartlearning_test`), and the deploy then succeeded cleanly. No data rows were modified outside the migration's own backfill; no other database was touched.
+
+## Checkpoint B results / gate
+
+- **Results:** Checkpoint B is **GREEN**. `ArchivedResult` now carries durable purge work state (`purgeState/purgeAttempts/nextPurgeAttemptAt`, paired lease fields, paired stable failure metadata, `quarantinedAt`) backed by one additive migration with preflight/backfill/coherence CHECKs and a partial due/lease-recovery index. Archive creation writes `pending` with `nextPurgeAttemptAt = purgeAt`; all three tombstone transitions write `purgeState = deleted` and clear transient work state. `purgeDue()`/scheduler/CLI/env remain intentionally unchanged (Checkpoints C–E own them).
+- **Not done / deferred:** no claim/lease execution logic, dry-run, scheduler/env/CLI wiring, or provider work; no additional constraint-level negative-state fixtures beyond the E2E matrix; WBS BE-5.2 boxes remain unchecked.
+- **Gate:** STOP here for human review before Checkpoint C. Migration deployment to other environments and any purge execution require separate authorization.
+
+---
+
+# 2026-09-11 — BE-5.2 Archive Retention Plan — Checkpoint C: shared deletion plan + true dry-run
+
+## Scope and acceptance criteria
+
+Checkpoint C centralizes the governed deletion as a single shared plan and adds an
+**execution-equivalent, no-delete dry-run** at the service layer. Durable
+claim/execute/retry/quarantine behavior belongs to Checkpoint D; scheduler/CLI/env
+wiring belongs to Checkpoint E; provider-backed restore remains BE-5.3. **Checkpoint C
+does not change what the executor deletes** (the `LiveSessionEvent` predicate stays at
+the current `PARTICIPANT_AFTER_SUBMIT` scope); it surfaces the reconciled contract scope
+numerically so the operator can see the gap before any execution-semantics change (D).
+
+- [x] Add `src/modules/governance/application/deletion-plan.ts` — the single source of truth for
+      governed deletion: ordered entries, each carrying a `where(sid)` closure **shared by the
+      count (dry-run) and deleteMany (execute) paths** so the plan cannot drift from execution.
+- [x] Refactor `GovernanceService` so all three tombstone paths (`purgeOneInTransaction`,
+      `applyDeletionManifestInTransaction` existing + canonical branches) delete governed rows
+      through the shared plan instead of three bespoke duplicate blocks.
+- [x] Add a service-layer **true dry-run**: `purgeDue(limit, now, dryRun=false)` uses the same
+      oldest-first `FOR UPDATE OF live_session SKIP LOCKED` claim + row lock, then counts each
+      governed table via the shared plan without writing; `dryRun=true` returns a per-archive /
+      per-category / reconciled-event report. Default path and scheduler callers are unchanged.
+- [x] Dry-run reports the `LiveSessionEvent` count under **both** the current executor scope
+      (`PARTICIPANT_AFTER_SUBMIT`) and the reconciled contract scope (all events), exposing the
+      Checkpoint-A-recorded conformance gap as a number without flipping the delete predicate.
+- [x] Guarded `smartlearning_test` e2e + unit proof: dry-run performs zero writes (submission /
+      participant / session_question / session_question_option / live_session_event / archive /
+      deletion_event / outbox counts all unchanged) and its per-category counts match a real
+      purge on identical fixtures (execution-equivalence tripwire).
+- [ ] **In progress:** obtain human review at the Checkpoint C gate before Checkpoint D.
+- [ ] **Deferred to D (not done here):** flip the executor `LiveSessionEvent` scope to delete
+      all session events (routing/projection/replay/delivery); CLI/scheduler dry-run wiring;
+      durable claim/lease/retry/quarantine.
+
+## Files and symbols
+
+- `src/modules/governance/application/deletion-plan.ts` — `DELETION_PLAN_VERSION`,
+  `GOVERNED_DELETION_PLAN` (ordered), `DeletionPlanEntry`, `DELETION_EVENT_CATEGORY`;
+  the single place that maps a category to its count===delete `where`. (Application layer,
+  not domain: the `where` closures are Prisma transaction-client coupled.)
+- `src/modules/governance/application/governance.service.ts` —
+  `deleteRowsByPlanInTransaction(t, sid)`, `planDeletionInTransaction(t, sid)`,
+  `purgeDue(limit, now, dryRun)`, `applyGovernedPlan` replacing the three duplicate blocks.
+- `src/modules/governance/application/governance.service.spec.ts` — dry-run returns a plan and
+  never calls deleteMany; executor and dry-run share the plan's where (no drift).
+- `test/archive-governance.e2e-spec.ts` — guarded zero-write dry-run + counts-match-purge.
+
+## Deletion plan contract (single source of truth)
+
+Ordered governed rows (matches the frozen BE-5.2 inventory): submission →
+live_session_event (current scope) → session_question_option → session_question → participant.
+The same `where` closure feeds both `count()` and `deleteMany()`. The reconciled full
+`LiveSessionEvent` scope (`{ liveSessionId }`) is reported separately as the conformance gap.
+
+## Risk, stop conditions, and rollback
+
+- **Risk:** HIGH (privacy-deletion planning). Dry-run must be provably write-free.
+- Stop immediately on any dry-run write observed, count/del drift between plan & execute,
+  wrong test DB identity, migration/fixture failure, or any behavior change in the live purge path.
+- Rollback: revert this checkpoint's service/domain/test changes; no down migration. The
+  executor predicate is intentionally unchanged, so no live deletion semantics shifted.
+
+## Verification (guarded; smallest → broader)
+
+- [x] `npm run typecheck` / `npm run lint:check` / `npm run format:check` / `npm run build` / `git diff --check` — PASS
+- [x] `npm test -- --runInBand src/modules/governance/application/governance.service.spec.ts` (unit) — PASS, 7 tests
+- [x] Governance unit bundle — PASS, 7 suites / 47 tests
+- [x] `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` — PASS, 14 tests (13 existing + 1 new dry-run proof)
+- [x] `NODE_ENV=test npm run prisma:migrate:status` — PASS, schema up to date (no new migration in Checkpoint C)
+
+## Checkpoint C results / gate
+
+- **Results:** Checkpoint C is **GREEN**. A single shared governed-deletion plan
+  (`governance/application/deletion-plan.ts`) is now the one place that maps each governed
+  table to its count===delete `where`, and all three tombstone paths
+  (`purgeOneInTransaction`, `applyDeletionManifestInTransaction` existing + canonical) delete
+  through it. `purgeDue(limit, now, dryRun)` gains a **true execution-equivalent dry-run**: it
+  takes the same oldest-first `FOR UPDATE OF live_session SKIP LOCKED` claim and row lock, then
+  counts each governed table via the shared plan with **zero writes** (guarded e2e asserts every
+  governed row + archive is untouched) and returns a per-archive/per-category report that also
+  reveals the `LiveSessionEvent` reconciled full-scope count side-by-side with the current executor
+  scope, quantifying the Checkpoint-A-recorded conformance gap as a number without flipping the
+  delete predicate. Scheduler `runOnce()` and default callers are unchanged (`dryRun=false`).
+- **What did not change:** the executor `LiveSessionEvent` predicate stays at
+  `PARTICIPANT_AFTER_SUBMIT`; no CLI/scheduler dry-run wiring; no durable claim/lease/quarantine.
+- **Not done / deferred to D (recorded, not silently skipped):** flip the executor `LiveSessionEvent`
+  scope to delete all session events; CLI/scheduler dry-run wiring; durable claim/retry/quarantine.
+- **Gate:** STOP here for human review at the Checkpoint C gate before Checkpoint D. Any
+  execution-semantics change (widening the event predicate), scheduler/CLI wiring, migration to other
+  environments, or purge execution requires separate authorization. WBS BE-5.2 boxes remain unchecked.
+
+---
+
+# 2026-09-11 — BE-5.2 Archive Retention Plan — Checkpoint D: durable leasing + full-session-event scope
+
+## Scope and acceptance criteria (per user gate ruling → follow plan doc; CLI/env/scheduler wiring stays in E)
+
+- [x] Rework `GovernanceService.purgeDue()` into bounded durable claim / per-item lease-verified
+      execute / compare-and-set failure transition (claim assigns a UUID v7 lease + increments
+      attempts; expired processing leases reclaimed; in-memory `failedIds` removed).
+- [x] Flip the executor + dry-run `LiveSessionEvent` predicate to delete ALL session events
+      (routing/projection/replay/delivery), closing the Checkpoint-A conformance gap; remove the now
+      redundant `RECONCILED_EVENT_WHERE` and `reconciledLiveSessionEventCount` (dry-run reports the
+      full scope via `tableCounts.LiveSessionEvent`).
+- [x] Add bounded retry/backoff + quarantine policy (`purge-failure-policy.ts`) mapping failures to
+      a stable allowlist and never persisting raw exception text; retry rows honor
+      `next_purge_attempt_at` with bounded exponential backoff, quarantine permanent/exhausted rows,
+      `purgeAt` never altered.
+- [x] Dry-run stays write-free (lock-only scan shares predicates with the live claim; no
+      `archived_result.updateMany`), and its counts match the now-widened executor.
+- [x] Add minimal low-cardinality metrics (`retried`, `quarantined` item results).
+- [ ] **Deferred to E:** scheduler splitting / manifest-export scheduler; CLI `dry-run` +
+      `run-once` execution wiring; purge-lease / max-attempt env fields. No schema/migration in D.
+
+## Files and symbols
+
+- `src/modules/governance/application/governance.service.ts` — `purgeDue` (claim→execute→transition),
+  `scanDueInTransaction`, `claimDueInTransaction`, `executePurgeOneInTransaction`,
+  `transitionFailureInTransaction`, `finalizePurgeInTransaction` (shared executor tail),
+  `planDeletionInTransaction` (dropped reconciled count).
+- `src/modules/governance/application/deletion-plan.ts` — `GOVERNED_DELETION_PLAN` LiveSessionEvent
+  → `{ liveSessionId }` (all events); `GovernedDeletionPlanDto` loses `reconciledLiveSessionEventCount`.
+- `src/modules/governance/application/purge-failure-policy.ts` — NEW: `PurgeFailureCode`,
+  `classifyPurgeFailure`, `decidePurgeFailure`, `retryDelayMs`, `LeaseLostError`.
+- `src/modules/metrics/metrics.constants.ts` — add `retried`, `quarantined` to `JOB_ITEM_RESULTS`.
+- `src/modules/governance/application/purge-failure-policy.spec.ts` — NEW unit coverage.
+- `test/archive-governance.e2e-spec.ts` — widened event assertions + expired-lease-recovery proof.
+
+## Eligibility semantics (superseded during verification)
+
+The initial claim/scan gated **all** rows on `next_purge_attempt_at <= now`. Guarded fixtures (and
+real data) legitimately rewrite only `purge_at` backward, so pending rows with stale
+`next_purge_attempt_at` became ineligible and were skipped. Corrected to: pending rows are due on
+`purge_at` alone; `next_purge_attempt_at` gates **retry** rows (backoff) only; expired leases gate
+`processing` rows. This matches the BE-5.2 plan (backoff applies to retries, not first attempts).
+
+## Risk & rollback
+
+- **Risk: HIGH** — irreversible privacy deletion + widened executor scope + concurrent-worker leases.
+- Rollback before deletion: disable `RETENTION_PURGE_ENABLED`, revert/forward-fix app code; additive
+  migration stays. No down migration; never reconstruct purged data.
+- DB boundary: DB-backed e2e ran only against authorized `smartlearning_test` (verified
+  `smartlearning_test@localhost:5432`, 19 migrations up to date); no purge of real data, no S3/provider ops.
+
+## Verification results
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `git diff --check` | PASS |
+| Governance unit bundle (`src/modules/governance/`) | PASS — 8 suites / 60 tests |
+| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` | PASS — 15 tests |
+| `NODE_ENV=test npm run prisma:migrate:status` | PASS — schema up to date (no new migration in D) |
+| Full unit `src/` | PASS except pre-existing `live-gateway.spec.ts:156` (Gate F, unrelated, realtime module untouched) |
+| Full e2e regression | archive-governance PASS in full-suite context; other PASS suites across account/admin/auth/realtime/enrollments/questions/live-session. Single failure `cli-batch-rate-limit` is the pre-existing `Bootstrap already completed` isolation flake (tasks/todo.md:1554) — passes isolated 3/3, unrelated to governance. |

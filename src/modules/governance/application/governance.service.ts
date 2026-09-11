@@ -7,10 +7,23 @@ import {
   NotFoundError,
 } from '../../../common/errors';
 import { normalizePageRequest, toPage } from '../../../common/pagination';
+import {
+  countPlanEntry,
+  deletePlanEntry,
+  DELETION_EVENT_CATEGORY,
+  GOVERNED_DELETION_PLAN,
+  type GovernedDeletionPlanDto,
+  type RetentionRunResult,
+} from './deletion-plan';
+import {
+  LeaseLostError,
+  classifyPurgeFailure,
+  decidePurgeFailure,
+  type PurgeFailureCode,
+} from './purge-failure-policy';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TransactionService } from '../../../prisma/transaction.service';
 import { MetricsService } from '../../metrics/metrics.service';
-import { RealtimeVisibility } from '../../realtime/live-session-realtime-contract';
 import type {
   AdminDeletionRequestSummaryDto,
   ArchiveDeletionDto,
@@ -33,6 +46,11 @@ import type { DeletionManifest } from '../domain/deletion-manifest';
 
 const DAY = 24 * 60 * 60 * 1000;
 const RETENTION_DAYS = 90;
+
+/** Durable lease / retry budget for the retention worker (Checkpoint D). */
+const PURGE_LEASE_MS = 10_000;
+const PURGE_MAX_ATTEMPTS = 5;
+
 const DELETED_CATEGORIES = [
   'archive_payload',
   'submissions',
@@ -228,6 +246,7 @@ export class GovernanceService {
       })),
     );
     const startedAt = s.startedAt ?? s.closedAt;
+    const purgeAt = new Date(s.closedAt.getTime() + RETENTION_DAYS * DAY);
     const archive = await t.archivedResult.create({
       data: {
         id: newId(),
@@ -236,7 +255,9 @@ export class GovernanceService {
         sessionLabel: startedAt.toISOString(),
         startedAt,
         closedAt: s.closedAt,
-        purgeAt: new Date(s.closedAt.getTime() + RETENTION_DAYS * DAY),
+        purgeAt,
+        purgeState: 'pending',
+        nextPurgeAttemptAt: purgeAt,
         payload: JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue,
       },
       include: this.archiveInclude(),
@@ -536,21 +557,19 @@ export class GovernanceService {
           'Deletion manifest event identity conflict.',
           'deletionEventId',
         );
-      await t.submission.deleteMany({ where: { liveSessionId: sid } });
-      await t.liveSessionEvent.deleteMany({
-        where: {
-          liveSessionId: sid,
-          visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
-        },
-      });
-      await t.sessionQuestionOption.deleteMany({
-        where: { sessionQuestion: { liveSessionId: sid } },
-      });
-      await t.sessionQuestion.deleteMany({ where: { liveSessionId: sid } });
-      await t.participant.deleteMany({ where: { liveSessionId: sid } });
+      await this.deleteRowsByPlanInTransaction(t, sid);
       await t.archivedResult.update({
         where: { id: archiveId },
-        data: { status: 'deleted', payload: Prisma.DbNull },
+        data: {
+          status: 'deleted',
+          payload: Prisma.DbNull,
+          purgeState: 'deleted',
+          purgeLeaseToken: null,
+          purgeLeaseExpiresAt: null,
+          lastPurgeFailureCode: null,
+          lastPurgeFailedAt: null,
+          quarantinedAt: null,
+        },
       });
       return this.deletionResult(archive, existing, null);
     }
@@ -568,21 +587,19 @@ export class GovernanceService {
         'status',
       );
 
-    await t.submission.deleteMany({ where: { liveSessionId: sid } });
-    await t.liveSessionEvent.deleteMany({
-      where: {
-        liveSessionId: sid,
-        visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
-      },
-    });
-    await t.sessionQuestionOption.deleteMany({
-      where: { sessionQuestion: { liveSessionId: sid } },
-    });
-    await t.sessionQuestion.deleteMany({ where: { liveSessionId: sid } });
-    await t.participant.deleteMany({ where: { liveSessionId: sid } });
+    await this.deleteRowsByPlanInTransaction(t, sid);
     await t.archivedResult.update({
       where: { id: archiveId },
-      data: { status: 'deleted', payload: Prisma.DbNull },
+      data: {
+        status: 'deleted',
+        payload: Prisma.DbNull,
+        purgeState: 'deleted',
+        purgeLeaseToken: null,
+        purgeLeaseExpiresAt: null,
+        lastPurgeFailureCode: null,
+        lastPurgeFailedAt: null,
+        quarantinedAt: null,
+      },
     });
     const event = await t.deletionEvent.create({
       data: {
@@ -598,6 +615,44 @@ export class GovernanceService {
       },
     });
     return this.deletionResult(archive, event, null);
+  }
+
+  /**
+   * Execute the governed deletion plan for one session on the transaction client.
+   * This is the single delete path both the retention/early-delete executor and the
+   * manifest apply use, so the LiveSessionEvent predicate (current
+   * PARTICIPANT_AFTER_SUBMIT scope) can never drift between callers.
+   */
+  private async deleteRowsByPlanInTransaction(
+    t: Prisma.TransactionClient,
+    sid: string,
+  ): Promise<void> {
+    for (const entry of GOVERNED_DELETION_PLAN) {
+      await deletePlanEntry(t, sid, entry);
+    }
+  }
+
+  /**
+   * Execution-equivalent, write-free deletion plan for one session. Uses the same
+   * governed predicates as the executor (so count === delete), then additionally
+   * reports the reconciled all-event LiveSessionEvent count for the BE-5.2
+   * conformance gap without applying it. Returns per-table counts, no mutations.
+   */
+  async planDeletionInTransaction(
+    t: Prisma.TransactionClient,
+    sid: string,
+    archiveId: string,
+  ): Promise<GovernedDeletionPlanDto> {
+    const tableCounts: Record<string, number> = {};
+    for (const entry of GOVERNED_DELETION_PLAN) {
+      tableCounts[entry.table] = await countPlanEntry(t, sid, entry);
+    }
+    return {
+      archiveId,
+      liveSessionId: sid,
+      category: DELETION_EVENT_CATEGORY,
+      tableCounts,
+    };
   }
 
   private async purgeOneInTransaction(
@@ -670,21 +725,48 @@ export class GovernanceService {
       );
     }
 
-    await t.submission.deleteMany({ where: { liveSessionId: sid } });
-    await t.liveSessionEvent.deleteMany({
-      where: {
-        liveSessionId: sid,
-        visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
-      },
-    });
-    await t.sessionQuestionOption.deleteMany({
-      where: { sessionQuestion: { liveSessionId: sid } },
-    });
-    await t.sessionQuestion.deleteMany({ where: { liveSessionId: sid } });
-    await t.participant.deleteMany({ where: { liveSessionId: sid } });
+    return this.finalizePurgeInTransaction(
+      t,
+      archive,
+      sid,
+      trigger,
+      executorId,
+      reason,
+      now,
+      request,
+    );
+  }
+
+  /**
+   * Run the governed deletion + tombstone (DeletionEvent) + outbox (DeletionManifest
+   * Outbox) + request resolution atomically. Shared by the admin early-delete /
+   * deterministic single-session purge path (`purgeOneInTransaction`) and the
+   * durable-lease retention executor (`executePurgeOneInTransaction`), so the two
+   * paths can never drift in what they delete or emit.
+   */
+  private async finalizePurgeInTransaction(
+    t: Prisma.TransactionClient,
+    archive: { id: string; liveSessionId: string; courseId: string },
+    sid: string,
+    trigger: 'retention' | 'early_delete',
+    executorId: string | undefined,
+    reason: DeletionReason | 'retention',
+    now: Date,
+    request?: { id: string } | null,
+  ): Promise<DeletionResultDto> {
+    await this.deleteRowsByPlanInTransaction(t, sid);
     await t.archivedResult.update({
       where: { id: archive.id },
-      data: { status: 'deleted', payload: Prisma.DbNull },
+      data: {
+        status: 'deleted',
+        payload: Prisma.DbNull,
+        purgeState: 'deleted',
+        purgeLeaseToken: null,
+        purgeLeaseExpiresAt: null,
+        lastPurgeFailureCode: null,
+        lastPurgeFailedAt: null,
+        quarantinedAt: null,
+      },
     });
     const event = await t.deletionEvent.create({
       data: {
@@ -786,71 +868,293 @@ export class GovernanceService {
     };
   }
 
-  async purgeDue(limit = 50, now = new Date()) {
+  /**
+   * Run one bounded, restart-safe retention sweep.
+   *
+   * Checkpoint D replaces the earlier invocation-local claim (a `NOT IN (failedIds)`
+   * exclusion held only for the lifetime of one call) with durable leases. A claim
+   * transaction assigns a UUID v7 lease and increments `purgeAttempts`; then each
+   * item executes in its own transaction that verifies the lease; failures transition
+   * (retry/backoff or quarantine) only while the lease token still matches. The public
+   * signature is unchanged so the scheduler and existing callers keep working.
+   */
+  async purgeDue(
+    limit = 50,
+    now = new Date(),
+    dryRun = false,
+  ): Promise<RetentionRunResult> {
     const startedAt = process.hrtime.bigint();
     const boundedLimit = Math.max(1, Math.min(100, Math.floor(limit)));
-    const failedIds = new Set<string>();
+    const planned: GovernedDeletionPlanDto[] = [];
     let selected = 0;
     let deleted = 0;
     let failed = 0;
 
     while (selected < boundedLimit) {
-      let claimedId: string | undefined;
-      try {
-        const outcome = await this.tx.run(async (t) => {
-          const exclusion = failedIds.size
-            ? Prisma.sql`AND archived_result.live_session_id NOT IN (${Prisma.join(
-                [...failedIds].map((id) => Prisma.sql`${id}::uuid`),
-              )})`
-            : Prisma.empty;
-          const rows = await t.$queryRaw<Array<{ liveSessionId: string }>>`
-            SELECT archived_result.live_session_id AS "liveSessionId"
-            FROM archived_result
-            JOIN live_session ON live_session.id = archived_result.live_session_id
-            WHERE archived_result.status = 'active'
-              AND archived_result.purge_at <= ${now}
-              ${exclusion}
-            ORDER BY archived_result.purge_at ASC, archived_result.id ASC
-            LIMIT 1
-            FOR UPDATE OF live_session SKIP LOCKED
-          `;
-          const row = rows[0];
-          if (!row) return null;
-          claimedId = row.liveSessionId;
-          return this.purgeOneInTransaction(
-            t,
-            row.liveSessionId,
-            'retention',
-            undefined,
-            'retention',
-            now,
-          );
+      const remaining = boundedLimit - selected;
+      if (dryRun) {
+        // Write-free scan + count in one transaction: same eligibility as the live
+        // claim, but it never persists a lease, so dry-run remains truly side-effect
+        // free while sharing the plan's predicates with execution.
+        const plans = await this.tx.run(async (t) => {
+          const rows = await this.scanDueInTransaction(t, now, remaining);
+          const out: GovernedDeletionPlanDto[] = [];
+          for (const row of rows) {
+            out.push(
+              await this.planDeletionInTransaction(
+                t,
+                row.liveSessionId,
+                row.archiveId,
+              ),
+            );
+          }
+          return out;
         });
-        if (!claimedId) break;
-        selected += 1;
-        this.recordItem('selected', 1);
-        if (outcome) {
-          deleted += 1;
-          this.recordItem('deleted', 1);
+        if (plans.length === 0) break;
+        planned.push(...plans);
+        selected += plans.length;
+        this.recordItem('selected', plans.length);
+        continue;
+      }
+
+      const claimed = await this.tx.run((t) =>
+        this.claimDueInTransaction(t, now, remaining),
+      );
+      if (claimed.length === 0) break;
+      selected += claimed.length;
+      this.recordItem('selected', claimed.length);
+
+      for (const item of claimed) {
+        try {
+          const outcome = await this.tx.run((t) =>
+            this.executePurgeOneInTransaction(
+              t,
+              item.liveSessionId,
+              item.leaseToken,
+              now,
+            ),
+          );
+          if (outcome) {
+            deleted += 1;
+            this.recordItem('deleted', 1);
+          }
+        } catch (error) {
+          failed += 1;
+          this.recordItem('failed', 1);
+          const code = classifyPurgeFailure(error);
+          const transition = await this.tx.run((t) =>
+            this.transitionFailureInTransaction(
+              t,
+              item.archiveId,
+              item.leaseToken,
+              code,
+              item.purgeAttempts,
+              now,
+            ),
+          );
+          if (transition.matched) {
+            this.recordItem(
+              transition.quarantined ? 'quarantined' : 'retried',
+              1,
+            );
+          }
         }
-      } catch {
-        if (!claimedId) {
-          this.recordRun('failure', startedAt);
-          throw new Error('Retention claim failed');
-        }
-        selected += 1;
-        failed += 1;
-        failedIds.add(claimedId);
-        this.recordItem('selected', 1);
-        this.recordItem('failed', 1);
       }
     }
     this.recordRun(failed === 0 ? 'success' : 'failure', startedAt);
+    if (dryRun) return { selected, deleted, failed, planned };
     return { selected, deleted, failed };
   }
 
+  /** Scan eligible due archives write-free (lock-only), returning ids for counting. */
+  private async scanDueInTransaction(
+    t: Prisma.TransactionClient,
+    now: Date,
+    limit: number,
+  ): Promise<Array<{ liveSessionId: string; archiveId: string }>> {
+    const rows = await t.$queryRaw<
+      Array<{ liveSessionId: string; archiveId: string }>
+    >`
+      SELECT archived_result.live_session_id AS "liveSessionId",
+             archived_result.id AS "archiveId"
+      FROM archived_result
+      JOIN live_session ON live_session.id = archived_result.live_session_id
+      WHERE archived_result.status = 'active'
+        AND archived_result.purge_at <= ${now}
+        AND (
+          archived_result.purge_state = 'pending'
+          OR (
+            archived_result.purge_state = 'retry'
+            AND archived_result.next_purge_attempt_at <= ${now}
+          )
+          OR (
+            archived_result.purge_state = 'processing'
+            AND archived_result.purge_lease_expires_at <= ${now}
+          )
+        )
+      ORDER BY archived_result.purge_at ASC, archived_result.id ASC
+      LIMIT ${limit}
+      FOR UPDATE OF live_session SKIP LOCKED
+    `;
+    return rows.map((row) => ({
+      liveSessionId: row.liveSessionId,
+      archiveId: row.archiveId,
+    }));
+  }
+
+  /**
+   * Claim a bounded batch of due archives oldest-first and assign durable lease
+   * ownership. Only rows whose lease assignment actually matched are returned, so a
+   * row reclaimed by another worker (or whose eligibility just changed) is skipped
+   * here and retried on the next claim instead of being double-processed.
+   */
+  private async claimDueInTransaction(
+    t: Prisma.TransactionClient,
+    now: Date,
+    limit: number,
+  ): Promise<
+    Array<{
+      liveSessionId: string;
+      archiveId: string;
+      leaseToken: string;
+      purgeAttempts: number;
+    }>
+  > {
+    const rows = await t.$queryRaw<
+      Array<{ liveSessionId: string; archiveId: string; purgeAttempts: bigint }>
+    >`
+      SELECT archived_result.live_session_id AS "liveSessionId",
+             archived_result.id AS "archiveId",
+             archived_result.purge_attempts AS "purgeAttempts"
+      FROM archived_result
+      JOIN live_session ON live_session.id = archived_result.live_session_id
+      WHERE archived_result.status = 'active'
+        AND archived_result.purge_at <= ${now}
+        AND (
+          archived_result.purge_state = 'pending'
+          OR (
+            archived_result.purge_state = 'retry'
+            AND archived_result.next_purge_attempt_at <= ${now}
+          )
+          OR (
+            archived_result.purge_state = 'processing'
+            AND archived_result.purge_lease_expires_at <= ${now}
+          )
+        )
+      ORDER BY archived_result.purge_at ASC, archived_result.id ASC
+      LIMIT ${limit}
+      FOR UPDATE OF live_session SKIP LOCKED
+    `;
+    const leaseExpiresAt = new Date(now.getTime() + PURGE_LEASE_MS);
+    const claimed: Array<{
+      liveSessionId: string;
+      archiveId: string;
+      leaseToken: string;
+      purgeAttempts: number;
+    }> = [];
+    for (const row of rows) {
+      const leaseToken = newId();
+      const updated = await t.archivedResult.updateMany({
+        where: {
+          id: row.archiveId,
+          status: 'active',
+          OR: [
+            { purgeState: { in: ['pending', 'retry'] } },
+            { purgeState: 'processing', purgeLeaseExpiresAt: { lte: now } },
+          ],
+        },
+        data: {
+          purgeState: 'processing',
+          purgeLeaseToken: leaseToken,
+          purgeLeaseExpiresAt: leaseExpiresAt,
+          purgeAttempts: { increment: 1 },
+          lastPurgeFailureCode: null,
+          lastPurgeFailedAt: null,
+        },
+      });
+      if (updated.count !== 1) continue;
+      claimed.push({
+        liveSessionId: row.liveSessionId,
+        archiveId: row.archiveId,
+        leaseToken,
+        purgeAttempts: Number(row.purgeAttempts) + 1,
+      });
+    }
+    return claimed;
+  }
+
+  /**
+   * Execute one claimed archive under durable lease. Verifies the lease token and
+   * `purgeAt` still hold, then performs the governed deletion + tombstone/outbox
+   * atomically. If the lease was lost, throws so the caller's failure transition can
+   * record `lease_lost` (a no-op because the token no longer matches).
+   */
+  private async executePurgeOneInTransaction(
+    t: Prisma.TransactionClient,
+    sid: string,
+    leaseToken: string,
+    now: Date,
+  ): Promise<DeletionResultDto | null> {
+    await this.tx.lockLiveSessionForUpdate(t, sid);
+    const archive = await t.archivedResult.findUnique({
+      where: { liveSessionId: sid },
+    });
+    if (!archive || archive.status !== 'active') return null;
+    if (archive.purgeLeaseToken !== leaseToken) throw new LeaseLostError();
+    if (archive.purgeAt > now) throw new LeaseLostError();
+    return this.finalizePurgeInTransaction(
+      t,
+      archive,
+      sid,
+      'retention',
+      undefined,
+      'retention',
+      now,
+      undefined,
+    );
+  }
+
+  /**
+   * Fail a claimed archive via compare-and-set on its lease. Retries with bounded
+   * exponential backoff for transient codes; quarantines permanent or exhausted
+   * rows. Only applies when the lease token still matches, so a reclaimed row is
+   * left untouched. Never alters `purgeAt`.
+   */
+  private async transitionFailureInTransaction(
+    t: Prisma.TransactionClient,
+    archiveId: string,
+    leaseToken: string,
+    code: PurgeFailureCode,
+    attempts: number,
+    now: Date,
+  ): Promise<{ matched: boolean; quarantined: boolean }> {
+    const decision = decidePurgeFailure(code, attempts, PURGE_MAX_ATTEMPTS);
+    const data = decision.quarantined
+      ? {
+          purgeState: 'quarantined',
+          quarantinedAt: now,
+          lastPurgeFailureCode: code,
+          lastPurgeFailedAt: now,
+          purgeLeaseToken: null,
+          purgeLeaseExpiresAt: null,
+        }
+      : {
+          purgeState: 'retry',
+          nextPurgeAttemptAt: new Date(now.getTime() + decision.delayMs),
+          lastPurgeFailureCode: code,
+          lastPurgeFailedAt: now,
+          purgeLeaseToken: null,
+          purgeLeaseExpiresAt: null,
+        };
+    const updated = await t.archivedResult.updateMany({
+      where: { id: archiveId, purgeLeaseToken: leaseToken },
+      data,
+    });
+    return { matched: updated.count === 1, quarantined: decision.quarantined };
+  }
+
   private recordItem(
-    result: 'selected' | 'deleted' | 'failed',
+    result: 'selected' | 'deleted' | 'failed' | 'retried' | 'quarantined',
     count: number,
   ): void {
     if (!Number.isFinite(count) || count <= 0) return;

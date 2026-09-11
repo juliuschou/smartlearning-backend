@@ -1636,4 +1636,270 @@ describe('LiveSession close/cancel (e2e)', () => {
       }),
     ).toBe(0);
   });
+
+  it('runs a write-free dry-run whose per-table counts match a real purge', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-dryrun`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    // One session with a participant + submission + events of mixed visibility.
+    const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Dry-run participant' });
+    expect(joined.status).toBe(201);
+    const participantId = joined.body.data.participantId as string;
+    const participantToken = joined.body.data.participantToken as string;
+    await teacher.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    const submitted = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('X-Participant-Token', participantToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    expect(submitted.status).toBe(201);
+    await teacher.agent
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+
+    const archive = await prisma.prisma.archivedResult.findUniqueOrThrow({
+      where: { liveSessionId: session.liveSessionId },
+    });
+    const liveSession = await prisma.prisma.liveSession.findUniqueOrThrow({
+      where: { id: session.liveSessionId },
+      select: { realtimeEventSeq: true },
+    });
+    const sessionQuestion =
+      await prisma.prisma.sessionQuestion.findUniqueOrThrow({
+        where: { id: session.sessionQuestionId },
+      });
+    // Two out-of-band events: one teacher-scoped and one participant-after-submit.
+    // Checkpoint D widens the delete scope to ALL session events, so the dry-run
+    // must count both and a real purge removes both. The DB CHECK ties
+    // target_participant_id non-null only to participant_after_submit, so the
+    // teacher event carries no target.
+    await prisma.prisma.liveSessionEvent.create({
+      data: {
+        id: newId(),
+        liveSessionId: session.liveSessionId,
+        sessionQuestionId: sessionQuestion.id,
+        eventName: 'result.updated',
+        eventSeq: liveSession.realtimeEventSeq + 1n,
+        aggregateVersion: sessionQuestion.aggregateVersion,
+        visibility: 'teacher',
+        projectionInput: { sessionQuestionId: sessionQuestion.id },
+      },
+    });
+    await prisma.prisma.liveSessionEvent.create({
+      data: {
+        id: newId(),
+        liveSessionId: session.liveSessionId,
+        sessionQuestionId: sessionQuestion.id,
+        targetParticipantId: participantId,
+        eventName: 'result.updated',
+        eventSeq: liveSession.realtimeEventSeq + 2n,
+        aggregateVersion: sessionQuestion.aggregateVersion,
+        visibility: 'participant_after_submit',
+        projectionInput: { sessionQuestionId: sessionQuestion.id },
+      },
+    });
+
+    const governance = app.get(GovernanceService);
+    const now = new Date(archive.purgeAt.getTime() + 1);
+    const baseline = {
+      submissions: await prisma.prisma.submission.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+      eventsAll: await prisma.prisma.liveSessionEvent.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+      options: await prisma.prisma.sessionQuestionOption.count({
+        where: { sessionQuestion: { liveSessionId: session.liveSessionId } },
+      }),
+      questions: await prisma.prisma.sessionQuestion.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+      participants: await prisma.prisma.participant.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    };
+    expect(baseline).toMatchObject({
+      submissions: 1,
+      questions: 1,
+      participants: 1,
+    });
+    expect(baseline.options).toBeGreaterThan(0);
+    // The realtime flow writes at least one event; the teacher (out-of-band) row we
+    // added plus the natural participant_after_submit event guarantees a non-zero
+    // full-scope count that Checkpoint D's widened executor must remove entirely.
+    expect(baseline.eventsAll).toBeGreaterThanOrEqual(1);
+
+    const dryRun = await governance.purgeDue(1, now, true);
+    expect(dryRun.deleted).toBe(0);
+    expect(dryRun.selected).toBe(1);
+    expect(dryRun.failed).toBe(0);
+    expect(dryRun.planned).toHaveLength(1);
+    const plan = dryRun.planned![0];
+    expect(plan.archiveId).toBe(archive.id);
+    expect(plan.category).toBe('governed_deletion');
+    expect(plan.tableCounts).toMatchObject({
+      Submission: baseline.submissions,
+      LiveSessionEvent: baseline.eventsAll,
+      SessionQuestionOption: baseline.options,
+      SessionQuestion: baseline.questions,
+      Participant: baseline.participants,
+    });
+
+    // Zero writes: dry-run leaves every governed row + archive untouched.
+    expect(
+      await prisma.prisma.submission.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(baseline.submissions);
+    expect(
+      await prisma.prisma.liveSessionEvent.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(baseline.eventsAll);
+    expect(
+      await prisma.prisma.sessionQuestionOption.count({
+        where: { sessionQuestion: { liveSessionId: session.liveSessionId } },
+      }),
+    ).toBe(baseline.options);
+    expect(
+      await prisma.prisma.sessionQuestion.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(baseline.questions);
+    expect(
+      await prisma.prisma.participant.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(baseline.participants);
+    expect(
+      await prisma.prisma.archivedResult.findUniqueOrThrow({
+        where: { id: archive.id },
+        select: { status: true },
+      }),
+    ).toMatchObject({ status: 'active' });
+
+    // Execution equivalence: a real purge on the same fixture deletes exactly the
+    // rows the dry-run planned (current executor scope), and no more. purgeOne is
+    // the deterministic single-session path the executor drives via
+    // purgeOneInTransaction (purgeDue may skip a row the realtime publisher keeps
+    // briefly locked, so it is not used for the count-equivalence assertion here).
+    const purgeResult = await governance.purgeOne(
+      session.liveSessionId,
+      'retention',
+      undefined,
+      'retention',
+      now,
+    );
+    expect(purgeResult).toMatchObject({ status: 'deleted' });
+    expect(
+      await prisma.prisma.submission.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    // Checkpoint D widens the executor to delete ALL session events
+    // (routing/projection/replay/delivery), so every visibility is now removed.
+    expect(
+      await prisma.prisma.liveSessionEvent.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.sessionQuestionOption.count({
+        where: { sessionQuestion: { liveSessionId: session.liveSessionId } },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.sessionQuestion.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.participant.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.archivedResult.findUniqueOrThrow({
+        where: { id: archive.id },
+        select: { status: true },
+      }),
+    ).toMatchObject({ status: 'deleted' });
+  });
+
+  it('reclaims an expired processing lease and purges exactly once', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-lease`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Lease participant' });
+    expect(joined.status).toBe(201);
+    expect(
+      (
+        await teacher.agent
+          .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, teacher.csrfToken)
+      ).status,
+    ).toBe(201);
+    const archive = await prisma.prisma.archivedResult.findUniqueOrThrow({
+      where: { liveSessionId: session.liveSessionId },
+    });
+    const now = new Date(archive.purgeAt.getTime() + 1);
+    // Simulate a crashed worker that claimed the row then died: expired lease,
+    // state stuck at processing. The next sweep must reclaim and delete it.
+    await prisma.prisma.archivedResult.update({
+      where: { id: archive.id },
+      data: {
+        purgeState: 'processing',
+        purgeLeaseToken: newId(),
+        purgeLeaseExpiresAt: new Date(now.getTime() - 1),
+        purgeAttempts: 1,
+      },
+    });
+    const governance = app.get(GovernanceService);
+    // Quiesce the realtime publisher so it does not hold the live_session row lock
+    // during the claim; otherwise SKIP LOCKED may skip the single due row.
+    const run = await withQuiescedLiveSessionPublisher(app, () =>
+      governance.purgeDue(1, now),
+    );
+    expect(run.deleted).toBe(1);
+    expect(run.failed).toBe(0);
+    expect(
+      await prisma.prisma.archivedResult.findUniqueOrThrow({
+        where: { id: archive.id },
+      }),
+    ).toMatchObject({ status: 'deleted', purgeState: 'deleted' });
+    // Exactly one canonical retention tombstone.
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          trigger: 'retention',
+          status: 'success',
+        },
+      }),
+    ).toBe(1);
+  });
 });

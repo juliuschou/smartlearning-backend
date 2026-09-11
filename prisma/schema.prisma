@@ -361,20 +361,28 @@ model LiveSessionEvent {
 
 /// Immutable anonymous archive for one closed session.
 model ArchivedResult {
-  id             String          @id @db.Uuid
-  liveSessionId  String          @unique @map("live_session_id") @db.Uuid
-  courseId       String          @map("course_id") @db.Uuid
-  sessionLabel   String          @map("session_label")
-  startedAt      DateTime        @map("started_at") @db.Timestamptz
-  closedAt       DateTime        @map("closed_at") @db.Timestamptz
-  purgeAt        DateTime        @map("purge_at") @db.Timestamptz
-  status         String          @default("active")
-  payload        Json?
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
-  liveSession    LiveSession     @relation(fields: [liveSessionId], references: [id], onDelete: Restrict)
-  course         Course          @relation(fields: [courseId], references: [id], onDelete: Restrict)
-  deletionEvents DeletionEvent[]
-  manifestOutbox DeletionManifestOutbox?
+  id                   String                  @id @db.Uuid
+  liveSessionId        String                  @unique @map("live_session_id") @db.Uuid
+  courseId             String                  @map("course_id") @db.Uuid
+  sessionLabel         String                  @map("session_label")
+  startedAt            DateTime                @map("started_at") @db.Timestamptz
+  closedAt             DateTime                @map("closed_at") @db.Timestamptz
+  purgeAt              DateTime                @map("purge_at") @db.Timestamptz
+  status               String                  @default("active")
+  payload              Json?
+  purgeState           String                  @default("pending") @map("purge_state")
+  purgeAttempts        Int                     @default(0) @map("purge_attempts")
+  nextPurgeAttemptAt   DateTime                @default(now()) @map("next_purge_attempt_at") @db.Timestamptz
+  purgeLeaseToken      String?                 @map("purge_lease_token") @db.Uuid
+  purgeLeaseExpiresAt  DateTime?               @map("purge_lease_expires_at") @db.Timestamptz
+  lastPurgeFailureCode String?                 @map("last_purge_failure_code")
+  lastPurgeFailedAt    DateTime?               @map("last_purge_failed_at") @db.Timestamptz
+  quarantinedAt        DateTime?               @map("quarantined_at") @db.Timestamptz
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz
+  liveSession          LiveSession             @relation(fields: [liveSessionId], references: [id], onDelete: Restrict)
+  course               Course                  @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  deletionEvents       DeletionEvent[]
+  manifestOutbox       DeletionManifestOutbox?
 
   @@index([courseId, closedAt], map: "idx_archived_result_course_closed")
   @@index([purgeAt, status], map: "idx_archived_result_purge_status")

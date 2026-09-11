@@ -4,6 +4,34 @@ type GovernanceInternals = {
   purgeOneInTransaction: (...args: unknown[]) => Promise<unknown>;
 };
 
+type GovernanceInternals2 = {
+  claimDueInTransaction: (...args: unknown[]) => Promise<
+    Array<{
+      liveSessionId: string;
+      archiveId: string;
+      purgeAttempts: number;
+      leaseToken: string;
+    }>
+  >;
+  transitionFailureInTransaction: (
+    t: unknown,
+    archiveId: string,
+    leaseToken: string,
+    code: string,
+    attempts: number,
+    now: Date,
+  ) => Promise<{ matched: boolean; quarantined: boolean }>;
+};
+
+type GovernanceInternals3 = {
+  executePurgeOneInTransaction: (
+    t: unknown,
+    sid: string,
+    leaseToken: string,
+    now: Date,
+  ) => Promise<unknown>;
+};
+
 describe('GovernanceService', () => {
   const archive = (id: string, purgeAt: Date) => ({
     id: `archive-${id}`,
@@ -23,12 +51,22 @@ describe('GovernanceService', () => {
     metrics?: object,
   ) => {
     const queryRaw = jest.fn();
-    for (const claim of claims) queryRaw.mockResolvedValueOnce(claim);
+    for (const claim of claims)
+      queryRaw.mockResolvedValueOnce(
+        claim.map((row, index) => ({
+          ...row,
+          archiveId: `archive-${row.liveSessionId}`,
+          purgeAttempts: index as unknown as bigint,
+        })),
+      );
     queryRaw.mockResolvedValue([]);
+    // Every claim matches the archive lease assignment so rows are not skipped.
+    const updateMany = jest.fn().mockResolvedValue({ count: 1 });
     const tx = {
       run: jest.fn((fn: (t: unknown) => unknown) =>
-        fn({ $queryRaw: queryRaw }),
+        fn({ $queryRaw: queryRaw, archivedResult: { updateMany } }),
       ),
+      lockLiveSessionForUpdate: jest.fn(),
     };
     const service = new GovernanceService(
       { prisma: {} } as never,
@@ -43,8 +81,11 @@ describe('GovernanceService', () => {
       [{ liveSessionId: 'older' }],
       [{ liveSessionId: 'newer' }],
     ]);
-    const purgeOneInTransaction = jest
-      .spyOn(service as unknown as GovernanceInternals, 'purgeOneInTransaction')
+    const executePurgeOne = jest
+      .spyOn(
+        service as unknown as GovernanceInternals3,
+        'executePurgeOneInTransaction',
+      )
       .mockResolvedValue({ status: 'deleted' } as never);
     const now = new Date('2026-02-01T00:00:00.000Z');
 
@@ -53,22 +94,23 @@ describe('GovernanceService', () => {
       deleted: 2,
       failed: 0,
     });
-    expect(
-      purgeOneInTransaction.mock.calls.map((call) => call.slice(1)),
-    ).toEqual([
-      ['older', 'retention', undefined, 'retention', now],
-      ['newer', 'retention', undefined, 'retention', now],
+    expect(executePurgeOne.mock.calls.map((call) => call.slice(1))).toEqual([
+      ['older', expect.any(String), now],
+      ['newer', expect.any(String), now],
     ]);
   });
 
-  it('continues after a failed item and excludes its id from later claims', async () => {
+  it('continues after a failed item via a retry transition', async () => {
     const metrics = { recordJobItem: jest.fn(), recordJobRun: jest.fn() };
     const { service, queryRaw } = serviceWithClaims(
       [[{ liveSessionId: 'failed' }], [{ liveSessionId: 'continued' }]],
       metrics,
     );
     jest
-      .spyOn(service as unknown as GovernanceInternals, 'purgeOneInTransaction')
+      .spyOn(
+        service as unknown as GovernanceInternals3,
+        'executePurgeOneInTransaction',
+      )
       .mockRejectedValueOnce(new Error('purge sentinel'))
       .mockResolvedValue({ status: 'deleted' } as never);
 
@@ -79,6 +121,12 @@ describe('GovernanceService', () => {
     expect(metrics.recordJobItem).toHaveBeenCalledWith(
       'retention_purge',
       'failed',
+      1,
+    );
+    // The failed row transitions to retry (lease matched) and is counted.
+    expect(metrics.recordJobItem).toHaveBeenCalledWith(
+      'retention_purge',
+      'retried',
       1,
     );
     expect(metrics.recordJobRun).toHaveBeenCalledWith(
@@ -264,6 +312,170 @@ describe('GovernanceService', () => {
     await expect(purge('support')).rejects.toMatchObject({
       code: 'CONFLICT',
       field: 'reason',
+    });
+  });
+
+  it('returns a write-free deletion plan for a due archive in dry-run', async () => {
+    const count = jest.fn().mockResolvedValue(3);
+    const deleteMany = jest.fn();
+    const archivedResult = {
+      updateMany: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({
+        id: 'archive-1',
+        liveSessionId: 'session-1',
+      }),
+      update: jest.fn(),
+    };
+    const transactionClient = {
+      $queryRaw: jest
+        .fn()
+        .mockResolvedValue([
+          { liveSessionId: 'session-1', archiveId: 'archive-1' },
+        ]),
+      archivedResult,
+      submission: { count, deleteMany },
+      liveSessionEvent: { count, deleteMany },
+      sessionQuestionOption: { count, deleteMany },
+      sessionQuestion: { count, deleteMany },
+      participant: { count, deleteMany },
+      deletionEvent: { findFirst: jest.fn(), create: jest.fn() },
+      deletionManifestOutbox: { create: jest.fn() },
+    };
+    const tx = {
+      run: jest.fn((fn: (t: typeof transactionClient) => Promise<unknown>) =>
+        fn(transactionClient),
+      ),
+    };
+    const service = new GovernanceService({ prisma: {} } as never, tx as never);
+
+    const result = await service.purgeDue(
+      1,
+      new Date('2026-02-01T00:00:00.000Z'),
+      true,
+    );
+
+    expect(result.deleted).toBe(0);
+    expect(result.planned).toHaveLength(1);
+    expect(result.planned?.[0]).toMatchObject({
+      archiveId: 'archive-1',
+      liveSessionId: 'session-1',
+      category: 'governed_deletion',
+    });
+    expect(deleteMany).not.toHaveBeenCalled();
+    // Dry-run must never persist a lease (no archived_result.updateMany).
+    expect(archivedResult.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('claims due sessions under a durable lease and skips stolen rows', async () => {
+    const $queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([
+        {
+          liveSessionId: 'older',
+          archiveId: 'archive-older',
+          purgeAttempts: 1n,
+        },
+        {
+          liveSessionId: 'stolen',
+          archiveId: 'archive-stolen',
+          purgeAttempts: 2n,
+        },
+      ])
+      .mockResolvedValue([]);
+    const updateMany = jest
+      .fn()
+      // 'older' matches and is leased; 'stolen' is already reclaimed so matches 0.
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    const transactionClient = {
+      $queryRaw,
+      archivedResult: { updateMany },
+    } as never;
+    const tx = {
+      run: jest.fn((fn: (t: never) => unknown) => fn(transactionClient)),
+      lockLiveSessionForUpdate: jest.fn(),
+    };
+    const service = new GovernanceService({ prisma: {} } as never, tx as never);
+
+    const claimed = await (
+      service as unknown as GovernanceInternals2
+    ).claimDueInTransaction(transactionClient, new Date('2026-02-01'), 5);
+
+    expect(claimed).toEqual([
+      expect.objectContaining({
+        liveSessionId: 'older',
+        archiveId: 'archive-older',
+        purgeAttempts: 2,
+        leaseToken: expect.any(String),
+      }),
+    ]);
+    // The stolen row's lease assignment matched 0 and is skipped.
+    expect(updateMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('transitions a transient failure to retry with backoff, cased on the lease', async () => {
+    const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const transactionClient = {
+      archivedResult: { updateMany },
+    } as never;
+    const service = new GovernanceService({ prisma: {} } as never, {} as never);
+    const now = new Date('2026-02-01T00:00:00.000Z');
+
+    const decision = await (
+      service as unknown as GovernanceInternals2
+    ).transitionFailureInTransaction(
+      transactionClient,
+      'archive-1',
+      'lease-token',
+      'transient_db',
+      1,
+      now,
+    );
+
+    expect(decision).toEqual({ matched: true, quarantined: false });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'archive-1', purgeLeaseToken: 'lease-token' },
+      data: {
+        purgeState: 'retry',
+        nextPurgeAttemptAt: new Date(now.getTime() + 250),
+        lastPurgeFailureCode: 'transient_db',
+        lastPurgeFailedAt: now,
+        purgeLeaseToken: null,
+        purgeLeaseExpiresAt: null,
+      },
+    });
+  });
+
+  it('quarantines a permanent failure and never alters purgeAt', async () => {
+    const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const transactionClient = {
+      archivedResult: { updateMany },
+    } as never;
+    const service = new GovernanceService({ prisma: {} } as never, {} as never);
+    const now = new Date('2026-02-01T00:00:00.000Z');
+
+    const decision = await (
+      service as unknown as GovernanceInternals2
+    ).transitionFailureInTransaction(
+      transactionClient,
+      'archive-1',
+      'lease-token',
+      'fk_blocker',
+      1,
+      now,
+    );
+
+    expect(decision).toEqual({ matched: true, quarantined: true });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'archive-1', purgeLeaseToken: 'lease-token' },
+      data: {
+        purgeState: 'quarantined',
+        quarantinedAt: now,
+        lastPurgeFailureCode: 'fk_blocker',
+        lastPurgeFailedAt: now,
+        purgeLeaseToken: null,
+        purgeLeaseExpiresAt: null,
+      },
     });
   });
 });
