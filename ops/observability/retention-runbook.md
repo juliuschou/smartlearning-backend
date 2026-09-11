@@ -10,6 +10,12 @@ This runbook covers the retention worker operation tooling. The purge and manife
 - Each loop has its own tunables: the purge loop uses `RETENTION_PURGE_BATCH_SIZE`, `RETENTION_PURGE_LEASE_MS`, and `RETENTION_PURGE_MAX_ATTEMPTS`; the manifest-export loop uses `RETENTION_MANIFEST_EXPORT_BATCH_SIZE` (and its own tick, `RETENTION_MANIFEST_EXPORT_TICK_MS`). Production requires a durable S3 manifest provider before either loop is enabled (`DELETION_MANIFEST_PROVIDER=s3`); `RETENTION_MANIFEST_EXPORT_BATCH_SIZE` only takes effect when `RETENTION_MANIFEST_EXPORT_ENABLED=1`.
 - The local manifest provider is a test/inspection adapter backed by `RETENTION_LOCAL_MANIFEST_FILE`; it is not an immutable object store and must not be treated as one.
 
+## Alert guidance
+
+- `SmartLearningRetentionPurgeJobFailing` / `SmartLearningRetentionManifestExportJobFailing`: a worker reports repeated run failures — inspect scheduler logs and the redacted exit output before retrying.
+- `SmartLearningRetentionPurgeQuarantined`: any archive reached the quarantined state, meaning it could not be purged within its retry budget. Stop the purge loop and investigate the stable failure code before proceeding.
+- `SmartLearningRetentionPurgeNoRecentSuccess`: the purge loop has not completed a successful run recently (last-success stamp is stale or absent). This is a missing-expected-run signal, distinct from a backlog gauge.
+
 ## Safe inspection
 
 Use a compiled build or the repository's normal TypeScript runner in a non-production environment. Do not point inspection at a shared writable path.

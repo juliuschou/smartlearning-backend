@@ -264,6 +264,37 @@ describe('LiveSession close/cancel (e2e)', () => {
     return { courseId, liveSessionId, sessionCode, sessionQuestionId };
   }
 
+  /**
+   * Pre-create a conflicting manifest outbox for the archive so the executor's
+   * final outbox `create` violates the `archived_result_id` unique constraint
+   * AFTER the governed deletes. The outbox FK requires a real DeletionEvent row.
+   */
+  async function seedConflictingOutbox(archive: {
+    id: string;
+    liveSessionId: string;
+    courseId: string;
+  }): Promise<void> {
+    const event = await prisma.prisma.deletionEvent.create({
+      data: {
+        id: newId(),
+        archivedResultId: archive.id,
+        liveSessionId: archive.liveSessionId,
+        courseId: archive.courseId,
+        trigger: 'teacher_request',
+        status: 'requested',
+      },
+    });
+    await prisma.prisma.deletionManifestOutbox.create({
+      data: {
+        id: newId(),
+        archivedResultId: archive.id,
+        deletionEventId: event.id,
+        contractVersion: 'deletion-manifest.v1',
+        manifest: { contractVersion: 'deletion-manifest.v1' },
+      },
+    });
+  }
+
   function requireDatabase(): void {
     if (!dbReachable) {
       throw new Error(
@@ -1899,6 +1930,330 @@ describe('LiveSession close/cancel (e2e)', () => {
           trigger: 'retention',
           status: 'success',
         },
+      }),
+    ).toBe(1);
+  });
+
+  it('rolls back the whole item when outbox creation fails mid-transaction', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-rollback`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Rollback participant' });
+    expect(joined.status).toBe(201);
+    const participantToken = joined.body.data.participantToken as string;
+    await teacher.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('X-Participant-Token', participantToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    await teacher.agent
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+
+    const archive = await prisma.prisma.archivedResult.findUniqueOrThrow({
+      where: { liveSessionId: session.liveSessionId },
+    });
+    const now = new Date(archive.purgeAt.getTime() + 1);
+    // Pre-create a conflicting outbox for the SAME archive so the executor's final
+    // outbox `create` violates `deletion_manifest_outbox.archived_result_id` unique
+    // constraint AFTER the governed deletes. The whole transaction must roll back.
+    await seedConflictingOutbox(archive);
+
+    const governance = app.get(GovernanceService);
+    await withQuiescedLiveSessionPublisher(app, async () => {
+      // Retention purge reaches finalizePurgeInTransaction directly (no teacher
+      // request needed), so it exercises the governed deletes then fails on the
+      // unique outbox constraint mid-transaction. Must roll back atomically.
+      await expect(
+        governance.purgeOne(
+          session.liveSessionId,
+          'retention',
+          undefined,
+          'retention',
+          now,
+        ),
+      ).rejects.toBeTruthy();
+    });
+
+    // Atomicity: every governed row is intact and the archive is still active.
+    expect(
+      await prisma.prisma.submission.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.prisma.participant.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.prisma.sessionQuestionOption.count({
+        where: { sessionQuestion: { liveSessionId: session.liveSessionId } },
+      }),
+    ).toBeGreaterThan(0);
+    expect(
+      await prisma.prisma.liveSessionEvent.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBeGreaterThan(0);
+    expect(
+      await prisma.prisma.archivedResult.findUniqueOrThrow({
+        where: { id: archive.id },
+        select: { status: true, purgeAt: true },
+      }),
+    ).toMatchObject({ status: 'active' });
+    // No successful retention tombstone was committed (the seeded teacher_request
+    // event remains, but the governed retention deletion rolled back).
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          trigger: 'retention',
+          status: 'success',
+        },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.deletionManifestOutbox.count({
+        where: { archivedResultId: archive.id },
+      }),
+    ).toBe(1);
+  });
+
+  it('does not double-process a single due row across two workers', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-same-row`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Same-row participant' });
+    expect(joined.status).toBe(201);
+    await teacher.agent
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    const archive = await prisma.prisma.archivedResult.findUniqueOrThrow({
+      where: { liveSessionId: session.liveSessionId },
+    });
+    const now = new Date(archive.purgeAt.getTime() + 1);
+    const governance = app.get(GovernanceService);
+
+    const [first, second] = await withQuiescedLiveSessionPublisher(app, () =>
+      Promise.all([governance.purgeDue(1, now), governance.purgeDue(1, now)]),
+    );
+    // Exactly one worker deletes the single due row; the other claims nothing
+    // (lease already taken/skipped via SKIP LOCKED). No double deletion.
+    expect(first.deleted + second.deleted).toBe(1);
+    expect(
+      await prisma.prisma.archivedResult.findUniqueOrThrow({
+        where: { id: archive.id },
+      }),
+    ).toMatchObject({ status: 'deleted', purgeState: 'deleted' });
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          trigger: 'retention',
+          status: 'success',
+        },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.prisma.deletionManifestOutbox.count({
+        where: { archivedResultId: archive.id },
+      }),
+    ).toBe(1);
+  });
+
+  it('quarantines a poison row while clean later-due rows continue', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-poison`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    // Poison archive A (earlier purgeAt) + clean archive B (later purgeAt).
+    const create = async (displayName: string) => {
+      const session = await createStartedSession(teacher);
+      await request(app.getHttpServer())
+        .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+        .send({ displayName });
+      await teacher.agent
+        .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, teacher.csrfToken);
+      return prisma.prisma.archivedResult.findUniqueOrThrow({
+        where: { liveSessionId: session.liveSessionId },
+      });
+    };
+    const archiveA = await create('Poison participant A');
+    const archiveB = await create('Poison participant B');
+    const governance = app.get(GovernanceService);
+    const now = new Date(
+      Math.max(archiveA.purgeAt.getTime(), archiveB.purgeAt.getTime()) + 1,
+    );
+    // Force archive A to fail permanently by pre-creating a conflicting outbox so
+    // the executor's final outbox create violates the unique constraint. Give it a
+    // max attempt budget that is already exhausted, so it quarantines immediately.
+    await seedConflictingOutbox(archiveA);
+    await prisma.prisma.archivedResult.update({
+      where: { id: archiveA.id },
+      data: { purgeAttempts: 5 },
+    });
+
+    const run = await withQuiescedLiveSessionPublisher(app, () =>
+      governance.purgeDue(100, now),
+    );
+    // Head-of-line freedom: B purges despite A failing; A lands in quarantine and
+    // no longer blocks the batch. Because A's earlier purgeAt is claimed first,
+    // one item fails (quarantined) and B still deletes.
+    expect(run.deleted).toBe(1);
+    expect(run.failed).toBe(1);
+    const stateA = await prisma.prisma.archivedResult.findUniqueOrThrow({
+      where: { id: archiveA.id },
+    });
+    expect(stateA.status).toBe('active');
+    expect(stateA.purgeState).toBe('quarantined');
+    expect(
+      await prisma.prisma.archivedResult.findUniqueOrThrow({
+        where: { id: archiveB.id },
+      }),
+    ).toMatchObject({ status: 'deleted', purgeState: 'deleted' });
+  });
+
+  it('leaves all governed tables at zero with exactly one tombstone and one outbox', async () => {
+    requireDatabase();
+    const teacher = await provisionTeacher(
+      `${TEACHER.username}-comprehensive`,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const session = await createStartedSession(teacher);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.sessionCode}/join`)
+      .send({ displayName: 'Comprehensive participant' });
+    expect(joined.status).toBe(201);
+    const participantToken = joined.body.data.participantToken as string;
+    await teacher.agent
+      .post(
+        `/api/v1/live-sessions/${session.liveSessionId}/questions/${session.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/submissions`)
+      .set('X-Participant-Token', participantToken)
+      .set('Idempotency-Key', newId())
+      .send({
+        sessionQuestionId: session.sessionQuestionId,
+        selectedOptionRefs: ['a'],
+      });
+    await teacher.agent
+      .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    const sessionQuestion =
+      await prisma.prisma.sessionQuestion.findUniqueOrThrow({
+        where: { id: session.sessionQuestionId },
+      });
+    const liveSession = await prisma.prisma.liveSession.findUniqueOrThrow({
+      where: { id: session.liveSessionId },
+      select: { realtimeEventSeq: true },
+    });
+    // Guarantee a routing/aggregate event with teacher visibility (not
+    // participant_after_submit) so the full-session event scope is exercised.
+    await prisma.prisma.liveSessionEvent.create({
+      data: {
+        id: newId(),
+        liveSessionId: session.liveSessionId,
+        sessionQuestionId: session.sessionQuestionId,
+        eventName: 'question.closed',
+        schemaVersion: 1,
+        eventSeq: liveSession.realtimeEventSeq + 1n,
+        aggregateVersion: sessionQuestion.aggregateVersion,
+        visibility: 'teacher',
+        projectionInput: { sessionQuestionId: session.sessionQuestionId },
+      },
+    });
+    const archive = await prisma.prisma.archivedResult.findUniqueOrThrow({
+      where: { liveSessionId: session.liveSessionId },
+    });
+    const governance = app.get(GovernanceService);
+    const now = new Date(archive.purgeAt.getTime() + 1);
+
+    await withQuiescedLiveSessionPublisher(app, () =>
+      governance.purgeDue(100, now).then((r) => expect(r.deleted).toBe(1)),
+    );
+
+    // All five governed tables → zero.
+    expect(
+      await prisma.prisma.submission.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.liveSessionEvent.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.sessionQuestionOption.count({
+        where: { sessionQuestion: { liveSessionId: session.liveSessionId } },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.sessionQuestion.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.participant.count({
+        where: { liveSessionId: session.liveSessionId },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.prisma.archivedResult.findUniqueOrThrow({
+        where: { id: archive.id },
+        select: { status: true, purgeState: true },
+      }),
+    ).toMatchObject({ status: 'deleted', purgeState: 'deleted' });
+    // Exactly one canonical retention tombstone and one outbox.
+    expect(
+      await prisma.prisma.deletionEvent.count({
+        where: {
+          liveSessionId: session.liveSessionId,
+          trigger: 'retention',
+          status: 'success',
+        },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.prisma.deletionManifestOutbox.count({
+        where: { archivedResultId: archive.id },
       }),
     ).toBe(1);
   });

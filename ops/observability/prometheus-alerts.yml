@@ -100,6 +100,36 @@ groups:
           summary: SmartLearning retention purge job is repeatedly failing
           description: Inspect retention errors and the remaining archive backlog.
 
+      - alert: SmartLearningRetentionManifestExportJobFailing
+        expr: increase(smartlearning_job_runs_total{job="manifest_export",outcome="failure"}[15m]) >= 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning deletion manifest export job is repeatedly failing
+          description: Inspect export errors and immutable object-store delivery state.
+
+      - alert: SmartLearningRetentionPurgeQuarantined
+        expr: increase(smartlearning_job_items_total{job="retention_purge",result="quarantined"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning retention purge has quarantined an archive
+          description: An archive could not be purged after retries; stop the purge loop and investigate before proceeding.
+
+      - alert: SmartLearningRetentionPurgeNoRecentSuccess
+        expr: |
+          absent(smartlearning_retention_purge_last_success_seconds) == 1
+          or
+          (time() - smartlearning_retention_purge_last_success_seconds) > 1800
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning retention purge has no recent successful run
+          description: The purge loop has not completed a successful run recently; inspect scheduler health and backlog.
+
       - alert: SmartLearningRetentionOldestDueAgeHigh
         expr: smartlearning_retention_oldest_due_age_seconds > 86400
         for: 15m

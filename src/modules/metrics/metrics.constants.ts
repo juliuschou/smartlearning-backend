@@ -19,6 +19,8 @@ export const METRIC_NAMES = {
   retentionManifestDeadRecords: 'smartlearning_retention_manifest_dead_records',
   retentionReconciliationFailures:
     'smartlearning_retention_reconciliation_failures_total',
+  retentionPurgeLastSuccessSeconds:
+    'smartlearning_retention_purge_last_success_seconds',
 } as const;
 
 export const HTTP_METHODS = [

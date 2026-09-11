@@ -1186,6 +1186,11 @@ export class GovernanceService {
       Number(process.hrtime.bigint() - startedAt) / 1_000_000_000;
     try {
       this.metrics?.recordJobRun('retention_purge', outcome, durationSeconds);
+      if (outcome === 'success') {
+        this.metrics?.recordRetentionPurgeLastSuccess(
+          Math.floor(Date.now() / 1000),
+        );
+      }
     } catch {
       // Metrics are observational and cannot change purge semantics.
     }

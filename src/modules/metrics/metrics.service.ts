@@ -36,6 +36,7 @@ export class MetricsService {
   private readonly retentionManifestLagSeconds: Gauge<string>;
   private readonly retentionManifestDeadRecords: Gauge<string>;
   private readonly retentionReconciliationFailures: Counter<string>;
+  private readonly retentionPurgeLastSuccessSeconds: Gauge<string>;
 
   constructor(@Inject(METRICS_REGISTRY) private readonly registry: Registry) {
     this.httpRequests = new Counter({
@@ -116,6 +117,11 @@ export class MetricsService {
     this.retentionReconciliationFailures = new Counter({
       name: METRIC_NAMES.retentionReconciliationFailures,
       help: 'Retention reconciliation runs that reported a failure outcome.',
+      registers: [registry],
+    });
+    this.retentionPurgeLastSuccessSeconds = new Gauge({
+      name: METRIC_NAMES.retentionPurgeLastSuccessSeconds,
+      help: 'Unix epoch seconds of the last successful retention purge run; 0 until one succeeds.',
       registers: [registry],
     });
   }
@@ -201,6 +207,14 @@ export class MetricsService {
     if (!isNonNegativeFinite(count)) return;
     this.tryRecord(() =>
       this.retentionManifestDeadRecords.set(Math.floor(count)),
+    );
+  }
+
+  /** Stamp the epoch seconds of the last successful purge run for staleness alerts. */
+  recordRetentionPurgeLastSuccess(epochSeconds: number): void {
+    if (!Number.isFinite(epochSeconds) || epochSeconds <= 0) return;
+    this.tryRecord(() =>
+      this.retentionPurgeLastSuccessSeconds.set(Math.floor(epochSeconds)),
     );
   }
 

@@ -21,6 +21,7 @@ describe('MetricsService', () => {
       'smartlearning_retention_manifest_lag_seconds',
       'smartlearning_retention_manifest_dead_records',
       'smartlearning_retention_reconciliation_failures_total',
+      'smartlearning_retention_purge_last_success_seconds',
     ]);
     expect(
       metrics.find(
@@ -71,7 +72,9 @@ describe('MetricsService', () => {
     service.recordRealtimePublishFailure('retry');
     service.recordRealtimePublishFailure('dead');
     service.recordJobItem('retention_purge', 'selected', 2);
+    service.recordJobItem('retention_purge', 'quarantined', 1);
     service.recordJobRun('retention_purge', 'success', 0.2);
+    service.recordRetentionPurgeLastSuccess(1700000000);
     service.recordReadiness('database', true);
 
     const output = await service.getRegistry().metrics();
@@ -84,6 +87,27 @@ describe('MetricsService', () => {
     expect(output).toContain('job="retention_purge"');
     expect(output).toContain('dependency="database"');
     expect(output).not.toContain('metric-sentinel');
+    expect(output).toContain('result="quarantined"');
+    expect(output).toContain(
+      'smartlearning_retention_purge_last_success_seconds 1700000000',
+    );
+  });
+
+  it('ignores invalid retention purge last-success timestamps', async () => {
+    const service = new MetricsService(new Registry());
+
+    service.recordRetentionPurgeLastSuccess(-5);
+    service.recordRetentionPurgeLastSuccess(Number.NaN);
+    service.recordRetentionPurgeLastSuccess(0);
+
+    // Invalid inputs leave the gauge at its initial 0, never a negative/nan value.
+    const output = await service.getRegistry().metrics();
+    expect(output).toContain(
+      'smartlearning_retention_purge_last_success_seconds 0',
+    );
+    expect(output).not.toContain(
+      'smartlearning_retention_purge_last_success_seconds -',
+    );
   });
 
   it('ignores invalid numeric observations and invalid fixed values', async () => {

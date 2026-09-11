@@ -22,6 +22,7 @@ These panels are an OPS-1.8 handoff for a Prometheus/Grafana deployment. PromQL 
 | Manifest lag              | `smartlearning_retention_manifest_lag_seconds`                                                                                          | seconds    | Export watermark lag; requires a provider-backed immutable store before production use.                                         |
 | Manifest dead records     | `smartlearning_retention_manifest_dead_records`                                                                                         | records    | Non-zero means durable export failure; stop and investigate.                                                                    |
 | Reconciliation failures   | `rate(smartlearning_retention_reconciliation_failures_total[15m])`                                                                      | failures/s | Reconciliation failures; keep apply disabled until reviewed.                                                                    |
+| Retention purge last success | `smartlearning_retention_purge_last_success_seconds`                                                                                 | epoch s    | Unix epoch of the last successful purge run; absent/stale means the scheduler stopped succeeding (see `RetentionPurgeNoRecentSuccess`). |
 
 ## Handoff notes
 

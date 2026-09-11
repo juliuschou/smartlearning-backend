@@ -3938,3 +3938,51 @@ schema/migration is touched in E.** All destructive operations remain gated and 
 | `NODE_ENV=test npm run prisma:migrate:status` | PASS — no pending migration (no schema change) |
 | `NODE_ENV=test test:archive-governance.e2e-spec.ts` | PASS — 1 suite / 15 tests |
 | `NODE_ENV=test test:deletion-manifest-exporter.integration-spec.ts` | PASS — 1 suite / 4 tests |
+
+# 2026-09-12 — BE-5.2 Archive Retention Plan — Checkpoint F: regression, concurrency, observability coverage
+
+## Scope & acceptance (per approved plan `foamy-jingling-key.md`)
+
+Checkpoint F adds the smallest tests proving each WBS item plus low-cardinality observability/alerts. **No schema/migration/env/plan-predicate change.** Destructive paths untouched; DB suites run only against guarded `smartlearning_test`.
+
+- [x] GAP 1 — mid-transaction rollback atomicity: force a failure after an intermediate governed delete; assert whole item rolls back (all tables intact, no tombstone/outbox, archive still pending, `purgeAt` unchanged).
+- [x] GAP 2 — same-row worker exclusivity: two `purgeDue` on one due row → exactly one deleted, one event, one outbox.
+- [x] GAP 3 — poison row + later-due rows continue: permanent-failure archive A quarantines/retries while clean archive B purges (no head-of-line blocking).
+- [x] GAP 4 — comprehensive zero-count + canonical event + outbox on one fixture (all 5 governed tables → 0, status deleted, purgeState deleted, 1 DeletionEvent, 1 outbox).
+- [x] GAP 5 — alerts: any-quarantine, manifest-export repeated failure, missing-expected-success/last-success. Wire last-success gauge if absent; update runbook + artifact test.
+
+## Risk & rollback
+
+- Risk: **medium** — all changes test-only or observability config; no destructive path altered.
+- Rollback: revert code/config/docs; no down migration.
+- Boundary: DB suites only against `smartlearning_test`; no purge on dev/staging/prod. Alert rules reference only existing/fixed-cardinality metrics.
+
+## Dependencies & environment
+
+- Runtime: Node `v26.5.1`. No prisma generate (no schema edit).
+- Guarded DB: `smartlearning_test` via `NODE_ENV=test` + `.env.test`; test setup implicitly runs idempotent `migrate deploy` + `truncateAll`.
+- DB-backed e2e/integration require **separate explicit authorization** before running.
+
+## Verification results
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| Targeted unit (governance.service 10, metrics.service 6) | PASS |
+| `npm run test:retention:artifacts` | PASS — 2 tests (alert/runbook/dashboard invariants incl. new alerts) |
+| Full unit regression | PASS except pre-existing unrelated `live-gateway.spec.ts:156` flake (391/392) |
+| Guarded `test:archive-governance.e2e-spec.ts` | PASS — 19/19 incl. all 4 new GAP tests; `git diff --check` clean |
+| Guarded `test:deletion-manifest-exporter.integration-spec.ts` | PASS — 4/4 |
+
+## Results
+
+- **GAP 1–4 (DB e2e):** four new `it()` blocks in `test/archive-governance.e2e-spec.ts` — atomic rollback (real-DB seam: pre-seeded conflicting `deletion_manifest_outbox.archived_result_id`, executor fails mid-transaction after governed deletes, whole item rolls back), same-row worker exclusivity, poison-row head-of-line freedom, and comprehensive all-governed-tables-zero + exactly-one-tombstone/outbox. Verified against guarded `smartlearning_test`; all pass.
+- **GAP 5 (observability):** new `smartlearning_retention_purge_last_success_seconds` gauge + `recordRetentionPurgeLastSuccess()` in `metrics.service.ts`; stamped on successful purge runs in `governance.service.ts.recordRun`. Three new alert rules in `ops/observability/prometheus-alerts.yml`: `SmartLearningRetentionPurgeQuarantined` (critical), `SmartLearningRetentionManifestExportJobFailing`, `SmartLearningRetentionPurgeNoRecentSuccess` (fires on absent OR stale last-success). Updated `retention-runbook.md`, `dashboard-inventory.md`, and `test/retention-operations-artifacts.spec.ts` to assert the new alert names.
+- **No schema/migration/plan-predicate/env change.** `purgeAt` and deletion categories untouched.
+
+## Observed flake (pre-existing, unrelated)
+
+`archive-governance.e2e-spec.ts` — `serializes concurrent purgeDue workers with database row locks` fails intermittently (`selected` 2→1, or `connect ECONNRESET`) even in isolation (~50-75% pass); it is NOT in this diff and predates Checkpoint F. Not caused by the GAP 1–4 additions (a full clean run passes 19/19).
