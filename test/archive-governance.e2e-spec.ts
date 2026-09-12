@@ -1248,11 +1248,13 @@ describe('LiveSession close/cancel (e2e)', () => {
       TEACHER.tempPassword,
       TEACHER.password,
     );
-    const sessions = await Promise.all([
-      createStartedSession(teacher),
-      createStartedSession(teacher),
-      createStartedSession(teacher),
-    ]);
+    // Serialized fixture setup (see the concurrent-purge test for the reason):
+    // racing createStartedSession over one agent's keep-alive socket resets it.
+    const sessions = [
+      await createStartedSession(teacher),
+      await createStartedSession(teacher),
+      await createStartedSession(teacher),
+    ];
     for (const session of sessions) {
       const closed = await teacher.agent
         .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)
@@ -1306,10 +1308,16 @@ describe('LiveSession close/cancel (e2e)', () => {
       TEACHER.tempPassword,
       TEACHER.password,
     );
-    const sessions = await Promise.all([
-      createStartedSession(teacher),
-      createStartedSession(teacher),
-    ]);
+    // Fixture setup is serialized: two createStartedSession calls each issue a
+    // chain of ~7 authenticated HTTP requests over the same supertest agent's
+    // keep-alive socket, and racing them via Promise.all intermittently resets
+    // that socket (ECONNRESET on the ephemeral listener port) before any purge
+    // work runs. The claim/lease concurrency under test is the concurrent
+    // purgeDue below, which stays concurrent.
+    const sessions = [
+      await createStartedSession(teacher),
+      await createStartedSession(teacher),
+    ];
     for (const session of sessions) {
       const closed = await teacher.agent
         .post(`/api/v1/live-sessions/${session.liveSessionId}/close`)

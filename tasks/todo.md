@@ -3986,3 +3986,65 @@ Checkpoint F adds the smallest tests proving each WBS item plus low-cardinality 
 ## Observed flake (pre-existing, unrelated)
 
 `archive-governance.e2e-spec.ts` — `serializes concurrent purgeDue workers with database row locks` fails intermittently (`selected` 2→1, or `connect ECONNRESET`) even in isolation (~50-75% pass); it is NOT in this diff and predates Checkpoint F. Not caused by the GAP 1–4 additions (a full clean run passes 19/19).
+
+# 2026-09-12 — BE-5.2 Archive Retention Plan — Checkpoint G step 2 flake resolution
+
+## Context
+
+Checkpoint G step 2 (guarded `smartlearning_test` regression) came back NOT green on the
+`archive-governance.e2e-spec.ts` concurrency test (`serializes concurrent purgeDue workers`, ~50–75%
+pass historically, failing 4/5 in this session). This session's Phase-1 diagnosis proved the failure
+was a **test-harness bug, not a purge/lease production defect**.
+
+## Diagnosis (evidence)
+
+- Instrumented isolated runs + a two-case isolation experiment added temporarily to the spec:
+  - DIAG A — **concurrent HTTP fixtures only** (2× `createStartedSession` via `Promise.all`, then
+    sequential close; no concurrent purge): failed intermittently with `connect/read ECONNRESET` on
+    an ephemeral **listener** port (56xxx–57xxx; DB is 5432).
+  - DIAG B — **sequential fixtures, concurrent `purgeDue(2)` ×2 via `Promise.all`**: passed **12/12**.
+- Conclusion: the `ECONNRESET` and the count mismatch arose in the **concurrent HTTP fixture phase**,
+  not the claim/lease SQL. `createStartedSession` each issues ~7 authenticated HTTP requests over the
+  same supertest agent's keep-alive socket; `Promise.all([createStartedSession, createStartedSession])`
+  races those requests on one socket, which intermittently resets (`ECONNRESET`), disrupting one
+  session's setup and causing the secondary `selected`/`deleted` counts to drop to 1. The purge code
+  (claim CAS, `SKIP LOCKED`, lease verification) was proven correct by DIAG B.
+
+## Fix
+
+`test/archive-governance.e2e-spec.ts` — serialize fixture setup at the two sites that raced
+`createStartedSession` over the shared agent socket; keep the concurrent `purgeDue` under test
+concurrent (that is the behavior DIAG B proved correct). No production code, schema, or purge logic
+changed.
+
+## Verification (authorized `smartlearning_test` only)
+
+- Fixed test (`serializes concurrent purgeDue`) isolated: **12/12 pass** (was ~50–75%).
+- Full `archive-governance.e2e-spec.ts`: **19/19 pass**.
+- Full unit regression: 391/392 — the single failure is the **pre-existing** `live-gateway.spec.ts:156`
+  realtime flake, confirmed to fail identically on clean HEAD (stash-popped), unrelated to this change.
+- Full e2e regression: **247/247 pass**.
+- DB-backed integration suites (`identity`, `poll-submission`, `deletion-manifest-exporter`): all pass
+  (7/7, 8/8, 4/4) against `smartlearning_test`.
+- Integration env-gated suites NOT run as part of step 2 (recorded as BLOCKED, not failures):
+  - `login-rate-limit.redis.integration-spec.ts` — requires `RUN_LOGIN_RATE_LIMIT_REDIS_TESTS=1`
+    (Redis not provisioned).
+  - `s3-sandbox-rehearsal.integration-spec.ts` — requires `DELETION_MANIFEST_PROVIDER=s3` +
+    reachable provider; this is the separately-authorized Checkpoint G step 3 (disposable S3
+    rehearsal), outside step-2 DB scope.
+- Static bundle: typecheck, lint:check, format:check, build, `git diff --check` all green.
+
+## Results
+
+- Root cause: test-harness concurrent HTTP fixture over a shared supertest agent socket → intermittent
+  `ECONNRESET` on the listener port, surfacing as the previously-observed flake. NOT a production
+  claim/lease defect.
+- Change is limited to `test/archive-governance.e2e-spec.ts`; no production/schema/migration/env change.
+- Checkpoint G step 2 (guarded `smartlearning_test` DB regression) is GREEN once the two
+  env-gated integration suites are excluded per their documented authorization gates.
+
+## Still pending (not claimed by this change)
+
+- `live-gateway.spec.ts:156` unit flake (pre-existing, realtime module) — separate issue, not touched.
+- Checkpoint G steps 3–9 (S3 rehearsal, Prometheus/Alertmanager, staging canary, capacity, production
+  rollout, WBS closeout) remain ahead, each behind its own authorization gate.
