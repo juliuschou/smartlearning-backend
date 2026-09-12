@@ -1,0 +1,40 @@
+# Disposable MinIO rehearsal target for BE-5.2/Checkpoint G step 3.
+#
+# WARNING — this is a THROWAWAY sandbox, not a production topology:
+#   - binds the container/API to localhost:19000 only;
+#   - named volume `minio-sandbox-data` is disposable (remove to clean up);
+#   - NOT part of the backend Compose stack and never used by production.
+#
+# Object-lock + versioning are enabled at bucket creation time by
+# ops/minio-rehearsal/setup.sh (MinIO requires locking+versioning enabled on
+# the bucket before per-object COMPLIANCE retain-until dates are accepted).
+#
+# Start with:  docker compose -f ops/minio-rehearsal/docker-compose.yml up -d
+# then run:    ops/minio-rehearsal/setup.sh
+# then:        ops/minio-rehearsal/rehearse.sh
+# tear down:   ops/minio-rehearsal/teardown.sh
+# Requires a running Docker daemon with the compose plugin.
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --address ":19000" --console-address ":19001"
+    environment:
+      # Root is used ONLY to create the scoped write-only rehearsal user and the
+      # bucket; the application itself uses the write-only credential from
+      # .env.sandbox-rehearsal, never the root key. Defaults here are overridable
+      # through .env (see .env.example). These are throwaway dev creds, not secrets.
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-rehearsal-root}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-rehearsal-write-password-1234}
+    ports:
+      - "127.0.0.1:19000:19000"
+      - "127.0.0.1:19001:19001"
+    volumes:
+      - minio-sandbox-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  minio-sandbox-data:
