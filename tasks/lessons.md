@@ -311,3 +311,17 @@
 - **Root cause:** Backoff/cooldown is only meaningful for **retry** rows. A pending (first-attempt) row is due purely on `purge_at`; a `processing` row is reclaimable on lease expiry; only a `retry` row should honor `next_purge_attempt_at`.
 - **Prevention rule:** In a durable retention claim, branch the eligibility by state so `next_purge_attempt_at` constrains only `retry`, `purge_at` constrains pending, and lease expiry constrains `processing`. Do not add an unconditional `next_purge_attempt_at` filter.
 - **Tripwire:** When adding a purge-eligibility predicate, assert separately that (a) pending, (b) ready retry, (c) backoff-gated retry, and (d) expired-processing rows each have the intended eligibility, and keep pending rows driven purely by `purge_at`.
+
+## 2026-09-12 — Automation scripts must use an available interpreter
+
+- **Failure mode:** A task-record append invoked `python`, but this environment exposes only `python3`, so the command failed before changing the file.
+- **Detection signal:** The shell returned `zsh: command not found: python` with exit code 127.
+- **Prevention rule:** Check `command -v python3` or use the repository runtime before invoking an ad hoc interpreter; do not assume a `python` alias exists.
+- **Tripwire:** For future shell-based file transforms, select an interpreter only after a read-only availability check and require exit code 0 before continuing.
+
+## 2026-09-12 — Do not format the historical task ledger during a focused change
+
+- **Failure mode:** A focused verification command included `tasks/todo.md` in Prettier input, producing large alignment-only rewrites across historical tables and mixing review noise with the scheduler safety change.
+- **Detection signal:** `git diff --numstat -- tasks/todo.md` showed 154 insertions / 99 deletions although the intended task update was append-only.
+- **Prevention rule:** Never run repository formatters over the historical task ledger for a focused checkpoint; append/edit only the current section and exclude `tasks/todo.md` from formatter file lists.
+- **Tripwire:** Before final review, inspect `git diff --numstat -- tasks/todo.md`; unexpected historical churn must be removed before delivery or explicitly reported if environment protection blocks restoration.

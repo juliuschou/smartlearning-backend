@@ -99,7 +99,14 @@ Generate secrets: `openssl rand -base64 32`
 ## Docker deployment (UAT / staging)
 
 The repo ships a multi-stage `Dockerfile` + `docker-compose.yml` that bring up
-PostgreSQL, a one-shot Prisma migrate service, and the NestJS API.
+PostgreSQL, a one-shot Prisma migrate service, and the NestJS API. Because
+`docker compose up` starts `prisma migrate deploy`, treat it as a migration
+operation and obtain environment-specific authorization before using it.
+
+Retention operation gates and recurring scheduler gates are independent. Keep
+`RETENTION_PURGE_SCHEDULER_ENABLED=false` and
+`RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED=false` for operator one-shot
+commands; see [`ops/observability/retention-runbook.md`](ops/observability/retention-runbook.md).
 
 ```bash
 # 1. Configure env (UAT values; .env.production is gitignored)

@@ -192,7 +192,17 @@ export class EnvConfig {
   LIVE_SESSION_AUTO_CLOSE_TICK_MS = 60 * 1000;
 
   @IsBoolean()
+  RETENTION_OPERATIONS_ENABLED = false;
+
+  @IsBoolean()
   RETENTION_PURGE_ENABLED = false;
+
+  // Per-operation authorization and recurring scheduler startup are separate
+  // gates beneath RETENTION_OPERATIONS_ENABLED. One-shot operator commands keep
+  // the scheduler gate false so application-context startup cannot trigger an
+  // additional sweep before the explicit CLI invocation.
+  @IsBoolean()
+  RETENTION_PURGE_SCHEDULER_ENABLED = false;
 
   @IsNumber()
   @Min(60_000)
@@ -224,6 +234,9 @@ export class EnvConfig {
   // they can be paused, scaled, or retuned without coupling.
   @IsBoolean()
   RETENTION_MANIFEST_EXPORT_ENABLED = false;
+
+  @IsBoolean()
+  RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED = false;
 
   @IsNumber()
   @Min(60_000)
@@ -314,13 +327,19 @@ export function validateEnv(
       raw.LIVE_SESSION_AUTO_CLOSE_TICK_MS,
       60 * 1000,
     ),
+    RETENTION_OPERATIONS_ENABLED:
+      bool(raw.RETENTION_OPERATIONS_ENABLED) ?? false,
     RETENTION_PURGE_ENABLED: bool(raw.RETENTION_PURGE_ENABLED) ?? false,
+    RETENTION_PURGE_SCHEDULER_ENABLED:
+      bool(raw.RETENTION_PURGE_SCHEDULER_ENABLED) ?? false,
     RETENTION_PURGE_TICK_MS: num(raw.RETENTION_PURGE_TICK_MS, 15 * 60 * 1000),
     RETENTION_PURGE_BATCH_SIZE: num(raw.RETENTION_PURGE_BATCH_SIZE, 50),
     RETENTION_PURGE_LEASE_MS: optionalNum(raw.RETENTION_PURGE_LEASE_MS),
     RETENTION_PURGE_MAX_ATTEMPTS: optionalNum(raw.RETENTION_PURGE_MAX_ATTEMPTS),
     RETENTION_MANIFEST_EXPORT_ENABLED:
       bool(raw.RETENTION_MANIFEST_EXPORT_ENABLED) ?? false,
+    RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED:
+      bool(raw.RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED) ?? false,
     RETENTION_MANIFEST_EXPORT_TICK_MS: num(
       raw.RETENTION_MANIFEST_EXPORT_TICK_MS,
       15 * 60 * 1000,
@@ -419,6 +438,23 @@ export function validateEnv(
   }
   if (config.CORS_ORIGIN.split(',').some((origin) => origin.trim() === '*')) {
     throw new Error('CORS_ORIGIN must not contain a wildcard origin');
+  }
+  if (
+    config.RETENTION_PURGE_SCHEDULER_ENABLED &&
+    (!config.RETENTION_OPERATIONS_ENABLED || !config.RETENTION_PURGE_ENABLED)
+  ) {
+    throw new Error(
+      'RETENTION_PURGE_SCHEDULER_ENABLED requires RETENTION_OPERATIONS_ENABLED and RETENTION_PURGE_ENABLED',
+    );
+  }
+  if (
+    config.RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED &&
+    (!config.RETENTION_OPERATIONS_ENABLED ||
+      !config.RETENTION_MANIFEST_EXPORT_ENABLED)
+  ) {
+    throw new Error(
+      'RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED requires RETENTION_OPERATIONS_ENABLED and RETENTION_MANIFEST_EXPORT_ENABLED',
+    );
   }
   // Deletion-manifest durability (BE-5 CP2 Checkpoint B). The process-local
   // provider cannot be durable across replicas, and a purge that cannot

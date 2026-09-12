@@ -5,10 +5,12 @@ This runbook covers the retention worker operation tooling. The purge and manife
 ## Current defaults and scope
 
 - `RETENTION_OPERATIONS_ENABLED` is disabled unless explicitly set to `1` or `true`.
-- `RETENTION_PURGE_ENABLED`, `RETENTION_MANIFEST_EXPORT_ENABLED`, and `RETENTION_RECONCILE_APPLY_ENABLED` are independently disabled by default.
-- `inspect`, `dry-run`, and `reconcile-inspect` are read-only. `run-once`, `manifest-export-once`, and `reconcile-apply` are destructive/networked operator workflows: they execute but only behind their explicit per-operation gates (`RETENTION_PURGE_ENABLED`, `RETENTION_MANIFEST_EXPORT_ENABLED`, `RETENTION_RECONCILE_APPLY_ENABLED`, each additionally gated by `RETENTION_OPERATIONS_ENABLED`). All gates are disabled by default.
-- Each loop has its own tunables: the purge loop uses `RETENTION_PURGE_BATCH_SIZE`, `RETENTION_PURGE_LEASE_MS`, and `RETENTION_PURGE_MAX_ATTEMPTS`; the manifest-export loop uses `RETENTION_MANIFEST_EXPORT_BATCH_SIZE` (and its own tick, `RETENTION_MANIFEST_EXPORT_TICK_MS`). Production requires a durable S3 manifest provider before either loop is enabled (`DELETION_MANIFEST_PROVIDER=s3`); `RETENTION_MANIFEST_EXPORT_BATCH_SIZE` only takes effect when `RETENTION_MANIFEST_EXPORT_ENABLED=1`.
+- `RETENTION_PURGE_ENABLED`, `RETENTION_MANIFEST_EXPORT_ENABLED`, and `RETENTION_RECONCILE_APPLY_ENABLED` authorize individual operations and are independently disabled by default.
+- `RETENTION_PURGE_SCHEDULER_ENABLED` and `RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED` separately authorize recurring scheduler startup and are disabled by default. Enabling an operation does **not** authorize its scheduler; a scheduler requires the master `RETENTION_OPERATIONS_ENABLED` gate and its matching operation gate or environment validation fails.
+- `inspect`, `dry-run`, and `reconcile-inspect` are read-only. `run-once`, `manifest-export-once`, and `reconcile-apply` are destructive/networked operator workflows: they execute only behind their explicit per-operation gates (`RETENTION_PURGE_ENABLED`, `RETENTION_MANIFEST_EXPORT_ENABLED`, `RETENTION_RECONCILE_APPLY_ENABLED`, each additionally gated by `RETENTION_OPERATIONS_ENABLED`). All gates are disabled by default.
+- Each scheduler has its own tunables: purge uses `RETENTION_PURGE_TICK_MS`, `RETENTION_PURGE_BATCH_SIZE`, `RETENTION_PURGE_LEASE_MS`, and `RETENTION_PURGE_MAX_ATTEMPTS`; manifest export uses `RETENTION_MANIFEST_EXPORT_TICK_MS` and `RETENTION_MANIFEST_EXPORT_BATCH_SIZE`. Production requires a durable S3 manifest provider before either operation is enabled (`DELETION_MANIFEST_PROVIDER=s3`).
 - The local manifest provider is a test/inspection adapter backed by `RETENTION_LOCAL_MANIFEST_FILE`; it is not an immutable object store and must not be treated as one.
+- Upgrade note: deployments that previously used only `RETENTION_PURGE_ENABLED` or `RETENTION_MANIFEST_EXPORT_ENABLED` for recurring loops must explicitly add the matching scheduler gate and `RETENTION_OPERATIONS_ENABLED`. Omission intentionally leaves the loop stopped; verify expected-run alerts after rollout.
 
 ## Alert guidance
 
@@ -49,7 +51,29 @@ Before any future provider-backed implementation is enabled, require all of the 
 5. recovery, audit, and monitoring checks are green;
 6. the corresponding operation gate is enabled for that one invocation.
 
-`run-once` and `manifest-export-once` now execute their destructive/networked operations when both `RETENTION_OPERATIONS_ENABLED` and the relevant per-operation gate (`RETENTION_PURGE_ENABLED` / `RETENTION_MANIFEST_EXPORT_ENABLED`) are set. Do not enable them for production without the immutable-object-store prerequisites below and explicit two-operator sign-off.
+`run-once` and `manifest-export-once` execute their destructive/networked operations when both `RETENTION_OPERATIONS_ENABLED` and the relevant per-operation gate (`RETENTION_PURGE_ENABLED` / `RETENTION_MANIFEST_EXPORT_ENABLED`) are set. The operator CLI forces both scheduler-specific gates false before booting `AppModule`, so read-only and one-shot commands cannot trigger startup sweeps; keep them false in the command profile as an explicit audit control. Do not enable any operation or scheduler in production without the immutable-object-store prerequisites below and explicit two-operator sign-off.
+
+### Batch-size-1 staging canary profile
+
+Use a dedicated one-shot process from the exact deployed artifact. Do not change the long-running backend's scheduler configuration.
+
+```sh
+RETENTION_OPERATIONS_ENABLED=1 \
+RETENTION_PURGE_ENABLED=true \
+RETENTION_PURGE_SCHEDULER_ENABLED=false \
+RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED=false \
+RETENTION_PURGE_BATCH_SIZE=1 \
+  node dist/src/bootstrap/retention.js run-once
+
+RETENTION_OPERATIONS_ENABLED=1 \
+RETENTION_MANIFEST_EXPORT_ENABLED=true \
+RETENTION_PURGE_SCHEDULER_ENABLED=false \
+RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED=false \
+RETENTION_MANIFEST_EXPORT_BATCH_SIZE=1 \
+  node dist/src/bootstrap/retention.js manifest-export-once
+```
+
+Immediately before each mutation, repeat the read-only selection check. Stop unless the dry-run selects exactly the reviewed synthetic archive and no unrelated item can precede it. Afterward, return every operation and scheduler gate to false and observe at least one scheduler tick plus alert evaluation delay; no additional run may occur.
 
 ## Immutable object-store prerequisites
 

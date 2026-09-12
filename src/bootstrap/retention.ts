@@ -18,6 +18,16 @@ export type RetentionCommand =
   | 'reconcile-inspect'
   | 'reconcile-apply';
 
+export function disableRetentionSchedulersForOperatorCommand(
+  env: NodeJS.ProcessEnv = process.env,
+): void {
+  // Every operator command must remain single-purpose. AppModule includes both
+  // scheduler providers, so force their startup gates off before ConfigModule
+  // reads env files or process.env. The explicit CLI branch owns the one call.
+  env.RETENTION_PURGE_SCHEDULER_ENABLED = 'false';
+  env.RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED = 'false';
+}
+
 export function parseRetentionCommand(argv: string[]): RetentionCommand {
   const command = argv[2] ?? 'inspect';
   if (
@@ -100,6 +110,7 @@ async function main(): Promise<void> {
     console.log(JSON.stringify(await service.inspect()));
     return;
   }
+  disableRetentionSchedulersForOperatorCommand();
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: false,
   });

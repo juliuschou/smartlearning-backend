@@ -34,7 +34,13 @@ export class ManifestExportScheduler implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     this.destroyed = false;
-    if (!this.config.get('RETENTION_MANIFEST_EXPORT_ENABLED', { infer: true }))
+    if (
+      !this.config.get('RETENTION_OPERATIONS_ENABLED', { infer: true }) ||
+      !this.config.get('RETENTION_MANIFEST_EXPORT_ENABLED', { infer: true }) ||
+      !this.config.get('RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED', {
+        infer: true,
+      })
+    )
       return;
     void this.runOnce();
     const interval = Number(

@@ -120,9 +120,13 @@ groups:
 
       - alert: SmartLearningRetentionPurgeNoRecentSuccess
         expr: |
-          absent(smartlearning_retention_purge_last_success_seconds) == 1
-          or
-          (time() - smartlearning_retention_purge_last_success_seconds) > 1800
+          smartlearning_retention_due_backlog > 0
+          and on()
+          (
+            absent(smartlearning_retention_purge_last_success_seconds) == 1
+            or
+            (time() - smartlearning_retention_purge_last_success_seconds) > 1800
+          )
         for: 10m
         labels:
           severity: warning

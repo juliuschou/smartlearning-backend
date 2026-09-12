@@ -23,6 +23,9 @@ describe('retention operational artifacts', () => {
     expect(alerts).toContain('smartlearning_retention_manifest_lag_seconds');
     expect(alerts).toContain('smartlearning_retention_manifest_dead_records');
     expect(alerts).toContain(
+      'smartlearning_retention_due_backlog > 0\n          and on()',
+    );
+    expect(alerts).toContain(
       'smartlearning_retention_reconciliation_failures_total',
     );
   });
@@ -37,7 +40,9 @@ describe('retention operational artifacts', () => {
     for (const gate of [
       'RETENTION_OPERATIONS_ENABLED',
       'RETENTION_PURGE_ENABLED',
+      'RETENTION_PURGE_SCHEDULER_ENABLED',
       'RETENTION_MANIFEST_EXPORT_ENABLED',
+      'RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED',
       'RETENTION_RECONCILE_APPLY_ENABLED',
     ]) {
       expect(runbook).toContain(gate);
@@ -47,5 +52,6 @@ describe('retention operational artifacts', () => {
     expect(runbook).toContain('not production-authorized or enabled');
     expect(runbook).toContain('dry-run');
     expect(runbook).toContain('RETENTION_MANIFEST_EXPORT_BATCH_SIZE');
+    expect(runbook).toContain('Batch-size-1 staging canary profile');
   });
 });

@@ -333,7 +333,10 @@ describe('validateEnv', () => {
   // BE-5.2 Checkpoint E — independent purge + manifest-export workers.
   it('defaults the retention purge lease/max-attempts and export fields', () => {
     const config = validateEnv({ ...baseEnv, NODE_ENV: 'test' });
+    expect(config.RETENTION_OPERATIONS_ENABLED).toBe(false);
+    expect(config.RETENTION_PURGE_SCHEDULER_ENABLED).toBe(false);
     expect(config.RETENTION_MANIFEST_EXPORT_ENABLED).toBe(false);
+    expect(config.RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED).toBe(false);
     expect(config.RETENTION_MANIFEST_EXPORT_TICK_MS).toBe(15 * 60 * 1000);
     expect(config.RETENTION_MANIFEST_EXPORT_BATCH_SIZE).toBe(50);
     expect(config.RETENTION_PURGE_LEASE_MS).toBeUndefined();
@@ -344,17 +347,59 @@ describe('validateEnv', () => {
     const config = validateEnv({
       ...baseEnv,
       NODE_ENV: 'test',
+      RETENTION_OPERATIONS_ENABLED: '1',
+      RETENTION_PURGE_ENABLED: '1',
+      RETENTION_PURGE_SCHEDULER_ENABLED: '1',
       RETENTION_PURGE_LEASE_MS: '25000',
       RETENTION_PURGE_MAX_ATTEMPTS: '7',
       RETENTION_MANIFEST_EXPORT_ENABLED: '1',
+      RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED: '1',
       RETENTION_MANIFEST_EXPORT_TICK_MS: '60000',
       RETENTION_MANIFEST_EXPORT_BATCH_SIZE: '10',
     });
+    expect(config.RETENTION_PURGE_SCHEDULER_ENABLED).toBe(true);
     expect(config.RETENTION_PURGE_LEASE_MS).toBe(25000);
     expect(config.RETENTION_PURGE_MAX_ATTEMPTS).toBe(7);
     expect(config.RETENTION_MANIFEST_EXPORT_ENABLED).toBe(true);
+    expect(config.RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED).toBe(true);
     expect(config.RETENTION_MANIFEST_EXPORT_TICK_MS).toBe(60000);
     expect(config.RETENTION_MANIFEST_EXPORT_BATCH_SIZE).toBe(10);
+  });
+
+  it('allows one-shot operation gates while schedulers remain disabled', () => {
+    const config = validateEnv({
+      ...baseEnv,
+      NODE_ENV: 'test',
+      RETENTION_PURGE_ENABLED: 'true',
+      RETENTION_MANIFEST_EXPORT_ENABLED: 'true',
+    });
+
+    expect(config.RETENTION_PURGE_SCHEDULER_ENABLED).toBe(false);
+    expect(config.RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED).toBe(false);
+  });
+
+  it('rejects a purge scheduler without purge operation authorization', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        NODE_ENV: 'test',
+        RETENTION_PURGE_SCHEDULER_ENABLED: 'true',
+      }),
+    ).toThrow(
+      'RETENTION_PURGE_SCHEDULER_ENABLED requires RETENTION_OPERATIONS_ENABLED and RETENTION_PURGE_ENABLED',
+    );
+  });
+
+  it('rejects a manifest-export scheduler without export authorization', () => {
+    expect(() =>
+      validateEnv({
+        ...baseEnv,
+        NODE_ENV: 'test',
+        RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED: 'true',
+      }),
+    ).toThrow(
+      'RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED requires RETENTION_OPERATIONS_ENABLED and RETENTION_MANIFEST_EXPORT_ENABLED',
+    );
   });
 
   it('rejects manifest export enabled in production without a durable S3 provider', () => {

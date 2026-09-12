@@ -84,7 +84,7 @@ describe('MetricsService', () => {
     expect(output).toContain('route="__unmatched__"');
     expect(output).toContain('outcome="retry"');
     expect(output).toContain('outcome="dead"');
-    expect(output).toContain('job="retention_purge"');
+    expect(output).toContain('bg_job="retention_purge"');
     expect(output).toContain('dependency="database"');
     expect(output).not.toContain('metric-sentinel');
     expect(output).toContain('result="quarantined"');
@@ -127,7 +127,7 @@ describe('MetricsService', () => {
 
     const output = await service.getRegistry().metrics();
     expect(output).not.toContain('route="/invalid"');
-    expect(output).not.toContain('job="retention_purge"');
+    expect(output).not.toContain('bg_job="retention_purge"');
     expect(output).not.toContain('dependency="invalid"');
   });
 

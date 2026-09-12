@@ -25,7 +25,12 @@ export class RetentionScheduler implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     this.destroyed = false;
-    if (!this.config.get('RETENTION_PURGE_ENABLED', { infer: true })) return;
+    if (
+      !this.config.get('RETENTION_OPERATIONS_ENABLED', { infer: true }) ||
+      !this.config.get('RETENTION_PURGE_ENABLED', { infer: true }) ||
+      !this.config.get('RETENTION_PURGE_SCHEDULER_ENABLED', { infer: true })
+    )
+      return;
     void this.runOnce();
     const interval = Number(
       this.config.get('RETENTION_PURGE_TICK_MS', { infer: true }) ?? 900_000,

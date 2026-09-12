@@ -6,7 +6,9 @@ import { DeletionManifestExporter } from './deletion-manifest.exporter';
 describe('ManifestExportScheduler', () => {
   const makeHarness = (
     overrides: {
-      enabled?: boolean;
+      operationsEnabled?: boolean;
+      operationEnabled?: boolean;
+      schedulerEnabled?: boolean;
       tickMs?: number;
       batchSize?: number;
       exportDueBatch?: jest.Mock;
@@ -19,8 +21,12 @@ describe('ManifestExportScheduler', () => {
     } as unknown as jest.Mocked<DeletionManifestExporter>;
     const config = {
       get: jest.fn((key: string) => {
+        if (key === 'RETENTION_OPERATIONS_ENABLED')
+          return overrides.operationsEnabled ?? true;
         if (key === 'RETENTION_MANIFEST_EXPORT_ENABLED')
-          return overrides.enabled ?? true;
+          return overrides.operationEnabled ?? true;
+        if (key === 'RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED')
+          return overrides.schedulerEnabled ?? true;
         if (key === 'RETENTION_MANIFEST_EXPORT_TICK_MS')
           return overrides.tickMs ?? 1_000;
         if (key === 'RETENTION_MANIFEST_EXPORT_BATCH_SIZE')
@@ -43,16 +49,39 @@ describe('ManifestExportScheduler', () => {
     jest.useRealTimers();
   });
 
-  it('does not start in disabled mode', async () => {
-    const { scheduler, exporter } = makeHarness({ enabled: false });
+  it('does not start when the scheduler gate is disabled', async () => {
+    const { scheduler, exporter, config } = makeHarness({
+      schedulerEnabled: false,
+    });
 
     scheduler.onModuleInit();
     await jest.runOnlyPendingTimersAsync();
 
+    expect(config.get).toHaveBeenCalledWith(
+      'RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED',
+      { infer: true },
+    );
     expect(exporter.exportDueBatch).not.toHaveBeenCalled();
     expect(jest.getTimerCount()).toBe(0);
     await scheduler.onModuleDestroy();
   });
+
+  it.each([
+    ['master', { operationsEnabled: false }],
+    ['manifest-export operation', { operationEnabled: false }],
+  ])(
+    'does not start when the %s gate is disabled',
+    async (_name, overrides) => {
+      const { scheduler, exporter } = makeHarness(overrides);
+
+      scheduler.onModuleInit();
+      await jest.runOnlyPendingTimersAsync();
+
+      expect(exporter.exportDueBatch).not.toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
+      await scheduler.onModuleDestroy();
+    },
+  );
 
   it('runs on startup and schedules the configured interval with the batch size', async () => {
     const { scheduler, exporter } = makeHarness({ tickMs: 250, batchSize: 7 });

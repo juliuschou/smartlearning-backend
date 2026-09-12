@@ -7,7 +7,9 @@ import { GovernanceService } from './governance.service';
 describe('RetentionScheduler', () => {
   const makeHarness = (
     overrides: {
-      enabled?: boolean;
+      operationsEnabled?: boolean;
+      operationEnabled?: boolean;
+      schedulerEnabled?: boolean;
       tickMs?: number;
       batchSize?: number;
       purgeDue?: jest.Mock;
@@ -24,7 +26,12 @@ describe('RetentionScheduler', () => {
     } as unknown as jest.Mocked<GovernanceService>;
     const config = {
       get: jest.fn((key: string) => {
-        if (key === 'RETENTION_PURGE_ENABLED') return overrides.enabled ?? true;
+        if (key === 'RETENTION_OPERATIONS_ENABLED')
+          return overrides.operationsEnabled ?? true;
+        if (key === 'RETENTION_PURGE_ENABLED')
+          return overrides.operationEnabled ?? true;
+        if (key === 'RETENTION_PURGE_SCHEDULER_ENABLED')
+          return overrides.schedulerEnabled ?? true;
         if (key === 'RETENTION_PURGE_TICK_MS') return overrides.tickMs ?? 1_000;
         if (key === 'RETENTION_PURGE_BATCH_SIZE')
           return overrides.batchSize ?? 50;
@@ -49,16 +56,39 @@ describe('RetentionScheduler', () => {
     jest.useRealTimers();
   });
 
-  it('does not start in disabled mode', async () => {
-    const { scheduler, governance } = makeHarness({ enabled: false });
+  it('does not start when the scheduler gate is disabled', async () => {
+    const { scheduler, governance, config } = makeHarness({
+      schedulerEnabled: false,
+    });
 
     scheduler.onModuleInit();
     await jest.runOnlyPendingTimersAsync();
 
+    expect(config.get).toHaveBeenCalledWith(
+      'RETENTION_PURGE_SCHEDULER_ENABLED',
+      { infer: true },
+    );
     expect(governance.purgeDue).not.toHaveBeenCalled();
     expect(jest.getTimerCount()).toBe(0);
     await scheduler.onModuleDestroy();
   });
+
+  it.each([
+    ['master', { operationsEnabled: false }],
+    ['purge operation', { operationEnabled: false }],
+  ])(
+    'does not start when the %s gate is disabled',
+    async (_name, overrides) => {
+      const { scheduler, governance } = makeHarness(overrides);
+
+      scheduler.onModuleInit();
+      await jest.runOnlyPendingTimersAsync();
+
+      expect(governance.purgeDue).not.toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
+      await scheduler.onModuleDestroy();
+    },
+  );
 
   it('runs on startup and schedules the configured interval', async () => {
     const { scheduler, governance, metrics } = makeHarness({

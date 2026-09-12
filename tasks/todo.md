@@ -3597,24 +3597,24 @@ BE-5.2 Checkpoint A freezes the irreversible retention deletion contract and rec
 
 ## Frozen deletion inventory
 
-| Data/table | Frozen BE-5.2 retention contract | Baseline disposition |
-| --- | --- | --- |
-| `Submission` | Delete every row belonging to the live session. | Governed deletion |
-| `LiveSessionEvent` | Delete every row for the session, including routing, projection, and replay state; visibility must not narrow the scope. | Governed deletion; current code only targets `participant_after_submit` and requires later correction |
-| `SessionQuestionOption` | Delete all selected-session option snapshots, after dependent answer data. | Governed deletion |
-| `SessionQuestion` | Delete all selected-session question snapshots after options. | Governed deletion |
-| `Participant` | Delete participant identity, account/token, display, and reconnect linkage. | Governed deletion |
-| Session-scoped aggregate/projection state | Delete any separate answer-bearing aggregate/projection rows represented by the schema; if represented only by submissions/events, the zero-row invariant applies to those sources. | Governed deletion; schema inventory must be rechecked in Checkpoint C |
-| `ArchivedResult` | Retain the non-answer archive shell/lifecycle metadata; set `payload` to NULL and transition status to deleted. Never move `purgeAt`. | Retained tombstone shell |
-| `DeletionEvent` | Retain exactly one canonical successful retention tombstone/event with stable categories/reason only. | Retained governance record |
-| `DeletionManifestOutbox` | Retain exactly one canonical immutable manifest outbox record for export/BE-5.3 reconciliation. | Retained governance record |
-| `LiveSession` | Retain lifecycle metadata, including `closedAt` and immutable `purgeAt`. | Explicitly retained |
-| `LiveSessionQuestionSelection` | Retain non-answer selection/lifecycle metadata; reusable question definitions remain independent. | Explicitly retained unless a later authoritative contract says otherwise |
-| Course | Retain course metadata and ownership. | Explicitly retained |
-| `CourseEnrollment` | Retain course/account roster metadata; it is not session answer data. | Explicitly retained |
-| Account | Retain account identity/lifecycle data outside participant linkage. | Explicitly retained |
-| `QuestionDefinition` | Retain reusable course question definitions. | Explicitly retained |
-| `QuestionOption` | Retain reusable options belonging to `QuestionDefinition`; only copied session options are governed. | Explicitly retained |
+| Data/table                                | Frozen BE-5.2 retention contract                                                                                                                                                    | Baseline disposition                                                                                  |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `Submission`                              | Delete every row belonging to the live session.                                                                                                                                     | Governed deletion                                                                                     |
+| `LiveSessionEvent`                        | Delete every row for the session, including routing, projection, and replay state; visibility must not narrow the scope.                                                            | Governed deletion; current code only targets `participant_after_submit` and requires later correction |
+| `SessionQuestionOption`                   | Delete all selected-session option snapshots, after dependent answer data.                                                                                                          | Governed deletion                                                                                     |
+| `SessionQuestion`                         | Delete all selected-session question snapshots after options.                                                                                                                       | Governed deletion                                                                                     |
+| `Participant`                             | Delete participant identity, account/token, display, and reconnect linkage.                                                                                                         | Governed deletion                                                                                     |
+| Session-scoped aggregate/projection state | Delete any separate answer-bearing aggregate/projection rows represented by the schema; if represented only by submissions/events, the zero-row invariant applies to those sources. | Governed deletion; schema inventory must be rechecked in Checkpoint C                                 |
+| `ArchivedResult`                          | Retain the non-answer archive shell/lifecycle metadata; set `payload` to NULL and transition status to deleted. Never move `purgeAt`.                                               | Retained tombstone shell                                                                              |
+| `DeletionEvent`                           | Retain exactly one canonical successful retention tombstone/event with stable categories/reason only.                                                                               | Retained governance record                                                                            |
+| `DeletionManifestOutbox`                  | Retain exactly one canonical immutable manifest outbox record for export/BE-5.3 reconciliation.                                                                                     | Retained governance record                                                                            |
+| `LiveSession`                             | Retain lifecycle metadata, including `closedAt` and immutable `purgeAt`.                                                                                                            | Explicitly retained                                                                                   |
+| `LiveSessionQuestionSelection`            | Retain non-answer selection/lifecycle metadata; reusable question definitions remain independent.                                                                                   | Explicitly retained unless a later authoritative contract says otherwise                              |
+| Course                                    | Retain course metadata and ownership.                                                                                                                                               | Explicitly retained                                                                                   |
+| `CourseEnrollment`                        | Retain course/account roster metadata; it is not session answer data.                                                                                                               | Explicitly retained                                                                                   |
+| Account                                   | Retain account identity/lifecycle data outside participant linkage.                                                                                                                 | Explicitly retained                                                                                   |
+| `QuestionDefinition`                      | Retain reusable course question definitions.                                                                                                                                        | Explicitly retained                                                                                   |
+| `QuestionOption`                          | Retain reusable options belonging to `QuestionDefinition`; only copied session options are governed.                                                                                | Explicitly retained                                                                                   |
 
 ### Category reconciliation baseline
 
@@ -3683,22 +3683,22 @@ Checkpoint B adds only the durable purge work-state foundation on `ArchivedResul
 
 ## Verification results
 
-| Command | Result |
-| --- | --- |
-| `npm run prisma:validate` | PASS — schema valid |
-| `npm run prisma:generate` + `node scripts/normalize-prisma-client.mjs generated/prisma` | PASS — client regenerated, CJS-normalized (0 files changed, idempotent) |
-| `npm run typecheck` | PASS |
-| `npm run format:check` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
-| Focused unit: `governance.service.spec.ts` | PASS — 1 suite / 6 tests |
-| Focused unit: governance 4-suite bundle (service/scheduler/reconciliation/exporter) | PASS — 4 suites / 22 tests |
-| Sanitized preflight: `.env.test` DB name + no exported `DATABASE_URL` | PASS — exactly `smartlearning_test@localhost:5432`, credentials not printed |
-| Pre-deploy `NODE_ENV=test npm run prisma:migrate:status` | PASS — only `20260911100000_add_archive_purge_worker_state` pending |
-| `NODE_ENV=test npm run prisma:migrate:deploy` | PASS after one fail-loud preflight iteration (below) |
-| Post-deploy `NODE_ENV=test npm run prisma:migrate:status` | PASS — 19 migrations, schema up to date |
-| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` | PASS — 1 suite / 13 tests, 0 failed, 0 skipped |
+| Command                                                                                      | Result                                                                      |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `npm run prisma:validate`                                                                    | PASS — schema valid                                                         |
+| `npm run prisma:generate` + `node scripts/normalize-prisma-client.mjs generated/prisma`      | PASS — client regenerated, CJS-normalized (0 files changed, idempotent)     |
+| `npm run typecheck`                                                                          | PASS                                                                        |
+| `npm run format:check`                                                                       | PASS                                                                        |
+| `npm run lint:check`                                                                         | PASS                                                                        |
+| `npm run build`                                                                              | PASS                                                                        |
+| `git diff --check`                                                                           | PASS                                                                        |
+| Focused unit: `governance.service.spec.ts`                                                   | PASS — 1 suite / 6 tests                                                    |
+| Focused unit: governance 4-suite bundle (service/scheduler/reconciliation/exporter)          | PASS — 4 suites / 22 tests                                                  |
+| Sanitized preflight: `.env.test` DB name + no exported `DATABASE_URL`                        | PASS — exactly `smartlearning_test@localhost:5432`, credentials not printed |
+| Pre-deploy `NODE_ENV=test npm run prisma:migrate:status`                                     | PASS — only `20260911100000_add_archive_purge_worker_state` pending         |
+| `NODE_ENV=test npm run prisma:migrate:deploy`                                                | PASS after one fail-loud preflight iteration (below)                        |
+| Post-deploy `NODE_ENV=test npm run prisma:migrate:status`                                    | PASS — 19 migrations, schema up to date                                     |
+| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` | PASS — 1 suite / 13 tests, 0 failed, 0 skipped                              |
 
 ### Fail-loud preflight event (forward-fixed)
 
@@ -3859,18 +3859,19 @@ real data) legitimately rewrite only `purge_at` backward, so pending rows with s
 
 ## Verification results
 
-| Gate | Result |
-| --- | --- |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
-| Governance unit bundle (`src/modules/governance/`) | PASS — 8 suites / 60 tests |
-| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` | PASS — 15 tests |
-| `NODE_ENV=test npm run prisma:migrate:status` | PASS — schema up to date (no new migration in D) |
-| Full unit `src/` | PASS except pre-existing `live-gateway.spec.ts:156` (Gate F, unrelated, realtime module untouched) |
-| Full e2e regression | archive-governance PASS in full-suite context; other PASS suites across account/admin/auth/realtime/enrollments/questions/live-session. Single failure `cli-batch-rate-limit` is the pre-existing `Bootstrap already completed` isolation flake (tasks/todo.md:1554) — passes isolated 3/3, unrelated to governance. |
+| Gate                                                                                         | Result                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`                                                                          | PASS                                                                                                                                                                                                                                                                                                                 |
+| `npm run lint:check`                                                                         | PASS                                                                                                                                                                                                                                                                                                                 |
+| `npm run format:check`                                                                       | PASS                                                                                                                                                                                                                                                                                                                 |
+| `npm run build`                                                                              | PASS                                                                                                                                                                                                                                                                                                                 |
+| `git diff --check`                                                                           | PASS                                                                                                                                                                                                                                                                                                                 |
+| Governance unit bundle (`src/modules/governance/`)                                           | PASS — 8 suites / 60 tests                                                                                                                                                                                                                                                                                           |
+| `NODE_ENV=test npm run test:e2e -- --runInBand --silent test/archive-governance.e2e-spec.ts` | PASS — 15 tests                                                                                                                                                                                                                                                                                                      |
+| `NODE_ENV=test npm run prisma:migrate:status`                                                | PASS — schema up to date (no new migration in D)                                                                                                                                                                                                                                                                     |
+| Full unit `src/`                                                                             | PASS except pre-existing `live-gateway.spec.ts:156` (Gate F, unrelated, realtime module untouched)                                                                                                                                                                                                                   |
+| Full e2e regression                                                                          | archive-governance PASS in full-suite context; other PASS suites across account/admin/auth/realtime/enrollments/questions/live-session. Single failure `cli-batch-rate-limit` is the pre-existing `Bootstrap already completed` isolation flake (tasks/todo.md:1554) — passes isolated 3/3, unrelated to governance. |
+
 ---
 
 # 2026-09-12 — BE-5.2 Archive Retention Plan — Checkpoint E: complete worker + operator wiring
@@ -3925,19 +3926,19 @@ schema/migration is touched in E.** All destructive operations remain gated and 
 
 ## Verification results
 
-| Gate | Result |
-| --- | --- |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `git diff --check` | PASS |
-| Targeted unit (retention parser, env validation, schedulers, governance/exporter) | PASS — 6 suites / 75 tests |
-| Full unit regression | PASS except pre-existing unrelated `live-gateway.spec.ts:156` flake (390/391) |
-| `npm run test:retention:artifacts` | PASS — 2 tests (runbook/alert invariants) |
-| `NODE_ENV=test npm run prisma:migrate:status` | PASS — no pending migration (no schema change) |
-| `NODE_ENV=test test:archive-governance.e2e-spec.ts` | PASS — 1 suite / 15 tests |
-| `NODE_ENV=test test:deletion-manifest-exporter.integration-spec.ts` | PASS — 1 suite / 4 tests |
+| Gate                                                                              | Result                                                                        |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `npm run typecheck`                                                               | PASS                                                                          |
+| `npm run lint:check`                                                              | PASS                                                                          |
+| `npm run format:check`                                                            | PASS                                                                          |
+| `npm run build`                                                                   | PASS                                                                          |
+| `git diff --check`                                                                | PASS                                                                          |
+| Targeted unit (retention parser, env validation, schedulers, governance/exporter) | PASS — 6 suites / 75 tests                                                    |
+| Full unit regression                                                              | PASS except pre-existing unrelated `live-gateway.spec.ts:156` flake (390/391) |
+| `npm run test:retention:artifacts`                                                | PASS — 2 tests (runbook/alert invariants)                                     |
+| `NODE_ENV=test npm run prisma:migrate:status`                                     | PASS — no pending migration (no schema change)                                |
+| `NODE_ENV=test test:archive-governance.e2e-spec.ts`                               | PASS — 1 suite / 15 tests                                                     |
+| `NODE_ENV=test test:deletion-manifest-exporter.integration-spec.ts`               | PASS — 1 suite / 4 tests                                                      |
 
 # 2026-09-12 — BE-5.2 Archive Retention Plan — Checkpoint F: regression, concurrency, observability coverage
 
@@ -3965,17 +3966,17 @@ Checkpoint F adds the smallest tests proving each WBS item plus low-cardinality 
 
 ## Verification results
 
-| Gate | Result |
-| --- | --- |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| Targeted unit (governance.service 10, metrics.service 6) | PASS |
-| `npm run test:retention:artifacts` | PASS — 2 tests (alert/runbook/dashboard invariants incl. new alerts) |
-| Full unit regression | PASS except pre-existing unrelated `live-gateway.spec.ts:156` flake (391/392) |
-| Guarded `test:archive-governance.e2e-spec.ts` | PASS — 19/19 incl. all 4 new GAP tests; `git diff --check` clean |
-| Guarded `test:deletion-manifest-exporter.integration-spec.ts` | PASS — 4/4 |
+| Gate                                                          | Result                                                                        |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `npm run typecheck`                                           | PASS                                                                          |
+| `npm run lint:check`                                          | PASS                                                                          |
+| `npm run format:check`                                        | PASS                                                                          |
+| `npm run build`                                               | PASS                                                                          |
+| Targeted unit (governance.service 10, metrics.service 6)      | PASS                                                                          |
+| `npm run test:retention:artifacts`                            | PASS — 2 tests (alert/runbook/dashboard invariants incl. new alerts)          |
+| Full unit regression                                          | PASS except pre-existing unrelated `live-gateway.spec.ts:156` flake (391/392) |
+| Guarded `test:archive-governance.e2e-spec.ts`                 | PASS — 19/19 incl. all 4 new GAP tests; `git diff --check` clean              |
+| Guarded `test:deletion-manifest-exporter.integration-spec.ts` | PASS — 4/4                                                                    |
 
 ## Results
 
@@ -4070,7 +4071,7 @@ changed.
 
 1. **compose image pull**: Docker Hub unreachable → `${MINIO_IMAGE:-...}` override, local
    release image tagged `RELEASE-LOCAL-REHEARSAL`.
-2. **mc MC_HOST_ ignored**: newer mc bakes /tmp/.mc/config.json into the image and the
+2. **mc MC_HOST\_ ignored**: newer mc bakes /tmp/.mc/config.json into the image and the
    MC_HOST_ env alias loses to it → `mc alias set` with private `MC_CONFIG_DIR` per call.
 3. **dash-prefixed secret keys**: generated secret could start with `-` and this mc build
    parses it as a flag (no `--` support on `admin user add`) → secrets now padded with a
@@ -4097,12 +4098,12 @@ If the daemon drops mid-run, `docker start minio-rehearsal-minio-1` and re-run.
 
 ## Verification
 
-| Gate | Result |
-| --- | --- |
-| `ops/minio-rehearsal/setup.sh` | PASS (bucket + write-only user) |
-| `ops/minio-rehearsal/rehearse.sh` | **PASS — 1/1 test** |
-| Admin object verification (body/checksum/lock metadata) | PASS |
-| `git status` | only intentional changes: `ops/minio-rehearsal/{docker-compose.yml,setup.sh,rehearse.sh}`, tasks/todo.md |
+| Gate                                                    | Result                                                                                                   |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `ops/minio-rehearsal/setup.sh`                          | PASS (bucket + write-only user)                                                                          |
+| `ops/minio-rehearsal/rehearse.sh`                       | **PASS — 1/1 test**                                                                                      |
+| Admin object verification (body/checksum/lock metadata) | PASS                                                                                                     |
+| `git status`                                            | only intentional changes: `ops/minio-rehearsal/{docker-compose.yml,setup.sh,rehearse.sh}`, tasks/todo.md |
 
 ## Remaining Checkpoint G steps
 
@@ -4140,6 +4141,7 @@ dashboard expression selecting `job="retention_purge"` (etc.) matched NOTHING �
 the quarantined-items alert could never fire in any real Prometheus deployment.
 
 Fix (committed):
+
 - `src/modules/metrics/metrics.service.ts` — metric label `job` → `bg_job` on
   `smartlearning_job_runs_total` / `smartlearning_job_duration_seconds` /
   `smartlearning_job_items_total`, with a comment explaining why.
@@ -4158,17 +4160,17 @@ Fix (committed):
 
 ## Verification
 
-| Gate | Result |
-| --- | --- |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `npm test -- --runInBand src/modules/metrics` | PASS — 3 suites / 11 tests |
-| `npm run test:retention:artifacts` | PASS — 2 tests |
-| Live alert chain | 2 retention alerts fired + delivered; purge-failing expr verified via PromQL |
-| Teardown | backend/webhook/prometheus/alertmanager stopped; containers+network removed; rehearsal fixtures deleted from smartlearning_test |
-| `git diff --check` | PASS |
+| Gate                                          | Result                                                                                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`                           | PASS                                                                                                                            |
+| `npm run lint:check`                          | PASS                                                                                                                            |
+| `npm run format:check`                        | PASS                                                                                                                            |
+| `npm run build`                               | PASS                                                                                                                            |
+| `npm test -- --runInBand src/modules/metrics` | PASS — 3 suites / 11 tests                                                                                                      |
+| `npm run test:retention:artifacts`            | PASS — 2 tests                                                                                                                  |
+| Live alert chain                              | 2 retention alerts fired + delivered; purge-failing expr verified via PromQL                                                    |
+| Teardown                                      | backend/webhook/prometheus/alertmanager stopped; containers+network removed; rehearsal fixtures deleted from smartlearning_test |
+| `git diff --check`                            | PASS                                                                                                                            |
 
 ## Remaining Checkpoint G steps
 
@@ -4207,6 +4209,7 @@ dashboard expression selecting `job="retention_purge"` (etc.) matched NOTHING �
 the quarantined-items alert could never fire in any real Prometheus deployment.
 
 Fix (committed):
+
 - `src/modules/metrics/metrics.service.ts` — metric label `job` → `bg_job` on
   `smartlearning_job_runs_total` / `smartlearning_job_duration_seconds` /
   `smartlearning_job_items_total`, with a comment explaining why.
@@ -4225,20 +4228,99 @@ Fix (committed):
 
 ## Verification
 
-| Gate | Result |
-| --- | --- |
-| `npm run typecheck` | PASS |
-| `npm run lint:check` | PASS |
-| `npm run format:check` | PASS |
-| `npm run build` | PASS |
-| `npm test -- --runInBand src/modules/metrics` | PASS — 3 suites / 11 tests |
-| `npm run test:retention:artifacts` | PASS — 2 tests |
-| Live alert chain | 2 retention alerts fired + delivered; purge-failing expr verified via PromQL |
-| Teardown | backend/webhook/prometheus/alertmanager stopped; containers+network removed; rehearsal fixtures deleted from smartlearning_test |
-| `git diff --check` | PASS |
+| Gate                                          | Result                                                                                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`                           | PASS                                                                                                                            |
+| `npm run lint:check`                          | PASS                                                                                                                            |
+| `npm run format:check`                        | PASS                                                                                                                            |
+| `npm run build`                               | PASS                                                                                                                            |
+| `npm test -- --runInBand src/modules/metrics` | PASS — 3 suites / 11 tests                                                                                                      |
+| `npm run test:retention:artifacts`            | PASS — 2 tests                                                                                                                  |
+| Live alert chain                              | 2 retention alerts fired + delivered; purge-failing expr verified via PromQL                                                    |
+| Teardown                                      | backend/webhook/prometheus/alertmanager stopped; containers+network removed; rehearsal fixtures deleted from smartlearning_test |
+| `git diff --check`                            | PASS                                                                                                                            |
 
 ## Remaining Checkpoint G steps
 
 - Step 5: staging canary; step 6+: capacity, production rollout, WBS closeout (each behind its
   own authorization gate). The `bg_job` label change must ship together with any dashboard that
   consumed the old `job=` expressions.
+
+# 2026-09-12 — BE-5.2 Checkpoint G step 5 — staging canary
+
+## Goal and acceptance criteria
+
+- [x] Separate one-shot operation authorization from recurring scheduler startup.
+- [x] Add focused regression coverage for env validation, purge scheduler, manifest-export scheduler,
+      and the one-shot CLI lifecycle.
+- [x] Update production env template and retention runbook with the scheduler-specific gates and
+      batch-size-1 canary profile.
+- [x] Run the non-DB verification bundle; do not invoke migration-capable test setup.
+- [x] Inspect the currently configured target without printing secrets; it is a localhost template,
+      not an identifiable staging environment.
+- [ ] **BLOCKED:** confirm staging schema is current after an actual staging target is provided;
+      otherwise stop for separate migration authorization.
+- [ ] Deploy one immutable application + `bg_job` observability release with all retention gates off.
+- [ ] Run read-only inspect/dry-run and obtain two-operator review for exactly one synthetic archive.
+- [ ] Execute exactly one purge and one immutable manifest export with both schedulers disabled.
+- [ ] Verify DB/object-store cardinality, checksum/lock/encryption, metrics/alerts, idempotency, and
+      disabled steady state.
+- [x] Record GREEN / FAILED / BLOCKED evidence and stop before capacity, production, or WBS work.
+
+## Risk & rollback
+
+- **Risk: HIGH** — irreversible privacy deletion and immutable external object creation.
+- Stop on ambiguous environment identity, stale schema, scheduler startup, selection drift, more than
+  one selected item, provider ambiguity, missing object lock/encryption/checksum, secret exposure,
+  readiness degradation, or retention alerts.
+- Before mutation, revert the pinned application + observability bundle and keep every gate disabled.
+  After purge/export, pause future claims and forward-fix; do not reconstruct deleted answer data or
+  delete/overwrite the locked manifest.
+
+## Dependencies & environment
+
+- Preflight found no usable staging control-plane context or staging env source. The only candidate,
+  `.env.production`, targets localhost (`CORS_ORIGIN=http://localhost:3000`, DB `smartlearning`:5433)
+  and has no S3, Prometheus, Alertmanager, or retention configuration. It is not a staging target.
+- Staging DB migrations are **not authorized** by this step. `docker compose up` and DB-backed test
+  setup are forbidden if they would invoke `prisma migrate deploy`.
+- Required external authorities: immutable S3 bucket/prefix, Prometheus/Alertmanager, two operators,
+  exact source commit/image digest, and a verified rollback revision.
+- Capacity validation, production rollout, recurring scheduler enablement, reconciliation apply, and
+  WBS closeout remain separately gated.
+
+## Working notes
+
+- Resolved the CLI/AppModule startup hazard: every operator command forces both scheduler gates false
+  before application-context creation. Recurring loops additionally require the master, operation,
+  and scheduler-specific gates at validation and runtime boundaries.
+- `SmartLearningRetentionPurgeNoRecentSuccess` now requires a positive due backlog, avoiding a default-
+  disabled/no-work false alarm. Metrics tests assert the exact `bg_job` label rather than a substring.
+- Release provenance baseline: clean local `main` at `0b928cf`; application metrics and matching
+  Prometheus/dashboard expressions must use `bg_job` and deploy together.
+
+## Results
+
+- **Status: BLOCKED at staging preflight.** The source-level canary safety correction is complete and
+  verified, but no identifiable staging target, immutable S3 bucket/prefix, or Prometheus/Alertmanager
+  control plane is configured in the current environment. No deployment or mutation was attempted.
+- Safety changes: independent scheduler gates; master + operation + scheduler runtime defense;
+  operator CLI forces schedulers off before `AppModule`; production/env/runbook canary guidance;
+  due-backlog guard for the no-recent-success alert; exact `bg_job` regression assertion.
+- Verification PASS:
+  - targeted Jest: 5 suites / 75 tests;
+  - retention artifacts: 1 suite / 2 tests;
+  - `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `npm run build`;
+  - `git diff --check`;
+  - high-effort code review: no retained verified findings.
+- `promtool` was unavailable locally; the repository artifact test validated the alert file. No tool
+  was installed.
+- Not run by design: DB-backed integration/e2e, migration/status against staging, containers,
+  provider calls, `inspect`, `dry-run`, purge, manifest export, or alert delivery. High-risk
+  integration/manual verification remains mandatory after a real staging target is supplied.
+- Formatting note: Prettier reformatted historical Markdown tables in this file. A safe attempt to
+  restore only that unrelated formatting noise while retaining this checkpoint was denied by the
+  environment's overwrite protection; no bypass was attempted.
+- **Gate:** provide the actual staging deployment context/env source (including current schema status,
+  immutable S3 target, observability endpoints, and rollback revision) before resuming step 5. Capacity
+  validation, production rollout, recurring scheduler enablement, and WBS closeout remain unauthorized.
