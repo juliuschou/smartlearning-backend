@@ -4475,3 +4475,9 @@ wake sources; repeated destroy cleans up at most once) for both `RetentionSchedu
 
 - backend：`feat(governance): BE-5.3 restore rehearsal spec + layered auth contract docs`（code/test/docs/todo）
 - docs：`docs(wbs): BE-5.3 partial closeout evidence annotation`
+
+# 2026-09-13 — BE-5.3 follow-up — live-gateway.spec.ts pre-existing failure（調查並修復）
+
+- **根因**：`LiveGateway.emitDurableEventToSocket` 的 `SESSION_CLOSED` 分支刻意以 `setImmediate(() => socket.disconnect(true))` 延遲斷線（讓 Socket.IO 先 flush terminal `session.closed` packet；見 live-gateway.ts:1173）。測試「includes the terminal status in replayed session.closed envelopes」仍同步斷言 `disconnect` → 零次呼叫而失敗。該 spec 失敗在乾淨 base `aaa115b` 已存在（非 BE-5.3 引入）。
+- **修復（test-only）**：`live-gateway.spec.ts` 斷言前 `await new Promise(resolve => setImmediate(resolve))` yield 一個 tick，並補註解說明 defer 意圖。無 production code 變更。
+- **驗證**：targeted spec 13/13 PASS；full unit bundle **61 suites / 406 tests PASS / 0 failed**；typecheck/lint:check green。commit `390c94d`。

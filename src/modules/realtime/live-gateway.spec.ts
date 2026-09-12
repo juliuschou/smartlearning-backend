@@ -153,6 +153,9 @@ describe('LiveGateway durable visibility', () => {
       RealtimeEvent.SESSION_CLOSED,
       expect.objectContaining({ data: { status: 'closed' } }),
     );
+    // disconnect(true) is deferred via setImmediate so Socket.IO can flush the
+    // terminal packet first; yield one tick before asserting it.
+    await new Promise<void>((resolve) => setImmediate(resolve));
     expect(socket.disconnect).toHaveBeenCalledWith(true);
   });
 
