@@ -24,6 +24,10 @@ export class RetentionScheduler implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    // Restart-safe: if the module is re-initialized after a destroy, clear any
+    // pre-existing interval so re-init never leaks a second wake source.
+    if (this.timer) clearInterval(this.timer);
+    this.timer = undefined;
     this.destroyed = false;
     if (
       !this.config.get('RETENTION_OPERATIONS_ENABLED', { infer: true }) ||

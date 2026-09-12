@@ -4324,3 +4324,36 @@ Fix (committed):
 - **Gate:** provide the actual staging deployment context/env source (including current schema status,
   immutable S3 target, observability endpoints, and rollback revision) before resuming step 5. Capacity
   validation, production rollout, recurring scheduler enablement, and WBS closeout remain unauthorized.
+
+# 2026-09-12 — BE-5.2.5 process-restart lifecycle tests
+
+## What was executed (test-only; no schema, DB, migration, staging, or production operation)
+
+Closed the CP2「Scheduler overlap/shutdown/restart」unit-level gap flagged in WBS for BE-5.2.5
+("缺 process restart recovery 專屬測試"). Added deterministic fake-timer lifecycle tests matching the
+`tasks/lessons.md:247` tripwire (restart performs a startup scan; duplicate init creates no duplicate
+wake sources; repeated destroy cleans up at most once) for both `RetentionScheduler` and
+`ManifestExportScheduler`.
+
+- **Enabler (behavior fix):** both schedulers' `onModuleInit()` now clear any pre-existing interval
+  before setting a fresh one, so a re-init/restart cannot leak a second wake source.
+  `retention.scheduler.ts`, `manifest-export.scheduler.ts`.
+- **Tests:** 3 mirror-test sets each in `retention.scheduler.spec.ts` /
+  `manifest-export.scheduler.spec.ts` (restart re-runs the startup sweep with exactly one interval;
+  duplicate init leaves exactly one interval and one sweep; repeated destroy clears the interval at
+  most once).
+
+## Acceptance
+
+- Targeted Jest (both scheduler specs): **PASS — 22 tests / 0 failed / 0 skipped** (8 pre-existing +
+  3 new per suite × 2 suites).
+- Non-DB bundle: **PASS** — `prettier --check` (4 files) / `typecheck` / `test:retention:artifacts` /
+  `lint:check` (no warnings) / `build` / `git diff --check` all green.
+- Test output `ERROR [RetentionScheduler] Retention sweep failed: ...` lines are test-intended failure
+  paths, not real failures.
+
+## Scope notes / not claimed
+
+- This closes only the **unit-level** scheduler lifecycle proof. CP2's multi-replica / real process
+  crash-restart **runtime** evidence on a staging target remains behind the Checkpoint G step 5 staging
+  gate (unchanged). BE-6.6 (auto-close process restart) is a separate WBS item, untouched.

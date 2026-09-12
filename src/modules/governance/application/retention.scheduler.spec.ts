@@ -169,6 +169,65 @@ describe('RetentionScheduler', () => {
     expect(governance.purgeDue).toHaveBeenCalledTimes(1);
   });
 
+  it('restart performs a startup scan without leaking a second wake source', async () => {
+    // `purgeDue` is called once per cold-start sweep; after destroy + init the
+    // scheduler must sweep again but keep exactly one interval.
+    const { scheduler, governance } = makeHarness({ tickMs: 250 });
+    governance.purgeDue.mockResolvedValue({
+      selected: 1,
+      deleted: 1,
+      failed: 0,
+    });
+
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(governance.purgeDue).toHaveBeenCalledTimes(1);
+    expect(jest.getTimerCount()).toBe(1);
+
+    await scheduler.onModuleDestroy();
+    expect(jest.getTimerCount()).toBe(0);
+
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(governance.purgeDue).toHaveBeenCalledTimes(2);
+    expect(jest.getTimerCount()).toBe(1);
+
+    await scheduler.onModuleDestroy();
+  });
+
+  it('duplicate init creates no duplicate wake sources', async () => {
+    const { scheduler, governance } = makeHarness({ tickMs: 100 });
+
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Only the first init's sweep and one interval survive; the second init
+    // clears the prior interval before setting a fresh one.
+    expect(governance.purgeDue).toHaveBeenCalledTimes(1);
+    expect(jest.getTimerCount()).toBe(1);
+
+    await scheduler.onModuleDestroy();
+  });
+
+  it('repeated destroy cleans up at most once', async () => {
+    const { scheduler, governance } = makeHarness({ tickMs: 100 });
+
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+    await scheduler.onModuleDestroy();
+    await scheduler.onModuleDestroy();
+
+    expect(jest.getTimerCount()).toBe(0);
+    expect(governance.purgeDue).toHaveBeenCalledTimes(1);
+  });
+
   it('passes failed counts to the completion log without leaking error details', async () => {
     const { scheduler, governance } = makeHarness();
     governance.purgeDue.mockResolvedValue({

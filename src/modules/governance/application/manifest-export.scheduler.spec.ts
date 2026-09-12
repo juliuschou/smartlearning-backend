@@ -154,6 +154,61 @@ describe('ManifestExportScheduler', () => {
     expect(exporter.exportDueBatch).toHaveBeenCalledTimes(1);
   });
 
+  it('restart performs a startup scan without leaking a second wake source', async () => {
+    const { scheduler, exporter } = makeHarness({ tickMs: 250 });
+    exporter.exportDueBatch.mockResolvedValue({
+      selected: 1,
+      exported: 1,
+      failed: 0,
+    });
+
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(exporter.exportDueBatch).toHaveBeenCalledTimes(1);
+    expect(jest.getTimerCount()).toBe(1);
+
+    await scheduler.onModuleDestroy();
+    expect(jest.getTimerCount()).toBe(0);
+
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(exporter.exportDueBatch).toHaveBeenCalledTimes(2);
+    expect(jest.getTimerCount()).toBe(1);
+
+    await scheduler.onModuleDestroy();
+  });
+
+  it('duplicate init creates no duplicate wake sources', async () => {
+    const { scheduler, exporter } = makeHarness({ tickMs: 100 });
+
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(exporter.exportDueBatch).toHaveBeenCalledTimes(1);
+    expect(jest.getTimerCount()).toBe(1);
+
+    await scheduler.onModuleDestroy();
+  });
+
+  it('repeated destroy cleans up at most once', async () => {
+    const { scheduler, exporter } = makeHarness({ tickMs: 100 });
+
+    scheduler.onModuleInit();
+    await Promise.resolve();
+    await Promise.resolve();
+    await scheduler.onModuleDestroy();
+    await scheduler.onModuleDestroy();
+
+    expect(jest.getTimerCount()).toBe(0);
+    expect(exporter.exportDueBatch).toHaveBeenCalledTimes(1);
+  });
+
   it('logs redacted counts without leaking error details', async () => {
     const { scheduler, exporter } = makeHarness();
     exporter.exportDueBatch.mockResolvedValue({
