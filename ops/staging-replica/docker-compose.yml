@@ -1,0 +1,205 @@
+# BE-5.2 Checkpoint G step 5 — staging canary replica (DISPOSABLE, LOCAL-ONLY).
+
+# Purpose: give the Checkpoint G step 5 staging canary an identifiable,
+# self-contained environment on this machine so the preflight blocker
+# ("no identifiable staging target") can be resolved WITHOUT touching
+# production. This stack is a staging *replica*, not production and not the
+# real staging host; all mutation gates start OFF.
+#
+# NOT STARTED BY DEFAULT AND NOT PART OF ANY OTHER STACK. Bring it up only
+# with explicit user authorization:
+#
+#   docker compose -f ops/staging-replica/docker-compose.yml \
+#     --env-file ops/staging-replica/.env.staging up -d
+#
+# Identity guards (why this stack is unambiguous):
+#   - dedicated Compose project directory (ops/staging-replica/) so container
+#     names are prefixed `staging-replica-*`;
+#   - dedicated Docker network `staging-replica` (no overlap with the
+#     smartlearning dev/test networks);
+#   - dedicated host ports: DB 15432, backend 13000, MinIO 19010 (console
+#     19011), Prometheus 19090, Alertmanager 19093, webhook listener 13999;
+#   - DB name `smartlearning_staging_replica` (the test setup's
+#     smartlearning_test name guard cannot collide with it);
+#   - every retention gate defaults to `false` in the env file; the canary
+#     profile enables exactly one operation gate per one-shot invocation.
+#
+# Teardown (removes ALL data): see runbook step 9.
+#
+# Secrets: `ops/staging-replica/.env.staging` is gitignored; generate values
+# with `openssl rand -base64 32`. Never commit real credentials.
+
+services:
+  # Staging Postgres — the ONLY database this stack may touch.
+  db:
+    image: postgres:16
+    container_name: staging-replica-db
+    restart: 'no'
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-sl_staging}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:-smartlearning_staging_replica}
+    volumes:
+      - pgdata_staging_replica:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USERNAME:-sl_staging} -d ${DB_NAME:-smartlearning_staging_replica}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Loopback-only host exposure (lessons.md tripwire: never 0.0.0.0).
+    ports:
+      - '127.0.0.1:15432:5432'
+    networks:
+      - staging-replica
+
+  # One-shot migration against the staging DB only.
+  migrate:
+    build:
+      context: ../..
+      target: migrate
+    image: smartlearning-backend-migrate:latest
+    container_name: staging-replica-migrate
+    restart: 'no'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://${DB_USERNAME:-sl_staging}:${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/${DB_NAME:-smartlearning_staging_replica}?schema=public
+    networks:
+      - staging-replica
+
+  # The application under canary test. All retention gates come from
+  # .env.staging and default to false there; the canary runbook enables an
+  # operation gate only inside a one-shot operator command env, never here.
+  backend:
+    build:
+      context: ../..
+      target: runtime
+    image: smartlearning-backend:latest
+    container_name: staging-replica-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.staging
+    environment:
+      NODE_ENV: test
+      # The replica MinIO serves a self-signed TLS cert; trust it for the AWS
+      # SDK via NODE_EXTRA_CA_CERTS. NODE_ENV=test is the documented replica
+      # execution identity: MinIO Community cannot serve SSE-S3, and
+      # NODE_ENV=production fail-closed requires server-side encryption.
+      NODE_EXTRA_CA_CERTS: /certs/public.crt
+      DATABASE_URL: postgresql://${DB_USERNAME:-sl_staging}:${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/${DB_NAME:-smartlearning_staging_replica}?schema=public
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:13000}
+      # Retention: master gate may be on (app boots with metrics) but BOTH
+      # operation gates and BOTH scheduler gates must stay false here. The
+      # canary mutations run through one-shot CLI invocations instead.
+      RETENTION_OPERATIONS_ENABLED: 'true'
+      RETENTION_PURGE_ENABLED: 'false'
+      RETENTION_PURGE_SCHEDULER_ENABLED: 'false'
+      RETENTION_MANIFEST_EXPORT_ENABLED: 'false'
+      RETENTION_MANIFEST_EXPORT_SCHEDULER_ENABLED: 'false'
+      RETENTION_RECONCILE_APPLY_ENABLED: 'false'
+    volumes:
+      - ./tls:/certs:ro
+    ports:
+      - '127.0.0.1:13000:3000'
+    networks:
+      - staging-replica
+
+  # NODE_ENV=production requires LOGIN_RATE_LIMIT_MODE=redis-required
+  # (env.validation.ts rejects production+memory), so the replica runs its own
+  # Redis for the login rate limiter.
+  redis:
+    image: redis:7-alpine
+    container_name: staging-replica-redis
+    restart: 'no'
+    command: ['redis-server', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - staging-replica
+
+  # Immutable object store for the manifest export (Object Lock + versioning
+  # provisioned by setup.sh, mirroring ops/minio-rehearsal/).
+  minio:
+    image: minio/minio:latest
+    container_name: staging-replica-minio
+    restart: 'no'
+    # NODE_ENV=production requires S3_ENDPOINT https (env.validation
+    # fail-closed guard), so the replica MinIO serves TLS with a
+    # self-signed cert generated in step 1 (minio picks up /certs
+    # private.key/public.crt automatically).
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+    volumes:
+      - minio_staging_replica:/data
+      - ./tls:/root/.minio/certs:ro
+    ports:
+      - '127.0.0.1:19010:9000'
+      - '127.0.0.1:19011:9001'
+    networks:
+      - staging-replica
+
+  # Scrapes the backend; evaluates the SAME alert file committed in the repo.
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: staging-replica-prometheus
+    restart: 'no'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./smartlearning-alerts.yml:/etc/prometheus/smartlearning-alerts.yml:ro
+    ports:
+      - '127.0.0.1:19090:9090'
+    networks:
+      - staging-replica
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: staging-replica-alertmanager
+    restart: 'no'
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - '127.0.0.1:19093:9093'
+    networks:
+      - staging-replica
+
+  # Captures Alertmanager deliveries for evidence (same script shape as
+  # ops/prom-rehearsal/alert-webhook-listener.mjs; runs the repo file with a
+  # plain node image — no build context needed).
+  alert-webhook:
+    image: node:24-alpine
+    container_name: staging-replica-alert-webhook
+    restart: 'no'
+    working_dir: /app
+    entrypoint: ['node', '/app/alert-webhook-listener.mjs']
+    volumes:
+      - ../prom-rehearsal/alert-webhook-listener.mjs:/app/alert-webhook-listener.mjs:ro
+    ports:
+      - '127.0.0.1:13999:3999'
+    networks:
+      - staging-replica
+
+volumes:
+  pgdata_staging_replica:
+  minio_staging_replica:
+
+networks:
+  staging-replica:
+    driver: bridge

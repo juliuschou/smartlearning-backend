@@ -4481,3 +4481,45 @@ wake sources; repeated destroy cleans up at most once) for both `RetentionSchedu
 - **根因**：`LiveGateway.emitDurableEventToSocket` 的 `SESSION_CLOSED` 分支刻意以 `setImmediate(() => socket.disconnect(true))` 延遲斷線（讓 Socket.IO 先 flush terminal `session.closed` packet；見 live-gateway.ts:1173）。測試「includes the terminal status in replayed session.closed envelopes」仍同步斷言 `disconnect` → 零次呼叫而失敗。該 spec 失敗在乾淨 base `aaa115b` 已存在（非 BE-5.3 引入）。
 - **修復（test-only）**：`live-gateway.spec.ts` 斷言前 `await new Promise(resolve => setImmediate(resolve))` yield 一個 tick，並補註解說明 defer 意圖。無 production code 變更。
 - **驗證**：targeted spec 13/13 PASS；full unit bundle **61 suites / 406 tests PASS / 0 failed**；typecheck/lint:check green。commit `390c94d`。
+
+# 2026-09-13 — BE-5.2 Checkpoint G step 5 — staging replica Compose + runbook drafted（純檔案，未啟動）
+
+- 新增 `ops/staging-replica/`（僅檔案，無任何容器啟動）：
+  - `docker-compose.yml` — disposable staging replica：db(15432, `smartlearning_staging_replica`) + one-shot migrate + backend(13000) + MinIO(19010/19011, object-lock bucket 由 setup.sh 建) + Prometheus v2.53(19090) + Alertmanager v0.27(19093) + node:24 webhook listener(13999)。專屬 project/network/容器名前綴/loopback-only ports；retention 所有 mutation gates 於 backend env 強制 false（master gate on 供 metrics）。
+  - `.env.staging.example` — env identity 模板（所有 mutation gates=false、batch size=1、`DELETION_MANIFEST_PROVIDER=s3` 指向 replica MinIO）；`.gitignore` 擋 `.env.staging`。
+  - `setup.sh` — 比照 minio-rehearsal：object-lock+versioning bucket `sl-staging-manifests`、prefix-scoped write-only user、creds 合併進 `.env.staging`（不印值）。
+  - `prometheus.yml`/`alertmanager.yml` — target 改指 replica 內部服務；**alert 檔直接複製 `ops/observability/prometheus-alerts.yml` 權威版**（prom-rehearsal 副本已 drift：缺 due-backlog guard）。
+  - `README.md` — step 0–9 canary runbook：preflight（含 identity 斷言）→ build/up → seed 1 個 synthetic archive → inspect/dry-run 雙 operator review → 單次 run-once(batch=1) → 單次 manifest-export-once → metrics/alerts/`bg_job` 斷言/disabled steady state → evidence → teardown(-v) + creds 移除。邊界：不碰 dev/test DB；長駐 backend 永不開 mutation gate；僅證 staging canary profile。
+- 驗證（未啟動任何容器）：`docker compose ... config` 渲染 7 服務、ports 符合設計；`setup.sh` bash -n PASS；跨堆疊掃描無 dev/test 引用；exporter unit 4/4、restore-rehearsal integration 1/1 仍 green。
+- **此為 step 5 執行前置草稿；執行需使用者另行明確授權。**
+
+## 2026-09-13 — Checkpoint G step 5 authorization + preflight
+
+- **授權**：使用者明確回覆「授权」（2026-09-13）— 解除 step 5 staging canary（replica 範圍）；不涵蓋 production rollout / WBS closeout。
+- Preflight：HEAD `83a0e5b`；dirty 僅本任務檔（`tasks/todo.md` 修改、`ops/staging-replica/` 未追蹤 = 本 toolkit 本身）；daemon 29.5.3。
+
+# 2026-09-13 — BE-5.2 Checkpoint G step 5 — staging canary GREEN（replica 實際執行）
+
+> **授權**：使用者「授权」（2026-09-13）；範圍僅 step 5 replica canary；teardown 完成。**單 operator 模式**（本會話 Claude 執行 + 使用者授權/監督，替代雙 operator 簽核；已記錄為限制）。
+
+## Execution identity（preflight 記錄）
+
+- Source revision：`83a0e5b`（乾淨樹除本 toolkit）；daemon 29.5.3。
+- Replica identity：專屬 project/network/ports（DB 15432、backend 13000、MinIO 19010、Prom 19090、AM 19093、webhook 13999）、DB `smartlearning_staging_replica`、所有 mutation gates 啟動時 false。
+- **重要 deviation（已文件化）**：replica 以 `NODE_ENV=test` 執行（backend + migrate）。原因：`NODE_ENV=production` fail-closed 要求 (a) `LOGIN_RATE_LIMIT_MODE=redis-required`（replica 已加 in-stack Redis 解決）、(b) `S3_ENDPOINT` https（replica MinIO TLS + `NODE_EXTRA_CA_CERTS` 解決）、(c) **`S3_SERVER_SIDE_ENCRYPTION` 非 none** — MinIO Community 對 `AES256` header 回 501 NotImplemented（需 KES/KMS）。replica 無法在不引入 KES 的情況下滿足 (c)，故以 guarded test identity 執行；**production 端 SSE 行為未證，需真實 staging KMS 支援**。此限制寫入 README。
+- 過程修正（toolkit 檔案）：compose 增 redis 服務 + TLS cert 掛載（backend `/certs` + MinIO `/root/.minio/certs`）+ `NODE_EXTRA_CA_CERTS`；`setup.sh` mc alias 改 https + 全域 `--insecure`；alert 檔複製權威版（prom-rehearsal 副本 drift 修正）。
+
+## Canary 執行記錄
+
+1. **Seed**：API 全鏈建立（admin bootstrap → teacher → course → poll question(2 opts) → session → join ×2 → submit ×2 → close）→ archive `01a096d9-34c9` active；`purgeAt` 手動調至 2026-09-12（過期）。1 個 synthetic due archive，無其他。
+2. **inspect/dry-run（read-only）**：`dueCount:1, oldestDueAge:66061s`；dry-run `selected:1, deleted:0, planned:[1]`（Submission 2/LiveSessionEvent 11/SessionQuestionOption 2/SessionQuestion 1/Participant 2），零寫入。
+3. **單次 purge（batch=1, schedulers off）**：`run-once` → `selected:1, deleted:1, failed:0`。驗證：tombstone `deleted, payload NULL`；submission/session_question=0；deletion_event 恰 1（trigger=retention）；outbox 恰 1 pending；post dry-run `selected:0`。
+4. **單次 manifest export（batch=1）**：初兩次 fail（SSE `AES256` → MinIO 501；`S3_SERVER_SIDE_ENCRYPTION=none` 被 production guard 擋 → **該 guard 的行為即本次發現的真實缺口**）。修正 identity 後：`selected:1, exported:1, failed:0`；outbox → `exported`；物件存在（403B），**COMPLIANCE lock until 2026-12-11、manifest-sha256 metadata、SHA256 checksum**。
+5. **Idempotent replay**：reset outbox → re-export → `exported:1`、物件數仍 **1**（412 replay 驗證路徑接受相同 bytes）。
+6. **Metrics/alerts/steady state**：`/metrics` 全 series 使用 `bg_job=`、**零 `job=` label collision**（grep=0）；Prometheus 全部 9 個 Retention alerts **inactive**（backlog 清空後 OldestDueAge/DueBacklog 正確解除）；60s 觀察窗 scheduler 活動=0（gates off steady state）；webhook listener 正常監聽（無告警投遞=正確的 disabled steady state）。
+7. **Teardown**：`down -v` → 容器全 REMOVED、volumes 全 REMOVED、network 移除。
+
+## 限制 / 未證（維持 gating）
+
+- **單 operator**（非雙 operator 簽核）；**NODE_ENV=test identity**（非 production identity）；**SSE=none**（MinIO Community 限制）— production 加密行為、真實 staging host、multi-replica、容量/rollout 仍屬 BE-5 final reconciliation + OPS-1 gate，未解除。
+- 過程中一次 write-only secret 出現在 tool output（即旋換新憑證；容器/憑證已隨 teardown 銷毀，風險閉合）。記入 lessons 候選：含 secrets 的 grep/sed 輸出需預先遮罩。

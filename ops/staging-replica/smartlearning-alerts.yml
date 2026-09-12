@@ -1,0 +1,180 @@
+groups:
+  - name: smartlearning-http
+    rules:
+      - alert: SmartLearningHttp5xxRatioHigh
+        expr: |
+          sum(rate(smartlearning_http_requests_total{status_class="5xx"}[5m]))
+            /
+          clamp_min(sum(rate(smartlearning_http_requests_total[5m])), 1) > 0.01
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning HTTP 5xx ratio is above 1 percent
+          description: Investigate unexpected server errors and dependency health.
+
+      - alert: SmartLearningDatabaseReadinessUnhealthy
+        expr: smartlearning_readiness_dependency_status{dependency="database"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning database readiness is unhealthy
+          description: Mutations may not safely commit; inspect PostgreSQL availability.
+
+      - alert: SmartLearningDatabaseMetricsAbsent
+        expr: absent(smartlearning_readiness_dependency_status{dependency="database"})
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning database readiness metric is absent
+          description: Metrics collection or the application may be unavailable.
+
+  - name: smartlearning-rate-limit
+    rules:
+      - alert: SmartLearningLoginRateLimitHitsHigh
+        expr: rate(smartlearning_login_rate_limit_hits_total[5m]) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning login rate-limit hits are sustained
+          description: Initial threshold only; OPS must tune this threshold to traffic.
+
+      - alert: SmartLearningLoginRateLimitUnhealthy
+        expr: smartlearning_readiness_dependency_status{dependency="login_rate_limit"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Required SmartLearning login limiter is unhealthy
+          description: Redis-required login limiting is unready and should fail closed.
+
+  - name: smartlearning-realtime
+    rules:
+      - alert: SmartLearningRealtimePublishRetries
+        expr: rate(smartlearning_realtime_publish_failures_total{outcome="retry"}[5m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning realtime publishes require retries
+          description: Inspect delivery latency and transient dependency failures.
+
+      - alert: SmartLearningRealtimePublishDeadLetters
+        expr: rate(smartlearning_realtime_publish_failures_total{outcome="dead"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning realtime publishes reached dead-letter state
+          description: Durable events require recovery investigation.
+
+      - alert: SmartLearningRealtimeRedisDegraded
+        expr: smartlearning_readiness_dependency_status{dependency="realtime_redis"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Optional SmartLearning realtime Redis is degraded
+          description: Local delivery may continue; this is separate from login limiter readiness.
+
+  - name: smartlearning-jobs
+    rules:
+      - alert: SmartLearningAutoCloseJobFailing
+        expr: increase(smartlearning_job_runs_total{bg_job="live_session_auto_close",outcome="failure"}[15m]) >= 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning auto-close job is repeatedly failing
+          description: Inspect scheduler logs and failed item counts.
+
+      - alert: SmartLearningRetentionPurgeJobFailing
+        expr: increase(smartlearning_job_runs_total{bg_job="retention_purge",outcome="failure"}[15m]) >= 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning retention purge job is repeatedly failing
+          description: Inspect retention errors and the remaining archive backlog.
+
+      - alert: SmartLearningRetentionManifestExportJobFailing
+        expr: increase(smartlearning_job_runs_total{bg_job="manifest_export",outcome="failure"}[15m]) >= 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning deletion manifest export job is repeatedly failing
+          description: Inspect export errors and immutable object-store delivery state.
+
+      - alert: SmartLearningRetentionPurgeQuarantined
+        expr: increase(smartlearning_job_items_total{bg_job="retention_purge",result="quarantined"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning retention purge has quarantined an archive
+          description: An archive could not be purged after retries; stop the purge loop and investigate before proceeding.
+
+      - alert: SmartLearningRetentionPurgeNoRecentSuccess
+        expr: |
+          smartlearning_retention_due_backlog > 0
+          and on()
+          (
+            absent(smartlearning_retention_purge_last_success_seconds) == 1
+            or
+            (time() - smartlearning_retention_purge_last_success_seconds) > 1800
+          )
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning retention purge has no recent successful run
+          description: The purge loop has not completed a successful run recently; inspect scheduler health and backlog.
+
+      - alert: SmartLearningRetentionOldestDueAgeHigh
+        expr: smartlearning_retention_oldest_due_age_seconds > 86400
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning retention oldest-due age exceeds one day
+          description: Inspect due archives and confirm the purge worker remains disabled or healthy.
+
+      - alert: SmartLearningRetentionDueBacklogHigh
+        expr: smartlearning_retention_due_backlog > 1000
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning retention due backlog is high
+          description: Review backlog growth before any explicitly approved purge operation.
+
+      - alert: SmartLearningRetentionManifestLagHigh
+        expr: smartlearning_retention_manifest_lag_seconds > 3600
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartLearning deletion manifest export is lagging
+          description: Inspect the export watermark and immutable object-store delivery state.
+
+      - alert: SmartLearningRetentionManifestDeadRecords
+        expr: smartlearning_retention_manifest_dead_records > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning deletion manifest has dead records
+          description: Stop retries and investigate durable export failures and scope before proceeding.
+
+      - alert: SmartLearningRetentionReconciliationFailing
+        expr: increase(smartlearning_retention_reconciliation_failures_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: SmartLearning retention reconciliation is failing
+          description: Preserve the inspection report and stop any apply workflow until the cause is reviewed.

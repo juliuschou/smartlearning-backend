@@ -325,3 +325,10 @@
 - **Detection signal:** `git diff --numstat -- tasks/todo.md` showed 154 insertions / 99 deletions although the intended task update was append-only.
 - **Prevention rule:** Never run repository formatters over the historical task ledger for a focused checkpoint; append/edit only the current section and exclude `tasks/todo.md` from formatter file lists.
 - **Tripwire:** Before final review, inspect `git diff --numstat -- tasks/todo.md`; unexpected historical churn must be removed before delivery or explicitly reported if environment protection blocks restoration.
+
+## 2026-09-13 — Checkpoint G step 5: secret exposure via unmasked tool output
+
+- **Failure mode:** `grep "^S3_" .env.staging | sed 's/\(KEY_ID\|SECRET\)=.*/\1=<set>/'` 只遮罩了 KEY_ID/SECRET 兩個字尾，但實際欄位名是 `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`（`S3_ACCESS_KEY_ID` 未含 "SECRET" 字尾）→ write-only secret 以明文進入 shell 輸出。
+- **Detection signal:** 讀回 tool 輸出時發現 `S3_SECRET_ACCESS_KEY=kSkD...` 以明文顯示。
+- **Prevention rule:** 對含 secrets 的 env 檔做任何展示前，用「先輸出到臨時檔再 sed」或逐行白名單遮罩（`sed -E 's/(KEY|TOKEN|SECRET|PASSWORD)=.*/\1=<set>/'`），且優先使用 `grep -c` 之類不出值的斷言；一旦洩漏立即旋換憑證。
+- **Tripwire:** 任何讀取 `.env.*`/credentials 檔的命令，輸出經 `grep -cE '=(GENERATE_ME|FILLED_BY_SETUP)$'` 之類斷言確認，或先跑 `grep -E 'SECRET|TOKEN|PASSWORD|KEY' file | sed 's/=.*/=<set>/'` 複核無明文。
