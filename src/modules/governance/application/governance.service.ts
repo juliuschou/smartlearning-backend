@@ -902,6 +902,11 @@ export class GovernanceService {
     const startedAt = process.hrtime.bigint();
     const boundedLimit = Math.max(1, Math.min(100, Math.floor(limit)));
     const planned: GovernedDeletionPlanDto[] = [];
+    /** Archive ids already planned in this dry-run; because dry-run never persists
+     * a lease or a tombstone, the due-scope is unchanged across passes and the
+     * loop would otherwise re-plan the same archives until it reaches `boundedLimit`
+     * (an inflating `selected` + duplicate `planned` rows in the operator artifact). */
+    const plannedArchiveIds = new Set<string>();
     let selected = 0;
     let deleted = 0;
     let failed = 0;
@@ -916,6 +921,8 @@ export class GovernanceService {
           const rows = await this.scanDueInTransaction(t, now, remaining);
           const out: GovernedDeletionPlanDto[] = [];
           for (const row of rows) {
+            if (plannedArchiveIds.has(row.archiveId)) continue;
+            plannedArchiveIds.add(row.archiveId);
             out.push(
               await this.planDeletionInTransaction(
                 t,
