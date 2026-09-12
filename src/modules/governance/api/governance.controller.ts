@@ -112,6 +112,10 @@ export class GovernanceController {
     });
   }
 
+  // Layered authorization contract (BE-5.3.1): the route guard admits Teacher OR Admin, but the
+  // service restricts creation to teacher role only (admins consume the request via the admin
+  // confirmation path). Keep the service-level teacher-only check authoritative; do not rely on
+  // this route guard alone.
   @Post(':liveSessionId/deletion-requests')
   @ApiOperation({ summary: 'Request early deletion of an owned archive' })
   @ApiParam({ name: 'liveSessionId', format: 'uuid' })

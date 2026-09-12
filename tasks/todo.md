@@ -4357,3 +4357,121 @@ wake sources; repeated destroy cleans up at most once) for both `RetentionSchedu
 - This closes only the **unit-level** scheduler lifecycle proof. CP2's multi-replica / real process
   crash-restart **runtime** evidence on a staging target remains behind the Checkpoint G step 5 staging
   gate (unchanged). BE-6.6 (auto-close process restart) is a separate WBS item, untouched.
+
+# 2026-09-13 — BE-5.3 Checkpoint A — 證據稽核與缺口對照
+
+> 範圍：read-only 稽核（WBS CP0 表 + lessons.md + 現有實作 + guarded E2E 重跑）。本關不改任何 production code。
+
+## 對照表（WBS 項 → 現有 evidence → CP0 缺口 → 處置）
+
+| WBS 項                  | 現有 evidence（本關實證）                                                                                                                                                                                                                                                         | CP0 缺口                                                                         | 處置 → Checkpoint B                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 5.3.1 request           | `governance.controller.ts` `POST /api/v1/results/:liveSessionId/deletion-requests`（Session+Csrf+TeacherOrAdmin）；`governance.service.ts request()` 首行 `role !== 'teacher' → ForbiddenError` + teacher-owner 404 existence-hiding + serialized outstanding-request idempotency | route guard 較廣（TeacherOrAdmin）但 service teacher-only 的分層契約未在文件明寫 | **缺口屬文件層**：controller 補一句分層註解 + `docs/frontend-api-reference.md` §507 補一行分層說明（非行為變更） |
+| 5.3.2 admin confirm     | E2E branch 全數重跑 green：missing CSRF → 403 `AUTH_CSRF_INVALID`（spec:500）、missing step-up → 403（spec:534）、student → 403（spec:476）、exact request binding + strict reason replay 409、admin StepUpGuard + AdminGuard                                                     | 「本輪未重跑各 branch」→ 已於本關重跑                                            | 已補證；B 僅凍結 baseline 綁 commit hash                                                                         |
+| 5.3.3 tombstone         | `prisma/schema.prisma:393 DeletionEvent`、`:419 DeletionManifestOutbox`（archivedResultId/deletionEventId unique）；migrations `20260828090000`、`20260908090000`、`20260909090000`、`20260909100000`；`migrate status`：19 migrations，smartlearning_test **up to date**         | migration 證據限 smartlearning_test（production 仍未證）                         | 維持 guarded 範圍宣稱；無程式變更                                                                                |
+| 5.3.4 idempotency       | E2E 19/19 green：`rejects resurrection...idempotently`（spec:1352）、`purges due archives...idempotent tombstone`（spec:1574）、`leaves all governed tables at zero with exactly one tombstone and one outbox`（spec:2155）；spec 共 21 個 `it(` declarations                     | 「final baseline 尚未凍結」                                                      | B 凍結 final baseline（本關測得 1 suite / 19 tests PASS / 0 skipped，HEAD 綁定）                                 |
+| 5.3.5 restore filtering | 同上 E2E green + `retention-reconciliation.ts` watermark/applyManifest + exporter + CLI reconcile-inspect/apply                                                                                                                                                                   | operational qualification；8 個 name-filter skips 成因未查                       | C 處理（local provider fixture 補跑 + disposition）                                                              |
+| 5.3.6 no-resurrect      | E2E `rejects resurrection`（spec:1352）green；integration specs 存在                                                                                                                                                                                                              | **BLOCKED**：可重現 committed rehearsal baseline 未成形；restore 完成邊界未定義  | C：依 `a1bbdbb` 模式固化 rehearsal 腳本/spec + 實際 disposable 演練 + 邊界定義                                   |
+
+## 本關執行的驗證（全部 PASS）
+
+- `npx prisma migrate status`（NODE_ENV=test，read-only）：19 migrations，smartlearning_test up to date。
+- `NODE_ENV=test npx jest --config ./test/jest-e2e.json --runInBand test/archive-governance.e2e-spec.ts`：**1 suite / 19 passed / 0 failed / 0 skipped**（52.5s），涵蓋上表 5.3.2 分支重跑與 5.3.3/5.3.4/5.3.6 tombstone/idempotency/no-resurrect 斷言。
+- Provenance：backend `main` HEAD `aaa115b`，working tree 於本關開始時乾淨（僅本 todo 附註為新增）。
+- lessons.md 相關 tripwire 已核（test DB loopback mapping、post-commit listener 先註冊）。
+
+## Gate
+
+**STOP：Checkpoint A 完成，待使用者確認後才進 Checkpoint B**（預期僅 5.3.1 文件分層說明 + baseline 凍結，無 production code 行為變更）。
+
+## Checkpoint B Results（2026-09-13）
+
+- 缺口補齊（僅 5.3.1 文件層，非行為變更）：
+  - `src/modules/governance/api/governance.controller.ts` — `request()` route 前補分層授權契約註解（route guard TeacherOrAdmin 廣、service teacher-only 權威）。
+  - `docs/frontend-api-reference.md` §deletion-requests — 補同一分層契約一行。
+- 未新增 migration、未動 deletion plan/predicate、未改 DTO contract（CP0 未列其他缺口）。
+- 驗證 PASS：
+  - prettier --check / `npm run typecheck` / `lint:check`（0 warnings）/ `npm run build` / `git diff --check`
+  - governance unit：9 suites / 76 tests PASS
+  - E2E rerun after edit：`test/archive-governance.e2e-spec.ts` 1 suite / 19 passed / 0 skipped
+  - `migrate status`（smartlearning_test，read-only）：up to date（19 migrations）
+- **Final baseline 凍結（5.3.4）**：evidence 綁定本 working tree（base HEAD `aaa115b` + 本關 2 檔文件層 diff）；E2E 19/19、unit 76/76、0 skipped。文件層 diff 將於 Checkpoint D 隨附註一併 commit，commit 後 baseline 改綁該 hash。
+- Gate：待使用者確認進 Checkpoint C（rehearsal 固化 + 5.3.5 補證）。
+
+# 2026-09-13 — BE-5.3 Checkpoint C — restore/rehearsal 證據
+
+> 授權範圍：disposable 容器 rehearsal（MinIO + 沙箱 spec）；DB 僅 guarded `smartlearning_test`。
+
+## 5.3.6 — backup-restore no-resurrection rehearsal（解 BLOCKED）
+
+- **可重現 committed 資產**：新增 `test/governance-restore-rehearsal.integration-spec.ts`（比照 `a1bbdbb` guarded toolkit 模式，無需容器）。流程：真實 service 鏈（course → session → join/submit → close archive → teacher request → admin confirm early_delete）→ manifest export 至 run-scoped local immutable store 檔 → **模擬 backup restore**（以 delete 前 backup 捕捉的相同 ids 重灌 sessionQuestion/options/participant/submission）→ **真實 CLI 子程序** `node dist/src/bootstrap/retention.js reconcile-apply`（gates + env + watermark 全走 operator path）→ 斷言：answer-bearing rows 歸零、canonical DeletionEvent 恰一（trigger=early_delete）、outbox 恰一、tombstone payload null、watermark 推進至 canonical event、repeat apply idempotent（applied=0）。
+- **restore 完成邊界（CP0 缺口定義）**：backup restore 完成 = manifest reconciliation apply 結束 + 上述驗證查詢通過；**不宣稱**透明 DB hook；production backup/restore runbook integration 維持未證、另關處理。
+- 執行記錄：`NODE_ENV=test npx jest --config ./test/jest-integration.json --runInBand test/governance-restore-rehearsal.integration-spec.ts` → **1 suite / 1 test PASS**（~6s）。DB=targeted truncateAll 的 smartlearning_test；tmp 檔 afterAll 清除。
+
+## 5.3.5 — name-filter skips disposition（CP0 缺口）
+
+- 成因查明：8 個 skips 來自**環境 guard**——`test/s3-sandbox-rehearsal.integration-spec.ts` 在 `DELETION_MANIFEST_PROVIDER!=s3` 時 throw `BLOCKED`（design-intent：local provider 不得冒充外部 delivery 證據）。2026-09-12 記錄的 Docker daemon 不可用 blocker 已解除（daemon 現可用 v29.5.3）。
+- **已以真實 disposable MinIO 補跑**：`docker compose -f ops/minio-rehearsal/docker-compose.yml up -d` + `setup.sh`（object-lock+versioning bucket、prefix-scoped write-only user、gitignored creds）→ `rehearse.sh` → `test/s3-sandbox-rehearsal.integration-spec.ts` **1 suite / 1 test PASS / 0 skipped**。憑證與容器事後 `teardown.sh` 清除（container/volume/creds 皆 REMOVED）。
+- 另重跑 `deletion-manifest-exporter.integration-spec.ts`：4 tests PASS。
+
+## Gate
+
+**STOP：Checkpoint C 完成，待使用者確認後進 Checkpoint D**（WBS 附註勾選 + docs 收斂 + 兩筆 commit）。
+
+# 2026-09-13 — BE-5.3 Checkpoint C — restore/rehearsal 證據（5.3.5 補證 + 5.3.6 解 BLOCKED）
+
+> 授權範圍：disposable 容器 rehearsal（MinIO）；DB 僅 guarded `smartlearning_test`；沙箱 fixture 為 run-scoped tmp 檔。
+
+## 5.3.6 — backup-restore no-resurrection rehearsal：可重現 committed 資產
+
+- 新增 **`test/governance-restore-rehearsal.integration-spec.ts`**（guarded integration spec，比照 `a1bbdbb` 模式但免容器：Postgres 用既有 guarded test DB，manifest store 用 run-scoped tmp 檔）。
+- 流程（單一 deterministic test）：
+  1. 真實 service 鏈建構：course（CourseService）→ QuestionDefinition(2 options) → createSession/start/openQuestion → ParticipantService.join → SubmissionService.submit → closeSession（archive 建立，status=active）。
+  2. **pre-delete backup capture**：於 delete 前抓 sessionQuestion(+options) 與 participant rows（等同 backup）。
+  3. teacher request → admin confirm（GovernanceService.request/delete）→ tombstone `status=deleted, payload=null`；deletion_event 2 筆（teacher_request + early_delete canonical）。
+  4. manifest export（真實 DeletionManifestExporter.exportDueBatch → local immutable store）→ 寫入 run-scoped `manifests.json`。
+  5. **模擬 backup restore**：以 backup 相同 ids 重灌 sessionQuestion/options/participant，submission（新 idempotency key）→ 斷言 submission=1。
+  6. **真實 CLI 子程序** `node dist/src/bootstrap/retention.js reconcile-apply`（RETENTION_OPERATIONS_ENABLED=1 + RETENTION_RECONCILE_APPLY_ENABLED=1 + RETENTION_LOCAL_MANIFEST_FILE，全 operator path）→ `applied:1`。
+  7. 斷言：submission/sessionQuestion/options/participant answer-bearing 歸零、`early_delete` event 恰一（reconcile 未產生第二 canonical）、outbox 恰一、tombstone `payload:null`、manifest store watermark 推進至 canonical deletionEventId。
+  8. repeat `reconcile-apply` → `applied:0`、counts 仍 0、event 仍恰一（idempotent）。
+- **restore 完成邊界定義（CP0 缺口）**：backup restore 完成 = manifest reconciliation apply 結束 **且** 上述驗證查詢通過。不宣稱透明 DB hook；production backup/restore runbook integration 仍為未證、另關處理。
+- 執行：`NODE_ENV=test npx jest --config ./test/jest-integration.json --runInBand test/governance-restore-rehearsal.integration-spec.ts` → **1 suite / 1 test PASS / 0 skipped**（~6s）。typecheck/lint:check green。tmp dir afterAll rmSync；DB rows 由 truncateAll 清除。
+
+## 5.3.5 — 8 個 name-filter skips disposition（CP0 缺口）
+
+- 成因：`test/s3-sandbox-rehearsal.integration-spec.ts` 的**環境 guard** — `DELETION_MANIFEST_PROVIDER != 's3'` 時 throw `BLOCKED`（design intent：local provider 不得冒充外部 delivery 證據）。先前 2026-09-12 之 Docker daemon 不可用 blocker 本輪已不存在（daemon v29.5.3 可用）。
+- **已以真實 disposable MinIO 補跑**（無 skip）：
+  - `docker compose -f ops/minio-rehearsal/docker-compose.yml up -d`（127.0.0.1:19000，disposable volume）
+  - `ops/minio-rehearsal/setup.sh`：object-lock+versioning bucket `sl-rehearsal-manifests`、prefix-scoped write-only user、gitignored creds
+  - `ops/minio-rehearsal/rehearse.sh` → `test/s3-sandbox-rehearsal.integration-spec.ts` **1 suite / 1 test PASS / 0 skipped**（4.5s）
+  - 事後 `teardown.sh`：container **REMOVED**、volume removed、`.env.minio-rehearsal` creds removed。
+- 另重跑 `test/deletion-manifest-exporter.integration-spec.ts`：**4 tests PASS / 0 skipped**。
+
+## Gate
+
+**STOP：Checkpoint C 完成。待使用者確認後進 Checkpoint D**（WBS 附註勾選、API reference 收斂、todo Results、兩筆分開 commit）。
+
+# 2026-09-13 — BE-5.3 Checkpoint D — WBS 勾選與文件收斂（Results）
+
+## What / where
+
+- WBS `BE-5.3`（docs repo）：勾選 5.3.1–5.3.6 + partial closeout 附註（格式同 BE-5.2 closeout block，明寫 guarded 非 production-ready、不勾 BE-5 parent、不解除 FE-6/QA-2.7）。
+- `docs/frontend-api-reference.md` §5：補一行 operator 端 restore/reconciliation 邊界（非前端 API、restore 完成定義）。
+- backend 新增 `test/governance-restore-rehearsal.integration-spec.ts`（Checkpoint C）；controller 分層註解 + API reference 分層說明（Checkpoint B）。
+
+## Verified
+
+- Static：prettier/format:check、typecheck、lint:check（0 warnings）、build、`git diff --check` — 全 PASS。
+- Unit（full `npm test -- --runInBand`）：**60 suites / 405 tests PASS**；**1 pre-existing failure** — `src/modules/realtime/live-gateway.spec.ts`「includes the terminal status in replayed session.closed envelopes」經 git stash 驗證於乾淨 base `aaa115b` 亦失敗（與 BE-5.3 無關，realtime durable visibility 範圍，另案處理）。
+- DB-backed（guarded smartlearning_test）：archive-governance E2E **19/19 PASS（0 skipped）**；integration：deletion-manifest-exporter **4/4**、s3-sandbox-rehearsal **1/1**（真實 disposable MinIO）、restore-rehearsal **1/1**。
+- `prisma migrate status`（read-only）：19 migrations up to date。
+
+## Skipped / not claimed
+
+- Production migration apply、production object-store、staging rehearsal、真實 backup/restore runbook — 維持未證，屬 BE-5 final reconciliation/OPS-1。
+- 教訓：無新增 lessons（本輪無 user correction；fixture schema 細節失敗由 spec 自身 iteration 吸收）。
+
+## Commits
+
+- backend：`feat(governance): BE-5.3 restore rehearsal spec + layered auth contract docs`（code/test/docs/todo）
+- docs：`docs(wbs): BE-5.3 partial closeout evidence annotation`
