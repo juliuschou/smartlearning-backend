@@ -4048,3 +4048,64 @@ changed.
 - `live-gateway.spec.ts:156` unit flake (pre-existing, realtime module) — separate issue, not touched.
 - Checkpoint G steps 3–9 (S3 rehearsal, Prometheus/Alertmanager, staging canary, capacity, production
   rollout, WBS closeout) remain ahead, each behind its own authorization gate.
+
+# 2026-09-12 — BE-5.2 Checkpoint G step 3 — S3 sandbox upload rehearsal (GREEN)
+
+## What was executed (authorized step 3; guarded smartlearning_test + disposable MinIO)
+
+- Started disposable MinIO via `ops/minio-rehearsal/docker-compose.yml` (local image
+  `minio/minio:latest` = RELEASE.2025-09-07T16-13-09Z; Docker Hub unreachable → compose now
+  uses `${MINIO_IMAGE:-minio/minio:RELEASE-LOCAL-REHEARSAL}` tagged from the local image).
+- `setup.sh` provisioned bucket `sl-rehearsal-manifests` (versioning + object-lock,
+  bucket-default COMPLIANCE 90d) + prefix-scoped write-only user; creds in gitignored
+  `ops/minio-rehearsal/.env.minio-rehearsal` (never printed/committed).
+- `rehearse.sh` ran `test/s3-sandbox-rehearsal.integration-spec.ts`: **PASS 1/1** —
+  conditional immutable write (If-None-Match:'*', ChecksumSHA256, COMPLIANCE retention),
+  outbox → `exported`, idempotent replay (selected 0), duplicate re-put accepted.
+- Admin-credential verification (`mc stat`/`mc cat`): object body is canonical
+  deletion-manifest.v1 JSON; SHA256 checksum matches metadata `manifest-sha256`;
+  COMPLIANCE lock until +90d (2026-12-11). SSE absent as configured (`none`).
+
+## Tooling fixes found during execution (committed to ops/minio-rehearsal/)
+
+1. **compose image pull**: Docker Hub unreachable → `${MINIO_IMAGE:-...}` override, local
+   release image tagged `RELEASE-LOCAL-REHEARSAL`.
+2. **mc MC_HOST_ ignored**: newer mc bakes /tmp/.mc/config.json into the image and the
+   MC_HOST_ env alias loses to it → `mc alias set` with private `MC_CONFIG_DIR` per call.
+3. **dash-prefixed secret keys**: generated secret could start with `-` and this mc build
+   parses it as a flag (no `--` support on `admin user add`) → secrets now padded with a
+   leading letter `k`.
+4. **host-path policy file**: `mc admin policy create` runs inside the container and cannot
+   open host paths → `docker cp` the policy JSON into the container first.
+5. **s3:HeadObject does not exist on MinIO** — HeadObject authorizes under `s3:GetObject`.
+   The provider's replay conflict-verification (metadata equality, fail-closed) requires it:
+   policy now grants PutObject + PutObjectRetention + GetObject on the prefix + ListBucket.
+6. **s3:PutObjectRetention required** — per-object COMPLIANCE retain-until in a PutObject
+   returns AccessDenied (403) without it (bisected: plain/IfNoneMatch/checksum puts pass,
+   lock put 403s).
+7. **rehearse.sh env grep**: ugrep-backed `grep` mishandled the `^(A|B_)=` pattern (matched
+   1 line instead of 9) → pattern widened to `^(DELETION_MANIFEST_PROVIDER|S3_)[A-Z_]*=`.
+8. **Bucket-default object lock**: MinIO rejects per-object retention unless the bucket was
+   created with locking (mb --with-lock) — `mc retention set --default COMPLIANCE 90d` set
+   (setup.sh already does --with-lock; default retention was set manually and is optional).
+
+## Environment instability (not a code defect)
+
+Docker daemon intermittently drops (container `Exited (255)` every few minutes; daemon
+socket refused between). All MinIO state is in the named volume and survived restarts.
+If the daemon drops mid-run, `docker start minio-rehearsal-minio-1` and re-run.
+
+## Verification
+
+| Gate | Result |
+| --- | --- |
+| `ops/minio-rehearsal/setup.sh` | PASS (bucket + write-only user) |
+| `ops/minio-rehearsal/rehearse.sh` | **PASS — 1/1 test** |
+| Admin object verification (body/checksum/lock metadata) | PASS |
+| `git status` | only intentional changes: `ops/minio-rehearsal/{docker-compose.yml,setup.sh,rehearse.sh}`, tasks/todo.md |
+
+## Remaining Checkpoint G steps
+
+- Step 4: Prometheus/Alertmanager rehearsal; step 5: staging canary; step 6+: capacity,
+  production rollout, WBS closeout (each behind its own authorization gate).
+- Teardown of MinIO container + volume pending (teardown.sh, operator-guarded).

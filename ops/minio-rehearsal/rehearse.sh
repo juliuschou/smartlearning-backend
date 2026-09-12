@@ -34,7 +34,7 @@ fi
 # in from the minio env file.
 set -a
 # shellcheck disable=SC1090
-source <(grep -E '^(DELETION_MANIFEST_PROVIDER|S3_)=' "${ENV_IN}")
+source <(grep -E '^(DELETION_MANIFEST_PROVIDER|S3_)[A-Z_]*[=]' "${ENV_IN}")
 set +a
 
 cd "${BACKEND}"

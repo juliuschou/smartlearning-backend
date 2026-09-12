@@ -16,7 +16,9 @@
 # Requires a running Docker daemon with the compose plugin.
 services:
   minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    # Image pinned to a locally pre-pulled release (Docker Hub unreachable in
+    # this environment). Override with MINIO_IMAGE to use a different tag.
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE-LOCAL-REHEARSAL}
     command: server /data --address ":19000" --console-address ":19001"
     environment:
       # Root is used ONLY to create the scoped write-only rehearsal user and the
@@ -26,12 +28,12 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-rehearsal-root}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-rehearsal-write-password-1234}
     ports:
-      - "127.0.0.1:19000:19000"
-      - "127.0.0.1:19001:19001"
+      - '127.0.0.1:19000:19000'
+      - '127.0.0.1:19001:19001'
     volumes:
       - minio-sandbox-data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ['CMD', 'mc', 'ready', 'local']
       interval: 5s
       timeout: 5s
       retries: 12

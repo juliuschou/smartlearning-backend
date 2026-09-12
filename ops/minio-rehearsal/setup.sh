@@ -31,41 +31,50 @@ REHEARSAL_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-rehearsal-write-password-1234}"
 # generated fresh each setup (never the root key).
 ACCESS_KEY_PREFIX="rehearsal-upload"
 
-mc() { docker exec --env MC_HOST_local="${REHEARSAL_ROOT_USER}:${REHEARSAL_ROOT_PASSWORD}@http://127.0.0.1:19000" "${CONTAINER}" /usr/bin/mc "$@"; }
+# NOTE: MC_HOST_ env form is overridden by the image's baked-in
+# /tmp/.mc/config.json in newer mc builds, so we set an explicit alias with a
+# private MC_CONFIG_DIR instead (idempotent for every mc call below).
+mc() {
+  docker exec -e MC_CONFIG_DIR=/tmp/.mc-rehearsal "${CONTAINER}" /usr/bin/mc \
+    alias set local "http://127.0.0.1:19000" "${REHEARSAL_ROOT_USER}" "${REHEARSAL_ROOT_PASSWORD}" >/dev/null 2>&1
+  docker exec -e MC_CONFIG_DIR=/tmp/.mc-rehearsal "${CONTAINER}" /usr/bin/mc "$@"
+}
 
 echo "[setup] waiting for MinIO at ${ENDPOINT} ..."
 for i in $(seq 1 60); do
-  if docker exec "${CONTAINER}" /usr/bin/mc ready local >/dev/null 2>&1; then break; fi
+  if docker exec -e MC_CONFIG_DIR=/tmp/.mc-rehearsal "${CONTAINER}" /usr/bin/mc \
+       alias set local "http://127.0.0.1:19000" "${REHEARSAL_ROOT_USER}" "${REHEARSAL_ROOT_PASSWORD}" >/dev/null 2>&1 \
+    && docker exec -e MC_CONFIG_DIR=/tmp/.mc-rehearsal "${CONTAINER}" /usr/bin/mc ready local >/dev/null 2>&1; then break; fi
   [ "$i" -eq 60 ] && { echo "[setup] ERROR: MinIO did not become ready" >&2; exit 1; }
   sleep 1
 done
 
 echo "[setup] creating bucket ${BUCKET} with object-lock + versioning..."
-mc mb                                        \
-  --with-lock                                 \
-  --region "${REGION}"                        \
-  "local/${BUCKET}"
+if ! mc stat "local/${BUCKET}" >/dev/null 2>&1; then
+  mc mb --with-lock --region "${REGION}" "local/${BUCKET}"
+else
+  echo "[setup] bucket ${BUCKET} already exists — skipping mb"
+fi
 mc version enable "local/${BUCKET}"
 
 echo "[setup] creating prefix-scoped write-only user..."
 ACCESS_KEY="$(printf '%s-%s' "${ACCESS_KEY_PREFIX}" "$(head -c 6 /dev/urandom | od -An -tx1 | tr -d ' \n')")"
-SECRET_KEY="$(head -c 24 /dev/urandom | base64 | tr '+/' '-_' | tr -d '=')"
+# Pad with a leading letter so the secret can never start with '-' (this mc
+# build parses a leading dash as a flag and does not honor '--' on admin user add).
+SECRET_KEY="k$(head -c 24 /dev/urandom | base64 | tr '+/' '-_' | tr -d '=')"
 
-# Policy: PutObject + ListBucket + HeadObject/GetBucketObjectLockConfiguration on
-# the prefix only. HeadObject is needed so a re-put that hits PreconditionFailed
-# can verify the existing object (provider read-back path). No delete.
+# Policy: PutObject + PutObjectRetention (per-object COMPLIANCE dates need it
+# on MinIO) + ListBucket, plus GetObject so the provider's replay verification
+# HeadObject is authorized (MinIO has no s3:HeadObject action; Head falls under
+# s3:GetObject). Manifest bodies are deletion evidence, not secrets, and the
+# provider only reads metadata/length — never the body. No delete.
 cat > "${ROOT}/.policy-rehearsal-write.json" <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": ["s3:PutObject"],
-      "Resource": ["arn:aws:s3:::${BUCKET}/${PREFIX}/*"]
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["s3:HeadObject"],
+      "Action": ["s3:PutObject", "s3:PutObjectRetention", "s3:GetObject"],
       "Resource": ["arn:aws:s3:::${BUCKET}/${PREFIX}/*"]
     },
     {
@@ -77,8 +86,10 @@ cat > "${ROOT}/.policy-rehearsal-write.json" <<POLICY
 }
 POLICY
 mc admin user add "local" "${ACCESS_KEY}" "${SECRET_KEY}"
-mc admin policy create "local" rehearsal-write "${ROOT}/.policy-rehearsal-write.json"
+docker cp "${ROOT}/.policy-rehearsal-write.json" "${CONTAINER}:/tmp/policy.json"
+mc admin policy create "local" rehearsal-write /tmp/policy.json
 mc admin policy attach "local" rehearsal-write --user "${ACCESS_KEY}"
+docker exec "${CONTAINER}" rm -f /tmp/policy.json
 rm -f "${ROOT}/.policy-rehearsal-write.json"
 
 cat > "${ENV_OUT}" <<ENVFILE
