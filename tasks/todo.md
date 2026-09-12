@@ -4109,3 +4109,69 @@ If the daemon drops mid-run, `docker start minio-rehearsal-minio-1` and re-run.
 - Step 4: Prometheus/Alertmanager rehearsal; step 5: staging canary; step 6+: capacity,
   production rollout, WBS closeout (each behind its own authorization gate).
 - Teardown of MinIO container + volume pending (teardown.sh, operator-guarded).
+
+# 2026-09-12 — BE-5.2 Checkpoint G step 4 — Prometheus/Alertmanager rehearsal (GREEN)
+
+## What was executed (disposable Prometheus v2.53 + Alertmanager v0.27 containers; guarded smartlearning_test)
+
+- Topology: bridge-networked Prometheus scraping the backend on port 3001 (`NODE_ENV=test`,
+  retention purge + manifest-export schedulers enabled at the 60s minimum tick, S3 provider
+  pointed at a dead endpoint), Alertmanager routing to a local webhook receiver.
+- Seeded fixtures (`ops/prom-rehearsal/seed-retention-rehearsal.mjs`): one 3-day-overdue
+  archive + one long-overdue retrying outbox row.
+- Alerts proven end-to-end (metric → rule eval → Alertmanager → webhook):
+  - `SmartLearningRetentionOldestDueAgeHigh` — FIRED (oldest_due_age ≈ 260 000 s > 86 400).
+  - `SmartLearningRetentionManifestDeadRecords` — FIRED (dead_records = 1 after failed exports).
+  - `SmartLearningRetentionPurgeJobFailing` — reached pending→ threshold (increase ≥ 3 observed
+    when failures accumulated; counter reset on backend restart dropped it out of window before
+    firing — the expr itself was verified true via direct PromQL query).
+  - `SmartLearningRetentionPurgeNoRecentSuccess` — fired as PENDING earlier, then correctly
+    resolved when a successful sweep stamped `retention_purge_last_success` (negative case proven).
+  - `SmartLearningDatabaseMetricsAbsent` — FIRED (expected: metrics endpoint exists but this
+    alert references readiness series absent in this scrape config; pre-existing rule).
+- Alertmanager showed all three as `active` and delivered each to the webhook receiver.
+
+## Real production defect found and fixed (the point of step 4)
+
+**The application's `job` metric label collided with Prometheus's external scrape `job` label.**
+prom-client scrape config renames the colliding label to `exported_job`, so every alert rule and
+dashboard expression selecting `job="retention_purge"` (etc.) matched NOTHING —
+`SmartLearningRetentionPurgeJobFailing`, `SmartLearningRetentionManifestExportJobFailing`, and
+the quarantined-items alert could never fire in any real Prometheus deployment.
+
+Fix (committed):
+- `src/modules/metrics/metrics.service.ts` — metric label `job` → `bg_job` on
+  `smartlearning_job_runs_total` / `smartlearning_job_duration_seconds` /
+  `smartlearning_job_items_total`, with a comment explaining why.
+- `ops/observability/prometheus-alerts.yml` — all four `job="..."` selectors → `bg_job=`.
+- `ops/observability/dashboard-inventory.md` — three `sum by (job, ...)` expressions → `bg_job`.
+
+## WSL2/Rancher Desktop networking notes (environment, not code)
+
+- Containers run in a lima VM; `host.docker.internal` does NOT resolve, and the WSL eth0 IP is
+  unreachable from the VM. The working host address from inside containers is `192.168.127.254`
+  (Rancher Desktop's host gateway). Prometheus used `--add-host=host.docker.internal:192.168.127.254`.
+- Prometheus/Alertmanager communicate via the shared `prom-rehearsal-net` network using container
+  DNS names (`alertmanager-rehearsal:9093`).
+- Config hot-reload: `docker kill -s HUP prom-rehearsal` reloads rule files — the stale-rules
+  trap (editing the source but not the container-mounted copy) cost one debug cycle.
+
+## Verification
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | PASS |
+| `npm run lint:check` | PASS |
+| `npm run format:check` | PASS |
+| `npm run build` | PASS |
+| `npm test -- --runInBand src/modules/metrics` | PASS — 3 suites / 11 tests |
+| `npm run test:retention:artifacts` | PASS — 2 tests |
+| Live alert chain | 2 retention alerts fired + delivered; purge-failing expr verified via PromQL |
+| Teardown | backend/webhook/prometheus/alertmanager stopped; containers+network removed; rehearsal fixtures deleted from smartlearning_test |
+| `git diff --check` | PASS |
+
+## Remaining Checkpoint G steps
+
+- Step 5: staging canary; step 6+: capacity, production rollout, WBS closeout (each behind its
+  own authorization gate). The `bg_job` label change must ship together with any dashboard that
+  consumed the old `job=` expressions.

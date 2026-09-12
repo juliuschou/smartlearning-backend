@@ -63,23 +63,26 @@ export class MetricsService {
       labelNames: ['outcome'],
       registers: [registry],
     });
+    // Label `bg_job` (not `job`): Prometheus renames a colliding `job` label to
+    // `exported_job` on scrape, which would silently break every alert and
+    // dashboard expression selecting on the application's job label.
     this.jobRuns = new Counter({
       name: METRIC_NAMES.jobRuns,
       help: 'Background job runs by fixed job and outcome.',
-      labelNames: ['job', 'outcome'],
+      labelNames: ['bg_job', 'outcome'],
       registers: [registry],
     });
     this.jobDuration = new Histogram({
       name: METRIC_NAMES.jobDuration,
       help: 'Background job duration in seconds.',
-      labelNames: ['job', 'outcome'],
+      labelNames: ['bg_job', 'outcome'],
       buckets: [...JOB_DURATION_BUCKETS],
       registers: [registry],
     });
     this.jobItems = new Counter({
       name: METRIC_NAMES.jobItems,
       help: 'Background job items by fixed job and result.',
-      labelNames: ['job', 'result'],
+      labelNames: ['bg_job', 'result'],
       registers: [registry],
     });
     this.readinessDependencyStatus = new Gauge({
@@ -169,8 +172,8 @@ export class MetricsService {
     )
       return;
     this.tryRecord(() => {
-      this.jobRuns.inc({ job, outcome });
-      this.jobDuration.observe({ job, outcome }, durationSeconds);
+      this.jobRuns.inc({ bg_job: job, outcome });
+      this.jobDuration.observe({ bg_job: job, outcome }, durationSeconds);
     });
   }
 
@@ -181,7 +184,7 @@ export class MetricsService {
       !isPositiveFinite(count)
     )
       return;
-    this.tryRecord(() => this.jobItems.inc({ job, result }, count));
+    this.tryRecord(() => this.jobItems.inc({ bg_job: job, result }, count));
   }
 
   recordRetentionDueBacklog(count: number, oldestDueAgeSeconds: number): void {
