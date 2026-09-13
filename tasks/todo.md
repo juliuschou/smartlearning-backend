@@ -4561,3 +4561,20 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - Verified: typecheck / lint:check / format:check / build all PASS; unit 61 suites / 406 tests PASS; integration 5/5 PASS; e2e CP3 + route-matrix 18/18 PASS — no regression.
 - WBS CP2: flipped 3 bullets to [x] with evidence note; manual Checkpoint 2 left open (gated on user review).
 - Risk: LOW — test-only, no prod/schema/migration/env change.
+
+## 2026-09-13 Close BE-3.1.6 CP6 (post-commit realtime proof)
+
+**Goal:** Add the two missing CP6 lifecycle proofs to live-session-realtime.e2e-spec.ts: post-commit ordering for close/cancel, and publish-failure isolation for close/cancel.
+**Risk:** LOW — test-only. e2e run needs authorized smartlearning_test (real sockets + PG).
+- [x] Inventory (agent): bullets 3/4 largely covered; gaps = close/cancel post-commit order + failure isolation
+- [ ] Add post-commit ordering test (question.close / session.close / cancel via bus publish DB check)
+- [ ] Add publish-failure isolation test (closeQuestion / closeSession / cancelSession)
+- [ ] Static + unit gates
+- [ ] Authorized e2e run + regression
+- [ ] Update WBS CP6 bullets + evidence
+
+### Results:
+- Added 6 realtime e2e tests to `test/live-session-realtime.e2e-spec.ts` closing CP6 gaps: post-commit ordering for question-close/session-close/cancel (bus publish asserts DB row already committed), and publisher-rejection isolation for question-close/session-close/cancel (mutation still 201 + row committed).
+- Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; realtime e2e 24/24 PASS; CP3+route-matrix regression 18/18 PASS.
+- WBS CP6 bullets 1-2 cover post-commit + failure isolation (bullet 3 projection already covered; bullet 4 lite scope documented). Manual CP6 Checkpoint left open.
+- Risk: LOW — test-only, no prod/schema/migration/env change.

@@ -1143,4 +1143,167 @@ describe('LiveSession realtime (durable) (e2e)', () => {
       publish.mockRestore();
     }
   });
+
+  it.each([
+    ['question close', 'closeQuestion'],
+    ['session close', 'closeSession'],
+    ['cancel', 'cancel'],
+  ])('%s publishes only after its transaction commits', async (_name, path) => {
+    requireDatabase();
+    const bus = app.get(LiveSessionEventBus);
+    let publishObserved: Promise<void> | undefined;
+    const publish = jest
+      .spyOn(bus, 'publish')
+      .mockImplementation(async (signal) => {
+        publishObserved = (async () => {
+          if (signal.type === 'question.closed') {
+            const row = await prisma.prisma.sessionQuestion.findUnique({
+              where: { id: signal.sessionQuestionId },
+            });
+            expect(row?.status).toBe('closed');
+          } else if (
+            signal.type === 'session.state_changed' &&
+            signal.status === 'closed'
+          ) {
+            const row = await prisma.prisma.liveSession.findUnique({
+              where: { id: signal.liveSessionId },
+            });
+            expect(row?.status).toBe('closed');
+          } else if (
+            signal.type === 'session.state_changed' &&
+            signal.status === 'cancelled'
+          ) {
+            const row = await prisma.prisma.liveSession.findUnique({
+              where: { id: signal.liveSessionId },
+            });
+            expect(row?.status).toBe('cancelled');
+          }
+        })();
+        await publishObserved;
+      });
+    try {
+      // Cancel is only valid from a WAITING session, and cancel does not open a
+      // question; the open step below applies only to the close branches.
+      const startsActive = path !== 'cancel';
+      const ctx = await setupActiveSession(startsActive);
+      if (path !== 'cancel') {
+        await ctx.teacher.agent
+          .post(
+            `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+          )
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      }
+      let response: request.Response;
+      if (path === 'closeQuestion') {
+        response = await ctx.teacher.agent
+          .post(
+            `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/close`,
+          )
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      } else if (path === 'closeSession') {
+        response = await ctx.teacher.agent
+          .post(`/api/v1/live-sessions/${ctx.liveSessionId}/close`)
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      } else {
+        response = await ctx.teacher.agent
+          .post(`/api/v1/live-sessions/${ctx.liveSessionId}/cancel`)
+          .set('Origin', TEST_ORIGIN)
+          .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      }
+      expect(response.status).toBe(201);
+      await publishObserved;
+    } finally {
+      publish.mockRestore();
+    }
+  });
+
+  it('publisher rejection does not fail or roll back question-close', async () => {
+    requireDatabase();
+    const bus = app.get(LiveSessionEventBus);
+    const publish = jest
+      .spyOn(bus, 'publish')
+      .mockRejectedValue(new Error('publisher unavailable'));
+    try {
+      const ctx = await setupActiveSession();
+      await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+
+      const closeQuestion = await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/close`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(closeQuestion.status).toBe(201);
+      const question = await prisma.prisma.sessionQuestion.findUnique({
+        where: { id: ctx.sessionQuestionId },
+      });
+      expect(question?.status).toBe('closed');
+    } finally {
+      publish.mockRestore();
+    }
+  });
+
+  it('publisher rejection does not fail or roll back session-close', async () => {
+    requireDatabase();
+    const bus = app.get(LiveSessionEventBus);
+    const publish = jest
+      .spyOn(bus, 'publish')
+      .mockRejectedValue(new Error('publisher unavailable'));
+    try {
+      const ctx = await setupActiveSession();
+      await ctx.teacher.agent
+        .post(
+          `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+        )
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+
+      const closeSession = await ctx.teacher.agent
+        .post(`/api/v1/live-sessions/${ctx.liveSessionId}/close`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(closeSession.status).toBe(201);
+      const session = await prisma.prisma.liveSession.findUnique({
+        where: { id: ctx.liveSessionId },
+      });
+      expect(session?.status).toBe('closed');
+      const cascadedQuestion = await prisma.prisma.sessionQuestion.findUnique({
+        where: { id: ctx.sessionQuestionId },
+      });
+      expect(cascadedQuestion?.status).toBe('closed');
+    } finally {
+      publish.mockRestore();
+    }
+  });
+
+  it('publisher rejection does not fail or roll back cancel', async () => {
+    requireDatabase();
+    const bus = app.get(LiveSessionEventBus);
+    const publish = jest
+      .spyOn(bus, 'publish')
+      .mockRejectedValue(new Error('publisher unavailable'));
+    try {
+      // Cancel is only valid from a WAITING session (P0 policy).
+      const ctx = await setupActiveSession(false);
+      const cancel = await ctx.teacher.agent
+        .post(`/api/v1/live-sessions/${ctx.liveSessionId}/cancel`)
+        .set('Origin', TEST_ORIGIN)
+        .set(CSRF_HEADER, ctx.teacher.csrfToken);
+      expect(cancel.status).toBe(201);
+      const session = await prisma.prisma.liveSession.findUnique({
+        where: { id: ctx.liveSessionId },
+      });
+      expect(session?.status).toBe('cancelled');
+    } finally {
+      publish.mockRestore();
+    }
+  });
 });
