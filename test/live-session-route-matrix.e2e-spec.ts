@@ -188,6 +188,44 @@ describe('LiveSession route matrix (e2e)', () => {
     );
   }
 
+  async function createWaitingSession(
+    teacher: AuthenticatedAgent,
+  ): Promise<{ liveSessionId: string }> {
+    const courseResponse = await teacher.agent
+      .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ name: 'Route Matrix Waiting Course', description: 'slice' });
+    expect(courseResponse.status).toBe(201);
+    const courseId = courseResponse.body.data.id as string;
+
+    const questionResponse = await teacher.agent
+      .post(`/api/v1/courses/${courseId}/questions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({
+        type: 'poll',
+        prompt: '啟動前等待題目',
+        selectionMode: 'single',
+        options: [
+          { optionRef: 'a', text: '選項 A' },
+          { optionRef: 'b', text: '選項 B' },
+        ],
+      });
+    expect(questionResponse.status).toBe(201);
+    const questionId = questionResponse.body.data.id as string;
+
+    const waitingResponse = await teacher.agent
+      .post('/api/v1/live-sessions')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ courseId, questionIds: [questionId] });
+    expect(waitingResponse.status).toBe(201);
+    const liveSessionId = waitingResponse.body.data.id as string;
+
+    return { liveSessionId };
+  }
+
   async function createStartedSession(teacher: AuthenticatedAgent): Promise<{
     liveSessionId: string;
     sessionQuestionId: string;
@@ -786,5 +824,154 @@ describe('LiveSession route matrix (e2e)', () => {
       .set('Origin', TEST_ORIGIN)
       .set(CSRF_HEADER, teacher.csrfToken);
     expect(cancelUnknown.status).toBe(404);
+  });
+
+  it('covers start actor, CSRF, and ownership matrix', async () => {
+    requireDatabase();
+    const owner = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const other = await provisionTeacher(
+      OTHER_TEACHER.username,
+      OTHER_TEACHER.displayName,
+      OTHER_TEACHER.tempPassword,
+      OTHER_TEACHER.password,
+    );
+    const student = await provisionStudent();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { liveSessionId } = await createWaitingSession(owner);
+    const startPath = `/api/v1/live-sessions/${liveSessionId}/start`;
+
+    const unauthenticated = await request(app.getHttpServer()).post(startPath);
+    expect(unauthenticated.status).toBe(401);
+    expectErrorEnvelope(unauthenticated, 'UNAUTHORIZED');
+
+    const studentStart = await student.agent
+      .post(startPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.csrfToken);
+    expect(studentStart.status).toBe(403);
+    expectErrorEnvelope(studentStart, 'FORBIDDEN');
+
+    const otherStart = await other.agent
+      .post(startPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, other.csrfToken);
+    expect(otherStart.status).toBe(404);
+    expectErrorEnvelope(otherStart, 'NOT_FOUND');
+
+    const missingCsrf = await owner.agent
+      .post(startPath)
+      .set('Origin', TEST_ORIGIN);
+    expect(missingCsrf.status).toBe(403);
+    expectErrorEnvelope(missingCsrf, 'AUTH_CSRF_INVALID');
+
+    const adminStart = await admin.agent
+      .post(startPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(adminStart.status).toBe(201);
+    expectSuccessEnvelope(adminStart);
+    expect(adminStart.body.data.status).toBe('active');
+  });
+
+  it('covers question-close actor, CSRF, and ownership matrix', async () => {
+    requireDatabase();
+    const owner = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const other = await provisionTeacher(
+      OTHER_TEACHER.username,
+      OTHER_TEACHER.displayName,
+      OTHER_TEACHER.tempPassword,
+      OTHER_TEACHER.password,
+    );
+    const student = await provisionStudent();
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { liveSessionId, sessionQuestionId } =
+      await createStartedSession(owner);
+    const questionPath = `/api/v1/live-sessions/${liveSessionId}/questions/${sessionQuestionId}`;
+
+    // Put the question into OPEN before exercising the close negatives, so the
+    // actor/ownership/CSRF paths are exercised against a closable state.
+    const openByOwner = await owner.agent
+      .post(`${questionPath}/open`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, owner.csrfToken);
+    expect(openByOwner.status).toBe(201);
+
+    const unauthenticated = await request(app.getHttpServer()).post(
+      `${questionPath}/close`,
+    );
+    expect(unauthenticated.status).toBe(401);
+    expectErrorEnvelope(unauthenticated, 'UNAUTHORIZED');
+
+    const studentClose = await student.agent
+      .post(`${questionPath}/close`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, student.csrfToken);
+    expect(studentClose.status).toBe(403);
+    expectErrorEnvelope(studentClose, 'FORBIDDEN');
+
+    const otherClose = await other.agent
+      .post(`${questionPath}/close`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, other.csrfToken);
+    expect(otherClose.status).toBe(404);
+    expectErrorEnvelope(otherClose, 'NOT_FOUND');
+
+    const missingCsrf = await owner.agent
+      .post(`${questionPath}/close`)
+      .set('Origin', TEST_ORIGIN);
+    expect(missingCsrf.status).toBe(403);
+    expectErrorEnvelope(missingCsrf, 'AUTH_CSRF_INVALID');
+
+    const adminClose = await admin.agent
+      .post(`${questionPath}/close`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(adminClose.status).toBe(201);
+    expectSuccessEnvelope(adminClose);
+    expect(adminClose.body.data.status).toBe('closed');
+  });
+
+  it('covers cancel anonymous 401, missing-CSRF 403, and admin cross-owner success', async () => {
+    requireDatabase();
+    const owner = await provisionTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+    const admin = await loginAs(ADMIN.username, ADMIN.password);
+    const { liveSessionId } = await createWaitingSession(owner);
+    const cancelPath = `/api/v1/live-sessions/${liveSessionId}/cancel`;
+
+    const unauthenticated = await request(app.getHttpServer())
+      .post(cancelPath)
+      .set('Origin', TEST_ORIGIN);
+    expect(unauthenticated.status).toBe(401);
+    expectErrorEnvelope(unauthenticated, 'UNAUTHORIZED');
+
+    const missingCsrf = await owner.agent
+      .post(cancelPath)
+      .set('Origin', TEST_ORIGIN);
+    expect(missingCsrf.status).toBe(403);
+    expectErrorEnvelope(missingCsrf, 'AUTH_CSRF_INVALID');
+
+    const adminCancel = await admin.agent
+      .post(cancelPath)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, admin.csrfToken);
+    expect(adminCancel.status).toBe(201);
+    expectSuccessEnvelope(adminCancel);
+    expect(adminCancel.body.data.status).toBe('cancelled');
+    expect(adminCancel.body.data.closedAt).toBeNull();
   });
 });

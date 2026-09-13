@@ -4594,3 +4594,18 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - Added `setupActiveQuizSession` helper + one realtime e2e test proving quiz correctness reveal gating over sockets: participant `result.updated` hides `isCorrect`/`correctCount`/`correctnessRate`/`correctOptionRefs` while open, reveals after close; teacher always receives correctness.
 - Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; realtime e2e 25/25 PASS; quiz+cp3+route-matrix regression 19/19 PASS.
 - WBS CP6 evidence note amended: the realtime-quiz reveal deferral is now closed (bullet 3 fully covered); no new box flipped.
+
+## 2026-09-13 Fill BE-3.1.4 CP4 auth-matrix gaps
+
+**Goal:** Add the missing actor/CSRF matrix tests for start / question-close / cancel in live-session-route-matrix.e2e-spec.ts.
+**Risk:** LOW — test-only. e2e needs authorized smartlearning_test.
+- [x] Inventory (agent): guards already complete; gaps = start/question-close/cancel actor matrices (+ internal-error sanitization already covered by filter spec)
+- [ ] Add start route actor matrix test
+- [ ] Add question-close actor matrix test
+- [ ] Add cancel gap-cell test (anonymous 401 / admin cross-owner / missing-CSRF)
+- [ ] Static + unit gates
+- [ ] Authorized e2e run + regression
+- [ ] Update WBS CP4 bullets + evidence
+
+### Results:
+- (pending)
