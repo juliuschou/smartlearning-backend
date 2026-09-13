@@ -4545,3 +4545,16 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - WBS `智學互動平台剩餘工作WBS.md` BE-6: flipped 6.4/6.5/6.6 to [x], disposition PARTIAL → CLOSED with evidence note.
 - **BE-3.1 CP7 manual sign-off (2026-09-13):** user confirmed `Checkpoint 7 verified`. Backend commit `01afc3a` + WBS flip CP7 bullets [x] and added a CP7 sign-off status block recording controlled-clock evidence (BE-6.5 chain) + post-close rejection (CP3 terminal-state + status guard) + retry/restart idempotency (BE-6.4/6.6). Scope note: this sign-off covers CP7 handoff only, not BE-3.1.8 final release sign-off.
 - Risk: LOW — test-only, no prod/schema/migration/env change. Rollback: delete test + revert WBS note.
+
+## 2026-09-13 Close BE-3.1.2 CP2 (question cascade & no-reopen)
+
+**Goal:** Flip WBS CP2 bullets via a guarded DB-backed integration spec proving the cascade + no-reopen invariants.
+**Risk:** LOW — test-only. DB-backed suite needs authorized smartlearning_test.
+- [x] Explore coverage (2 agents): forward transition covered; gaps = one-open-msg/P2002, repeated close, active-session reopen, multi-q cascade/no-leftover, non-active close
+- [ ] Add test/question-cascade.integration-spec.ts (5 tests)
+- [ ] Static + unit gates
+- [ ] Authorized DB run + e2e regression
+- [ ] Update WBS CP2 bullets + evidence
+
+### Results:
+- (pending)
