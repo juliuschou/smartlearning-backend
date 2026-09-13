@@ -19,8 +19,12 @@ describe('live-session state contract', () => {
   it('allows only waiting → active and active → closed', () => {
     expect(canStartLiveSession(LiveSessionStatus.WAITING)).toBe(true);
     expect(canStartLiveSession(LiveSessionStatus.ACTIVE)).toBe(false);
+    expect(canStartLiveSession(LiveSessionStatus.CLOSED)).toBe(false);
+    expect(canStartLiveSession(LiveSessionStatus.CANCELLED)).toBe(false);
     expect(canCloseLiveSession(LiveSessionStatus.ACTIVE)).toBe(true);
+    expect(canCloseLiveSession(LiveSessionStatus.WAITING)).toBe(false);
     expect(canCloseLiveSession(LiveSessionStatus.CLOSED)).toBe(false);
+    expect(canCloseLiveSession(LiveSessionStatus.CANCELLED)).toBe(false);
   });
 
   it('allows cancel only from waiting, not active or terminal states', () => {
@@ -33,8 +37,10 @@ describe('live-session state contract', () => {
   it('allows only not_open → open → closed for session questions', () => {
     expect(canOpenSessionQuestion(SessionQuestionStatus.NOT_OPEN)).toBe(true);
     expect(canOpenSessionQuestion(SessionQuestionStatus.OPEN)).toBe(false);
+    expect(canOpenSessionQuestion(SessionQuestionStatus.CLOSED)).toBe(false);
     expect(canCloseSessionQuestion(SessionQuestionStatus.OPEN)).toBe(true);
     expect(canCloseSessionQuestion(SessionQuestionStatus.CLOSED)).toBe(false);
+    expect(canCloseSessionQuestion(SessionQuestionStatus.NOT_OPEN)).toBe(false);
   });
 
   it('generates and canonicalizes non-confusable codes', () => {

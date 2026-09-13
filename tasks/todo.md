@@ -4536,8 +4536,12 @@ wake sources; repeated destroy cleans up at most once) for both `RetentionSchedu
 - [ ] Authorized run of the integration spec against smartlearning_test
 - [ ] Record results here + update WBS (flip boxes, disposition, date)
 
+### CP8 transition-matrix (BE-3.1.8):
+Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previously-unasserted 28-state cells. Verified: typecheck/lint/format/build/unit (406) PASS; integration 8/8 PASS; e2e CP3+route-matrix 18/18 PASS — no regression. Domain `live-session-status.spec.ts` now exhaustively enumerates start/close/open negatives. **Does not claim CP8 final sign-off** (gated on user manual review).
+
 ### Results:
 - Added `test/live-session-auto-close.integration-spec.ts` (4 tests) proving BE-6.4/6.5/6.6 with controlled clock against guarded `smartlearning_test`.
 - Verified: typecheck / lint:check / format:check / build / unit (61 suites, 406 tests) all PASS; integration spec 4/4 PASS (authorized DB run).
-- WBS `智學互動平台剩餘工作WBS.md` BE-6: flipped 6.4/6.5/6.6 to [x], disposition PARTIAL → CLOSED with evidence note; BE-3.1 CP7 handoff still needs BE-3.1 manual checkpoint sign-off.
+- WBS `智學互動平台剩餘工作WBS.md` BE-6: flipped 6.4/6.5/6.6 to [x], disposition PARTIAL → CLOSED with evidence note.
+- **BE-3.1 CP7 manual sign-off (2026-09-13):** user confirmed `Checkpoint 7 verified`. Backend commit `01afc3a` + WBS flip CP7 bullets [x] and added a CP7 sign-off status block recording controlled-clock evidence (BE-6.5 chain) + post-close rejection (CP3 terminal-state + status guard) + retry/restart idempotency (BE-6.4/6.6). Scope note: this sign-off covers CP7 handoff only, not BE-3.1.8 final release sign-off.
 - Risk: LOW — test-only, no prod/schema/migration/env change. Rollback: delete test + revert WBS note.
