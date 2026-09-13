@@ -4551,10 +4551,13 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 **Goal:** Flip WBS CP2 bullets via a guarded DB-backed integration spec proving the cascade + no-reopen invariants.
 **Risk:** LOW — test-only. DB-backed suite needs authorized smartlearning_test.
 - [x] Explore coverage (2 agents): forward transition covered; gaps = one-open-msg/P2002, repeated close, active-session reopen, multi-q cascade/no-leftover, non-active close
-- [ ] Add test/question-cascade.integration-spec.ts (5 tests)
-- [ ] Static + unit gates
-- [ ] Authorized DB run + e2e regression
-- [ ] Update WBS CP2 bullets + evidence
+- [x] Add test/question-cascade.integration-spec.ts (5 tests)
+- [x] Static + unit gates
+- [x] Authorized DB run + e2e regression
+- [x] Update WBS CP2 bullets + evidence
 
 ### Results:
-- (pending)
+- Added `test/question-cascade.integration-spec.ts` (5 tests) proving BE-3.1.2 CP2 cascade & no-reopen against guarded `smartlearning_test`.
+- Verified: typecheck / lint:check / format:check / build all PASS; unit 61 suites / 406 tests PASS; integration 5/5 PASS; e2e CP3 + route-matrix 18/18 PASS — no regression.
+- WBS CP2: flipped 3 bullets to [x] with evidence note; manual Checkpoint 2 left open (gated on user review).
+- Risk: LOW — test-only, no prod/schema/migration/env change.
