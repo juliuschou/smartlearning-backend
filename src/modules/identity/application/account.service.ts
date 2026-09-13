@@ -107,6 +107,79 @@ export class AccountService {
     return this.db.account.findUnique({ where: { username } });
   }
 
+  /**
+   * Create the dedicated disposable W1 teacher atomically. This method is not
+   * exposed through HTTP; the guarded local provisioning CLI is its only
+   * caller. Normal admin-created accounts retain the temporary-password gate.
+   */
+  async createLocalW1Teacher(input: {
+    username: string;
+    displayName: string;
+    password: string;
+    createdBy: string;
+  }): Promise<Account> {
+    if (!input.username.startsWith('local-w1-'))
+      throw new ValidationError(
+        'Local W1 username marker is required.',
+        'username',
+      );
+    this.validatePasswordOrThrow(input.password, 'password');
+    const passwordHash = await hashPassword(input.password);
+    return this.tx.run(async (txClient) => {
+      await this.tx.lockAdvisoryKey(txClient, 'local-w1-teacher-provision');
+      const creator = await txClient.account.findUnique({
+        where: { id: input.createdBy },
+        select: { id: true, role: true, status: true },
+      });
+      if (
+        !creator ||
+        creator.role !== AccountRole.ADMIN ||
+        creator.status !== AccountStatus.ACTIVE
+      )
+        throw new ForbiddenError(
+          'A different active admin creator is required.',
+        );
+      const existing = await txClient.account.findUnique({
+        where: { username: input.username },
+        select: { id: true },
+      });
+      if (existing)
+        throw new ConflictError('Username already exists', 'username');
+      return txClient.account.create({
+        data: {
+          id: newId(),
+          username: input.username,
+          displayName: input.displayName,
+          role: AccountRole.TEACHER,
+          status: AccountStatus.ACTIVE,
+          canCreateCourse: true,
+          passwordHash,
+          mustChangePassword: false,
+          passwordChangedAt: new Date(),
+          createdBy: input.createdBy,
+        },
+      });
+    });
+  }
+
+  async disableLocalW1Teacher(
+    username: string,
+    createdBy: string,
+  ): Promise<Account | null> {
+    if (!username.startsWith('local-w1-'))
+      throw new ValidationError(
+        'Local W1 username marker is required.',
+        'username',
+      );
+    const account = await this.db.account.findUnique({ where: { username } });
+    if (!account) return null;
+    if (account.role !== AccountRole.TEACHER || account.createdBy !== createdBy)
+      throw new ForbiddenError(
+        'Account provenance does not match the local W1 fixture.',
+      );
+    return this.disableAccount(account.id, createdBy);
+  }
+
   findById(id: string): Promise<Account | null> {
     return this.db.account.findUnique({ where: { id } });
   }

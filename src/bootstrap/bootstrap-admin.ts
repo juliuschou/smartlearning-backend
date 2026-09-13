@@ -10,16 +10,34 @@
  * Behavior: refuses if already bootstrapped; otherwise creates the first
  * admin and sets `bootstrap_completed = true`. Exits non-zero on failure.
  */
-import { NestFactory } from '@nestjs/core';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppModule } from '../app.module';
+import { NestFactory } from '@nestjs/core';
+import { AuthModule } from '../common/auth';
+import { validateEnv } from '../config/env.validation';
+import { IdentityModule } from '../modules/identity/identity.module';
+import { PrismaModule } from '../prisma/prisma.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.test', '.env'],
+      validate: validateEnv,
+    }),
+    PrismaModule,
+    AuthModule,
+    IdentityModule,
+  ],
+})
+class BootstrapModule {}
 import { BootstrapService } from '../modules/identity/application/bootstrap.service';
 import { errorType } from '../common/observability';
 
 async function main(): Promise<void> {
   // Load env the same way the app does (envFilePath by NODE_ENV) so the
   // bootstrap CLI shares the validated configuration source.
-  const app = await NestFactory.createApplicationContext(AppModule, {
+  const app = await NestFactory.createApplicationContext(BootstrapModule, {
     logger: ['error', 'warn'],
   });
   // Ensure ConfigModule is initialized even if AppModule is used standalone.

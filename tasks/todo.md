@@ -4537,9 +4537,11 @@ wake sources; repeated destroy cleans up at most once) for both `RetentionSchedu
 - [ ] Record results here + update WBS (flip boxes, disposition, date)
 
 ### CP8 transition-matrix (BE-3.1.8):
+
 Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previously-unasserted 28-state cells. Verified: typecheck/lint/format/build/unit (406) PASS; integration 8/8 PASS; e2e CP3+route-matrix 18/18 PASS — no regression. Domain `live-session-status.spec.ts` now exhaustively enumerates start/close/open negatives. **Does not claim CP8 final sign-off** (gated on user manual review).
 
 ### Results:
+
 - Added `test/live-session-auto-close.integration-spec.ts` (4 tests) proving BE-6.4/6.5/6.6 with controlled clock against guarded `smartlearning_test`.
 - Verified: typecheck / lint:check / format:check / build / unit (61 suites, 406 tests) all PASS; integration spec 4/4 PASS (authorized DB run).
 - WBS `智學互動平台剩餘工作WBS.md` BE-6: flipped 6.4/6.5/6.6 to [x], disposition PARTIAL → CLOSED with evidence note.
@@ -4550,6 +4552,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 
 **Goal:** Flip WBS CP2 bullets via a guarded DB-backed integration spec proving the cascade + no-reopen invariants.
 **Risk:** LOW — test-only. DB-backed suite needs authorized smartlearning_test.
+
 - [x] Explore coverage (2 agents): forward transition covered; gaps = one-open-msg/P2002, repeated close, active-session reopen, multi-q cascade/no-leftover, non-active close
 - [x] Add test/question-cascade.integration-spec.ts (5 tests)
 - [x] Static + unit gates
@@ -4557,6 +4560,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - [x] Update WBS CP2 bullets + evidence
 
 ### Results:
+
 - Added `test/question-cascade.integration-spec.ts` (5 tests) proving BE-3.1.2 CP2 cascade & no-reopen against guarded `smartlearning_test`.
 - Verified: typecheck / lint:check / format:check / build all PASS; unit 61 suites / 406 tests PASS; integration 5/5 PASS; e2e CP3 + route-matrix 18/18 PASS — no regression.
 - WBS CP2: flipped 3 bullets to [x] with evidence note; manual Checkpoint 2 left open (gated on user review).
@@ -4566,6 +4570,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 
 **Goal:** Add the two missing CP6 lifecycle proofs to live-session-realtime.e2e-spec.ts: post-commit ordering for close/cancel, and publish-failure isolation for close/cancel.
 **Risk:** LOW — test-only. e2e run needs authorized smartlearning_test (real sockets + PG).
+
 - [x] Inventory (agent): bullets 3/4 largely covered; gaps = close/cancel post-commit order + failure isolation
 - [ ] Add post-commit ordering test (question.close / session.close / cancel via bus publish DB check)
 - [ ] Add publish-failure isolation test (closeQuestion / closeSession / cancelSession)
@@ -4574,6 +4579,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - [ ] Update WBS CP6 bullets + evidence
 
 ### Results:
+
 - Added 6 realtime e2e tests to `test/live-session-realtime.e2e-spec.ts` closing CP6 gaps: post-commit ordering for question-close/session-close/cancel (bus publish asserts DB row already committed), and publisher-rejection isolation for question-close/session-close/cancel (mutation still 201 + row committed).
 - Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; realtime e2e 24/24 PASS; CP3+route-matrix regression 18/18 PASS.
 - WBS CP6 bullets 1-2 cover post-commit + failure isolation (bullet 3 projection already covered; bullet 4 lite scope documented). Manual CP6 Checkpoint left open.
@@ -4583,6 +4589,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 
 **Goal:** Add a realtime e2e proving quiz correctness reveal gating over sockets (hide pre-close, reveal post-close, teacher asymmetry).
 **Risk:** LOW — test-only. e2e run needs authorized smartlearning_test.
+
 - [x] Verify reveal gate in realtime path (getResults kind=participant, status===CLOSED)
 - [x] Add setupActiveQuizSession helper
 - [x] Add quiz reveal test (pre-close hide / teacher shows / post-close reveal)
@@ -4591,6 +4598,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - [x] Amend WBS note + record results
 
 ### Results:
+
 - Added `setupActiveQuizSession` helper + one realtime e2e test proving quiz correctness reveal gating over sockets: participant `result.updated` hides `isCorrect`/`correctCount`/`correctnessRate`/`correctOptionRefs` while open, reveals after close; teacher always receives correctness.
 - Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; realtime e2e 25/25 PASS; quiz+cp3+route-matrix regression 19/19 PASS.
 - WBS CP6 evidence note amended: the realtime-quiz reveal deferral is now closed (bullet 3 fully covered); no new box flipped.
@@ -4599,6 +4607,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 
 **Goal:** Add the missing actor/CSRF matrix tests for start / question-close / cancel in live-session-route-matrix.e2e-spec.ts.
 **Risk:** LOW — test-only. e2e needs authorized smartlearning_test.
+
 - [x] Inventory (agent): guards already complete; gaps = start/question-close/cancel actor matrices (+ internal-error sanitization already covered by filter spec)
 - [x] Add start route actor matrix test
 - [x] Add question-close actor matrix test
@@ -4608,6 +4617,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - [x] Update WBS CP4 bullets + evidence
 
 ### Results:
+
 - Added 3 e2e tests to `test/live-session-route-matrix.e2e-spec.ts` (backend `8492073`): actor/CSRF/ownership matrices for start (401/403/404/admin/missing-CSRF), question-close (401/403/404/missing-CSRF/admin), cancel (anonymous 401 / missing-CSRF / admin cross-owner).
 - Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; route-matrix e2e 17/17 PASS; close-cancel+cp3 regression 16/16 PASS.
 - WBS CP4 bullets 1-3 → [x] with evidence note; internal-error sanitization already covered by `global-exception-filter.spec` (sanitizes unknown errors); manual CP4 Checkpoint left open.
@@ -4629,6 +4639,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 **Acceptance criteria:** serialized runner; e2e/integration classification correct; non-zero failure propagation; no production/schema/migration changes; final evidence records per-phase counts and any remaining deadlock.
 **Risk & rollback:** LOW-MEDIUM — test orchestration only; keep the `smartlearning_test` guard and existing publisher quiescing. Rollback by reverting runner/package/task commits; no production rollback or migration reversal.
 **Dependencies & environment:** Node/npm from repository; PostgreSQL `localhost:5432/smartlearning_test`; test setup may migrate/truncate only that guarded database; no concurrent DB-backed test process.
+
 - [x] Diagnose with strictly serialized runs; capture whether `40P01` reproduces.
 - [x] Add serialized CP8 runner and validate sequencing/exit propagation through the clean run.
 - [x] Run static + five e2e + four integration CP8 suites sequentially.
@@ -4648,6 +4659,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 **Acceptance criteria:** correct e2e/integration configs; `smartlearning_test` only; 0 skipped and 0 failures for targeted and regression suites; quality gates pass; runtime/contract/deferred scope recorded separately.
 **Risk & rollback:** MEDIUM — authorized test setup may migrate/truncate `smartlearning_test`; no production/schema changes. Revert task/WBS evidence commits if the recorded conclusion changes.
 **Dependencies & environment:** Node/npm repository versions; PostgreSQL `localhost:5432/smartlearning_test`; no concurrent DB-backed process.
+
 - [x] Capture branch/HEAD/working tree, versions, DB target, and migration status.
 - [x] Run Phase B targeted identity/enrollment/participant/realtime/privacy/OpenAPI suites sequentially.
 - [x] Run full unit/integration/e2e regression and quality gates sequentially.
@@ -4667,6 +4679,7 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 **Acceptance criteria:** archive deadlock not reproducible after correct cleanup lifecycle; all active publisher/truncate boundaries audited; full regression results recorded with environment-gated blockers distinguished from code failures.
 **Risk & rollback:** MEDIUM — authorized test DB cleanup only; no production/schema/migration changes unless a PostgreSQL wait graph proves an application inversion. Revert task/docs evidence only.
 **Dependencies & environment:** Node v26.5.1, npm 11.17.0, Prisma 7.9.1; `localhost:5432/smartlearning_test`; no concurrent DB test processes.
+
 - [x] Diagnose archive deadlock and audit publisher/truncate lifecycle.
 - [x] Rerun archive suite and full unit/integration/e2e regression sequentially.
 - [x] Run quality gates and migration/diff checks.
@@ -4687,3 +4700,80 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - Full integration with Redis/S3 external suites excluded: **8 suites / 38 tests PASS**.
 - Full e2e: **33/34 suites PASS, 257/258 tests PASS**; archive-governance passed, but `cli-credential.e2e-spec.ts` failed `serializes rotate versus disable without leaving an active credential` (`expected [201,201]`, received `[201,403]`). This is a separate CLI credential concurrency blocker, not an archive deadlock.
 - Unit 61/406 and all static/quality gates PASS. The archive `40P01` is therefore classified as not reproduced after serialized cleanup; full regression remains blocked by the CLI race plus explicit Redis/S3 environment gates.
+
+# 2026-09-14 — BE-5 CP2 remediation group 6 — capacity and rollout evidence audit
+
+**Authorization:** User authorized CP2 remediation group 6. Scope was read-only evidence review of W1–W8 capacity targets, batch/drain behavior, resource impact, worker concurrency, canary/ramp/pause, rollback, approvers, and threshold calibration. No runtime or destructive operation was authorized by this group.
+
+## Evidence reviewed
+
+- `docs/智學互動平台/00_專案規劃/MVP 效能目標.md`: W1–W8 workload definitions and hard pass/fail criteria for one LiveSession with 300 learners + 1 teacher; the document states that these targets require an M4 test report and are not completion evidence by themselves.
+- `ops/staging-replica/README.md`: disposable, identifiable replica canary profile with exact one-item batch sequence, scheduler-off controls, teardown, and explicit non-production boundary.
+- `tasks/todo.md` staging canary record: one synthetic archive purge/export/replay and teardown were recorded, but the run used `NODE_ENV=test`, `SSE=none`, and a single operator; it explicitly leaves capacity, multi-replica, production-like rollout, and production encryption unverified.
+- `ops/observability/retention-runbook.md`: production dry-run/purge, immutable provider, monitoring deployment/routing/on-call, and W1–W8 capacity evidence remain blocked gaps.
+
+## Disposition
+
+**Group 6: BLOCKED.** No evidence was found for measured W1–W8 p50/p95/p99/max results, batch duration or drain rate, DB connection/I/O/CPU/RAM/event-loop/object-store impact, multi-worker or multi-replica isolation, production-like canary ramp/pause/rollback, verified rollback revision, named approvers, or capacity-derived alert threshold calibration. Existing workload definitions and the staging canary are planning/profile evidence only; they do not establish operational or production readiness.
+
+## Safety boundary and next action
+
+Keep all retention operation and scheduler gates disabled. Production rollout remains separately gated and requires an exact target, immutable provider/KMS/TLS/identity evidence, capacity report, monitoring/routing/on-call evidence, rollback revision, and explicit approver record. No BE-5 closeout or FE-6 authorization is changed.
+
+**Verification:** Read-only source/document inspection only; backend `main` is clean and synchronized at `b9bcd2b`. No tests, containers, DB, migration, purge, export, restore, reconcile, external upload, scheduler enablement, rollout, or commit was performed under this authorization.
+
+# 2026-09-14 — W1 Credential Provisioning Blocker
+
+W1 remains **BLOCKED before workload execution**.
+
+## Confirmed findings
+
+- The disposable backend and database are available.
+- No existing non-temporary teacher account with course-creation permission is available.
+- `bootstrap:admin` provisions only the initial administrator.
+- `prisma:seed` provisions only the bootstrap system-setting row.
+- Teacher creation is supported only through the authenticated administrator API.
+- No usable authenticated administrator credential is available in the current disposable environment.
+- No supported unauthenticated teacher provisioning mechanism exists.
+
+Therefore, `LOAD_TEACHER_USERNAME` and `LOAD_TEACHER_PASSWORD` cannot be populated safely.
+
+No existing accounts, passwords, credentials, tracked files, or database rows were modified. No login preflight, course-creation preflight, fixture creation, or W1 workload was executed.
+
+**Status:** **BLOCKED — test identity provisioning infrastructure is missing.**
+
+**Recommended remediation:** Add a reproducible disposable-test provisioning path for a dedicated non-temporary load-test teacher, or provide an authorized disposable administrator credential that can create the teacher through the existing application API.
+
+# 2026-09-14 — W1 Local Provisioning Path
+
+## Root cause
+
+The existing bootstrap path creates only the first admin, seed creates only the bootstrap setting, and normal teacher creation requires an authenticated admin API. No supported disposable identity provisioning path existed.
+
+## Implementation
+
+- Added `npm run bootstrap:w1-teacher -- provision|cleanup`.
+- Added `AccountService.createLocalW1Teacher()` using existing password policy, Argon2 hashing, UUID generation, transaction handling, and advisory locking.
+- Added `AccountService.disableLocalW1Teacher()` with exact `local-w1-` marker and creator provenance checks.
+- Provisioning creates only an active teacher with `canCreateCourse=true` and `mustChangePassword=false`; normal admin account creation behavior is unchanged.
+- The CLI refuses unless `NODE_ENV=test`, `LOCAL_W1_PROVISIONING_ENABLED=1`, `LOCAL_PROVISION_TARGET=disposable`, and `DATABASE_URL` targets `smartlearning_test`.
+
+## Safety and credentials
+
+- Existing usernames are never repaired, overwritten, or reused.
+- `admin` and `samchou` are not modified.
+- Passwords are process-environment-only and are not printed or written to tracked files.
+- Cleanup disables only a marked teacher whose `createdBy` matches the designated admin; it does not perform broad deletion.
+
+## Verification evidence
+
+- Static implementation and documentation changes completed.
+- W1 was not run.
+- Created the separate `smartlearning_test` database in the local PostgreSQL container and confirmed all 19 migrations are applied.
+- Provisioning verification remains blocked before account creation because no authorized disposable admin creator is available; existing `admin` and `samchou` remain untouched.
+- W1 was not run and no login/course-creation preflight was executed.
+- Quality gates after implementation: typecheck, lint, format check, build, and `git diff --check` all PASS.
+
+## Remaining blockers
+
+An explicitly authorized dedicated disposable bootstrap admin is required before provisioning can safely populate `LOAD_TEACHER_USERNAME` and `LOAD_TEACHER_PASSWORD`. W1 remains blocked until teacher provisioning and its login/course-creation preflight pass.
