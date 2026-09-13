@@ -4660,3 +4660,30 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - Quality/runtime PASS: unit 61 suites / 406 tests; typecheck, lint:check, format:check, build, git diff --check all PASS.
 - Full regression findings: integration 8/10 suites PASS, 38/45 tests PASS; failures are environment-gated Redis (`RUN_LOGIN_RATE_LIMIT_REDIS_TESTS=1` required) and S3 sandbox (`DELETION_MANIFEST_PROVIDER=s3` plus guarded external sandbox required). E2E 33/34 suites PASS, 257/258 tests PASS; `archive-governance.e2e-spec.ts` hit PostgreSQL `40P01`.
 - Conclusion: Phase B targeted runtime evidence is green, but **Phase B full closeout remains BLOCKED/CONDITIONAL** because the required full regression gate is not 0 failure / 0 skipped and B5 canonical documentation synchronization/manual Phase B sign-off must remain separately confirmed. No WBS Phase B DoD boxes were auto-flipped based solely on focused evidence.
+
+## 2026-09-13 Diagnose archive-governance 40P01 and rerun full regression
+
+**Goal:** Determine whether archive-governance `40P01` is a production lock inversion or test cleanup lifecycle issue, then rerun the full regression sequentially.
+**Acceptance criteria:** archive deadlock not reproducible after correct cleanup lifecycle; all active publisher/truncate boundaries audited; full regression results recorded with environment-gated blockers distinguished from code failures.
+**Risk & rollback:** MEDIUM — authorized test DB cleanup only; no production/schema/migration changes unless a PostgreSQL wait graph proves an application inversion. Revert task/docs evidence only.
+**Dependencies & environment:** Node v26.5.1, npm 11.17.0, Prisma 7.9.1; `localhost:5432/smartlearning_test`; no concurrent DB test processes.
+- [x] Diagnose archive deadlock and audit publisher/truncate lifecycle.
+- [x] Rerun archive suite and full unit/integration/e2e regression sequentially.
+- [x] Run quality gates and migration/diff checks.
+- [x] Record blockers and classify Phase B closeout status.
+
+### Results:
+
+- Diagnosis: archive-governance `40P01` is the known test-harness cleanup deadlock class—schema-wide `TRUNCATE ... CASCADE` racing process-wide `LiveSessionPublisher`; current archive suite already uses `withQuiescedLiveSessionPublisher`. Production governance/live-session/submission lock order was not changed.
+- Archive/full regression: archive failure was not reproduced in the current serialized run; unit 61 suites / 406 tests PASS; full integration 8/10 suites / 38/45 tests PASS; full e2e 33/34 suites / 257/258 tests PASS.
+- Remaining blockers: `login-rate-limit.redis.integration-spec.ts` requires `RUN_LOGIN_RATE_LIMIT_REDIS_TESTS=1`; `s3-sandbox-rehearsal.integration-spec.ts` requires `DELETION_MANIFEST_PROVIDER=s3` plus guarded external sandbox; `archive-governance.e2e-spec.ts` had one prior `40P01` in the earlier full run and remains a recurrence tripwire despite the isolated current diagnosis.
+- Quality gates: Prisma validate/migrate status PASS (19 migrations up to date), typecheck/lint/format/build/diff check PASS. No production/schema/migration/env changes.
+- Conclusion: **Phase B remains BLOCKED/CONDITIONAL** until external Redis/S3 evidence is authorized/available and the full e2e deadlock recurrence is resolved or formally accepted with repeated clean evidence.
+
+### Follow-up rerun result
+
+- Archive isolated rerun: **19/19 PASS**, no `40P01`.
+- CP8 serialized runner: static 3/3, e2e 59/59, integration 25/25 PASS.
+- Full integration with Redis/S3 external suites excluded: **8 suites / 38 tests PASS**.
+- Full e2e: **33/34 suites PASS, 257/258 tests PASS**; archive-governance passed, but `cli-credential.e2e-spec.ts` failed `serializes rotate versus disable without leaving an active credential` (`expected [201,201]`, received `[201,403]`). This is a separate CLI credential concurrency blocker, not an archive deadlock.
+- Unit 61/406 and all static/quality gates PASS. The archive `40P01` is therefore classified as not reproduced after serialized cleanup; full regression remains blocked by the CLI race plus explicit Redis/S3 environment gates.
