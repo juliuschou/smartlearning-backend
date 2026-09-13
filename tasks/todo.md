@@ -4622,3 +4622,22 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - **Observed counts from the isolated report:** 7 commands passed, 4 failed; 53 tests passed, 14 failed; no skips reported. Treat the aggregate as provisional because the command/config mismatch means the complete nine-suite bundle was not uniformly exercised.
 - **`git diff --check`:** PASS. No source/docs files or commits were changed by the clean run.
 - **Next action:** diagnose the `40P01` deadlocks and run each e2e/integration file with its correct script/config, sequentially, before any CP8 manual final sign-off.
+
+## 2026-09-13 Remediate CP8 40P01 deadlocks
+
+**Goal:** Prevent CP8 DB-backed suites from overlapping on shared `smartlearning_test`; use the correct Jest config per suite; rerun the full CP8 bundle.
+**Acceptance criteria:** serialized runner; e2e/integration classification correct; non-zero failure propagation; no production/schema/migration changes; final evidence records per-phase counts and any remaining deadlock.
+**Risk & rollback:** LOW-MEDIUM — test orchestration only; keep the `smartlearning_test` guard and existing publisher quiescing. Rollback by reverting runner/package/task commits; no production rollback or migration reversal.
+**Dependencies & environment:** Node/npm from repository; PostgreSQL `localhost:5432/smartlearning_test`; test setup may migrate/truncate only that guarded database; no concurrent DB-backed test process.
+- [x] Diagnose with strictly serialized runs; capture whether `40P01` reproduces.
+- [x] Add serialized CP8 runner and validate sequencing/exit propagation through the clean run.
+- [x] Run static + five e2e + four integration CP8 suites sequentially.
+- [x] Record final branch/HEAD/DB/migration/count evidence and update WBS only if release criteria pass.
+
+### Results:
+
+- Root cause classification: test orchestration/configuration interference was supported; production lock order was not changed. The initial deadlock run mixed `.e2e-spec.ts` and `.integration-spec.ts` under the e2e config and prior attempts overlapped processes against the shared test DB. Corrected runner now executes one phase at a time with the proper config.
+- Added `scripts/run-cp8.cjs` and `npm run test:cp8`; phases are static → five e2e suites → four integration suites, sequentially with timestamped status and exit propagation.
+- Verification: typecheck PASS; lint:check PASS; format:check PASS; build PASS; unit 61 suites / 406 tests PASS; CP8 static 1 suite / 3 tests PASS; CP8 e2e 5 suites / 59 tests PASS; CP8 integration 4 suites / 25 tests PASS; migration status 19 migrations up to date; `git diff --check` PASS; `40P01` not reproduced.
+- No production/schema/migration/env changes. Existing `.gitignore` modification remains unrelated and unstaged.
+- Manual CP8 approval remains separate: automated evidence is now green, but user must explicitly confirm `Checkpoint 8 verified` after reviewing the WBS evidence.
