@@ -4612,3 +4612,13 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; route-matrix e2e 17/17 PASS; close-cancel+cp3 regression 16/16 PASS.
 - WBS CP4 bullets 1-3 → [x] with evidence note; internal-error sanitization already covered by `global-exception-filter.spec` (sanitizes unknown errors); manual CP4 Checkpoint left open.
 - Risk: LOW — test-only, no prod/schema/migration/env change.
+
+## 2026-09-13 CP8 final-release pre-sign-off clean run
+
+- **Environment:** backend `main`, HEAD `7993ffc8909347c1e90d7896ec6166a57f7e12eb`; docs HEAD `f208ec76557c8287ecdd9880249636be6006f414`; Node 26.5.1 / npm 11.17.0; DB `localhost:5432/smartlearning_test`; PostgreSQL public schema.
+- **Migration status:** 19 migrations found; schema up to date.
+- **Targeted run:** isolated in-band commands for realtime, route matrix, quiz flow, close/cancel, CP3 terminal state, poll submission, auto-close, terminal matrix, and question cascade.
+- **Result:** NOT READY FOR CP8 SIGN-OFF. The first combined invocation incorrectly mixed e2e and integration specs under the e2e Jest config. The later isolated report recorded 4 failed commands, including PostgreSQL `40P01` deadlocks at `question.service.ts:62,67`, `transaction.service.ts:47`, and `live-session.service.ts:1394`. A separately rerun isolated route matrix passed 17/17.
+- **Observed counts from the isolated report:** 7 commands passed, 4 failed; 53 tests passed, 14 failed; no skips reported. Treat the aggregate as provisional because the command/config mismatch means the complete nine-suite bundle was not uniformly exercised.
+- **`git diff --check`:** PASS. No source/docs files or commits were changed by the clean run.
+- **Next action:** diagnose the `40P01` deadlocks and run each e2e/integration file with its correct script/config, sequentially, before any CP8 manual final sign-off.
