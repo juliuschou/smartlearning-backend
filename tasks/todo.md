@@ -4641,3 +4641,22 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - Verification: typecheck PASS; lint:check PASS; format:check PASS; build PASS; unit 61 suites / 406 tests PASS; CP8 static 1 suite / 3 tests PASS; CP8 e2e 5 suites / 59 tests PASS; CP8 integration 4 suites / 25 tests PASS; migration status 19 migrations up to date; `git diff --check` PASS; `40P01` not reproduced.
 - No production/schema/migration/env changes. Existing `.gitignore` modification remains unrelated and unstaged.
 - Manual CP8 approval remains separate: automated evidence is now green, but user must explicitly confirm `Checkpoint 8 verified` after reviewing the WBS evidence.
+
+## 2026-09-13 Phase B complete closeout verification
+
+**Goal:** Re-run the complete student-account/enrollment Phase B evidence bundle and reconcile BE-1/BE-2 closeout status without silently accepting skips or unavailable DB.
+**Acceptance criteria:** correct e2e/integration configs; `smartlearning_test` only; 0 skipped and 0 failures for targeted and regression suites; quality gates pass; runtime/contract/deferred scope recorded separately.
+**Risk & rollback:** MEDIUM — authorized test setup may migrate/truncate `smartlearning_test`; no production/schema changes. Revert task/WBS evidence commits if the recorded conclusion changes.
+**Dependencies & environment:** Node/npm repository versions; PostgreSQL `localhost:5432/smartlearning_test`; no concurrent DB-backed process.
+- [x] Capture branch/HEAD/working tree, versions, DB target, and migration status.
+- [x] Run Phase B targeted identity/enrollment/participant/realtime/privacy/OpenAPI suites sequentially.
+- [x] Run full unit/integration/e2e regression and quality gates sequentially.
+- [x] Record per-command counts and reconcile WBS only if all required evidence is green.
+
+### Results:
+
+- Environment: backend `main` at `b23da4b11ce40f59a0590e1c3d342306640ada73`; pre-existing `.gitignore` and task-log changes only; Node `v26.5.1`; npm `11.17.0`; Prisma `7.9.1`; DB `localhost:5432/smartlearning_test`; 19 migrations up to date. DB authorization covered implicit migrate/truncate setup.
+- Phase B targeted PASS: identity integration 1 suite / 7 tests; student-account + enrollments + OpenAPI 3 suites / 12 tests; participant-account 1 / 10; participant-revocation 1 / 9; realtime 1 / 25; privacy/result units 2 / 14; open-text 1 / 1.
+- Quality/runtime PASS: unit 61 suites / 406 tests; typecheck, lint:check, format:check, build, git diff --check all PASS.
+- Full regression findings: integration 8/10 suites PASS, 38/45 tests PASS; failures are environment-gated Redis (`RUN_LOGIN_RATE_LIMIT_REDIS_TESTS=1` required) and S3 sandbox (`DELETION_MANIFEST_PROVIDER=s3` plus guarded external sandbox required). E2E 33/34 suites PASS, 257/258 tests PASS; `archive-governance.e2e-spec.ts` hit PostgreSQL `40P01`.
+- Conclusion: Phase B targeted runtime evidence is green, but **Phase B full closeout remains BLOCKED/CONDITIONAL** because the required full regression gate is not 0 failure / 0 skipped and B5 canonical documentation synchronization/manual Phase B sign-off must remain separately confirmed. No WBS Phase B DoD boxes were auto-flipped based solely on focused evidence.
