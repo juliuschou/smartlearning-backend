@@ -4600,12 +4600,15 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 **Goal:** Add the missing actor/CSRF matrix tests for start / question-close / cancel in live-session-route-matrix.e2e-spec.ts.
 **Risk:** LOW — test-only. e2e needs authorized smartlearning_test.
 - [x] Inventory (agent): guards already complete; gaps = start/question-close/cancel actor matrices (+ internal-error sanitization already covered by filter spec)
-- [ ] Add start route actor matrix test
-- [ ] Add question-close actor matrix test
-- [ ] Add cancel gap-cell test (anonymous 401 / admin cross-owner / missing-CSRF)
-- [ ] Static + unit gates
-- [ ] Authorized e2e run + regression
-- [ ] Update WBS CP4 bullets + evidence
+- [x] Add start route actor matrix test
+- [x] Add question-close actor matrix test
+- [x] Add cancel gap-cell test (anonymous 401 / admin cross-owner / missing-CSRF)
+- [x] Static + unit gates
+- [x] Authorized e2e run + regression
+- [x] Update WBS CP4 bullets + evidence
 
 ### Results:
-- (pending)
+- Added 3 e2e tests to `test/live-session-route-matrix.e2e-spec.ts` (backend `8492073`): actor/CSRF/ownership matrices for start (401/403/404/admin/missing-CSRF), question-close (401/403/404/missing-CSRF/admin), cancel (anonymous 401 / missing-CSRF / admin cross-owner).
+- Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; route-matrix e2e 17/17 PASS; close-cancel+cp3 regression 16/16 PASS.
+- WBS CP4 bullets 1-3 → [x] with evidence note; internal-error sanitization already covered by `global-exception-filter.spec` (sanitizes unknown errors); manual CP4 Checkpoint left open.
+- Risk: LOW — test-only, no prod/schema/migration/env change.
