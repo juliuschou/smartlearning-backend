@@ -4585,10 +4585,10 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 **Risk:** LOW — test-only. e2e run needs authorized smartlearning_test.
 - [x] Verify reveal gate in realtime path (getResults kind=participant, status===CLOSED)
 - [x] Add setupActiveQuizSession helper
-- [ ] Add quiz reveal test (pre-close hide / teacher shows / post-close reveal)
-- [ ] Static + unit gates
-- [ ] Authorized e2e run + regression
-- [ ] Amend WBS note + record results
+- [x] Add quiz reveal test (pre-close hide / teacher shows / post-close reveal)
+- [x] Static + unit gates
+- [x] Authorized e2e run + regression
+- [x] Amend WBS note + record results
 
 ### Results:
 - Added `setupActiveQuizSession` helper + one realtime e2e test proving quiz correctness reveal gating over sockets: participant `result.updated` hides `isCorrect`/`correctCount`/`correctnessRate`/`correctOptionRefs` while open, reveals after close; teacher always receives correctness.
