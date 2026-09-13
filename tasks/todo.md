@@ -4578,3 +4578,19 @@ Added `test/terminal-matrix.integration-spec.ts` (8 tests) filling the 8 previou
 - Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; realtime e2e 24/24 PASS; CP3+route-matrix regression 18/18 PASS.
 - WBS CP6 bullets 1-2 cover post-commit + failure isolation (bullet 3 projection already covered; bullet 4 lite scope documented). Manual CP6 Checkpoint left open.
 - Risk: LOW — test-only, no prod/schema/migration/env change.
+
+## 2026-09-13 Realtime quiz reveal gating (CP6 bullet-3 deferred)
+
+**Goal:** Add a realtime e2e proving quiz correctness reveal gating over sockets (hide pre-close, reveal post-close, teacher asymmetry).
+**Risk:** LOW — test-only. e2e run needs authorized smartlearning_test.
+- [x] Verify reveal gate in realtime path (getResults kind=participant, status===CLOSED)
+- [x] Add setupActiveQuizSession helper
+- [ ] Add quiz reveal test (pre-close hide / teacher shows / post-close reveal)
+- [ ] Static + unit gates
+- [ ] Authorized e2e run + regression
+- [ ] Amend WBS note + record results
+
+### Results:
+- Added `setupActiveQuizSession` helper + one realtime e2e test proving quiz correctness reveal gating over sockets: participant `result.updated` hides `isCorrect`/`correctCount`/`correctnessRate`/`correctOptionRefs` while open, reveals after close; teacher always receives correctness.
+- Verified: typecheck/lint/format/build all PASS; unit 61/406 PASS; realtime e2e 25/25 PASS; quiz+cp3+route-matrix regression 19/19 PASS.
+- WBS CP6 evidence note amended: the realtime-quiz reveal deferral is now closed (bullet 3 fully covered); no new box flipped.

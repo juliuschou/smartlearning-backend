@@ -366,6 +366,76 @@ describe('LiveSession realtime (durable) (e2e)', () => {
     };
   }
 
+  /**
+   * Build a started active session whose question is a QUIZ with an exact-set
+   * correct answer. Mirrors setupActiveSession but for the quiz type (US-F17
+   * vote-to-reveal correctness gating).
+   */
+  async function setupActiveQuizSession(): Promise<{
+    teacher: AuthenticatedAgent & { sessionCookie: string };
+    courseId: string;
+    liveSessionId: string;
+    sessionCode: string;
+    sessionQuestionId: string;
+  }> {
+    const teacher = await createTeacher(
+      TEACHER.username,
+      TEACHER.displayName,
+      TEACHER.tempPassword,
+      TEACHER.password,
+    );
+
+    const courseResponse = await teacher.agent
+      .post('/api/v1/courses')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ name: 'RT Quiz Course', description: 'realtime quiz' });
+    expect(courseResponse.status).toBe(201);
+    const courseId = courseResponse.body.data.id as string;
+
+    const questionResponse = await teacher.agent
+      .post(`/api/v1/courses/${courseId}/questions`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({
+        type: 'quiz',
+        prompt: '下列哪些是質數？',
+        options: [
+          { optionRef: 'two', text: '2' },
+          { optionRef: 'three', text: '3' },
+          { optionRef: 'four', text: '4' },
+        ],
+        correctOptionRefs: ['two', 'three'],
+      });
+    expect(questionResponse.status).toBe(201);
+    const questionId = questionResponse.body.data.id as string;
+
+    const waitingResponse = await teacher.agent
+      .post('/api/v1/live-sessions')
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken)
+      .send({ courseId, questionIds: [questionId] });
+    expect(waitingResponse.status).toBe(201);
+    const liveSessionId = waitingResponse.body.data.id as string;
+    const sessionCode = waitingResponse.body.data.sessionCode as string;
+
+    const startResponse = await teacher.agent
+      .post(`/api/v1/live-sessions/${liveSessionId}/start`)
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, teacher.csrfToken);
+    expect(startResponse.status).toBe(201);
+    const sessionQuestionId = startResponse.body.data.sessionQuestions[0]
+      .id as string;
+
+    return {
+      teacher,
+      courseId,
+      liveSessionId,
+      sessionCode,
+      sessionQuestionId,
+    };
+  }
+
   async function joinParticipant(
     sessionCode: string,
     displayName: string,
@@ -1305,5 +1375,103 @@ describe('LiveSession realtime (durable) (e2e)', () => {
     } finally {
       publish.mockRestore();
     }
+  });
+
+  it('quiz result.updated hides correctness from the participant until reveal, and exposes it to the teacher', async () => {
+    requireDatabase();
+    const ctx = await setupActiveQuizSession();
+    const teacherSocket = connectTeacher(
+      ctx.liveSessionId,
+      ctx.teacher.sessionCookie,
+    );
+    await nextEvent(teacherSocket, 'session.snapshot');
+
+    const openOpened = nextEvent(teacherSocket, 'question.opened');
+    await ctx.teacher.agent
+      .post(
+        `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/open`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, ctx.teacher.csrfToken);
+    await openOpened;
+
+    const p = await joinParticipant(ctx.sessionCode, 'quiz-p1');
+    const participantSocket = connectParticipant(
+      ctx.sessionCode,
+      p.participantToken,
+    );
+    await nextEvent(participantSocket, 'session.snapshot');
+
+    // Teacher has a live aggregated result (always reveal-correctness). Capture
+    // its serialized JSON to assert teacher-only fields later.
+    const teacherResult = nextEventMatching(
+      teacherSocket,
+      'result.updated',
+      (payload: unknown) => {
+        const data = (payload as { data?: { sessionQuestionId?: string } })
+          .data;
+        return data?.sessionQuestionId === ctx.sessionQuestionId;
+      },
+    );
+
+    // Pre-register participant listener BEFORE the submit mutation so the
+    // post-commit participant projection is observed.
+    const participantResult = nextEventMatching(
+      participantSocket,
+      'result.updated',
+      (payload: unknown) => {
+        const data = (payload as { data?: { sessionQuestionId?: string } })
+          .data;
+        return data?.sessionQuestionId === ctx.sessionQuestionId;
+      },
+    );
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/live-sessions/${ctx.liveSessionId}/submissions`)
+      .set('X-Participant-Token', p.participantToken)
+      .set('Idempotency-Key', '0190c6b8-0000-7000-8000-000000000701')
+      .send({
+        sessionQuestionId: ctx.sessionQuestionId,
+        selectedOptionRefs: ['two', 'three'],
+      });
+
+    // Teacher projection: correctness IS present (always reveal).
+    const teacherResultJson = JSON.stringify(await teacherResult);
+    expect(teacherResultJson).toContain('correctCount');
+    expect(teacherResultJson).toContain('correctnessRate');
+
+    // Participant projection while open: correctness is hidden.
+    const participantBeforeCloseJson = JSON.stringify(await participantResult);
+    expect(participantBeforeCloseJson).not.toContain('isCorrect');
+    expect(participantBeforeCloseJson).not.toContain('correctCount');
+    expect(participantBeforeCloseJson).not.toContain('correctnessRate');
+    expect(participantBeforeCloseJson).not.toContain('correctOptionRefs');
+
+    // Pre-register participant listener BEFORE the close mutation.
+    const revealedResult = nextEventMatching(
+      participantSocket,
+      'result.updated',
+      (payload: unknown) => {
+        const data = (payload as { data?: { sessionQuestionId?: string } })
+          .data;
+        return data?.sessionQuestionId === ctx.sessionQuestionId;
+      },
+    );
+
+    const closeResponse = await ctx.teacher.agent
+      .post(
+        `/api/v1/live-sessions/${ctx.liveSessionId}/questions/${ctx.sessionQuestionId}/close`,
+      )
+      .set('Origin', TEST_ORIGIN)
+      .set(CSRF_HEADER, ctx.teacher.csrfToken);
+    expect(closeResponse.status).toBe(201);
+
+    // After close (reveal gate), the participant now sees correctness.
+    const participantAfterCloseJson = JSON.stringify(await revealedResult);
+    expect(participantAfterCloseJson).toContain('isCorrect');
+    expect(participantAfterCloseJson).toContain('correctCount');
+
+    teacherSocket.close();
+    participantSocket.close();
   });
 });
