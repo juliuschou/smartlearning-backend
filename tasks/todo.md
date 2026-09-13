@@ -4523,3 +4523,21 @@ wake sources; repeated destroy cleans up at most once) for both `RetentionSchedu
 
 - **單 operator**（非雙 operator 簽核）；**NODE_ENV=test identity**（非 production identity）；**SSE=none**（MinIO Community 限制）— production 加密行為、真實 staging host、multi-replica、容量/rollout 仍屬 BE-5 final reconciliation + OPS-1 gate，未解除。
 - 過程中一次 write-only secret 出現在 tool output（即旋換新憑證；容器/憑證已隨 teardown 銷毀，風險閉合）。記入 lessons 候選：含 secrets 的 grep/sed 輸出需預先遮罩。
+
+## 2026-09-13 Close BE-6.4 / 6.5 / 6.6 (auto-close scheduler evidence)
+
+**Goal:** Flip WBS BE-6.4 (idempotent retry), 6.5 (clock-controlled deterministic test), 6.6 (process restart) to closed via a guarded DB-backed integration spec; update WBS disposition.
+**Risk:** LOW — test-only; no prod/schema/migration/env change. DB-backed suite requires authorized `smartlearning_test` access.
+**Dependencies/Env:** `smartlearning_test` reachable on localhost:5432 (probed OK); test setup refuses non-test DB.
+
+- [x] Understand auto-close service/scheduler + integration harness
+- [ ] Add test/live-session-auto-close.integration-spec.ts (BE-6.5 chain, 6.4 retry, 6.6 restart, +negative control)
+- [ ] Run format/lint/typecheck/build/unit gates
+- [ ] Authorized run of the integration spec against smartlearning_test
+- [ ] Record results here + update WBS (flip boxes, disposition, date)
+
+### Results:
+- Added `test/live-session-auto-close.integration-spec.ts` (4 tests) proving BE-6.4/6.5/6.6 with controlled clock against guarded `smartlearning_test`.
+- Verified: typecheck / lint:check / format:check / build / unit (61 suites, 406 tests) all PASS; integration spec 4/4 PASS (authorized DB run).
+- WBS `智學互動平台剩餘工作WBS.md` BE-6: flipped 6.4/6.5/6.6 to [x], disposition PARTIAL → CLOSED with evidence note; BE-3.1 CP7 handoff still needs BE-3.1 manual checkpoint sign-off.
+- Risk: LOW — test-only, no prod/schema/migration/env change. Rollback: delete test + revert WBS note.
