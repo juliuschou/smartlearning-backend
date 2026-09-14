@@ -5,7 +5,7 @@ import { AuthModule } from '../common/auth';
 import { validateEnv } from '../config/env.validation';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { AccountService } from '../modules/identity/application/account.service';
-import { BootstrapService } from '../modules/identity/application/bootstrap.service';
+import { RateLimitModule } from '../modules/rate-limit/rate-limit.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
@@ -18,6 +18,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     PrismaModule,
     AuthModule,
     IdentityModule,
+    RateLimitModule,
   ],
 })
 class LocalProvisioningModule {}

@@ -4777,3 +4777,54 @@ The existing bootstrap path creates only the first admin, seed creates only the 
 ## Remaining blockers
 
 An explicitly authorized dedicated disposable bootstrap admin is required before provisioning can safely populate `LOAD_TEACHER_USERNAME` and `LOAD_TEACHER_PASSWORD`. W1 remains blocked until teacher provisioning and its login/course-creation preflight pass.
+
+---
+
+# 2026-09-15 — W1 create-smoke evidence closeout (5 participants)
+
+**Authorization:** Provisional W1 dummy-teacher provisioning + single 5-participant W1 create-smoke against `smartlearning_test` only. No cleanup, no larger load, no W2–W8 performed. Evidence record only.
+
+## Result: W1 create-smoke PASS (5 participants, functional load path only — NOT capacity/performance acceptance)
+
+- Provisioning: **PASS**
+- Teacher verification: **PASS** (role=teacher, status=active, can_create_course=true, created_by=authorized admin)
+- Login: **PASS**
+- CSRF: **PASS** (Origin `http://localhost:3000` matched backend allowlist; `AUTH_CSRF_INVALID` resolved)
+- Fixture creation: **PASS**
+- W1 5-participant join: **PASS** — 5/5 successful, 0 errors, 0 duplicate participant IDs
+- Latency: p50 ~85ms, p95/p99/max ~106ms (5-participant smoke)
+- **Note:** these smoke latencies are NOT full W1 threshold evidence. Thresholds (300 learners, ≤120s join-complete, Join API p95 ≤1s, error rate <1%) remain unverified.
+
+## Run identifiers
+
+- Run id: `9cdc7373-f535-433b-8844-cd4b02323743`
+- Teacher username: `local-w1-w1-20260915001809-32304`
+- courseId: `01a0a0b6-464e-7130-a1b5-fcc90cd68e34`
+- questionId: `01a0a0b6-4663-716b-b7da-7d5b38659e11`
+- liveSessionId: `01a0a0b6-4688-7648-a5f2-424dcab4011b`
+- sessionQuestionId: `01a0a0b6-46b7-7338-98aa-ac5d4c79b50e`
+- Artifact: `artifacts/w1-smoke.json` (kept; not committed/deleted pending repository artifact policy)
+
+## Credentials
+
+No password was recorded or recoverable; provisioning/load password was memory-only (never printed, persisted, or committed). Prior unusable teacher `local-w1-w1-202609150012` was left untouched.
+
+## W1 documented acceptance criteria (from `docs/智學互動平台/00_專案規劃/MVP 效能目標.md`)
+
+- Participant count: 300 anonymous learners + 1 teacher in one LiveSession.
+- Concurrency model: all 300 join the same `waiting` or `active` LiveSession within 120 s, each with a unique session-scoped participant token + display name. (Harness `runW1` fires all joins in one `Promise.all` burst; `arrivalWindowMs` is read in config but not used to pace W1.)
+- Duration: 300 learners join within 120 s.
+- Latency thresholds: 300-person join-completion ≤120 s; Join API p95 ≤1 s.
+- Error-rate threshold: functional request error rate <1% (W1–W5); caveat: error rate must not mask data errors (loss/duplicates/inconsistency always fail regardless of rate).
+- Correctness criteria: success rate measured, participant duplicate count, teacher join-count accuracy; server-authority reconciliation after run (participant count, one valid submission per participant per question, option counts, liveSession/sessionQuestion final state).
+- Cleanup behavior: W1 create-mode harness leaves the disposable fixture for inspection (`destructiveCleanup:false`); production load requires a disposable/staging target and its own teardown.
+- Resource/telemetry evidence expected: record hardware, OS, versions, network conditions, deploy topology, DB baseline row counts; full report template requires CPU/RAM/network + App/DB/realtime component versions + initial data size.
+
+## Proposed staged execution (NOT executed — awaiting authorization)
+
+1. **20 participants** → stop condition: 20/20 joined, 0 errors, 0 duplicates, join burst completes within budget.
+2. **50 participants** → stop: same checks pass.
+3. **100 participants** → stop: same checks pass + capture resource/telemetry baseline.
+4. **Full W1 target (300, ≤120 s window)** → assess join-completion ≤120 s, Join p95 ≤1 s, error rate <1%, 0 duplicates, teacher join-count accuracy; then server-authority reconciliation.
+
+Between stages: pause, confirm each gate (no errors/duplicates, latency within budget) before the next. Full run additionally requires recording the environment/telemetry matrix from the report template and a disposable/staging target + teardown.

@@ -1,7 +1,7 @@
 /**
  * One-time deployment bootstrap CLI — creates the first system admin.
  *
- * Run via `npm run bootstrap:admin` (tsx). Credentials are read from env vars
+ * Run via `npm run bootstrap:admin` (build + compiled node). Credentials are read from env vars
  * `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD` /
  * `BOOTSTRAP_ADMIN_DISPLAY_NAME` — never from command-line args or shell
  * history (CLI BDD R-C1-2 posture applied to the bootstrap secret).
@@ -16,6 +16,7 @@ import { NestFactory } from '@nestjs/core';
 import { AuthModule } from '../common/auth';
 import { validateEnv } from '../config/env.validation';
 import { IdentityModule } from '../modules/identity/identity.module';
+import { RateLimitModule } from '../modules/rate-limit/rate-limit.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     PrismaModule,
     AuthModule,
     IdentityModule,
+    RateLimitModule,
   ],
 })
 class BootstrapModule {}
