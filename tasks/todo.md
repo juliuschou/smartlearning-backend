@@ -4828,3 +4828,40 @@ No password was recorded or recoverable; provisioning/load password was memory-o
 4. **Full W1 target (300, ≤120 s window)** → assess join-completion ≤120 s, Join p95 ≤1 s, error rate <1%, 0 duplicates, teacher join-count accuracy; then server-authority reconciliation.
 
 Between stages: pause, confirm each gate (no errors/duplicates, latency within budget) before the next. Full run additionally requires recording the environment/telemetry matrix from the report template and a disposable/staging target + teardown.
+
+## 2026-09-15 — W1 execution checkpoint A (blocked)
+
+- Cleanup completed only against `smartlearning_test`: the two authorized teachers were disabled; the explicitly listed course, question, live session, session question, participants, options, and events were removed. Read-only verification returned zero rows for the targeted fixture resources.
+- Baseline captured: commit `d439cf6394691c8e2ad247b965559a8d7cc885cb`, Node `v26.5.1`, PostgreSQL `16.15`, 16 vCPUs, 15 GiB RAM, isolated backend on `127.0.0.1:3001`, PostgreSQL on `127.0.0.1:5432`, `smartlearning_test`, Redis mode off.
+- A fresh teacher was provisioned successfully (`local-w1-w1-20260915-final`) after one transient transaction-start timeout, but the generated password was not retained into the subsequent shell used for the load run. **Current attempt: BLOCKED — credential lifecycle/orchestration; workload not started.** Teacher login failed during preflight with `AUTH_INVALID_CREDENTIALS`; 0 participants executed and no W1-20 stage artifact/report was produced. This is not a W1 workload failure and has no capacity/performance result.
+- Do not modify, reset, rotate, or delete `local-w1-w1-20260915-final`; leave it as a cleanup candidate pending review. The isolated test backend was stopped after the blocked preflight.
+
+## 2026-09-15 — W1 credential orchestration remediation
+
+- Added `npm run load:w1` (`scripts/run-w1.ts`) to keep one generated credential in memory across provisioning, credential/authorization smoke, and sequential W1 stages. The existing `bootstrap:w1-teacher` and `load:test` paths remain the provisioning and workload implementations.
+- Added login projection checks in `scripts/load-harness/fixture.ts`: the newly provisioned identity must be the logged-in teacher with `canCreateCourse=true` and `mustChangePassword=false` before fixture creation continues.
+- Added `--smoke-only` to the orchestrator for the required first credential smoke; failed preflight exits before participant load. The protected `local-w1-w1-20260915-final` account is never selected or mutated.
+- Password handling is runtime-only: child environment injection only, no stdout/stderr output or artifact field, no shell tracing, fail-closed missing-credential checks, and in-memory variable clearing in `finally`.
+- Static verification passed: Prettier, typecheck, ESLint, and `git diff --check`. Two initial smoke attempts stopped before participant execution (one missing `LOCAL_PROVISION_TARGET`, one exact-Origin mismatch); the corrected fixture-only smoke then passed against `smartlearning_test`. No W1-20/50/100/300 stage ran. Newly created marked teachers were retained as cleanup candidates; no automatic cleanup was performed.
+
+## 2026-09-15 — W1-20 capacity gate
+
+- Exact target: isolated backend `http://127.0.0.1:3001`, `NODE_ENV=test`, database `smartlearning_test`; commit `d439cf6394691c8e2ad247b965559a8d7cc885cb`.
+- Run `b6dd022d-20c7-4dc7-85ad-bf3f3ae31327`; fresh teacher `local-w1-1789476234247-02b36186`, account `01a0a518-7ab8-70eb-9855-6135fa693e61`; protected and prior smoke accounts untouched.
+- Credential smoke passed first, then only W1-20 ran: 20 attempted/20 successful/0 failed, error rate 0%, duplicate participant IDs 0, p50 259.66ms, p95 309.86ms, p99 316.60ms, max 316.60ms, total completion 318.65ms. Artifact: `artifacts/w1-b6dd022d-20c7-4dc7-85ad-bf3f3ae31327-20.json`.
+- Database reconciliation confirmed 20 participants for the live session and the teacher account remained active with course creation permission. The current harness does not collect an authenticated teacher-detail response or CPU/RAM telemetry; those fields are not represented as passed evidence. W1-50/100/300 were not run and no automatic cleanup was performed.
+
+## 2026-09-15 — W1-50 capacity gate
+
+- Pre-gate reconciliation: W1-20 harness successful joins=20 and persisted database participants=20 for run `b6dd022d-20c7-4dc7-85ad-bf3f3ae31327`; exact username for account `01a0a518-7ab8-70eb-9855-6135fa693e61` is `local-w1-1789475943995-57e55bfe`. The remaining process was the intended isolated backend on `127.0.0.1:3001`; no load harness or participant-generator process was running.
+- Run `1fcaf88d-0b89-475e-a64b-b24701bdff95`, commit `d439cf6394691c8e2ad247b965559a8d7cc885cb`; fresh teacher `local-w1-1789476505505-b43c9767`, account `01a0a51c-9de0-70af-b509-1ed8694063c6`.
+- Credential/fixture smoke passed, then only W1-50 ran: 50 attempted/50 successful/0 failed, error rate 0%, duplicate participant IDs 0, p50 429.97ms, p95 442.31ms, p99 452.48ms, max 452.48ms, total completion 458.78ms. Persisted database participant count=50; API/harness/DB counts reconciled.
+- CPU/RAM telemetry: NOT COLLECTED; not supported by the current harness/environment. W1-50 gate PASS. W1-100/300 were not run and no automatic cleanup was performed.
+
+## 2026-09-15 — W1-300 final capacity gate
+
+- Exact target: isolated backend `http://127.0.0.1:3001`, `NODE_ENV=test`, database `smartlearning_test`, user `smartlearning`; commit `d439cf6394691c8e2ad247b965559a8d7cc885cb`.
+- Run `5d4a2dc8-6d79-4af1-bb5a-3ec2dc9eed01`; fresh teacher `local-w1-1789477418247-7d0b419d`, account `01a0a52a-91b7-7291-a8a9-93870f853dfa`; credential/fixture smoke passed first.
+- W1-300: 300 attempted/300 successful/0 failed, error rate 0%, unexpected API errors 0, duplicate participant IDs 0, p50 2376.90ms, p95 2423.75ms, p99 2426.90ms, max 2427.12ms, total completion 2464.66ms; persisted DB participants=300 and API/harness/DB counts reconciled exactly.
+- Available telemetry snapshot after execution: backend process RSS 655568 KiB / CPU 1.3%; PostgreSQL container CPU 0.46% / memory 44.71 MiB of 15.44 GiB; `pg_stat_activity` count 7. These are post-run snapshots, not time-series peak measurements.
+- Final W1 acceptance: **FAIL** because Join API p95 was 2423.75ms, exceeding the documented ≤1000ms threshold. W1-300 completed with no data-integrity or error-rate failure, but W1 overall does not qualify as PASS. No W2–W8 ran and no automatic cleanup was performed.

@@ -36,6 +36,7 @@
     "test:retention:artifacts": "jest --config ./test/jest-retention-artifacts.json --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "load:test": "tsx scripts/load-harness/index.ts",
+    "load:w1": "tsx scripts/run-w1.ts",
     "load:test:list": "tsx scripts/load-harness/index.ts --list",
     "load:test:unit": "tsx scripts/load-harness/metrics.spec.ts"
   },

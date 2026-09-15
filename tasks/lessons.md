@@ -312,6 +312,20 @@
 - **Prevention rule:** In a durable retention claim, branch the eligibility by state so `next_purge_attempt_at` constrains only `retry`, `purge_at` constrains pending, and lease expiry constrains `processing`. Do not add an unconditional `next_purge_attempt_at` filter.
 - **Tripwire:** When adding a purge-eligibility predicate, assert separately that (a) pending, (b) ready retry, (c) backoff-gated retry, and (d) expired-processing rows each have the intended eligibility, and keep pending rows driven purely by `purge_at`.
 
+## 2026-09-15 — Keep runtime-only credentials in one continuous execution
+
+- **Failure mode:** A generated W1 teacher password was created in one shell, then the staged load loop ran in a later shell without that password; provisioning succeeded but every fixture login failed with `AUTH_INVALID_CREDENTIALS`.
+- **Detection signal:** Provisioning output was successful, but the harness emitted `Teacher login failed (AUTH_INVALID_CREDENTIALS)` and no report file was produced.
+- **Prevention rule:** Generate the password and run provisioning plus every gated stage in one continuous shell; never reconstruct, print, persist, or replace the runtime-only password between stages.
+- **Tripwire:** Assert the provisioning command succeeds and immediately run a credential smoke/login before creating any W1 fixture; abort on any harness login failure and do not advance stages.
+
+## 2026-09-15 — W1 orchestration must preserve existing guard variable names
+
+- **Failure mode:** The first W1 orchestrator used `LOCAL_W1_PROVISION_TARGET`, but the existing provisioning guard and documented command require `LOCAL_PROVISION_TARGET`; provisioning failed before account creation.
+- **Detection signal:** The child provisioning command returned `LOCAL_PROVISION_TARGET=disposable is required.` and no teacher was created.
+- **Prevention rule:** Before wrapping an existing CLI, copy its exact environment contract from the authoritative implementation and docs; do not derive new variable names from the feature prefix.
+- **Tripwire:** Execute the orchestrator's smoke-only path with the documented environment and require the child provisioning command to pass before any fixture or participant operation.
+
 ## 2026-09-12 — Automation scripts must use an available interpreter
 
 - **Failure mode:** A task-record append invoked `python`, but this environment exposes only `python3`, so the command failed before changing the file.

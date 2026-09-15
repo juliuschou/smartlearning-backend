@@ -238,8 +238,9 @@ async function main(): Promise<void> {
     config.sessionQuestionId = fixture.sessionQuestionId;
   }
   const scenarios: ScenarioReport[] = [];
-  for (const name of config.scenarios)
-    scenarios.push(await runScenario(name, config, http));
+  if (process.env.LOAD_FIXTURE_ONLY !== '1')
+    for (const name of config.scenarios)
+      scenarios.push(await runScenario(name, config, http));
   const report: HarnessReport = {
     schemaVersion: 1,
     run: {

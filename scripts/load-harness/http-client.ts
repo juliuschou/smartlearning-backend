@@ -148,12 +148,15 @@ export class LoadHttpClient {
     username: string,
     password: string,
   ) {
-    const result = await this.request<Record<string, unknown>>(
-      operation,
-      'POST',
-      '/auth/login',
-      { body: { username, password }, captureCookies: true },
-    );
+    const result = await this.request<{
+      username?: string;
+      role?: string;
+      canCreateCourse?: boolean;
+      mustChangePassword?: boolean;
+    }>(operation, 'POST', '/auth/login', {
+      body: { username, password },
+      captureCookies: true,
+    });
     if (result.status !== 201 || !this.csrfToken)
       throw new Error(
         `Teacher login failed (${result.errorCode ?? result.status}).`,

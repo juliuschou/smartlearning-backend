@@ -29,7 +29,17 @@ export async function createW1Fixture(
   password: string,
 ): Promise<W1Fixture> {
   const operation = createOperation('fixture-create', 'http');
-  await http.loginTeacher(operation, username, password);
+  const login = await http.loginTeacher(operation, username, password);
+  if (
+    !login.data ||
+    login.data.username !== username ||
+    login.data.role !== 'teacher' ||
+    login.data.canCreateCourse !== true ||
+    login.data.mustChangePassword !== false
+  )
+    throw new Error(
+      'Teacher preflight returned an invalid account projection.',
+    );
   const marker = `load-harness-${runId}`;
   const course = data(
     await http.createCourse(

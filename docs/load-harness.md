@@ -40,6 +40,23 @@ npm run load:test -- --scenarios W1 --participants 5 --output artifacts/w1-creat
 
 Create mode requires both explicit write flags, loopback base URL, teacher credentials, and W1 only. It creates one course, poll question, active session, and open question; cleanup is disabled and the report contains only safe fixture identifiers.
 
+## One-process W1 orchestration
+
+`load:w1` owns one runtime-only credential lifecycle: it checks the test target and backend health, provisions a fresh uniquely marked teacher, immediately performs a create-mode credential/authorization smoke, then runs the documented W1 stages sequentially (20, 50, 100, 300). A failed preflight or stage stops the process before the next participant load. The protected historical teacher is never selected by this command.
+
+```bash
+NODE_ENV=test \
+LOCAL_W1_PROVISIONING_ENABLED=1 \
+LOCAL_PROVISION_TARGET=disposable \
+LOAD_DISPOSABLE_TARGET=1 \
+LOAD_BASE_URL=http://127.0.0.1:3001 \
+LOAD_CORS_ORIGIN=http://localhost:3000 \
+LOCAL_W1_PROVISION_CREATED_BY='<admin-account-id>' \
+npm run load:w1
+```
+
+The password is generated in memory, passed only as `LOCAL_W1_TEACHER_PASSWORD` / `LOAD_TEACHER_PASSWORD` to child processes, and is never printed, persisted, or included in artifacts. Stage reports contain safe identifiers only. The new teacher is retained as a cleanup candidate after a failed run; optional cleanup after a fully passing run requires `W1_AUTO_CLEANUP=1` and still affects only the newly generated marked teacher.
+
 ## Dedicated local W1 teacher provisioning
 
 The account provisioning command is separate from the load harness and does not run W1. It is guarded to the isolated `smartlearning_test` database and refuses production/development targets, missing opt-in, non-marker usernames, and existing usernames.

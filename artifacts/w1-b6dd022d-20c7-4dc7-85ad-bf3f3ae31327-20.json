@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "runId": "b6dd022d-20c7-4dc7-85ad-bf3f3ae31327",
+    "startedAt": "2026-09-15T12:44:00.844Z",
+    "finishedAt": "2026-09-15T12:44:01.400Z",
+    "baseUrl": "http://127.0.0.1:3001",
+    "scenarios": [
+      "W1"
+    ],
+    "participantCount": 20,
+    "fixtureMode": "create"
+  },
+  "scenarios": [
+    {
+      "name": "W1",
+      "status": "passed",
+      "durationMs": 318.65140700000006,
+      "operations": [
+        {
+          "name": "join",
+          "transport": "http",
+          "count": 20,
+          "successCount": 20,
+          "errorCount": 0,
+          "errorRate": 0,
+          "latencyMs": {
+            "count": 20,
+            "p50": 259.6592140000001,
+            "p95": 309.857778,
+            "p99": 316.599042,
+            "max": 316.599042
+          },
+          "errors": {}
+        }
+      ],
+      "correctness": {
+        "joined": 20,
+        "duplicateParticipantIds": 0
+      }
+    }
+  ],
+  "fixture": {
+    "runId": "b6dd022d-20c7-4dc7-85ad-bf3f3ae31327",
+    "marker": "load-harness-b6dd022d-20c7-4dc7-85ad-bf3f3ae31327",
+    "courseId": "01a0a518-7e62-770d-a375-b43e2358b54e",
+    "questionId": "01a0a518-7e72-77f9-8f73-46b30c63af3a",
+    "liveSessionId": "01a0a518-7e83-73df-a00e-3dfb0793382b",
+    "sessionQuestionId": "01a0a518-7e9a-70b0-9018-f6bf2e4fd10b"
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  }
+}
