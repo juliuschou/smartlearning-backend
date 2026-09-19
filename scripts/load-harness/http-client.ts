@@ -1,17 +1,24 @@
 import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import type { OperationMetrics } from './metrics';
+import { W1DiagnosticsCollector } from './diagnostics';
+
+const W1_RUN_ID_HEADER = 'x-w1-run-id';
 
 export interface ApiResponse<T> {
   status: number;
   data?: T;
   errorCode?: string;
+  requestId?: string;
+  elapsedMs?: number;
 }
 
 export class LoadHttpClient {
   constructor(
     private readonly baseUrl: string,
     private readonly timeoutMs: number,
+    private readonly diagnostics?: W1DiagnosticsCollector,
+    private readonly runId?: string,
   ) {}
 
   private readonly cookies = new Map<string, string>();
@@ -29,6 +36,12 @@ export class LoadHttpClient {
     } = {},
   ): Promise<ApiResponse<T>> {
     const started = performance.now();
+    const diagnosticRequestId =
+      process.env.W1_DIAGNOSTICS === '1'
+        ? `w1-${this.runId ?? 'run'}-${randomUUID()}`.slice(0, 128)
+        : undefined;
+    const releaseDiagnosticRequest =
+      this.diagnostics?.startRequest() ?? (() => undefined);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
@@ -38,14 +51,18 @@ export class LoadHttpClient {
         headers: {
           accept: 'application/json',
           ...(options.body ? { 'content-type': 'application/json' } : {}),
+          ...(process.env.W1_DIAGNOSTICS === '1' && this.runId
+            ? { [W1_RUN_ID_HEADER]: this.runId }
+            : {}),
+          ...(diagnosticRequestId
+            ? { 'x-request-id': diagnosticRequestId }
+            : {}),
           ...options.headers,
         },
         body:
           options.body === undefined ? undefined : JSON.stringify(options.body),
       });
       if (options.captureCookies) this.captureCookies(response.headers);
-      const elapsed = performance.now() - started;
-      operation.timingsMs.push(elapsed);
       let body: { data?: T; error?: { code?: string } } = {};
       let parsedJson = false;
       try {
@@ -54,6 +71,10 @@ export class LoadHttpClient {
       } catch {
         /* classify below */
       }
+      const elapsed = performance.now() - started;
+      operation.timingsMs.push(elapsed);
+      if (diagnosticRequestId)
+        this.diagnostics?.recordClient(diagnosticRequestId, elapsed);
       const expectedStatus =
         options.expectedStatuses?.includes(response.status) ??
         (response.status >= 200 && response.status < 300);
@@ -69,9 +90,14 @@ export class LoadHttpClient {
         status: response.status,
         data: body.data,
         errorCode: body.error?.code,
+        requestId: diagnosticRequestId,
+        elapsedMs: elapsed,
       };
     } catch (error) {
-      operation.timingsMs.push(performance.now() - started);
+      const elapsed = performance.now() - started;
+      operation.timingsMs.push(elapsed);
+      if (diagnosticRequestId)
+        this.diagnostics?.recordClient(diagnosticRequestId, elapsed);
       this.recordHttpError(
         operation,
         error instanceof DOMException && error.name === 'AbortError'
@@ -85,9 +111,12 @@ export class LoadHttpClient {
           error instanceof DOMException && error.name === 'AbortError'
             ? 'TIMEOUT'
             : 'NETWORK_ERROR',
+        requestId: diagnosticRequestId,
+        elapsedMs: elapsed,
       };
     } finally {
       clearTimeout(timer);
+      releaseDiagnosticRequest();
     }
   }
 

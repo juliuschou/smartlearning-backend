@@ -11,6 +11,7 @@ import {
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AccountRole } from '../../identity/domain/roles';
 import { UnauthorizedError } from '../../../common/errors';
+import { requestIdFrom } from '../../../common/http';
 import { JoinLiveSessionDto, JoinLiveSessionResponseDto } from './dto';
 import type {
   LiveSessionDto,
@@ -57,7 +58,20 @@ export class ParticipantsController {
             sessionCode,
             request.authContext.account.id,
           )
-        : await this.participants.join(sessionCode, dto.displayName);
+        : await this.participants.join(
+            sessionCode,
+            dto.displayName,
+            process.env.W1_DIAGNOSTICS === '1'
+              ? {
+                  runId: request
+                    .get('x-w1-run-id')
+                    ?.match(/^[A-Za-z0-9-]{1,128}$/)
+                    ? request.get('x-w1-run-id')
+                    : undefined,
+                  requestId: requestIdFrom(request),
+                }
+              : undefined,
+          );
     const currentQuestion =
       result.liveSession.sessionQuestions?.find(
         (question) => question.status === SessionQuestionStatus.OPEN,

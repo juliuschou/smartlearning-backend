@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { performance } from 'node:perf_hooks';
 import type { Participant } from '../../../../generated/prisma/client';
 import {
   generateToken,
@@ -65,18 +66,28 @@ export class ParticipantService {
   async join(
     sessionCode: string,
     rawDisplayName: unknown,
+    diagnosticContext?: { runId?: string; requestId?: string },
   ): Promise<{
     participant: Participant;
     participantToken: string;
     liveSession: ReturnType<typeof toLiveSessionDto>;
   }> {
+    const diagnostic = process.env.W1_DIAGNOSTICS === '1';
+    const diagnosticStarted = performance.now();
+    const phase: Record<string, number> = {};
     const displayName = normalizeParticipantDisplayName(rawDisplayName);
+    const findStarted = performance.now();
     const session = await this.sessions.findByCode(sessionCode);
+    if (diagnostic) phase.findByCode = performance.now() - findStarted;
     const participantToken = generateToken();
     const tokenHash = hashToken(participantToken);
 
+    const transactionStarted = performance.now();
     const participant = await this.transactions.run(async (tx) => {
+      const lockStarted = performance.now();
       await this.transactions.lockLiveSessionForUpdate(tx, session.id);
+      if (diagnostic)
+        phase.liveSessionLockRead = performance.now() - lockStarted;
       const current = await tx.liveSession.findUnique({
         where: { id: session.id },
       });
@@ -87,6 +98,7 @@ export class ParticipantService {
           409,
         );
       }
+      const insertStarted = performance.now();
       const participant = await tx.participant.create({
         data: {
           id: newId(),
@@ -95,6 +107,9 @@ export class ParticipantService {
           tokenHash,
         },
       });
+      if (diagnostic)
+        phase.participantInsert = performance.now() - insertStarted;
+      const outboxStarted = performance.now();
       await this.outbox.append(tx, {
         liveSessionId: current.id,
         event: RealtimeEvent.SESSION_SNAPSHOT,
@@ -103,8 +118,10 @@ export class ParticipantService {
           reason: RealtimeCheckpointReason.PARTICIPANT_JOINED,
         },
       });
+      if (diagnostic) phase.outboxAppend = performance.now() - outboxStarted;
       return participant;
     });
+    if (diagnostic) phase.transaction = performance.now() - transactionStarted;
 
     // Publish after the join transaction commits.
     this.publish({
@@ -113,12 +130,26 @@ export class ParticipantService {
       participantId: participant.id,
     });
 
+    const snapshotStarted = performance.now();
+    const snapshot = await this.sessions.getSnapshot(session.id);
+    if (diagnostic) {
+      phase.postCommitSnapshot = performance.now() - snapshotStarted;
+      phase.total = performance.now() - diagnosticStarted;
+      this.logger.debug(
+        JSON.stringify({
+          event: 'w1.join.diagnostic',
+          runId: diagnosticContext?.runId ?? null,
+          requestId: diagnosticContext?.requestId ?? null,
+          liveSessionId: session.id,
+          phases: phase,
+          publisher: 'fire-and-forget; not measured on response path',
+        }),
+      );
+    }
     return {
       participant,
       participantToken,
-      liveSession: toLiveSessionDto(
-        await this.sessions.getSnapshot(session.id),
-      ),
+      liveSession: toLiveSessionDto(snapshot),
     };
   }
 

@@ -1,9 +1,9 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { spawn } from 'node:child_process';
-import { access, readFile } from 'node:fs/promises';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { access, readFile, writeFile } from 'node:fs/promises';
 import { config as loadDotenv } from 'dotenv';
 const PROTECTED_TEACHER = 'local-w1-w1-20260915-final';
-const STAGES = [20, 50, 100, 300] as const;
+const STAGES = [100] as const;
 const SMOKE_PARTICIPANTS = 1;
 
 type ChildResult = { status: number; stdout: string; stderr: string };
@@ -78,6 +78,14 @@ async function healthCheck(baseUrl: string): Promise<void> {
   if (!response.ok) fail(`Backend health failed: HTTP ${response.status}.`);
 }
 
+type SmokeFixture = {
+  courseId: string;
+  questionId?: string;
+  liveSessionId: string;
+  sessionQuestionId: string;
+  sessionCode: string;
+};
+
 async function runHarness(
   baseUrl: string,
   username: string,
@@ -86,12 +94,13 @@ async function runHarness(
   outputPath: string,
   runIdValue: string,
   fixtureOnly = false,
+  fixture?: SmokeFixture,
 ): Promise<ChildResult> {
   const env = {
     ...process.env,
     LOAD_BASE_URL: baseUrl,
-    LOAD_FIXTURE_MODE: 'create',
-    LOAD_ALLOW_FIXTURE_WRITES: '1',
+    LOAD_FIXTURE_MODE: fixture ? 'existing' : 'create',
+    LOAD_ALLOW_FIXTURE_WRITES: fixture ? '0' : '1',
     LOAD_DISPOSABLE_TARGET: '1',
     LOAD_TEACHER_USERNAME: username,
     LOAD_TEACHER_PASSWORD: password,
@@ -99,6 +108,13 @@ async function runHarness(
     LOAD_OUTPUT: outputPath,
     LOAD_SCENARIOS: 'W1',
     LOAD_PARTICIPANTS: String(participants),
+    ...(fixture
+      ? {
+          LOAD_SESSION_CODE: fixture.sessionCode,
+          LOAD_LIVE_SESSION_ID: fixture.liveSessionId,
+          LOAD_SESSION_QUESTION_ID: fixture.sessionQuestionId,
+        }
+      : {}),
     ...(fixtureOnly ? { LOAD_FIXTURE_ONLY: '1' } : {}),
   };
   if (!env.LOAD_TEACHER_USERNAME || !env.LOAD_TEACHER_PASSWORD)
@@ -124,7 +140,7 @@ async function assertFixtureSmoke(
   outputPath: string,
   result: ChildResult,
   password: string,
-): Promise<void> {
+): Promise<SmokeFixture> {
   if (result.status !== 0)
     fail(
       `Credential/fixture smoke failed; diagnostics=${safeOutput(`${result.stdout}\n${result.stderr}`, password)}`,
@@ -135,19 +151,108 @@ async function assertFixtureSmoke(
       courseId?: string;
       liveSessionId?: string;
       sessionQuestionId?: string;
+      sessionCode?: string;
     };
     scenarios?: unknown[];
   };
   if (
     !report.fixture?.courseId ||
     !report.fixture.liveSessionId ||
-    !report.fixture.sessionQuestionId
+    !report.fixture.sessionQuestionId ||
+    !report.fixture.sessionCode
   )
     fail('Credential/fixture smoke did not produce a complete fixture.');
   if (report.scenarios?.length)
     fail(
       'Credential/fixture smoke unexpectedly executed a participant scenario.',
     );
+  return {
+    courseId: report.fixture.courseId,
+    liveSessionId: report.fixture.liveSessionId,
+    sessionQuestionId: report.fixture.sessionQuestionId,
+    sessionCode: report.fixture.sessionCode ?? '',
+  };
+}
+
+async function startObserver(
+  fixturePath: string,
+  outputPath: string,
+): Promise<ChildProcess | undefined> {
+  if (process.env.W1_DIAGNOSTICS !== '1') return undefined;
+  const observer = spawn(
+    `${process.cwd()}/node_modules/.bin/tsx`,
+    ['scripts/load-harness/pg-observer.ts'],
+    {
+      env: {
+        ...process.env,
+        W1_PG_OBSERVER_FIXTURE: fixturePath,
+        W1_PG_OBSERVER_OUTPUT: outputPath,
+      },
+      stdio: 'ignore',
+    },
+  );
+  await new Promise<void>((resolve, reject) => {
+    observer.once('error', reject);
+    observer.once('spawn', () => resolve());
+  });
+  return observer;
+}
+
+async function stopObserver(
+  observer: ChildProcess | undefined,
+  outputPath: string,
+): Promise<unknown> {
+  if (!observer) return undefined;
+  observer.kill('SIGTERM');
+  await new Promise<void>((resolve) => observer.once('close', () => resolve()));
+  try {
+    const text = await readFile(outputPath, 'utf8');
+    const report = JSON.parse(text) as unknown;
+    if (!report || typeof report !== 'object')
+      throw new Error('observer report must be a JSON object');
+    const candidate = report as Record<string, unknown>;
+    const reconciliation = candidate.reconciliation;
+    const plans = candidate.plans;
+    const safety = candidate.safety;
+    if (
+      candidate.schemaVersion !== 2 ||
+      candidate.enabled !== true ||
+      candidate.target !== 'smartlearning_test' ||
+      !reconciliation ||
+      typeof reconciliation !== 'object' ||
+      !plans ||
+      typeof plans !== 'object' ||
+      !safety ||
+      typeof safety !== 'object'
+    )
+      throw new Error('observer report is missing required fields');
+    const reconciliationRecord = reconciliation as Record<string, unknown>;
+    const plansRecord = plans as Record<string, unknown>;
+    const safetyRecord = safety as Record<string, unknown>;
+    if (
+      typeof reconciliationRecord.liveSessionId !== 'string' ||
+      typeof reconciliationRecord.sessionQuestionId !== 'string' ||
+      !('expected' in reconciliationRecord) ||
+      !('persisted' in reconciliationRecord) ||
+      !('exactMatch' in reconciliationRecord) ||
+      !plansRecord.findByCode ||
+      typeof plansRecord.findByCode !== 'object' ||
+      !plansRecord.getSnapshot ||
+      typeof plansRecord.getSnapshot !== 'object' ||
+      safetyRecord.readOnly !== true ||
+      safetyRecord.writes !== false ||
+      safetyRecord.schemaChanges !== false ||
+      safetyRecord.indexChanges !== false ||
+      safetyRecord.poolChanges !== false ||
+      safetyRecord.lockChanges !== false
+    )
+      throw new Error('observer report has invalid required fields');
+    return report;
+  } catch (error) {
+    fail(
+      `Observer did not produce valid JSON: ${error instanceof Error ? error.message : 'invalid report'}`,
+    );
+  }
 }
 
 async function assertStage(
@@ -191,14 +296,14 @@ async function main(): Promise<void> {
     : undefined;
   const maxStage = maxStageArg
     ? Number(maxStageArg.slice('--max-stage='.length))
-    : 300;
+    : 100;
   if (
     (selectedStage !== undefined &&
       !STAGES.includes(selectedStage as (typeof STAGES)[number])) ||
     (selectedStage === undefined &&
       !STAGES.includes(maxStage as (typeof STAGES)[number]))
   )
-    fail('--stage/--max-stage must be one of 20, 50, 100, or 300.');
+    fail('--stage/--max-stage must be 100 for diagnostic W1 runs.');
   const baseUrl = required('LOAD_BASE_URL');
   const createdBy = required('LOCAL_W1_PROVISION_CREATED_BY');
   const username = `local-w1-${Date.now()}-${randomUUID().slice(0, 8)}`;
@@ -208,6 +313,7 @@ async function main(): Promise<void> {
   const prefix = `${outputDir}/w1-${id}`;
   let provisioned = false;
   let keepTeacher = true;
+  let observer: ChildProcess | undefined;
 
   try {
     await healthCheck(baseUrl);
@@ -241,7 +347,17 @@ async function main(): Promise<void> {
       id,
       true,
     );
-    await assertFixtureSmoke(smokePath, smoke, password);
+    const smokeFixture = await assertFixtureSmoke(smokePath, smoke, password);
+    const stageFixturePath = `${prefix}-stage-fixture.json`;
+    await writeFile(
+      stageFixturePath,
+      `${JSON.stringify(
+        { fixture: { ...smokeFixture, expectedParticipants: STAGES[0] } },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
     process.stdout.write(
       `Credential smoke passed: runId=${id} teacher=${username}\n`,
     );
@@ -252,6 +368,8 @@ async function main(): Promise<void> {
       : STAGES.filter((stage) => stage <= maxStage);
     for (const participants of stages) {
       const outputPath = `${prefix}-${participants}.json`;
+      const observerPath = `${prefix}-pg-observer.json`;
+      observer = await startObserver(stageFixturePath, observerPath);
       const result = await runHarness(
         baseUrl,
         username,
@@ -259,14 +377,33 @@ async function main(): Promise<void> {
         participants,
         outputPath,
         id,
+        false,
+        smokeFixture,
       );
       await assertStage(outputPath, participants, result, password);
+      const observerReport = await stopObserver(observer, observerPath);
+      observer = undefined;
+      const parsedStage: unknown = JSON.parse(
+        await readFile(outputPath, 'utf8'),
+      );
+      if (!parsedStage || typeof parsedStage !== 'object')
+        fail('W1 stage report must be a JSON object.');
+      const stageReport = parsedStage as Record<string, unknown>;
+      if (!Array.isArray(stageReport.scenarios) || !stageReport.schemaVersion)
+        fail('W1 stage report is missing required fields.');
+      stageReport.postgresObserver = observerReport;
+      await writeFile(
+        outputPath,
+        `${JSON.stringify(stageReport, null, 2)}\n`,
+        'utf8',
+      );
       process.stdout.write(
         `W1 stage passed: participants=${participants} runId=${id}\n`,
       );
     }
     keepTeacher = false;
   } finally {
+    if (observer) await stopObserver(observer, `${prefix}-pg-observer.json`);
     if (provisioned && keepTeacher)
       process.stderr.write(
         `Cleanup candidate retained: teacher=${username} runId=${id}\n`,

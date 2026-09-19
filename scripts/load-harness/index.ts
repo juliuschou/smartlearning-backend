@@ -10,6 +10,7 @@ import { LoadHttpClient } from './http-client';
 import { createOperation, operationReport } from './metrics';
 import { LoadSocketClient } from './socket-client';
 import { createW1Fixture, type W1Fixture } from './fixture';
+import { W1DiagnosticsCollector } from './diagnostics';
 
 interface ScenarioReport {
   name: ScenarioName;
@@ -31,8 +32,9 @@ interface HarnessReport {
     fixtureMode: string;
   };
   scenarios: ScenarioReport[];
-  fixture?: Omit<W1Fixture, 'sessionCode'>;
+  fixture?: Omit<W1Fixture, 'sessionCode'> & { sessionCode: string };
   safety: { secretsRedacted: true; destructiveCleanup: false };
+  diagnostics?: ReturnType<W1DiagnosticsCollector['report']>;
 }
 
 function usage(): void {
@@ -224,7 +226,13 @@ async function main(): Promise<void> {
     return;
   }
   const startedAt = new Date().toISOString();
-  const http = new LoadHttpClient(config.baseUrl, config.timeoutMs);
+  const diagnostics = new W1DiagnosticsCollector();
+  const http = new LoadHttpClient(
+    config.baseUrl,
+    config.timeoutMs,
+    diagnostics,
+    config.runId,
+  );
   let fixture: W1Fixture | undefined;
   if (config.fixtureMode === 'create') {
     fixture = await createW1Fixture(
@@ -262,10 +270,12 @@ async function main(): Promise<void> {
             questionId: fixture.questionId,
             liveSessionId: fixture.liveSessionId,
             sessionQuestionId: fixture.sessionQuestionId,
+            sessionCode: fixture.sessionCode,
           },
         }
       : {}),
     safety: { secretsRedacted: true, destructiveCleanup: false },
+    ...(diagnostics.report() ? { diagnostics: diagnostics.report() } : {}),
   };
   const json = JSON.stringify(report, null, 2);
   if (config.outputPath)
