@@ -346,3 +346,70 @@
 - **Detection signal:** 讀回 tool 輸出時發現 `S3_SECRET_ACCESS_KEY=kSkD...` 以明文顯示。
 - **Prevention rule:** 對含 secrets 的 env 檔做任何展示前，用「先輸出到臨時檔再 sed」或逐行白名單遮罩（`sed -E 's/(KEY|TOKEN|SECRET|PASSWORD)=.*/\1=<set>/'`），且優先使用 `grep -c` 之類不出值的斷言；一旦洩漏立即旋換憑證。
 - **Tripwire:** 任何讀取 `.env.*`/credentials 檔的命令，輸出經 `grep -cE '=(GENERATE_ME|FILLED_BY_SETUP)$'` 之類斷言確認，或先跑 `grep -E 'SECRET|TOKEN|PASSWORD|KEY' file | sed 's/=.*/=<set>/'` 複核無明文。
+
+## 2026-09-18 — Gate3 background samplers need exported Compose inputs
+
+- **Failure mode:** The remediation heartbeat ran in a background subshell before Compose interpolation variables were exported, so service resolution silently produced `absent` rows even while containers were healthy.
+- **Detection signal:** `heartbeat.tsv` contained repeated `absent` records; direct Compose resolution failed with missing `GATE3_SECRET_HOST_DIR`/image/port interpolation variables.
+- **Prevention rule:** Export or explicitly pass every Compose interpolation variable before starting background lifecycle samplers; prefer a wrapper that supplies variables on every Compose invocation instead of relying on ambient shell state.
+- **Tripwire:** Render the exact Compose config before startup and require heartbeat samples to contain resolved container IDs, running state, and health before reporting `UP PASS`.
+
+## 2026-09-18 — Rancher Desktop port publication needs a non-internal ingress network
+
+- **Failure mode:** Gate3 attached qa-a/qa-b only to an `internal: true` bridge; the services were healthy in-container, but Rancher Desktop did not materialize usable loopback-published ports.
+- **Detection signal:** Container inspect showed `NetworkSettings.Ports={"3000/tcp":null}` and `docker compose port` failed; a controlled bridge experiment published successfully only after the container also joined a non-internal bridge.
+- **Prevention rule:** Separate dependency isolation from host ingress: keep Redis, secret initialization, and the temporary test-DB attachment on the internal network, and attach only qa-a/qa-b to a disposable non-internal ingress network.
+- **Tripwire:** Before reporting Gate A PASS, require both QA port mappings to be non-null and HTTP-reachable, prove Redis and the protected DB are absent from the ingress network, then prove both per-run networks are absent after `down` and the DB's original network-name set is restored exactly.
+
+## 2026-09-19 — Cross-boundary identity, port state, and disposable infrastructure
+
+- **Failure mode:** Treating localhost as the application's source identity, equating `HostConfig.PortBindings` with an active published port, trusting stale Rancher Desktop mount paths or containers, or proceeding without verifying the target database/Redis/network/environment could misclassify infrastructure failures or mutate the wrong resource; backup evidence was also accepted without a restore proof.
+- **Detection signal:** Container inspection and runtime connectivity disagreed with assumed host identity or port publication; minimal-container reproduction was not established before considering Rancher Desktop, WSL, firewall, or daemon changes; stale `/mnt/wsl/rancher-desktop/run/docker-mounts/...` paths and unknown disposable state were treated as authoritative; destructive-test target identity or backup restoration was unverified.
+- **Prevention rule:** Never assume localhost identity across Windows/WSL/Docker boundaries. Never equate `HostConfig.PortBindings` with an active published port: verify `NetworkSettings.Ports` and actual Windows/WSL connectivity. Reproduce infrastructure failures with a minimal standalone container before changing Rancher Desktop, WSL, firewall, or daemon settings. Treat Rancher Desktop materialized mount paths as runtime-only, recreate disposable containers from source-controlled configuration, verify database/Redis/network/`NODE_ENV`/backend identity before destructive tests, and call a backup proven only after a successful restore.
+- **Tripwire:** For every important disposable run, record runtime-observed source identity, rendered port mappings, and an actual connectivity probe; require a minimal-container reproduction before host/runtime changes; reject non-reproducible mount paths and stale resources; perform exact identity checks before destructive operations; and require a restore test with verified data before declaring backup success.
+
+## 2026-09-19 — Mock subprocess fixtures need explicit environment propagation
+
+- **Failure mode:** A Gate3 lifecycle fixture invoked a generated mock script as a child process but kept its output-path variable shell-local, so the child expanded an empty path and the mocked suite stopped before exercising the lifecycle assertions.
+- **Detection signal:** The no-Docker test failed with `source-evidence.sh: line 2: : No such file or directory` while shell syntax and earlier in-process fixtures passed.
+- **Prevention rule:** Export or explicitly pass every variable consumed by generated child-process fixtures; do not assume a variable assigned in the parent shell is inherited.
+- **Tripwire:** For each generated executable fixture, enumerate its referenced variables and assert they are exported or provided inline before invocation; the fail-closed mock suite must reach its final PASS marker.
+
+## 2026-09-19 — Restore real shell functions after phase-order mocks
+
+- **Failure mode:** A lifecycle-order fixture replaced `attach_qa_publish_network` with a logging stub, then a later fixture attempted to test the real helper without re-sourcing it, so the test observed the stale stub instead of production behavior.
+- **Detection signal:** The mocked suite reached the attachment fixture but failed its expected `ensure → boundaries → qa-a → qa-b` call sequence with an empty attachment log.
+- **Prevention rule:** Treat Bash function overrides as shared mutable fixture state; isolate them in subshells or explicitly re-source/save-and-restore the production definition before the next fixture.
+- **Tripwire:** Before a fixture claims to exercise a real helper, assert `declare -f <helper>` contains a production-only marker or re-source the library immediately before installing that fixture's dependency mocks.
+
+## 2026-09-19 — Test `errexit`-dependent helpers under production shell semantics
+
+- **Failure mode:** A fixture called a helper under `set +e` to capture its status, but the production helper relies on `set -e` to stop immediately when `docker network connect` fails; the test therefore continued and returned a later command's status.
+- **Detection signal:** The injected connect operation returned 9, but the outer fixture observed a different status and continued beyond the intended failure point.
+- **Prevention rule:** When testing Bash helpers whose control flow depends on `errexit`, invoke them in a subshell with `set -e` and capture the subshell status from a parent temporarily using `set +e`.
+- **Tripwire:** Every injected-failure fixture must assert both the original failure status and absence of calls after the failure boundary.
+
+## 2026-09-19 — TSV `printf` formats must match schema arity
+
+- **Failure mode:** A ten-column source-evidence row used only nine `%s` conversions. Bash `printf` reused the format for the extra argument, splitting one logical row and violating the declared TSV schema.
+- **Detection signal:** Header field-count assertions passed syntax checks but the first aggregate data row did not contain the declared ten columns.
+- **Prevention rule:** Keep each TSV header, format string, and argument list at the same explicit arity; never rely on Bash `printf` format reuse.
+- **Tripwire:** Mocked evidence tests must assert field counts for both header and first data row of every TSV artifact.
+
+## 2026-09-19 Gate3 publish network cleanup flag not authoritative
+- Failure mode: `gate3:down` skipped `remove_publish_network` whenever `PUBLISH_NETWORK_CREATED != 1`, but Compose can materialize the project-scoped `gate3-publish` network independently of the harness's explicit `ensure_publish_network`, leaving the network behind with state flag = 0.
+- Detection signal: post-down verification `publish_network_present=YES` while all other resources were already removed.
+- Prevention rule: cleanup removal decisions must be verified from the resource's own identity labels, never from a harness state flag; absent resources must be treated as idempotent success; attached-container states must fail closed with a container listing.
+- Tripwire: `tools/gate3/tests/run.sh` publish-network removal contract fixtures (absent / empty / attached / identity-mismatch).
+
+## 2026-09-19 Gate A: source-correlation parse fails on real pino-pretty logs
+- Failure mode: `source-evidence.sh` probes HTTP successfully but correlation always fails against real logs — the extracted JSON is the pino object, while `request completed` appears as pretty-printed message text before the JSON, so `.msg` does not exist in real records; mock fixtures embed `msg` inside the JSON object and therefore cannot catch this.
+- Detection signal: `matches=0 reason=msg mismatch` for every attempt while `marker_present=YES` and the record is visually present in Compose logs.
+- Prevention rule: source-correlation extraction must be validated against a real captured log line fixture (not only synthetic mocks); correlate on fields inside the JSON (`req.url`, `req.headers`, `res.statusCode`) rather than the pretty-printed message text, or parse pino JSON transport output directly.
+- Tripwire: one real-log fixture test in `tools/gate3/tests/run.sh` using a captured pino-pretty line with the message outside the JSON.
+
+## 2026-09-19 — Gate3 parser fix follow-ups (fixture traps)
+- Failure mode: three fixture-authoring traps surfaced while fixing the source-correlation parser: (1) a mock `docker logs` fixture reused the qa-a marker record for qa-b, so the qa-b probe could never correlate; (2) a global `sed "s/$marker/wrong-id/g"` removed every marker occurrence, turning an ID-mismatch case into "marker not found" instead; (3) a Bash string-substitution line with mismatched quoting silently shifted parsing and produced a downstream "unbound variable" at an unrelated line.
+- Detection signal: FAILs attributed to wrong rejection reasons or to line numbers that did not correspond to the visible code.
+- Prevention rule: build each rejection-reason fixture by mutating exactly the field it tests (keep all other marker occurrences intact); give every fixture case a unique run id so its diagnostics survive; after any Bash quoting-heavy fixture edit, run `bash -n` plus a smoke of the fixture string before the suite.
+- Tripwire: the mocked suite asserts each rejection reason by exact string in the per-case `source-correlation.tsv`, and the container-free parser fixtures assert both exit status and `SOURCE_IDENTITY` value for the real captured-format line.

@@ -4865,3 +4865,277 @@ Between stages: pause, confirm each gate (no errors/duplicates, latency within b
 - W1-300: 300 attempted/300 successful/0 failed, error rate 0%, unexpected API errors 0, duplicate participant IDs 0, p50 2376.90ms, p95 2423.75ms, p99 2426.90ms, max 2427.12ms, total completion 2464.66ms; persisted DB participants=300 and API/harness/DB counts reconciled exactly.
 - Available telemetry snapshot after execution: backend process RSS 655568 KiB / CPU 1.3%; PostgreSQL container CPU 0.46% / memory 44.71 MiB of 15.44 GiB; `pg_stat_activity` count 7. These are post-run snapshots, not time-series peak measurements.
 - Final W1 acceptance: **FAIL** because Join API p95 was 2423.75ms, exceeding the documented ≤1000ms threshold. W1-300 completed with no data-integrity or error-rate failure, but W1 overall does not qualify as PASS. No W2–W8 ran and no automatic cleanup was performed.
+
+## 2026-09-15 — W1-300 functional/performance attribution
+
+- **Functional correctness: PASS** — 300/300 joins, 0% errors, 0 duplicate participant IDs, and exact database reconciliation.
+- **Performance: FAIL** — required Join API p95 ≤1000 ms; measured p95 was 2423.75 ms.
+- **Confirmed architectural constraint:** join transactions serialize on the shared `LiveSession` row.
+- **Likely amplification:** PostgreSQL connection pool max ≈10, post-commit session snapshot work, and possible realtime publisher contention.
+- **Root-cause attribution:** strongly supported, but per-phase latency contribution still requires diagnostic instrumentation.
+
+## 2026-09-15 — W1 diagnostics implementation checkpoint
+
+- Added strict `W1_DIAGNOSTICS=1` gating for load-harness effective in-flight concurrency/client CPU/RSS diagnostics and anonymous join phase logging. Normal runs do not create diagnostic records or emit diagnostic logs.
+- Preserved the anonymous join transaction ordering and `LiveSession` `FOR UPDATE` lock; participant insert and outbox append remain inside the transaction, publisher wake remains post-commit, and snapshot remains post-commit.
+- Current Prisma adapter does not expose its internal pg pool, so pool counters, isolated PostgreSQL lock waits, backend/DB resource telemetry, event-loop delay, and publisher-before-response timing are explicitly reported unavailable rather than inferred.
+- Restricted `scripts/run-w1.ts` to W1-20 only. No W1-100/W1-300/W2-W8 or cleanup operation was run in this checkpoint.
+- Static verification passed: Prettier, typecheck, lint, format check, build, `git diff --check`, and focused secret scan. The diagnostic workload is blocked pending a safe source for `LOCAL_W1_PROVISION_CREATED_BY` (the environment has no configured value and `psql` is unavailable); no fresh teacher was provisioned and no workload ran.
+
+## 2026-09-15 — W1-20 opt-in diagnostic run
+
+- Read-only compiled Prisma lookup found exactly one valid creator: account `01a09b70-fcb5-7651-b6c3-bc5b4dde307a`, username `exporter-01a09b70-fcb5-7651-b6c3-d2c2f29ec1f5`, role `admin`, status `active`. `LOCAL_W1_PROVISION_CREATED_BY` was set only in the workload shell and was not persisted.
+- Run `73c0e725-4532-489e-8218-ff27e66012e7`, commit `c9c2476917378eec2f48733bdc644b606c3cfad3`; fresh teacher `local-w1-1789481208927-c9441153`, account `01a0a564-688b-704d-871f-2cb67d4ec6da`, role `teacher`, status `active`.
+- Exactly W1-20 ran: 20 attempted/20 successful/0 failed, error rate 0%, duplicate participant IDs 0. DB reconciliation: 20 participants and 23 live-session events for the diagnostic fixture; participant count matches the API/harness count.
+- Overall Join API timing: p50 161.38 ms, p95 214.65 ms, p99 221.26 ms, max 221.26 ms. Effective client concurrency peak was 20. Client telemetry: RSS 90,693,632 bytes; CPU user 76,982 μs; CPU system 13,930 μs.
+- Per-phase timings: **NOT AVAILABLE** in the report. The current implementation logs backend phase diagnostics separately, but the orchestrator does not capture backend logs into the artifact; no phase timing is claimed. Pool total/idle/waiting, PostgreSQL lock-wait evidence, backend CPU/RSS, PostgreSQL CPU/memory/active connections, event-loop delay, and publisher-before-response timing: **NOT AVAILABLE**.
+- LiveSession serialization remains an architectural constraint, but this run does not directly support its per-request latency contribution because lock-wait duration was not isolated. Compared with the prior W1-20 baseline (p95 309.86 ms), this run measured 214.65 ms p95; the instrumentation does not appear to materially increase latency, but this is not a controlled paired comparison.
+- Cleanup candidate created: fresh teacher `local-w1-1789481208927-c9441153` and its diagnostic fixture/artifacts; no automatic cleanup performed. Existing teachers, fixtures, and artifacts were untouched. W1-100/W1-300/W2-W8 were not run.
+- Final `git status --short`: ` M scripts/load-harness/http-client.ts`, ` M scripts/load-harness/index.ts`, ` M scripts/run-w1.ts`, ` M src/modules/participants/api/participants.controller.ts`, ` M src/modules/participants/application/participant.service.ts`, ` M tasks/todo.md`, `?? artifacts/w1-73c0e725-4532-489e-8218-ff27e66012e7-20.json`, `?? artifacts/w1-73c0e725-4532-489e-8218-ff27e66012e7-credential-smoke.json`, `?? scripts/load-harness/diagnostics.ts`.
+
+## 2026-09-15 — W1-20 backend diagnostic evidence capture
+
+- Static checks passed before execution: format check, typecheck, lint, build, `git diff --check`, and focused secret scan. The isolated backend on `127.0.0.1:3001` was restarted only with `NODE_ENV=test`, `W1_DIAGNOSTICS=1`, and stdout/stderr captured to a temporary local log. No migration or database recreation occurred.
+- Run `be90a884-97fa-43a5-9f14-45116ba02303`, commit `c9c2476917378eec2f48733bdc644b606c3cfad3`; exactly W1-20 ran with fresh teacher `local-w1-1789481904797-27ee0221`, account `01a0a56f-01d2-7103-b21c-41096bbaaac3`, role `teacher`, status `active`. Client result: 20/20 joins, 0 failures, 0% errors, 0 duplicates; DB reconciliation was exact for 20 participants.
+- Client latency: p50 161.38 ms, p95 214.65 ms, p99 221.26 ms, max 221.26 ms. Effective client concurrency peak=20. The artifact now includes 20/20 matched backend diagnostic records for the same run and fixture; unique request IDs were unavailable because the existing diagnostic requests correlated by run ID/session ID only. Malformed records: 0.
+- Backend phase timing summaries (ms): total server path p50 291.51/p95 334.60/max 339.28; `findByCode` 27.37/206.10/208.50; transaction total 125.80/279.20/279.83; `LiveSession FOR UPDATE segment` 80.22/233.58/234.87; participant insert 1.54/9.40/9.46; outbox append 3.42/13.70/14.84; post-commit snapshot 59.09/193.65/200.57. Sequence increment, separate commit, pool acquisition, and publisher-before-response timing were not separately instrumented: **NOT AVAILABLE**.
+- Directly measured p50 shares against total server p50 (overlapping phases are not additive): `findByCode`≈9.4%, transaction≈43.1%, LiveSession FOR UPDATE segment≈27.5%, participant insert≈0.5%, outbox append≈1.2%, post-commit snapshot≈20.3%. These shares are descriptive ratios only; transaction contains the lock/read and commit, so they must not be summed.
+- The phase breakdown directly confirms substantial transaction/LiveSession serialization contribution in this 20-request burst, but does not isolate PostgreSQL lock wait or prove it is the sole dominant cause. Suspected but unconfirmed amplification remains pool saturation and publisher contention. Backend/DB CPU/RSS, PostgreSQL CPU/memory/active connections, pool total/idle/waiting, lock-wait duration, event-loop delay, and separate commit timing remain **NOT AVAILABLE**.
+- Instrumentation distortion assessment: client p95 214.65 ms versus prior W1-20 p95 309.86 ms; no material increase is evident, but this is not a controlled paired comparison. W1-100 is not yet justified solely by this evidence; retain the larger-workload stop until per-phase instrumentation is reviewed.
+- Cleanup candidate: fresh teacher `local-w1-1789481904797-27ee0221` and its fixture/artifacts retained; no automatic cleanup. W1-100/W1-300/W2-W8 were not run.
+
+## 2026-09-15 — W1-20 paired timing correlation validation
+
+- Required checks passed before execution: format check, typecheck, lint, build, `git diff --check`, and focused secret scan. The isolated backend on `127.0.0.1:3001` was restarted with diagnostic stdout captured; no migration, recreation, or cleanup occurred.
+- Run `9bab6aa9-ae66-4ce2-ad0f-772932efda05`, commit `c9c2476917378eec2f48733bdc644b606c3cfad3`; fresh teacher `local-w1-1789482672058-fb9d7bd9`, account `01a0a57a-b6fe-702c-a84e-87c7db5a5ea6`, role `teacher`, status `active`. Exactly W1-20 ran.
+- Functional result: 20/20 joins, 0 failures, 0% errors, 0 duplicate IDs; DB participant reconciliation exact at 20.
+- Client latency (full response body consumed before timing): p50 144.07 ms, p95 212.60 ms, p99 217.80 ms, max 217.80 ms. Server blocking service total (service entry through post-commit snapshot; excludes controller/envelope/socket flush): p50 123.08 ms, p95 196.98 ms, max 201.72 ms.
+- Correlation: 20/20 client join records, 20/20 backend diagnostic records, 20 unique diagnostic request IDs, 0 missing/corrupt records, and 20/20 exact client/server pair matches. Six non-join fixture diagnostic requests were excluded from the join pairing. Invariant `server blocking ≤ client end-to-end + 10 ms` held for all 20 requests; violations=0.
+- Paired phase summaries (ms): `findByCode` p50 29.97/p95 96.35/max 97.52; transaction p50 47.15/p95 129.01/max 129.95; `LiveSession FOR UPDATE segment` p50 22.68/p95 102.76/max 104.77; participant insert p50 1.29/p95 2.37/max 6.29; outbox append p50 2.91/p95 4.25/max 4.83; post-commit snapshot p50 32.01/p95 55.04/max 56.30.
+- Same-request decompositions: median server request `123.08 ms` = transaction `63.77 ms` (51.8%), FOR UPDATE segment `50.49 ms` (41.0%), snapshot `32.01 ms` (26.0%); p95-tail request `196.98 ms` = transaction `129.01 ms` (65.5%), FOR UPDATE `94.61 ms` (48.0%), snapshot `5.11 ms` (2.6%); slowest request `201.72 ms` = transaction `100.83 ms` (50.0%), FOR UPDATE `83.54 ms` (41.4%), snapshot `3.30 ms` (1.6%). These nested ratios are not additive.
+- Timing-boundary diagnosis: the earlier apparent contradiction came from mixing the previous run's client values with this run's backend values; this run also corrected client timing to include response-body consumption. The server service total is blocking application work, not full HTTP response-finish time, but it remained below paired client duration for all requests.
+- Confirmed dominant phases: transaction and its LiveSession FOR UPDATE segment are the largest repeated contributors in the paired data. This directly supports meaningful LiveSession serialization contribution, but does not isolate PostgreSQL lock wait or prove it is the sole bottleneck. Suspected/unconfirmed causes: pool saturation and publisher contention.
+- Still **NOT AVAILABLE**: isolated PostgreSQL lock-wait duration, pool acquisition counters, sequence increment timing, separate commit timing, publisher completion timing, backend/DB CPU/RSS, PostgreSQL CPU/memory/active connections, and event-loop delay.
+- W1-100 is not justified yet solely from this run; retain the larger-workload stop. Cleanup candidate `local-w1-1789482672058-fb9d7bd9` and its fixture/artifacts were retained; no automatic cleanup. W1-100/W1-300/W2-W8 were not run.
+
+## 2026-09-15 — W1-100 query/snapshot investigation
+
+- Goal: add diagnostics-only decomposition for `findByCode` and post-commit snapshot, plus read-only PostgreSQL observation and reconciliation; no production optimization, schema/index/pool/lock changes, cleanup, W1-300, or W2-W8.
+- Initial inspection: both paths use the wide `sessionForProjection` graph; anonymous join loads it twice. The locked session reread remains required for race correctness. PrismaPg does not expose application pool counters, and exact generated SQL is not currently captured.
+- Status: implementation complete; exactly one W1-100 observer run is wired but intentionally not executed in this task.
+
+### Results
+
+- Added opt-in `scripts/load-harness/pg-observer.ts` using a single read-only `pg.Client`, guarded to `W1_DIAGNOSTICS=1` and `smartlearning_test`.
+- Observer samples `pg_stat_activity`/`pg_locks`, reconciles participant/event counts, and captures representative JSON EXPLAIN plans for session-code and session-id projection shapes.
+- `scripts/run-w1.ts` starts/stops one observer around the existing W1-100 stage and embeds its report under `postgresObserver`; normal runs are unchanged. No workload, migration, cleanup, schema/index/pool/lock change was run.
+- Verification: `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `git diff --check` passed.
+
+## 2026-09-16 — Phase B RC evidence ledger pointer
+
+The canonical Phase B evidence synchronization for RC `b9bcd2be9c9d31d7eb4d197c3865988b11215c5b` is recorded in the RC task ledger and project WBS. This main worktree ledger is not that immutable RC snapshot and remains subject to its separately recorded dirty working tree.
+
+- Canonical RC task ledger: `smartLearning-backend-phase-b-rc/tasks/todo.md` — Phase B DOC-1 / QA-1 evidence synchronization entry.
+- Canonical project status: `docs/智學互動平台/00_專案規劃/智學互動平台剩餘工作WBS.md` — Phase B evidence ledger synchronization entry.
+- Reconciled targeted evidence: 12 suites / 95 tests PASS; machine execution proven; RC association strongly supported; individual logs do not embed the RC SHA and no cryptographic binding is claimed.
+- Reconciled Phase B E2E: 7 suites / 57 tests PASS, RC-bound, `/tmp/phase-b-rc-full-e2e/`.
+- Core integration: 8 suites / 38 tests PASS. Redis 1/6 (BE-8.5) and S3 1/1 (BE-5/OPS) remain blocked external qualification gates, not assertion failures.
+- Manual Phase B sign-off has not been performed. The BE-8 CLI credential concurrency result remains an open cross-workstream full-repository blocker and is not a Phase B functional blocker.
+
+## 2026-09-18 — Reproducible one-shot Gate3 harness
+
+- [x] CP0 read-only discovery: existing Gate3 resources are ad hoc/unlabelled; `smart-learning-pg-test` is the protected external `smartlearning_test` authority; development resources are separate and out of scope; backend image `smartlearning-backend:qa1-rc-b9bcd2b` is `nodejs` `999:999`.
+- [x] CP1–CP5 implement RUN_ID-scoped Compose, secret-init named volume, lifecycle evidence, source evidence, readiness, and exact cleanup.
+- [x] CP6 complete two final qualifying disposable smoke rounds after static validation; no Redis boundary proof or DB mutation.
+- [ ] Gate A remediation: revalidate service-resolved heartbeat IDs, external published-port source evidence, post-down exact absence, DB network restoration, and artifact policy.
+- [ ] Fresh Gate A revalidation: not yet run.
+- [ ] Redis Boundary Proof: NOT RUN.
+
+### Risk and rollback
+
+- Risk: medium; changes are new disposable harness artifacts only, but Docker network attachment and cleanup must remain exact.
+- Rollback: remove/revert `tools/gate3/` and package script additions; never remove the protected test DB, development resources, or persistent volumes.
+
+### Dependencies and environment
+
+- Docker/Compose, OpenSSL, curl, jq, `smart-learning-pg-test` with migrated `smartlearning_test`, and the expected backend image are required. `shellcheck` is optional.
+- No migration, seed, reset, truncate, outage, S3, boundary, or full regression command is permitted in this checkpoint.
+
+### Results
+
+- Implementation complete: `tools/gate3/` now owns RUN_ID-scoped Compose, secret initialization, non-root startup, lifecycle evidence, source evidence, readiness, and exact cleanup. Existing working-tree load-harness changes were preserved.
+- Static verification: `npm run gate3:static` PASS; `bash -n` and `docker compose config` PASS; `shellcheck` NOT AVAILABLE; `npm run typecheck` PASS; `npm run lint:check` PASS; `npm run format:check` PASS; `git diff --check` PASS.
+- Round 1 `20260917-182342-acd226`: PASS — fresh qa-a/qa-b/Redis/secret volume, readiness 200, Redis PONG, test DB healthy, both backends `nodejs`, secret metadata absent, observed source `::ffff:127.0.0.1` equal, exact down cleanup.
+- Round 2 `20260917-182451-0acbbe`: PASS — fresh resource IDs and RUN_ID, same readiness/Redis/DB/non-root/metadata/source checks, exact down cleanup. No Gate3 containers/volumes/networks from either round remain; test DB remains attached to its pre-existing networks.
+- No Redis boundary seed, 99→100→429, outage/recovery, S3, full regression, migration, reset/drop/truncate, development DB mutation, or development Redis mutation was executed.
+- Corrected final repeatability rounds after removing the backend host-script bind: Round 1 `20260917-182843-f73549` PASS; Round 2 `20260917-182935-e02e76` PASS. Both used inline non-secret runtime loading plus the read-only named secret volume; both were down-cleaned with fresh resource IDs.
+
+## 2026-09-18 — Gate A remediation checkpoint
+
+- Static remediation checks PASS: `bash -n tools/gate3/*.sh`, `npm run gate3:static`, and `git diff --check`; ShellCheck remains unavailable.
+- Implemented service-resolved heartbeat records, external correlation probe design, post-down exact absence checks, DB network membership evidence, `/artifacts/gate3/` ignore policy, and checklist reconciliation. No application rate-limit code or database/schema changes were made.
+- Fresh disposable runs `20260918-135314-6bb57a`, `20260918-135542-6bdc0d`, `20260918-135736-994c23`, `20260918-135924-8c0343`, `20260918-140047-b06c9d`, and `20260918-140227-47fb21` were created and exact-cleaned while diagnosing the remediation. The first two exposed missing exported Compose interpolation variables in the background sampler; subsequent runs reached the external probe but host-side published-port access timed out in this WSL/Rancher environment, and the gateway hostname was unavailable. No boundary workload, fixture, migration, reset, truncate, outage, S3, or development-resource mutation ran.
+- Current status: **Gate A remediation not yet revalidated**; **Fresh Gate A revalidation remains NOT PASS**; **Redis Boundary Proof remains NOT RUN**. The latest external-probe execution was blocked by the environment permission classifier when the probe was changed to use the already-present `busybox:1.36` helper image; no workaround or boundary workload was attempted.
+- Fresh WSL2-side revalidation `20260918-141733-dc734c` used Compose-discovered published ports and a WSL2 `curl` probe with unique request IDs. QA services were healthy and the probe reached the published-port step, but `127.0.0.1:<published-port>` timed out in the current Rancher Desktop/WSL routing path; the run was exact-cleaned. Gate A remains blocked; no boundary workload ran.
+- Diagnostic fresh run `20260918-142801-b6aa92` reached healthy qa-a/qa-b, then stopped before connectivity testing because Docker inspect reported `NetworkSettings.Ports={"3000/tcp":null}` for both containers while rendered Compose declared `127.0.0.1:3101/3102:3000`; `docker compose port` returned `invalid IP:0`. The run was exact-cleaned. Classification: **COMPOSE PORT MAPPING BLOCKER**; no settings, firewall, WSL, or application changes were made.
+- Dual-network remediation implemented: the internal Gate3 dependency network remains `internal: true`; a separate per-run non-internal `gate3-publish` network is attached only to qa-a/qa-b. Redis, secret-init, and the temporary `smart-learning_test` DB attachment remain private-network-only.
+- Fresh dual-network run `20260918-160000-dualnet`: topology remediation PASS through runtime checks — qa-a/qa-b were dual-homed, Redis and the protected test DB remained off `gate3-publish`, both `NetworkSettings.Ports` mappings materialized, and exact cleanup restored DB memberships and removed both run networks. External WSL source probe timed out on qa-a after port materialization; Gate A remains blocked pending transport/source evidence.
+- Fresh Gate A revalidation remains **NOT PASS**; Redis Boundary Proof remains **NOT RUN**. No boundary workload, migration, reset/drop/truncate, outage, S3, or development-resource mutation was executed.
+
+## 2026-09-19 — Gate3 private-first publish lifecycle
+
+### Goal and acceptance criteria
+
+- [x] Confirm the current dual-network-at-create lifecycle and the private-first/post-health publish-network design.
+- [x] Make qa-a/qa-b start only on the private Gate3 network while retaining create-time loopback port declarations.
+- [x] Add private-phase health, DB-bearing readiness, Redis connectivity, topology, and route assertions before publication.
+- [x] Attach only qa-a/qa-b to `gate3-publish`, then assert the default-route transition and materialized loopback bindings before source evidence.
+- [x] Make default cleanup exact for private-only, partially attached, and fully attached failures; preserve mode retains the actual failed phase.
+- [x] Add no-Docker regression coverage and update the Gate3 operational contract.
+- [x] Verify shell syntax, mocked tests, static text contracts, and diff hygiene without executing Gate A or a real Gate3 lifecycle.
+
+### Risk and rollback
+
+- Risk: medium; this is an infrastructure lifecycle and cleanup change isolated to `tools/gate3/`. Engine-specific network creation, route selection, and late port materialization remain runtime hypotheses until separately authorized evidence is collected.
+- Rollback: revert the Gate3 harness/documentation changes only. Do not modify application code, DB/Redis schema or data, Docker/Rancher Desktop/WSL configuration, or the existing preserved diagnostic run.
+
+### Dependencies and environment
+
+- Implementation verification is no-Docker only. `tools/gate3/static-check.sh`, `gate3.sh preflight/up/source/doctor/down`, Gate A, migrations, seeds, resets, truncates, boundary workloads, and runtime restarts/cleanup are excluded.
+- The existing preserved diagnostic run and its artifacts must remain untouched.
+
+### Working notes
+
+- Keep `ports:` as create-time intent; do not treat `HostConfig.PortBindings` as proof that `NetworkSettings.Ports` has materialized.
+- Redis and the protected test DB remain private-only. The application readiness endpoint is the read-only DB-bearing proof.
+- Capture separate private and published topology/route artifacts so ordering and partial failures remain auditable.
+
+### Results
+
+- Implemented private-first QA startup in `tools/gate3/compose.yaml`; create-time loopback port intent remains, while `gate3-publish` is attached only after both QA services pass private in-container readiness.
+- `tools/gate3/gate3.sh` now records distinct private/published topology and `/proc/net/route` evidence, validates the exact default-route transition and materialized loopback mappings, tracks run-owned publish-network creation, rejects reused run identities, and keeps Redis/DB private-only.
+- Cleanup now preserves the original failure phase/status, conditionally restores the protected DB attachment, aggregates cleanup errors, stops samplers independently, removes only the exact run-owned publish network, and handles private-only/partial/full states. Preserve mode retains the actual failed phase.
+- `source-evidence.sh` validates exact persisted loopback ports without executing state as shell code and emits consistent TSV schemas. `static-check.sh`, mocked lifecycle fixtures, and the Gate3 README were updated for the staged contract.
+- No-Docker verification PASS: `bash -n` for `gate3.sh`, `static-check.sh`, `source-evidence.sh`, and `tests/run.sh`; `bash tools/gate3/tests/run.sh`; `git diff --check`.
+- Not run by design: `tools/gate3/static-check.sh` (Docker Compose render), Gate3 preflight/up/source/doctor/down, Gate A, Redis boundary proof, migrations, DB/Redis mutation, runtime restart, or cleanup. The existing preserved diagnostic run was not touched. Runtime validation of Rancher Desktop route/port behavior remains pending separate authorization.
+- Final static verification (2026-09-19, separately authorized): `npm run gate3:static` PASS (Compose render + jq lifecycle contracts; `shellcheck` NOT AVAILABLE on host — coverage gap only), `npm run typecheck` PASS, `npm run lint:check` PASS, `npm run format:check` PASS, `git diff --check` PASS. No static blockers. Gate A runtime verification remains **PENDING**.
+
+## 2026-09-19 — Gate3 dynamic publish-network cleanup contract fix
+
+### Goal and acceptance criteria
+
+- [x] Read-only confirm the leftover `gate3-20260919-112200-d7f5bf_gate3-publish` network state before any removal.
+- [x] Fix `gate3:down` so the dynamic publish network is reliably cleaned per the authorized cleanup contract.
+- [x] Add harness-level tests for absent/empty/run-owned/external/partial/publish and private networks, repeated down, and cross-RUN_ID protection.
+- [x] Update `gate3.sh`, `tests/run.sh`, `static-check.sh`, `README.md`, `tasks/todo.md`, `tasks/lessons.md`.
+
+### Risk and rollback
+
+- Risk: low; cleanup-only change in `tools/gate3/`, no application or Compose topology change (one label added to `gate3-publish` for run-identity provenance).
+- Rollback: revert the Gate3 harness files only.
+
+### Results
+
+- Root cause: `remove_publish_network` early-returned on `PUBLISH_NETWORK_CREATED != 1`, but Compose materializes the project-scoped `gate3-publish` network independently of the harness flag, so `down` skipped removal while post-down verification failed.
+- Fix: removal is now identity-verified from the network's own labels (compose project + `com.docker.compose.network=gate3-publish` + per-run run-id label), not gated on state. Added the run-id label to the Compose `gate3-publish` definition so Compose-materialized networks carry provenance.
+- Contract: absent → idempotent PASS (`ALREADY-ABSENT`); empty+verified → exact remove; attached containers → fail closed listing IDs/names, no broad disconnect/force rm; identity mismatch → fail closed. Repeated `down` succeeds.
+- RUN_ID=20260919-112200-d7f5bf cleanup: leftover publish network confirmed absent before this session's removal step (authorized inspect + rm became a no-op); re-ran `down` for that RUN_ID → `DOWN COMPLETE`, post-down `result=PASS` (all run resources absent, DB running, DB not a member of the run private network). Preserved run 20260919-094757-195ae8 untouched.
+- Verification: `bash -n` OK; `npm run gate3:test` PASS (incl. new publish-network removal fixtures); `npm run gate3:static` PASS; `npm run typecheck` PASS; `npm run lint:check` PASS; `npm run format:check` PASS; `git diff --check` PASS. `shellcheck` NOT AVAILABLE on host.
+- Gate A runtime verification remains **PENDING**.
+
+## 2026-09-19 — Gate A runtime verification (RUN_ID=20260919-135625-af98e9)
+
+### Results
+
+- Preflight PASS (ports 3501/3502, image ID match, nodejs 999:999, DB=smartlearning_test on bridge).
+- Private-first lifecycle evidence PASS: qa-a/qa-b/redis started private-only (`topology-private.txt`: qa/redis/db publish member=NO); publish network empty before attachment (`publish-network-private.json`); late attach recorded in `publish-attachment.tsv`; `topology-published.txt` shows qa_publish_member=YES, redis/db_publish_member=NO. No dual-network-at-start regression.
+- Private IPs: qa-a=192.168.208.5, qa-b=192.168.208.4 (internal gate3, empty gateway); publish IPs: qa-a=192.168.224.2, qa-b=192.168.224.3 (gateway 192.168.224.1). Private-phase default routes = 0; published default route = 1 via 192.168.224.1 on eth1 for both.
+- Published ports: 127.0.0.1:3501->3000 (qa-a), 127.0.0.1:3502->3000 (qa-b); NetworkSettings.Ports matches persisted HostConfig.PortBindings exactly.
+- HTTP: /health/live 200 + `{"status":"ok"}` + echoed x-request-id on both ports (scripted probe for qa-a; manual confirm for both after failure diagnosis).
+- Source identity: both services observed `remoteAddress=::ffff:192.168.224.1` (publish gateway), identical across qa-a/qa-b; 200 status; records present in Compose logs.
+- **Gate A final verdict: FAIL — SOURCE-CORRELATION BLOCKER (harness-level, NOT application failure).**
+- Root cause: `tools/gate3/source-evidence.sh` extracts `{...}` JSON then asserts `.msg == "request completed"`, but real pino-pretty log lines place `request completed` outside the JSON object (pretty format: `request completed {json}`); `.msg` never matches live logs (mock fixtures embed msg inside JSON, so tests passed). Live logs DO contain exactly-one valid correlated record per service (verified manually: GET /health/live, 200, both x-request-id match, remoteAddress present).
+- Doctor/source re-runs reproduce the same harness parse failure; no transport blockers: WSL curl 200 on both ports; listener owner is Rancher Desktop `wsl-helper docker-proxy serve` (expected); Windows-side direct probe not available from this shell — recorded as evidence gap, not a blocker.
+- Cleanup PASS: `DOWN COMPLETE`, post-down `result=PASS`; all run resources absent; DB running with original memberships restored.
+- Preserved run 20260919-094757-195ae8 untouched. Redis proof and W1 still NOT executed (not authorized).
+
+## 2026-09-19 — Gate3 source-correlation parser fix (pino-pretty contract)
+
+### Goal and acceptance criteria
+
+- [x] Fix `source-evidence.sh` to correlate on the real pino-pretty contract: pretty message `request completed` outside the JSON payload; all correlation fields read from the JSON object (no `.msg` dependency).
+- [x] Fail closed with distinct rejection reasons (marker not found, pretty message mismatch, JSON payload not found, invalid JSON payload, request/response ID mismatch, method/URL/status mismatch, missing remoteAddress, duplicate records, bounded timeout).
+- [x] Add real-format pino-pretty fixtures (message outside JSON) to mocked correlation cases A–J.
+- [x] Add a container-free parser regression mode (`GATE3_PARSER_ONLY=1`) with real captured-line fixtures.
+- [x] No application/Compose/DB changes; harness, fixtures, docs, tasks files only.
+
+### Risk and rollback
+
+- Risk: low; Gate3 harness parser + tests only. No application, logging, Compose topology, Redis, or DB schema change.
+- Rollback: revert `tools/gate3/source-evidence.sh`, `tools/gate3/tests/run.sh`, `tools/gate3/README.md` harness changes.
+
+### Results
+
+- Root cause: parser asserted `.msg == "request completed"` on the extracted JSON, but pino-pretty renders the message as text before the JSON (`… INFO (7): request completed {json}`), so `.msg` never exists in live logs; mock fixtures embedded `msg` inside the JSON and could not catch it (Gate A 20260919-135625-af98e9: every attempt `matches=0 reason=msg mismatch` while the record was present).
+- Fix: `correlate_records` strips ANSI, extracts the JSON suffix, and matches the pretty message on the pre-JSON text; correlation then reads `req.headers["x-request-id"]`, `res.headers["x-request-id"]`, `req.method`, `req.url`, `res.statusCode`, `req.remoteAddress` from the JSON. Exactly-one contract, `matches>1` FAIL preserved.
+- Rejection reasons are distinct and recorded per attempt in `source-correlation.tsv`; a bounded-timeout line is also appended when polling exhausts.
+- New fixtures use the real format (`[ts] INFO (7): request completed {…}` with the message outside the JSON; deterministic test markers; remoteAddress uses the runtime-confirmed test value; no secrets). Cases A–J covered: real line PASS, no-`.msg` PASS, message mismatch FAIL, malformed JSON FAIL, req/res ID mismatch FAIL, missing remoteAddress FAIL, duplicate FAIL, unrelated-surroundings exactly-one PASS, ANSI-residue PASS.
+- Container-free regression: `GATE3_PARSER_ONLY=1 tools/gate3/source-evidence.sh <marker> < <fixture-log>` proves exactly-one correlation PASS with the message outside the JSON (sanity-checked against the captured Gate A record shape, deterministic marker).
+- Verification: `bash -n tools/gate3/*.sh` OK; `npm run gate3:test` PASS; `npm run gate3:static` PASS (shellcheck NOT AVAILABLE on host); `npm run typecheck` PASS; `npm run lint:check` PASS; `npm run format:check` PASS; `git diff --check` PASS.
+- **Gate A runtime revalidation remains PENDING** (not authorized this phase). Redis proof and W1 remain NOT executed (not authorized).
+
+## 2026-09-19 — Gate3 per-probe correlation marker semantics fix
+
+### Goal and acceptance criteria
+
+- [x] Replace deterministic `gate3-<RUN_ID>-<service>` markers with per-probe unique markers (`RUN_ID` + service + phase + collision-resistant nonce); single generation point.
+- [x] Preserve the exactly-one contract per marker (matches==1 PASS; 0 or >1 FAIL). No "latest/first wins" relaxation.
+- [x] Extend diagnostics schema so each attempt records RUN_ID / service / phase / probe marker / attempt / timestamp / candidate_count / observed source / reason.
+- [x] Regressions: up→source→doctor marker isolation; same-phase rerun; true duplicate FAIL; distinct-marker non-duplicate PASS; malformed/mismatch/missing-remoteAddress contracts unchanged; parser-only fixed-marker mode unchanged; marker traceable from diagnostics.
+- [x] No changes to application logging, request-id middleware, health endpoint, participant controller/service, Compose topology, private-first lifecycle, Redis, DB schema, or WSL/Docker settings.
+- [x] No runtime Gate A / gate3:up / source / doctor / down / Redis proof / W1 execution; preserved run 20260919-094757-195ae8 untouched.
+
+### Risk and rollback
+
+- Risk: low; Gate3 harness marker generation + tests only.
+- Rollback: revert `tools/gate3/source-evidence.sh`, `tools/gate3/gate3.sh` (3 call sites), `tools/gate3/tests/run.sh`, `tools/gate3/README.md`.
+
+### Results
+
+- Root cause: the deterministic marker `gate3-<RUN_ID>-qa-a` was reused by every probe execution (gate3:up, gate3:source, gate3:doctor, and retries within the same RUN_ID). Each legitimate probe wrote one valid correlated record sharing the same marker, so the exactly-one invariant (match_count==1 per marker over the full log history) collided with itself: a later probe searching all historical logs found candidate_count>1 → `duplicate correlated records` FAIL. Not a parser, application, or transport failure — a marker-semantics conflict.
+- Fix: `probe_marker()` in `source-evidence.sh` is the single marker-generation contract. Format `gate3-<RUN_ID>-<service>-<phase>-<epoch-nanos>-<8-byte-urandom-hex>`; validated header-safe `^[A-Za-z0-9._-]+$` and ≤200 chars; no secrets. Phase injected via `GATE3_SOURCE_PHASE` at the three call sites in `gate3.sh` (up=up, source=source, doctor=doctor); anything outside up/source/doctor fails closed. `correlate_records` and the exactly-one contract are untouched.
+- Diagnostics: `source-correlation.tsv` now `run_id, service, phase, probe_marker, attempt, timestamp_utc, marker_present, candidate_count, json_parse, observed_source, reason`; `source-probe.tsv` gained a `phase` column. `<service>-probe.tsv` and `source-evidence.txt` unchanged in content (markers minted per execution appear there).
+- Regressions added (all PASS): coexist fixtures prove up/source/doctor records sharing one log stream each correlate exactly-once per their own marker (also same-phase rerun); distinct-marker two-record log is not misjudged duplicate; duplicate-marker log still FAILs; all original malformed/mismatch/missing-remoteAddress reason contracts unchanged; parser-only fixed-marker mode unchanged; correlation TSV header/rows assert probe identity fields and minted marker shape `gate3-<run>-qa-[ab]-(up|source|doctor)-<nanos>-<16hex>`.
+- Verification: `bash -n tools/gate3/*.sh` OK; `npm run gate3:test` PASS; `npm run gate3:static` PASS (shellcheck NOT AVAILABLE on host); `npm run typecheck` PASS; `npm run lint:check` PASS; `npm run format:check` PASS; `git diff --check` PASS.
+- **Correlation blocker: resolved at harness level. Gate A fresh runtime revalidation remains PENDING** (not authorized this phase). Redis proof and W1 remain NOT executed (not authorized).
+
+## 2026-09-20 — Redis Boundary Proof (PASS)
+
+### Scope
+
+- Goal: prove Redis test access is possible within an isolatable, identifiable, exactly-cleanable boundary, without touching the development Redis or the preserved Gate3 run.
+- Explicitly forbidden and not performed: FLUSHALL/FLUSHDB/KEYS */bulk SCAN-delete, Redis config changes, restarts, migration, W1, broad Docker cleanup, any modification of preserved run 20260919-094757-195ae8.
+
+### Discovery (read-only)
+
+- Dev Redis `smartlearning-redis` (redis:7-alpine 7.4.11, run_id a04fe5e5…, network smartlearning-backend_smartlearning, 172.18.0.4): PONG, DBSIZE 0, keyspace empty. **Not a write target** — live consumer `smartlearning-backend` with `LOGIN_RATE_LIMIT_MODE=redis-required`.
+- Preserved run Redis `gate3-20260919-094757-195ae8-redis-1`: PONG, DBSIZE 0. **Untouchable** (preserved run).
+- Therefore neither existing instance was used; a dedicated disposable Redis was created instead.
+
+### Isolation strategy
+
+- Dedicated container `redis-proof-20260919-235629-redisproof` (redis:7-alpine, 192.168.208.2) on dedicated network `rp-20260919-235629-redisproof-net`; RUN_ID `20260919-235629-redisproof`.
+- Key namespace `gate3:20260919-235629-redisproof:redis-proof:*` — unique, exact-match deletable.
+
+### Baseline and proof (all PASS)
+
+- Baseline: DBSIZE 0, keyspace empty, SCAN 0 keys (proof target and dev Redis both).
+- PING → PONG; SET `…:smoke`=`proof-value` → OK; GET → `proof-value`; EXPIRE 60 → TTL 60.
+- Rate-limit primitive: INCR (=1) and Lua `INCR; if v==1 then EXPIRE` → counts 2, 3 with first-call EXPIRE semantics correct.
+- Exact DEL of the 2 proof keys → 2; namespace SCAN 0; DBSIZE 0; full keyspace SCAN 0.
+- Unrelated state unchanged: dev Redis PONG/DBSIZE 0; preserved run qa-a/qa-b/redis all Up (healthy).
+- Cleanup: container + network removed exactly; removal verified; preserved run and dev Redis untouched.
+
+### Final verdict
+
+- **Redis Boundary Proof: PASS.** W1 remains NOT authorized / NOT executed.
