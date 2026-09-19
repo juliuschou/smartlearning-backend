@@ -95,3 +95,9 @@ git diff --check
 ```
 
 Record skipped or blocked DB-backed checks and their reason in `tasks/todo.md`; do not silently treat unavailable PostgreSQL as successful verification.
+
+
+
+# Project Instructions
+
+請遵循 `.claude/rules/` 中的所有專案規則。

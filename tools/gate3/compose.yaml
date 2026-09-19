@@ -1,0 +1,126 @@
+services:
+  secret-init:
+    image: ${GATE3_SECRET_INIT_IMAGE:-busybox:1.36}
+    user: '0:0'
+    command: ['/bin/sh', '/gate3/init-secrets.sh']
+    volumes:
+      - ${GATE3_SECRET_HOST_DIR:?GATE3_SECRET_HOST_DIR is required}:/host-secrets:ro
+      - gate3-secrets:/run/gate3-secrets
+      - ./init-secrets.sh:/gate3/init-secrets.sh:ro
+    networks: [gate3]
+    labels:
+      com.smartlearning.gate3: 'true'
+      com.smartlearning.gate3.run-id: ${RUN_ID:?RUN_ID is required}
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    networks: [gate3]
+    labels:
+      com.smartlearning.gate3: 'true'
+      com.smartlearning.gate3.run-id: ${RUN_ID:?RUN_ID is required}
+
+  qa-a:
+    image: ${GATE3_BACKEND_IMAGE:?GATE3_BACKEND_IMAGE is required}
+    depends_on:
+      secret-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -eu
+      - -c
+      - export DATABASE_URL="$(cat /run/gate3-secrets/database_url)"; export COOKIE_SECRET="$(cat /run/gate3-secrets/cookie_secret)"; export LOGIN_RATE_LIMIT_KEY_SECRET="$(cat /run/gate3-secrets/login_rate_limit_key_secret)"; exec node dist/src/main
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      CORS_ORIGIN: http://127.0.0.1:${GATE3_QA_A_PORT:?GATE3_QA_A_PORT is required}
+      LOGIN_RATE_LIMIT_MODE: redis-required
+      LOGIN_RATE_LIMIT_REDIS_URL: redis://redis:6379/0
+      LOGIN_RATE_LIMIT_ACCOUNT_MAX: '10'
+      LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: '300000'
+      LOGIN_RATE_LIMIT_SOURCE_MAX: '20'
+      LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS: '300000'
+      LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS: '2000'
+      LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS: '500'
+      REALTIME_REDIS_MODE: off
+      GATE3_RUN_ID: ${RUN_ID:?RUN_ID is required}
+    volumes:
+      - gate3-secrets:/run/gate3-secrets:ro
+    ports:
+      - '127.0.0.1:${GATE3_QA_A_PORT:?GATE3_QA_A_PORT is required}:3000'
+    networks:
+      gate3:
+        aliases: [qa-a]
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      start_period: 5s
+      retries: 30
+    labels:
+      com.smartlearning.gate3: 'true'
+      com.smartlearning.gate3.run-id: ${RUN_ID:?RUN_ID is required}
+
+  qa-b:
+    image: ${GATE3_BACKEND_IMAGE:?GATE3_BACKEND_IMAGE is required}
+    depends_on:
+      secret-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -eu
+      - -c
+      - export DATABASE_URL="$(cat /run/gate3-secrets/database_url)"; export COOKIE_SECRET="$(cat /run/gate3-secrets/cookie_secret)"; export LOGIN_RATE_LIMIT_KEY_SECRET="$(cat /run/gate3-secrets/login_rate_limit_key_secret)"; exec node dist/src/main
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      CORS_ORIGIN: http://127.0.0.1:${GATE3_QA_B_PORT:?GATE3_QA_B_PORT is required}
+      LOGIN_RATE_LIMIT_MODE: redis-required
+      LOGIN_RATE_LIMIT_REDIS_URL: redis://redis:6379/0
+      LOGIN_RATE_LIMIT_ACCOUNT_MAX: '10'
+      LOGIN_RATE_LIMIT_ACCOUNT_WINDOW_MS: '300000'
+      LOGIN_RATE_LIMIT_SOURCE_MAX: '20'
+      LOGIN_RATE_LIMIT_SOURCE_WINDOW_MS: '300000'
+      LOGIN_RATE_LIMIT_CONNECT_TIMEOUT_MS: '2000'
+      LOGIN_RATE_LIMIT_COMMAND_TIMEOUT_MS: '500'
+      REALTIME_REDIS_MODE: off
+      GATE3_RUN_ID: ${RUN_ID:?RUN_ID is required}
+    volumes:
+      - gate3-secrets:/run/gate3-secrets:ro
+    ports:
+      - '127.0.0.1:${GATE3_QA_B_PORT:?GATE3_QA_B_PORT is required}:3000'
+    networks:
+      gate3:
+        aliases: [qa-b]
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      start_period: 5s
+      retries: 30
+    labels:
+      com.smartlearning.gate3: 'true'
+      com.smartlearning.gate3.run-id: ${RUN_ID:?RUN_ID is required}
+
+volumes:
+  gate3-secrets:
+
+networks:
+  gate3:
+    driver: bridge
+    internal: true
+  gate3-publish:
+    driver: bridge
+    internal: false
+    labels:
+      com.smartlearning.gate3: 'true'
+      com.smartlearning.gate3.run-id: ${RUN_ID:?RUN_ID is required}
