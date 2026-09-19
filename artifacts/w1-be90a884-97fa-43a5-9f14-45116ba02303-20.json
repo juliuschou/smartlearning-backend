@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "runId": "be90a884-97fa-43a5-9f14-45116ba02303",
+    "startedAt": "2026-09-15T14:18:31.623Z",
+    "finishedAt": "2026-09-15T14:18:32.225Z",
+    "baseUrl": "http://127.0.0.1:3001",
+    "scenarios": [
+      "W1"
+    ],
+    "participantCount": 20,
+    "fixtureMode": "create"
+  },
+  "scenarios": [
+    {
+      "name": "W1",
+      "status": "passed",
+      "durationMs": 358.83531999999997,
+      "operations": [
+        {
+          "name": "join",
+          "transport": "http",
+          "count": 20,
+          "successCount": 20,
+          "errorCount": 0,
+          "errorRate": 0,
+          "latencyMs": {
+            "count": 20,
+            "p50": 311.67531500000007,
+            "p95": 350.85273500000005,
+            "p99": 356.195157,
+            "max": 356.195157
+          },
+          "errors": {}
+        }
+      ],
+      "correctness": {
+        "joined": 20,
+        "duplicateParticipantIds": 0
+      }
+    }
+  ],
+  "fixture": {
+    "runId": "be90a884-97fa-43a5-9f14-45116ba02303",
+    "marker": "load-harness-be90a884-97fa-43a5-9f14-45116ba02303",
+    "courseId": "01a0a56f-05d9-759e-86a5-26969297c5ec",
+    "questionId": "01a0a56f-05e8-75cc-a634-fbbc694f5043",
+    "liveSessionId": "01a0a56f-05ff-7605-a473-3ac1bdb603f1",
+    "sessionQuestionId": "01a0a56f-061b-72f6-a9c8-6126cb7c95c4"
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  },
+  "diagnostics": {
+    "enabled": true,
+    "effectiveClientConcurrency": {
+      "peak": 20,
+      "measured": true
+    },
+    "phases": {},
+    "pool": {
+      "totalCount": null,
+      "idleCount": null,
+      "waitingCount": null,
+      "status": "unavailable",
+      "reason": "Prisma adapter pool is not exposed by the current application."
+    },
+    "runtime": {
+      "client": {
+        "rssBytes": 89124864,
+        "cpuUserMicros": 96414,
+        "cpuSystemMicros": 8383,
+        "eventLoopDelayMs": null
+      },
+      "backend": "unavailable",
+      "postgres": "unavailable"
+    },
+    "attribution": {
+      "directlyMeasured": [
+        "effective client concurrency",
+        "client process RSS and CPU"
+      ],
+      "inferred": [
+        "shared LiveSession row lock remains architectural constraint"
+      ],
+      "unavailable": [
+        "pool totalCount/idleCount/waitingCount",
+        "isolated PostgreSQL lock-wait duration",
+        "backend CPU/RSS and PostgreSQL CPU/memory/active connections",
+        "event-loop delay",
+        "publisher timing before HTTP response"
+      ]
+    },
+    "backend": {
+      "capture": {
+        "expected": 20,
+        "matched": 20,
+        "requestIdsPresent": 0,
+        "uniqueRequestIds": 0,
+        "correlation": "runId + liveSessionId; request ID unavailable",
+        "malformed": 0,
+        "complete": true
+      },
+      "phaseTimingsMs": {
+        "total": {
+          "count": 20,
+          "p50": 291.5108739999996,
+          "p95": 334.5987320000022,
+          "max": 339.2820839999986
+        },
+        "findByCode": {
+          "count": 20,
+          "p50": 27.369461999998748,
+          "p95": 206.09518799999933,
+          "max": 208.50311099999817
+        },
+        "transaction": {
+          "count": 20,
+          "p50": 125.79517000000124,
+          "p95": 279.19721299999946,
+          "max": 279.83233899999686
+        },
+        "liveSessionLockRead": {
+          "count": 20,
+          "p50": 80.22228399999949,
+          "p95": 233.58275800000047,
+          "max": 234.87232099999892
+        },
+        "participantInsert": {
+          "count": 20,
+          "p50": 1.5436489999992773,
+          "p95": 9.397574999999051,
+          "max": 9.459610999998404
+        },
+        "outboxAppend": {
+          "count": 20,
+          "p50": 3.4155160000009346,
+          "p95": 13.701873999998497,
+          "max": 14.841225000000122
+        },
+        "postCommitSnapshot": {
+          "count": 20,
+          "p50": 59.091725999998744,
+          "p95": 193.654004,
+          "max": 200.57424000000174
+        }
+      },
+      "measurementNotes": {
+        "liveSessionLockRead": "LiveSession FOR UPDATE segment; includes query execution and any lock/pool wait, not isolated lock wait.",
+        "transaction": "Includes lock/read, writes, and commit completion; commit is not separately measurable.",
+        "publisher": "Fire-and-forget and not measured on response path."
+      }
+    }
+  }
+}

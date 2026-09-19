@@ -1,0 +1,522 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "runId": "f173bba5-0f58-4d23-b70d-9c40db2954eb",
+    "startedAt": "2026-09-15T14:40:29.820Z",
+    "finishedAt": "2026-09-15T14:40:30.860Z",
+    "baseUrl": "http://127.0.0.1:3001",
+    "scenarios": [
+      "W1"
+    ],
+    "participantCount": 100,
+    "fixtureMode": "create"
+  },
+  "scenarios": [
+    {
+      "name": "W1",
+      "status": "passed",
+      "durationMs": 808.687703,
+      "operations": [
+        {
+          "name": "join",
+          "transport": "http",
+          "count": 100,
+          "successCount": 100,
+          "errorCount": 0,
+          "errorRate": 0,
+          "latencyMs": {
+            "count": 100,
+            "p50": 733.113064,
+            "p95": 770.901317,
+            "p99": 786.425974,
+            "max": 791.0812699999999
+          },
+          "errors": {}
+        }
+      ],
+      "correctness": {
+        "joined": 100,
+        "duplicateParticipantIds": 0
+      }
+    }
+  ],
+  "fixture": {
+    "runId": "f173bba5-0f58-4d23-b70d-9c40db2954eb",
+    "marker": "load-harness-f173bba5-0f58-4d23-b70d-9c40db2954eb",
+    "courseId": "01a0a583-230f-719f-8480-e1ba41a85ae4",
+    "questionId": "01a0a583-231c-7252-87ae-eaab7deeb844",
+    "liveSessionId": "01a0a583-232c-769e-8101-fbb08c7f2919",
+    "sessionQuestionId": "01a0a583-2343-774f-8d30-4b4d696a7e8b"
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  },
+  "diagnostics": {
+    "enabled": true,
+    "clientRequests": [
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-1fb1aeaa-571b-4ee1-8c87-fc95c677b71e",
+        "durationMs": 136.90159400000002
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-50412544-000b-4512-8087-5fa4318d4359",
+        "durationMs": 12.692874000000018
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-3868768b-2da1-403e-b6e2-82d1b936f412",
+        "durationMs": 14.531025
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-42a613e2-6063-4d42-ac55-96aec1fd5cc9",
+        "durationMs": 20.208848999999987
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-6b1dbb78-052d-476a-859e-baa79f4836d2",
+        "durationMs": 25.016065999999967
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-6f6ab79f-9c74-4818-b21a-ea8838f36705",
+        "durationMs": 20.58534800000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-a9d75441-11a2-4387-a3a7-eea685ddb97f",
+        "durationMs": 543.2877550000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-d6d6270d-df63-487b-bdec-6b05d45d99a8",
+        "durationMs": 580.6578669999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-cf4dc99f-227e-450f-91dd-0bbe4aa1ec72",
+        "durationMs": 600.696136
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-cefa1aa2-433f-4211-8c7a-c2bd9b3474a2",
+        "durationMs": 603.516917
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-825f10b5-0873-41da-9e78-445a7f870fec",
+        "durationMs": 603.817036
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-534a42a8-dadb-4653-8d5d-f6bc654b27c2",
+        "durationMs": 605.030657
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-55479dbe-beb0-434d-9554-aa230ecf3986",
+        "durationMs": 607.921468
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-1d42193c-6984-4754-bdaf-147f5598e1fc",
+        "durationMs": 608.804358
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-38f6896c-6a0b-4b4b-b997-b70cece48288",
+        "durationMs": 613.2135390000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-acf401c7-e7a6-4959-ab62-05e9bde5175c",
+        "durationMs": 611.829878
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-bc508e93-78fb-4f37-b129-e3b931443797",
+        "durationMs": 614.886174
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-204bef4d-25f6-44db-af2b-4a6ebf46a670",
+        "durationMs": 615.448345
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-610bf996-8714-44c2-86d6-11df1421aee5",
+        "durationMs": 615.7389599999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-c992b865-3d03-41fe-a575-08c2d30edac3",
+        "durationMs": 616.685598
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-012099ab-3bfe-4300-8681-7d310bd90b36",
+        "durationMs": 619.19944
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-fe4bdc0f-37b1-4fd0-a345-c23b09f07f61",
+        "durationMs": 626.5281889999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-d0ab095a-db81-4363-810d-575ec409f6c1",
+        "durationMs": 624.758785
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-e516a74a-6e24-446b-9bed-b245d3934a53",
+        "durationMs": 625.32276
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-525e3e98-89e2-4f2a-a5b8-5e9451417a16",
+        "durationMs": 626.489256
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-75e3516c-26f0-4f07-af7c-4e6ece27413a",
+        "durationMs": 630.704281
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-bfd0dce0-a77a-4523-8966-f0d4942fc0ce",
+        "durationMs": 629.7197329999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-75e5d7a4-2488-49ae-97f3-5d0c5cf1a93b",
+        "durationMs": 632.307235
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-dda27be7-8f66-400e-b61e-eb22038601fa",
+        "durationMs": 634.9138599999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-9cee019b-6958-46f5-99c9-38ecfba083d0",
+        "durationMs": 635.251383
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-013e294f-ecc9-402e-88dd-6effd5f20638",
+        "durationMs": 634.760026
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-b0421ff2-ce99-435b-993d-15863866db98",
+        "durationMs": 639.3857619999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-a9b306f6-31bb-4a0d-87c3-33e83068c9ab",
+        "durationMs": 639.3370849999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-b7fab097-0d78-463a-bd1b-9097c4cc6233",
+        "durationMs": 640.442442
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-86cd0202-3c72-465f-812e-41aac0d5cf80",
+        "durationMs": 640.0955260000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-ff41dd65-c6b8-40c6-9366-43fa291a064c",
+        "durationMs": 644.502607
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-33720e28-6fe3-4c41-856e-ce0e20141e99",
+        "durationMs": 644.454193
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-3fae528d-0198-4aae-b8ba-d242f415fa0a",
+        "durationMs": 649.094957
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-ad8b647f-309b-42ec-97d0-8709c4d12dd9",
+        "durationMs": 647.883516
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-dd7c8ac6-c9eb-4d09-8a70-8036c3dfa129",
+        "durationMs": 650.95694
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-de799632-3c55-40b7-8529-e3e4847f6707",
+        "durationMs": 648.252013
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-dd63cbc9-1f2c-47ed-b631-072476a1d2e1",
+        "durationMs": 651.6798679999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-311b534b-7bee-4c9e-86cb-5e5a83030852",
+        "durationMs": 658.970642
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-16f8104a-ab45-434a-81ac-6c3eb3cb860d",
+        "durationMs": 670.0306499999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-28ffa9be-feb9-4308-8712-273c5302fa24",
+        "durationMs": 676.7084110000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-fae6a356-bf69-47d1-8916-4e3403e49bd0",
+        "durationMs": 675.9013010000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-2b949d1c-5ae0-4db7-8a92-46b3fb88daee",
+        "durationMs": 691.1452529999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-eca44393-d5ce-401b-ba06-288e3a0664a1",
+        "durationMs": 711.9290030000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-03d297ef-3809-4224-b3f7-07498845c43e",
+        "durationMs": 716.4572579999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-14abb751-7d65-4d59-95cc-389a8a354b6f",
+        "durationMs": 717.5853849999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-8657bc88-cfab-495c-9426-7a2cfc0424ea",
+        "durationMs": 725.0121230000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-2f9424e5-9ffd-45be-a9d6-3b384d9f16af",
+        "durationMs": 724.4524530000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-7fd07f55-effb-4316-b44e-63b4611831c6",
+        "durationMs": 725.075668
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-83b0193f-681b-41c8-9559-3f4d2f19d822",
+        "durationMs": 737.5600549999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-4d8ecff5-35c6-421c-859f-43023316d66c",
+        "durationMs": 730.7419209999998
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-677120c2-ae7d-4b62-a11c-456a3875f0cc",
+        "durationMs": 734.382558
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-2471dc71-f94f-468e-8736-a24644b6b58b",
+        "durationMs": 733.113064
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-1c466f66-df83-4984-a95c-c2713ec9f143",
+        "durationMs": 731.8220100000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-1f062ddf-d73b-4dff-af77-9dab41578ee0",
+        "durationMs": 737.947785
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-7c61839b-ca28-48a1-8fa6-f0048627ec27",
+        "durationMs": 739.3119670000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-ea00f99a-dbf1-4764-92d6-811c1b549525",
+        "durationMs": 748.73226
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-cef068e4-a4b4-481c-b66b-2eb9b64504e3",
+        "durationMs": 744.160852
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-ae3c49fc-f3ca-4068-9561-c83f15058f68",
+        "durationMs": 744.0290319999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-d96c7bde-db5e-461d-878f-703a4708abb1",
+        "durationMs": 753.803504
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-04830530-32fa-4393-95f8-5dbb9a6e7d35",
+        "durationMs": 754.644084
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-15da427c-e855-4189-ae1b-3dbbe7be407e",
+        "durationMs": 745.036443
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-a1e4af7a-88e1-43fd-beea-ff094b87cc13",
+        "durationMs": 743.5347340000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-2abad47e-8037-4e98-ba4a-b97bf0a8afd6",
+        "durationMs": 745.8420550000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-7d45bbb5-2057-4752-847b-88582093f089",
+        "durationMs": 744.7973440000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-226f2ae8-9549-4f43-b6a2-6da9bdfbb30e",
+        "durationMs": 749.158197
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-2720cd51-ce48-4e5b-bad7-96de8e4fc87e",
+        "durationMs": 750.3403469999998
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-c7bf224f-b4b1-4591-9476-9e2c50a878cd",
+        "durationMs": 748.449522
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-f5dfa414-2bea-48ce-be35-432f409ea48f",
+        "durationMs": 755.4761179999998
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-f89cd4dc-3ac4-4382-b789-d7b8d8d09eed",
+        "durationMs": 749.131073
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-444c7dd5-b9f6-40f5-9dfb-ab6133ed6b00",
+        "durationMs": 750.7625919999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-f5169db4-b38b-4167-8405-62494acc94ab",
+        "durationMs": 758.432691
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-fac2329f-2b76-42ff-878b-77e06012399b",
+        "durationMs": 753.4834190000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-16866a39-f205-42c9-b634-0e2545b39262",
+        "durationMs": 756.734522
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-f179969a-bf59-4be0-8946-cf986aae9d02",
+        "durationMs": 764.8227080000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-d068fee5-b7ef-44e1-bb72-62539535addd",
+        "durationMs": 762.004985
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-6b697c8d-6433-44c1-b260-ca345f1342fc",
+        "durationMs": 762.561946
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-afa951ed-9ce9-43f5-857c-55f89c58034f",
+        "durationMs": 764.971008
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-162671f4-3a6e-47d1-b0a5-48be541dca62",
+        "durationMs": 761.05727
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-e862a82c-77b9-494e-9d2f-67ad5bd4897c",
+        "durationMs": 760.714729
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-78424a85-e42a-4bd2-b7d0-55a4755d9425",
+        "durationMs": 764.2822760000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-05d86c61-71ea-4b25-be44-06124f733545",
+        "durationMs": 766.5418999999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-8b4b6ef4-08e1-40db-becf-829f655708bf",
+        "durationMs": 761.220765
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-3605f57b-d9fb-4747-9f3a-ce98324260b3",
+        "durationMs": 763.082763
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-c258b50f-cf97-47cf-a82d-660480547bbc",
+        "durationMs": 763.51938
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-b3a67c8d-66cf-4d7b-8c08-5b2fe2245557",
+        "durationMs": 768.271694
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-ea10413d-5987-476a-ae2e-83121e1b2eef",
+        "durationMs": 763.6031449999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-dc27c774-1474-4edc-8fe3-1b1b6cbdf0a9",
+        "durationMs": 764.041491
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-cc4f7176-9afa-4541-b9f3-3f3ef8c2a1f2",
+        "durationMs": 765.154943
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-8234285e-5a1c-4d03-b270-7d9882d0ce72",
+        "durationMs": 764.92996
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-4917b980-5b28-4d0c-939f-c45e815f9d70",
+        "durationMs": 768.3492530000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-9dcecd20-9deb-4a91-9bd9-88156fb60758",
+        "durationMs": 766.3941910000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-2ec32bd6-4e8f-4c86-b7cf-e096971d8723",
+        "durationMs": 767.215273
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-62cc3900-cb4f-49d0-9110-2a65414116c8",
+        "durationMs": 768.4638339999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-2cfad26a-4266-44b2-8105-9f06b6dcccf9",
+        "durationMs": 768.343693
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-0995b9b7-cc0d-4383-b0d5-647bae67f758",
+        "durationMs": 770.901317
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-54af277a-5398-4ea3-92d4-03645359881a",
+        "durationMs": 770.8499280000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-a69242a9-8599-4c4e-9e17-1bf76203d409",
+        "durationMs": 775.0124719999999
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-578b8b81-a65c-4f63-8e22-fa1f2a28d059",
+        "durationMs": 773.1544260000001
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-139aa19b-c890-474b-bc39-9b2a96c95351",
+        "durationMs": 771.343564
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-866fa505-d0d1-47a1-8f75-f7f1e8e3ad28",
+        "durationMs": 786.425974
+      },
+      {
+        "requestId": "w1-f173bba5-0f58-4d23-b70d-9c40db2954eb-61c3a6c0-f621-40da-9a57-d38ef7f0c874",
+        "durationMs": 791.0812699999999
+      }
+    ],
+    "effectiveClientConcurrency": {
+      "peak": 100,
+      "measured": true
+    },
+    "phases": {},
+    "pool": {
+      "totalCount": null,
+      "idleCount": null,
+      "waitingCount": null,
+      "status": "unavailable",
+      "reason": "Prisma adapter pool is not exposed by the current application."
+    },
+    "runtime": {
+      "client": {
+        "rssBytes": 95461376,
+        "cpuUserMicros": 179572,
+        "cpuSystemMicros": 11765,
+        "eventLoopDelayMs": null
+      },
+      "backend": "unavailable",
+      "postgres": "unavailable"
+    },
+    "attribution": {
+      "directlyMeasured": [
+        "effective client concurrency",
+        "client process RSS and CPU"
+      ],
+      "inferred": [
+        "shared LiveSession row lock remains architectural constraint"
+      ],
+      "unavailable": [
+        "pool totalCount/idleCount/waitingCount",
+        "isolated PostgreSQL lock-wait duration",
+        "backend CPU/RSS and PostgreSQL CPU/memory/active connections",
+        "event-loop delay",
+        "publisher timing before HTTP response"
+      ]
+    }
+  }
+}

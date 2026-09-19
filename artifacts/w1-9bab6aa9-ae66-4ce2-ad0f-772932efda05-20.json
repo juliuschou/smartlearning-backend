@@ -1,0 +1,322 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "runId": "9bab6aa9-ae66-4ce2-ad0f-772932efda05",
+    "startedAt": "2026-09-15T14:31:18.861Z",
+    "finishedAt": "2026-09-15T14:31:19.346Z",
+    "baseUrl": "http://127.0.0.1:3001",
+    "scenarios": [
+      "W1"
+    ],
+    "participantCount": 20,
+    "fixtureMode": "create"
+  },
+  "scenarios": [
+    {
+      "name": "W1",
+      "status": "passed",
+      "durationMs": 220.50205899999997,
+      "operations": [
+        {
+          "name": "join",
+          "transport": "http",
+          "count": 20,
+          "successCount": 20,
+          "errorCount": 0,
+          "errorRate": 0,
+          "latencyMs": {
+            "count": 20,
+            "p50": 144.06512400000003,
+            "p95": 212.59857699999998,
+            "p99": 217.79617099999996,
+            "max": 217.79617099999996
+          },
+          "errors": {}
+        }
+      ],
+      "correctness": {
+        "joined": 20,
+        "duplicateParticipantIds": 0
+      }
+    }
+  ],
+  "fixture": {
+    "runId": "9bab6aa9-ae66-4ce2-ad0f-772932efda05",
+    "marker": "load-harness-9bab6aa9-ae66-4ce2-ad0f-772932efda05",
+    "courseId": "01a0a57a-baf5-71db-bef5-52137fcaddff",
+    "questionId": "01a0a57a-bb10-7284-bf95-569976526092",
+    "liveSessionId": "01a0a57a-bb21-77c1-b3ec-718aae9b9132",
+    "sessionQuestionId": "01a0a57a-bb38-7469-99db-9f0c70dfa516"
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  },
+  "diagnostics": {
+    "enabled": true,
+    "clientRequests": [
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-aafe248d-e2bb-43e3-a8e1-4863e11ccc17",
+        "durationMs": 143.807295
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-9609c857-6d26-4dbe-89df-2380a0f82e11",
+        "durationMs": 27.378487999999976
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-be5d3116-8a05-4bad-8171-f7e2aa17e245",
+        "durationMs": 29.002858000000003
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-b69b20ac-a67f-411d-8860-1ade15147814",
+        "durationMs": 20.425254999999993
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-0fd3b7b7-0e45-45a9-9f10-91958b5e522d",
+        "durationMs": 23.735914000000037
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-7c93d530-825b-462b-8498-7d03e73a5094",
+        "durationMs": 18.43579600000004
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-a83fba8a-35e2-4952-b328-a95b7847276a",
+        "durationMs": 104.963569
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-0a58f153-200b-4c19-ac20-786d1fc2b2bb",
+        "durationMs": 117.05591399999997
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-7a9d156e-f62c-43cb-a649-6fc336f785e8",
+        "durationMs": 121.70936599999999
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-7bb67cd0-068e-4dce-8a2b-b7068e47464d",
+        "durationMs": 129.23275999999998
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-80d4d487-0ef0-4525-b00d-0df441fcf562",
+        "durationMs": 132.070069
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-6c1e4361-8a49-4c07-8a1b-2a58c10b66ef",
+        "durationMs": 133.45692400000001
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-ac113303-2ec3-4913-b4df-469e51585d4a",
+        "durationMs": 136.497754
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-89c56f7d-958a-4adf-a110-01ea57d402ba",
+        "durationMs": 138.02817
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-e4e4287f-9d77-41ef-83e2-61a4fd4fce6d",
+        "durationMs": 144.06512400000003
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-403bf128-4fec-487c-8204-008a8aadfa73",
+        "durationMs": 143.55500199999994
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-2be3ed59-b7ab-4d7d-a00f-88e8ada683b3",
+        "durationMs": 146.74103499999995
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-4b689d4a-0241-40c3-b288-6b599b24a47a",
+        "durationMs": 151.85752400000007
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-b22a9be3-16d0-4acc-a942-8d6f88d09cfe",
+        "durationMs": 152.74874599999993
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-32323f51-bf18-40ae-ad5d-105a974beb6f",
+        "durationMs": 172.24504000000007
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-16214810-168e-48ad-a9c5-771da4cfd585",
+        "durationMs": 177.81448699999999
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-e82466fe-24f3-4e97-93b9-45c504842ba6",
+        "durationMs": 188.25579499999998
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-a97f064e-b059-4043-a3c5-e4391a436bba",
+        "durationMs": 197.71047700000003
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-b41c995d-34a8-4311-a032-30927687fab0",
+        "durationMs": 203.65156900000005
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-0d172198-c3e8-46fa-a5a9-b9286661b3d2",
+        "durationMs": 212.59857699999998
+      },
+      {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-c021ce54-aa70-45cc-8ef5-bbe9b5801c74",
+        "durationMs": 217.79617099999996
+      }
+    ],
+    "effectiveClientConcurrency": {
+      "peak": 20,
+      "measured": true
+    },
+    "phases": {},
+    "pool": {
+      "totalCount": null,
+      "idleCount": null,
+      "waitingCount": null,
+      "status": "unavailable",
+      "reason": "Prisma adapter pool is not exposed by the current application."
+    },
+    "runtime": {
+      "client": {
+        "rssBytes": 89993216,
+        "cpuUserMicros": 90341,
+        "cpuSystemMicros": 15955,
+        "eventLoopDelayMs": null
+      },
+      "backend": "unavailable",
+      "postgres": "unavailable"
+    },
+    "attribution": {
+      "directlyMeasured": [
+        "effective client concurrency",
+        "client process RSS and CPU"
+      ],
+      "inferred": [
+        "shared LiveSession row lock remains architectural constraint"
+      ],
+      "unavailable": [
+        "pool totalCount/idleCount/waitingCount",
+        "isolated PostgreSQL lock-wait duration",
+        "backend CPU/RSS and PostgreSQL CPU/memory/active connections",
+        "event-loop delay",
+        "publisher timing before HTTP response"
+      ]
+    },
+    "paired": {
+      "expected": 20,
+      "clientJoinRecords": 20,
+      "backendRecords": 20,
+      "uniqueRequestIds": 20,
+      "missingClientRecords": 0,
+      "missingBackendRecords": 0,
+      "unpairedNonJoinDiagnosticRequests": 6,
+      "corruptRecords": 0,
+      "toleranceMs": 10,
+      "invariant": {
+        "name": "server blocking duration <= client end-to-end duration + tolerance",
+        "holds": true,
+        "violations": 0
+      },
+      "phaseTimingsMs": {
+        "total": {
+          "count": 20,
+          "p50": 123.08315500000026,
+          "p95": 196.98142700000244,
+          "max": 201.71996999999828
+        },
+        "findByCode": {
+          "count": 20,
+          "p50": 29.967751000000135,
+          "p95": 96.35409499999878,
+          "max": 97.519984999999
+        },
+        "transaction": {
+          "count": 20,
+          "p50": 47.15458800000124,
+          "p95": 129.01368399999774,
+          "max": 129.9533420000007
+        },
+        "liveSessionLockRead": {
+          "count": 20,
+          "p50": 22.678553000001557,
+          "p95": 102.7564280000006,
+          "max": 104.77322600000116
+        },
+        "participantInsert": {
+          "count": 20,
+          "p50": 1.2948710000018764,
+          "p95": 2.3738350000021455,
+          "max": 6.287219999998342
+        },
+        "outboxAppend": {
+          "count": 20,
+          "p50": 2.906942000001436,
+          "p95": 4.250986999999441,
+          "max": 4.8318770000005316
+        },
+        "postCommitSnapshot": {
+          "count": 20,
+          "p50": 32.00598600000012,
+          "p95": 55.04030000000057,
+          "max": 56.304377000000386
+        }
+      },
+      "median": {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-2be3ed59-b7ab-4d7d-a00f-88e8ada683b3",
+        "clientMs": 146.74103499999995,
+        "serverMs": 123.08315500000026,
+        "phases": {
+          "findByCode": 27.232824000002438,
+          "transaction": 63.77280500000052,
+          "liveSessionLockRead": 50.48930499999915,
+          "participantInsert": 1.237422999998671,
+          "outboxAppend": 2.6191060000019206,
+          "postCommitSnapshot": 32.00598600000012
+        },
+        "shares": {
+          "transaction": 0.5181278055473991,
+          "liveSessionLockRead": 0.4102048326596685,
+          "postCommitSnapshot": 0.2600354695165236
+        }
+      },
+      "slowTailP95": {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-0d172198-c3e8-46fa-a5a9-b9286661b3d2",
+        "clientMs": 212.59857699999998,
+        "serverMs": 196.98142700000244,
+        "phases": {
+          "findByCode": 62.80157600000166,
+          "transaction": 129.01368399999774,
+          "liveSessionLockRead": 94.6088439999985,
+          "participantInsert": 2.3738350000021455,
+          "outboxAppend": 3.1394619999991846,
+          "postCommitSnapshot": 5.114205000001675
+        },
+        "shares": {
+          "transaction": 0.6549535454426175,
+          "liveSessionLockRead": 0.48029322074104647,
+          "postCommitSnapshot": 0.02596287923125672
+        }
+      },
+      "slowest": {
+        "requestId": "w1-9bab6aa9-ae66-4ce2-ad0f-772932efda05-c021ce54-aa70-45cc-8ef5-bbe9b5801c74",
+        "clientMs": 217.79617099999996,
+        "serverMs": 201.71996999999828,
+        "phases": {
+          "findByCode": 97.519984999999,
+          "transaction": 100.83469400000104,
+          "liveSessionLockRead": 83.5415729999986,
+          "participantInsert": 1.0057660000020405,
+          "outboxAppend": 3.342141000000993,
+          "postCommitSnapshot": 3.301854999997886
+        },
+        "shares": {
+          "transaction": 0.49987462322149806,
+          "liveSessionLockRead": 0.41414626920675884,
+          "postCommitSnapshot": 0.01636850828402321
+        }
+      },
+      "notes": {
+        "client": "Measured after response body consumption.",
+        "server": "ParticipantService blocking service path from service entry through post-commit snapshot; excludes controller/envelope/socket flush.",
+        "liveSessionLockRead": "FOR UPDATE segment, not isolated lock wait.",
+        "phaseShares": "Shares use the same paired request and are not additive across phases."
+      }
+    }
+  }
+}
