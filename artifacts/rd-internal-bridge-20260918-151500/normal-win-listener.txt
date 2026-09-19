@@ -1,0 +1,6 @@
+
+LocalAddress LocalPort OwningProcess
+------------ --------- -------------
+127.0.0.1        31994         28036
+
+

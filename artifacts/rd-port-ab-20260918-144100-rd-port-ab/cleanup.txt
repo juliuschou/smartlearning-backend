@@ -1,0 +1,2 @@
+rd-port-test-localhost
+rd-port-test-wildcard

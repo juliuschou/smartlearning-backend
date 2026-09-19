@@ -1,0 +1,1 @@
+wsl: Failed to translate '\\wsl.localhost\Ubuntu\home\user\projects\smartLearning\smartLearning-backend'

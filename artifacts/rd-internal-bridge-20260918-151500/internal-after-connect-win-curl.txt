@@ -1,0 +1,4 @@
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+  0      0   0      0   0      0      0      0                              0100     19 100     19   0      0   9021      0                              0100     19 100     19   0      0   8816      0                              0100     19 100     19   0      0   8562      0                              0
+internal-port-test

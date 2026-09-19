@@ -1,0 +1,4 @@
+1:time="2026-09-18T22:31:28+08:00" level=info msg="Proxy server started accepting on /run/wsl-proxy.sock, forwarding to 192.168.143.1"
+2:time="2026-09-18T22:31:43+08:00" level=error msg="failed creating listener for published port [3000]: listen tcp 0.0.0.0:3000: bind: address already in use"
+3:time="2026-09-18T22:31:43+08:00" level=error msg="failed creating listener for published port [5433]: listen tcp 0.0.0.0:5433: bind: address already in use"
+4:time="2026-09-18T22:31:43+08:00" level=error msg="failed creating listener for published port [5432]: listen tcp 127.0.0.1:5432: bind: address already in use"

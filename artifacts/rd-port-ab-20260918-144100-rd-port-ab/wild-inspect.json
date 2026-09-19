@@ -1,0 +1,1 @@
+{"Name":"/rd-port-test-wildcard","Id":"20ab53da73e74ad99042f494e06af9cd89463fbf0f1135901790b49fa1fb28aa","HostConfigPortBindings":{"8080/tcp":[{"HostIp":"","HostPort":"31992"}]},"NetworkSettingsPorts":{"8080/tcp":[{"HostIp":"0.0.0.0","HostPort":"31992"},{"HostIp":"::","HostPort":"31992"}]},"StateStatus":"running"}

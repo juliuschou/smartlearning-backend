@@ -1,0 +1,41 @@
+[
+    {
+        "Name": "rd-internal-port-test-net",
+        "Id": "0d419915e76b8f368f495117653a2f65cb749ec18d3b9794002c01cbf3cc2394",
+        "Created": "2026-09-18T22:57:17.6751044+08:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "192.168.176.0/20",
+                    "Gateway": "192.168.176.1"
+                }
+            ]
+        },
+        "Internal": true,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Options": {},
+        "Labels": {},
+        "Containers": {},
+        "Status": {
+            "IPAM": {
+                "Subnets": {
+                    "192.168.176.0/20": {
+                        "IPsInUse": 3,
+                        "DynamicIPsAvailable": 4093
+                    }
+                }
+            }
+        }
+    }
+]
