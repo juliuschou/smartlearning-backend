@@ -413,3 +413,9 @@
 - Detection signal: FAILs attributed to wrong rejection reasons or to line numbers that did not correspond to the visible code.
 - Prevention rule: build each rejection-reason fixture by mutating exactly the field it tests (keep all other marker occurrences intact); give every fixture case a unique run id so its diagnostics survive; after any Bash quoting-heavy fixture edit, run `bash -n` plus a smoke of the fixture string before the suite.
 - Tripwire: the mocked suite asserts each rejection reason by exact string in the per-case `source-correlation.tsv`, and the container-free parser fixtures assert both exit status and `SOURCE_IDENTITY` value for the real captured-format line.
+## 2026-09-20 — Freeze verified W1 performance baselines before further diagnosis
+
+- **Failure mode:** A performance experiment can be incorrectly treated as a new acceptance result, allowing an effective-but-insufficient improvement to overwrite the prior comparison baseline or invite another tuning round before governance status is recorded.
+- **Detection signal:** W1-300 C+B correctness was exact, but Join p95 remained 1280.57 ms against the 1000 ms formal threshold; the remaining contention location was not directly proven.
+- **Prevention rule:** Freeze the verified `W1 PERFORMANCE BASELINE — C+B` in `tasks/todo.md`, preserve the accepted lock/sequence/response-path architecture, classify Formal W1 as FAIL solely on latency, and record unresolved bottlenecks only as hypotheses until direct evidence exists.
+- **Tripwire:** Before any future optimization, compare against client p50/p95/p99/max `922.52/1280.57/1311.13/1318.49` ms, transaction p95 `774.21` ms, service p95 `1037.24` ms, and `postCommitSnapshot` response-path = NO; reject any report that omits correctness and formal-threshold verdicts.

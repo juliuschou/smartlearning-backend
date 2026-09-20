@@ -5139,3 +5139,20 @@ The canonical Phase B evidence synchronization for RC `b9bcd2be9c9d31d7eb4d197c3
 ### Final verdict
 
 - **Redis Boundary Proof: PASS.** W1 remains NOT authorized / NOT executed.
+## 2026-09-20 — W1 PERFORMANCE BASELINE — C+B (frozen)
+
+- **Formal status:** Gate A = PASS; Redis Boundary Proof = PASS; Option A = INSUFFICIENT; Option C = EFFECTIVE BUT INSUFFICIENT; Option B = EFFECTIVE BUT INSUFFICIENT; Formal W1 = FAIL; W2–W8 = not executed.
+- **Frozen W1-300 baseline:** 300/300 successful, 0 errors, 0 duplicate participant IDs, exact participant/event/sequence reconciliation, close-vs-Join PASS, rollback PASS, event ordering PASS; stage duration 1362.05 ms.
+- **Latency baseline:** client p50 922.52 ms, p95 1280.57 ms, p99 1311.13 ms, max 1318.49 ms; transaction p95 774.21 ms; service total p95 1037.24 ms; `postCommitSnapshot` on response path = NO.
+- **Verdict:** correctness PASS. Formal W1 FAIL solely because Join p95 `1280.57 ms > 1000 ms`; this is not a correctness failure.
+- **Accepted architecture:** LiveSession lifecycle/joinability synchronization uses `FOR SHARE` for Join and `FOR UPDATE` for close/cancel; `LiveSessionEventSequence` is the dedicated transactional per-session counter; participant/event writes remain atomic; Option C remains off the synchronous Join response path.
+- **Observation boundary:** remaining serialization/contention is recorded only as a hypothesis around the dedicated sequence counter. No claim is made that it is the sole root cause, or that Prisma pool, Node event-loop, or PostgreSQL CPU is the bottleneck without direct evidence.
+- **Freeze scope:** do not modify application code, schema, migrations, sequence/transaction/lock architecture, Option C response behavior, pool, Redis, indexes, infrastructure, or performance harnesses; do not run new W1 workloads or W2–W8; do not clean historical resources. Only task/lesson documentation may change until the freeze is lifted.
+- **Governance caveat:** the protected candidate LiveSession `01a0bacc-83f9-7417-a52e-481d2fbd3e8c` is absent, but because no pre-truncate existence check covered all protected IDs, its prior state and removal cause remain **UNKNOWN — INSUFFICIENT EVIDENCE**. Future truncating suites require exact protected-ID preflight and a fresh disposable DB if any protected row exists.
+- **Future optimization rule:** preserve this section as the before baseline; any later performance work must compare against these numbers and must not overwrite or reinterpret them.
+
+### Freeze verification
+
+- [x] Documentation-only baseline freeze recorded.
+- [x] No runtime, workload, migration, cleanup, restart, or performance tuning executed in this freeze update.
+- [ ] Run `git diff --check` after documentation changes.
