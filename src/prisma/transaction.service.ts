@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../../generated/prisma/client';
+import { Prisma, type Participant } from '../../generated/prisma/client';
 import { ConflictError, NotFoundError } from '../common/errors';
 import { PrismaService } from './prisma.service';
 import { normalizeUuid } from '../common/crypto';
@@ -85,12 +85,72 @@ export class TransactionService {
     tx: Prisma.TransactionClient,
     liveSessionId: string,
   ): Promise<bigint> {
-    const session = await tx.liveSession.update({
-      where: { id: normalizeUuid(liveSessionId) },
-      data: { realtimeEventSeq: { increment: 1 } },
-      select: { realtimeEventSeq: true },
+    const sequence = await tx.liveSessionEventSequence.update({
+      where: { liveSessionId: normalizeUuid(liveSessionId) },
+      data: { lastEventSeq: { increment: 1 } },
+      select: { lastEventSeq: true },
     });
-    return session.realtimeEventSeq;
+    return sequence.lastEventSeq;
+  }
+
+  /**
+   * Atomically admit an anonymous Join and insert its participant. The shared
+   * row lock is held until transaction end, so lifecycle FOR UPDATE either
+   * linearizes before this statement (zero rows) or after the Join commits.
+   */
+  async insertParticipantIfLiveSessionJoinable(
+    tx: Prisma.TransactionClient,
+    input: {
+      participantId: string;
+      liveSessionId: string;
+      displayName: string;
+      tokenHash: string;
+    },
+  ): Promise<Participant | null> {
+    const rows = await tx.$queryRaw<Participant[]>`
+      WITH joinable_session AS (
+        SELECT id
+        FROM live_session
+        WHERE id = ${normalizeUuid(input.liveSessionId)}::uuid
+          AND status IN ('waiting', 'active')
+        FOR SHARE
+      )
+      INSERT INTO participant (id, live_session_id, display_name, token_hash)
+      SELECT
+        ${normalizeUuid(input.participantId)}::uuid,
+        joinable_session.id,
+        ${input.displayName},
+        ${input.tokenHash}
+      FROM joinable_session
+      RETURNING
+        id,
+        live_session_id AS "liveSessionId",
+        account_id AS "accountId",
+        display_name AS "displayName",
+        token_hash AS "tokenHash",
+        joined_at AS "joinedAt"
+    `;
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Acquire Join's shared lifecycle guard. Course/account locks may follow in
+   * canonical order while close/cancel remains blocked until transaction end.
+   */
+  async lockJoinableLiveSessionForShare(
+    tx: Prisma.TransactionClient,
+    liveSessionId: string,
+  ): Promise<{ id: string; courseId: string; status: string } | null> {
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; courseId: string; status: string }>
+    >`
+      SELECT id, course_id AS "courseId", status
+      FROM live_session
+      WHERE id = ${normalizeUuid(liveSessionId)}::uuid
+        AND status IN ('waiting', 'active')
+      FOR SHARE
+    `;
+    return rows[0] ?? null;
   }
 
   /**
@@ -128,7 +188,7 @@ export class TransactionService {
     await tx.$queryRaw`SELECT id FROM course WHERE id = ${courseId}::uuid FOR UPDATE`;
   }
 
-  /** Lock a LiveSession row while joining or changing its lifecycle. */
+  /** Lock a LiveSession row while changing its lifecycle or stable projection. */
   async lockLiveSessionForUpdate(
     tx: Prisma.TransactionClient,
     sessionId: string,

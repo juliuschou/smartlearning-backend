@@ -30,9 +30,9 @@ export interface AppendRealtimeEventInput {
 
 /**
  * Appends one durable realtime row inside the caller's transaction. Callers
- * must lock the LiveSession first and, for question events, the relevant
- * SessionQuestion rows second. Sequence allocation and the event insert then
- * commit or roll back with the domain mutation.
+ * retain the domain locks required by their mutation; question events lock the
+ * relevant SessionQuestion rows. The dedicated per-session sequence allocation
+ * and event insert commit or roll back with the domain mutation.
  */
 @Injectable()
 export class LiveSessionOutboxService {

@@ -6,9 +6,11 @@ import {
   ParseUUIDPipe,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { AccountRole } from '../../identity/domain/roles';
 import { UnauthorizedError } from '../../../common/errors';
 import { requestIdFrom } from '../../../common/http';
@@ -51,6 +53,7 @@ export class ParticipantsController {
     @Param('sessionCode') sessionCode: string,
     @Body() dto: JoinLiveSessionDto,
     @Req() request: ParticipantRequest,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<JoinLiveSessionResponseDto> {
     const result =
       request.authContext?.account.role === AccountRole.STUDENT
@@ -72,6 +75,18 @@ export class ParticipantsController {
                 }
               : undefined,
           );
+    if (
+      process.env.W1_DIAGNOSTICS === '1' &&
+      'diagnostic' in result &&
+      result.diagnostic?.runId &&
+      result.diagnostic.requestId
+    ) {
+      const encoded = Buffer.from(JSON.stringify(result.diagnostic)).toString(
+        'base64url',
+      );
+      if (encoded.length <= 4096)
+        response.setHeader('x-w1-join-diagnostic', encoded);
+    }
     const currentQuestion =
       result.liveSession.sessionQuestions?.find(
         (question) => question.status === SessionQuestionStatus.OPEN,

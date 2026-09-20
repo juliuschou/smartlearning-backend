@@ -51,6 +51,7 @@ import type {
 
 const sessionForProjection = {
   course: true,
+  realtimeEventSequence: true,
   questionSelections: { orderBy: { position: 'asc' as const } },
   questions: {
     orderBy: { position: 'asc' as const },
@@ -62,6 +63,13 @@ type SessionProjection = Prisma.LiveSessionGetPayload<{
   include: typeof sessionForProjection;
 }>;
 type SnapshotQuestion = SessionProjection['questions'][number];
+
+function realtimeEventSeq(sequence: { lastEventSeq: bigint } | null): bigint {
+  if (!sequence) {
+    throw new Error('LiveSession realtime event sequence is missing.');
+  }
+  return sequence.lastEventSeq;
+}
 type SnapshotSubmission = {
   sessionQuestionId: string;
   selectedOptionRefs: Prisma.JsonValue | null;
@@ -396,6 +404,9 @@ export class LiveSessionService {
               sessionCode,
             },
           });
+          await tx.liveSessionEventSequence.create({
+            data: { liveSessionId: liveSession.id },
+          });
           await tx.liveSessionQuestionSelection.createMany({
             data: sourceQuestions.map((question, index) => ({
               id: newId(),
@@ -697,6 +708,7 @@ export class LiveSessionService {
           where: { id: canonicalSessionId },
           include: {
             course: true,
+            realtimeEventSequence: true,
             questions: {
               select: {
                 id: true,
@@ -780,7 +792,7 @@ export class LiveSessionService {
         }
 
         return toWatermark(
-          session.realtimeEventSeq,
+          realtimeEventSeq(session.realtimeEventSequence),
           Object.fromEntries(
             questions.map((question) => [
               question.id,
@@ -968,7 +980,7 @@ export class LiveSessionService {
             () => true,
           ),
           watermark: toWatermark(
-            session.realtimeEventSeq,
+            realtimeEventSeq(session.realtimeEventSequence),
             Object.fromEntries(
               session.questions.map((question) => [
                 question.id,
@@ -1094,7 +1106,7 @@ export class LiveSessionService {
             (question) => question.status === SessionQuestionStatus.CLOSED,
           ),
           watermark: toWatermark(
-            session.realtimeEventSeq,
+            realtimeEventSeq(session.realtimeEventSequence),
             Object.fromEntries(
               session.questions
                 .filter(

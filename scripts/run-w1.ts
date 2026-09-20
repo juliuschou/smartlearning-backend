@@ -3,7 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { access, readFile, writeFile } from 'node:fs/promises';
 import { config as loadDotenv } from 'dotenv';
 const PROTECTED_TEACHER = 'local-w1-w1-20260915-final';
-const STAGES = [100] as const;
+const STAGES = [20, 100, 300] as const;
 const SMOKE_PARTICIPANTS = 1;
 
 type ChildResult = { status: number; stdout: string; stderr: string };
@@ -215,7 +215,7 @@ async function stopObserver(
     const plans = candidate.plans;
     const safety = candidate.safety;
     if (
-      candidate.schemaVersion !== 2 ||
+      candidate.schemaVersion !== 4 ||
       candidate.enabled !== true ||
       candidate.target !== 'smartlearning_test' ||
       !reconciliation ||
@@ -229,16 +229,47 @@ async function stopObserver(
     const reconciliationRecord = reconciliation as Record<string, unknown>;
     const plansRecord = plans as Record<string, unknown>;
     const safetyRecord = safety as Record<string, unknown>;
+    const sampling = candidate.sampling;
+    const observerErrors = candidate.observerErrors;
+    const connectionObservations = candidate.connectionObservations;
     if (
       typeof reconciliationRecord.liveSessionId !== 'string' ||
       typeof reconciliationRecord.sessionQuestionId !== 'string' ||
+      reconciliationRecord.exactMatch !== true ||
       !('expected' in reconciliationRecord) ||
       !('persisted' in reconciliationRecord) ||
-      !('exactMatch' in reconciliationRecord) ||
+      !Array.isArray(candidate.samples) ||
+      candidate.samples.length === 0 ||
+      candidate.samples.some((sample) => {
+        if (!sample || typeof sample !== 'object') return true;
+        const record = sample as Record<string, unknown>;
+        return !Array.isArray(record.blockingEdges);
+      }) ||
+      !sampling ||
+      typeof sampling !== 'object' ||
+      typeof (sampling as Record<string, unknown>).startedAt !== 'string' ||
+      typeof (sampling as Record<string, unknown>).finishedAt !== 'string' ||
+      typeof (sampling as Record<string, unknown>).intervalMs !== 'number' ||
+      ((sampling as Record<string, unknown>).intervalMs as number) < 100 ||
+      !connectionObservations ||
+      !Array.isArray(connectionObservations) ||
+      connectionObservations.length === 0 ||
+      !Array.isArray(observerErrors) ||
+      observerErrors.length > 0 ||
       !plansRecord.findByCode ||
       typeof plansRecord.findByCode !== 'object' ||
+      !Array.isArray(
+        (plansRecord.findByCode as Record<string, unknown>).plan,
+      ) ||
+      ((plansRecord.findByCode as Record<string, unknown>).plan as unknown[])
+        .length === 0 ||
       !plansRecord.getSnapshot ||
       typeof plansRecord.getSnapshot !== 'object' ||
+      !Array.isArray(
+        (plansRecord.getSnapshot as Record<string, unknown>).plan,
+      ) ||
+      ((plansRecord.getSnapshot as Record<string, unknown>).plan as unknown[])
+        .length === 0 ||
       safetyRecord.readOnly !== true ||
       safetyRecord.writes !== false ||
       safetyRecord.schemaChanges !== false ||
@@ -296,14 +327,14 @@ async function main(): Promise<void> {
     : undefined;
   const maxStage = maxStageArg
     ? Number(maxStageArg.slice('--max-stage='.length))
-    : 100;
+    : 300;
   if (
     (selectedStage !== undefined &&
       !STAGES.includes(selectedStage as (typeof STAGES)[number])) ||
     (selectedStage === undefined &&
       !STAGES.includes(maxStage as (typeof STAGES)[number]))
   )
-    fail('--stage/--max-stage must be 100 for diagnostic W1 runs.');
+    fail('--stage/--max-stage must be one of 20, 100, or 300.');
   const baseUrl = required('LOAD_BASE_URL');
   const createdBy = required('LOCAL_W1_PROVISION_CREATED_BY');
   const username = `local-w1-${Date.now()}-${randomUUID().slice(0, 8)}`;
@@ -314,6 +345,7 @@ async function main(): Promise<void> {
   let provisioned = false;
   let keepTeacher = true;
   let observer: ChildProcess | undefined;
+  let observerOutputPath: string | undefined;
 
   try {
     await healthCheck(baseUrl);
@@ -368,7 +400,13 @@ async function main(): Promise<void> {
       : STAGES.filter((stage) => stage <= maxStage);
     for (const participants of stages) {
       const outputPath = `${prefix}-${participants}.json`;
-      const observerPath = `${prefix}-pg-observer.json`;
+      const observerPath = `${prefix}-pg-observer-${participants}.json`;
+      observerOutputPath = observerPath;
+      await writeFile(
+        stageFixturePath,
+        `${JSON.stringify({ fixture: { ...smokeFixture, expectedParticipants: participants } }, null, 2)}\n`,
+        'utf8',
+      );
       observer = await startObserver(stageFixturePath, observerPath);
       const result = await runHarness(
         baseUrl,
@@ -383,6 +421,7 @@ async function main(): Promise<void> {
       await assertStage(outputPath, participants, result, password);
       const observerReport = await stopObserver(observer, observerPath);
       observer = undefined;
+      observerOutputPath = undefined;
       const parsedStage: unknown = JSON.parse(
         await readFile(outputPath, 'utf8'),
       );
@@ -403,7 +442,8 @@ async function main(): Promise<void> {
     }
     keepTeacher = false;
   } finally {
-    if (observer) await stopObserver(observer, `${prefix}-pg-observer.json`);
+    if (observer && observerOutputPath)
+      await stopObserver(observer, observerOutputPath);
     if (provisioned && keepTeacher)
       process.stderr.write(
         `Cleanup candidate retained: teacher=${username} runId=${id}\n`,

@@ -704,9 +704,11 @@ export class LiveGateway
       async (tx) => {
         const session = await tx.liveSession.findUnique({
           where: { id: client.liveSessionId },
-          select: { realtimeEventSeq: true },
+          select: {
+            realtimeEventSequence: { select: { lastEventSeq: true } },
+          },
         });
-        if (!session) {
+        if (!session?.realtimeEventSequence) {
           throw new DomainError(
             'SESSION_NOT_JOINABLE',
             'LiveSession cannot be joined.',
@@ -724,7 +726,7 @@ export class LiveGateway
               liveSessionId: client.liveSessionId,
               eventSeq: {
                 gt: parsed.value,
-                lte: session.realtimeEventSeq,
+                lte: session.realtimeEventSequence.lastEventSeq,
               },
             },
             orderBy: { eventSeq: 'asc' },
@@ -732,7 +734,7 @@ export class LiveGateway
           }),
         ]);
         return {
-          currentEventSeq: session.realtimeEventSeq,
+          currentEventSeq: session.realtimeEventSequence.lastEventSeq,
           oldestEventSeq: oldest?.eventSeq ?? null,
           rows,
           truncated: rows.length > REPLAY_LIMIT,

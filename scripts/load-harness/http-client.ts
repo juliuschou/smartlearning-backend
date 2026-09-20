@@ -73,8 +73,15 @@ export class LoadHttpClient {
       }
       const elapsed = performance.now() - started;
       operation.timingsMs.push(elapsed);
-      if (diagnosticRequestId)
+      if (diagnosticRequestId) {
         this.diagnostics?.recordClient(diagnosticRequestId, elapsed);
+        if (path.includes('/join'))
+          this.diagnostics?.recordBackend(
+            diagnosticRequestId,
+            this.runId ?? '',
+            response.headers.get('x-w1-join-diagnostic'),
+          );
+      }
       const expectedStatus =
         options.expectedStatuses?.includes(response.status) ??
         (response.status >= 200 && response.status < 300);
@@ -172,6 +179,31 @@ export class LoadHttpClient {
     );
   }
 
+  /** Raw submission with caller-supplied idempotency key + request ID (W2). */
+  async submitRaw(
+    operation: OperationMetrics,
+    liveSessionId: string,
+    sessionQuestionId: string,
+    participantToken: string,
+    answer: Record<string, unknown>,
+    idempotencyKey: string,
+    requestId?: string,
+  ) {
+    return this.request<{ id: string; participantId: string }>(
+      operation,
+      'POST',
+      `/live-sessions/${liveSessionId}/submissions`,
+      {
+        headers: {
+          'X-Participant-Token': participantToken,
+          'Idempotency-Key': idempotencyKey,
+          ...(requestId ? { 'x-request-id': requestId } : {}),
+        },
+        body: { sessionQuestionId, ...answer },
+      },
+    );
+  }
+
   async loginTeacher(
     operation: OperationMetrics,
     username: string,
@@ -223,6 +255,53 @@ export class LoadHttpClient {
           ],
         },
       },
+    );
+  }
+
+  /** Generic question creation for W2 fixtures (poll / open_text / quiz). */
+  async createQuestionRaw(
+    operation: OperationMetrics,
+    courseId: string,
+    body: Record<string, unknown>,
+  ) {
+    return this.teacherRequest<Record<string, unknown>>(
+      operation,
+      'POST',
+      `/courses/${courseId}/questions`,
+      { body },
+    );
+  }
+
+  /** Teacher snapshot (Web session) — used to read SessionQuestion snapshot options. */
+  async teacherGetSnapshot(operation: OperationMetrics, liveSessionId: string) {
+    return this.teacherRequest<{
+      sessionQuestions?: Array<{
+        id: string;
+        options?: Array<{
+          id: string;
+          optionRef?: string | null;
+          isCorrect?: boolean;
+        }>;
+      }>;
+    }>(operation, 'GET', `/live-sessions/${liveSessionId}`);
+  }
+
+  /** Teacher quiz/poll results projection — the only wire shape carrying option isCorrect. */
+  async teacherGetResults(
+    operation: OperationMetrics,
+    liveSessionId: string,
+    sessionQuestionId: string,
+  ) {
+    return this.teacherRequest<{
+      options?: Array<{
+        optionId: string;
+        optionRef?: string | null;
+        isCorrect?: boolean;
+      }>;
+    }>(
+      operation,
+      'GET',
+      `/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/results`,
     );
   }
 

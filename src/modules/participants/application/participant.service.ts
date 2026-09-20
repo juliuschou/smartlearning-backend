@@ -71,11 +71,32 @@ export class ParticipantService {
     participant: Participant;
     participantToken: string;
     liveSession: ReturnType<typeof toLiveSessionDto>;
+    diagnostic?: {
+      schemaVersion: 2;
+      runId: string | null;
+      requestId: string | null;
+      phases: Record<string, number>;
+      phaseSemantics: {
+        liveSessionLockRead: 'joinabilityGuardSharedLockAndConditionalParticipantInsert';
+        outboxAppend: 'transactionalSequenceAllocationAndOutboxInsert';
+      };
+      architecture: {
+        joinabilitySynchronization: 'live_session_for_share_vs_lifecycle_for_update';
+        sequenceAllocation: 'live_session_event_sequence_row';
+      };
+      publisher: 'fire-and-forget; not measured on response path';
+      snapshotOnResponsePath: false;
+    };
   }> {
     const diagnostic = process.env.W1_DIAGNOSTICS === '1';
     const diagnosticStarted = performance.now();
     const phase: Record<string, number> = {};
     const displayName = normalizeParticipantDisplayName(rawDisplayName);
+
+    // Pre-lock work: pure reads and deterministic validation that do not
+    // depend on shared LiveSession state. The joinability check here is a
+    // fast-fail; the transaction re-checks status after the lock so a
+    // concurrent close/cancel cannot grant a join (no TOCTOU grant).
     const findStarted = performance.now();
     const session = await this.sessions.findByCode(sessionCode);
     if (diagnostic) phase.findByCode = performance.now() - findStarted;
@@ -84,34 +105,32 @@ export class ParticipantService {
 
     const transactionStarted = performance.now();
     const participant = await this.transactions.run(async (tx) => {
-      const lockStarted = performance.now();
-      await this.transactions.lockLiveSessionForUpdate(tx, session.id);
-      if (diagnostic)
-        phase.liveSessionLockRead = performance.now() - lockStarted;
-      const current = await tx.liveSession.findUnique({
-        where: { id: session.id },
-      });
-      if (!current || !isJoinableLiveSessionStatus(current.status)) {
+      const guardStarted = performance.now();
+      const participant =
+        await this.transactions.insertParticipantIfLiveSessionJoinable(tx, {
+          participantId: newId(),
+          liveSessionId: session.id,
+          displayName,
+          tokenHash,
+        });
+      if (diagnostic) {
+        const guardDuration = performance.now() - guardStarted;
+        // Compatibility field: schema v2 redefines this as the shared
+        // joinability guard plus conditional participant insert, not an
+        // exclusive LiveSession lock read.
+        phase.liveSessionLockRead = guardDuration;
+        phase.participantInsert = guardDuration;
+      }
+      if (!participant) {
         throw new DomainError(
           'SESSION_NOT_JOINABLE',
           'LiveSession cannot be joined.',
           409,
         );
       }
-      const insertStarted = performance.now();
-      const participant = await tx.participant.create({
-        data: {
-          id: newId(),
-          liveSessionId: current.id,
-          displayName,
-          tokenHash,
-        },
-      });
-      if (diagnostic)
-        phase.participantInsert = performance.now() - insertStarted;
       const outboxStarted = performance.now();
       await this.outbox.append(tx, {
-        liveSessionId: current.id,
+        liveSessionId: participant.liveSessionId,
         event: RealtimeEvent.SESSION_SNAPSHOT,
         visibility: RealtimeVisibility.TEACHER,
         projectionInput: {
@@ -130,26 +149,65 @@ export class ParticipantService {
       participantId: participant.id,
     });
 
-    const snapshotStarted = performance.now();
-    const snapshot = await this.sessions.getSnapshot(session.id);
+    // Option C: the post-commit snapshot read is not part of the Join HTTP
+    // correctness contract — durable participant/event state is already
+    // committed above, and the controller only extracts
+    // {id, status, sessionCode, currentQuestion}. Those derive from the
+    // pre-lock findByCode projection (unique sessionCode key), so no
+    // post-commit read stays on the response path. Clients obtain the full
+    // live state via GET /live-sessions/:id/snapshot and the /live namespace.
+    let diagnosticTrace:
+      | {
+          schemaVersion: 2;
+          runId: string | null;
+          requestId: string | null;
+          phases: Record<string, number>;
+          phaseSemantics: {
+            liveSessionLockRead: 'joinabilityGuardSharedLockAndConditionalParticipantInsert';
+            outboxAppend: 'transactionalSequenceAllocationAndOutboxInsert';
+          };
+          architecture: {
+            joinabilitySynchronization: 'live_session_for_share_vs_lifecycle_for_update';
+            sequenceAllocation: 'live_session_event_sequence_row';
+          };
+          publisher: 'fire-and-forget; not measured on response path';
+          snapshotOnResponsePath: false;
+        }
+      | undefined;
     if (diagnostic) {
-      phase.postCommitSnapshot = performance.now() - snapshotStarted;
+      phase.postCommitSnapshot = 0;
       phase.total = performance.now() - diagnosticStarted;
+      diagnosticTrace = {
+        schemaVersion: 2,
+        runId: diagnosticContext?.runId ?? null,
+        requestId: diagnosticContext?.requestId ?? null,
+        phases: { ...phase },
+        phaseSemantics: {
+          liveSessionLockRead:
+            'joinabilityGuardSharedLockAndConditionalParticipantInsert',
+          outboxAppend: 'transactionalSequenceAllocationAndOutboxInsert',
+        },
+        architecture: {
+          joinabilitySynchronization:
+            'live_session_for_share_vs_lifecycle_for_update',
+          sequenceAllocation: 'live_session_event_sequence_row',
+        },
+        publisher: 'fire-and-forget; not measured on response path',
+        snapshotOnResponsePath: false,
+      };
       this.logger.debug(
         JSON.stringify({
           event: 'w1.join.diagnostic',
-          runId: diagnosticContext?.runId ?? null,
-          requestId: diagnosticContext?.requestId ?? null,
           liveSessionId: session.id,
-          phases: phase,
-          publisher: 'fire-and-forget; not measured on response path',
+          ...diagnosticTrace,
         }),
       );
     }
     return {
       participant,
       participantToken,
-      liveSession: toLiveSessionDto(snapshot),
+      liveSession: toLiveSessionDto(session),
+      ...(diagnosticTrace ? { diagnostic: diagnosticTrace } : {}),
     };
   }
 
@@ -174,9 +232,10 @@ export class ParticipantService {
     return {
       participant,
       participantToken: null,
-      liveSession: toLiveSessionDto(
-        await this.sessions.getSnapshot(session.id),
-      ),
+      // Option C: same deferred-snapshot contract as the anonymous join — the
+      // pre-lock projection supplies the minimal response; full state comes
+      // from the snapshot endpoint / /live namespace.
+      liveSession: toLiveSessionDto(session),
     };
   }
 
@@ -236,15 +295,11 @@ export class ParticipantService {
     );
 
     const result = await this.transactions.run(async (tx) => {
-      await this.transactions.lockLiveSessionForUpdate(
+      const current = await this.transactions.lockJoinableLiveSessionForShare(
         tx,
         canonicalLiveSessionId,
       );
-      const current = await tx.liveSession.findUnique({
-        where: { id: canonicalLiveSessionId },
-        select: { id: true, courseId: true, status: true },
-      });
-      if (!current || !isJoinableLiveSessionStatus(current.status)) {
+      if (!current) {
         throw new DomainError(
           'SESSION_NOT_JOINABLE',
           'LiveSession cannot be joined.',
@@ -252,11 +307,10 @@ export class ParticipantService {
         );
       }
 
-      // Enrollment removal locks the Course row, while account disable locks
-      // the Account row. Take both locks before rechecking authorization so a
-      // participant cannot be created after either revocation commits. The
-      // lock order is liveSession -> course -> account, matching the existing
-      // live-session lifecycle path and avoiding a check-then-create race.
+      // The shared LiveSession guard is Join's linearization point against
+      // lifecycle FOR UPDATE. Enrollment removal locks Course and account
+      // disable locks Account; retain liveSession -> course -> account order
+      // before rechecking authorization so no revocation can race creation.
       await this.transactions.lockCourseForUpdate(tx, current.courseId);
       await this.transactions.lockAccountForUpdate(tx, canonicalAccountId);
 
