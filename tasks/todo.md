@@ -5156,3 +5156,65 @@ The canonical Phase B evidence synchronization for RC `b9bcd2be9c9d31d7eb4d197c3
 - [x] Documentation-only baseline freeze recorded.
 - [x] No runtime, workload, migration, cleanup, restart, or performance tuning executed in this freeze update.
 - [ ] Run `git diff --check` after documentation changes.
+
+# W2 — Concentrated Submission (授權 2026-09-20)
+
+## Acceptance criteria（functional，無既有 W2 latency threshold → 不得自行發明）
+
+Per question type (poll / open_text / quiz)，各自 fresh fixture/run：
+- [ ] LiveSession status = active；exactly one SessionQuestion = open
+- [ ] 300 participants 存在且各提交一次
+- [ ] max(requestStart) − min(requestStart) ≤ 10,000 ms（ initiation window proof ）
+- [ ] 300 valid submissions；duplicate = 0；functional error rate = 0%
+- [ ] DB reconciliation = exact（option counts / text content / quiz correct-incorrect）
+- [ ] required realtime broadcasts complete（每筆成功提交對應 targeted RESULT_UPDATED）
+- [ ] commit-to-broadcast p50/p95/p99/max 量測（COMMIT TIMING EVIDENCE GAP 標記，以 client responseEnd 作為最近可說明之 commit 點）
+
+## Staged execution（§15）
+- [ ] Poll smoke 20 → PASS → Poll 300
+- [ ] Open Text smoke 20 → PASS → Open Text 300
+- [ ] Quiz smoke 20 → PASS → Quiz 300
+- [ ] 任一 smoke FAIL → 停止該題型，不升級；任一 300 correctness FAIL → 停止全部，保存 evidence
+
+## Preflight（§2 / §18）
+- [ ] commit SHA / working tree / Node / PG version / DB identity = smartlearning_test / migration status / backend endpoint / observer
+- [ ] Protected orphan check：teacher `local-w1-1789840353701-82cd63fa` + LiveSession `01a0bacc-83f9-7417-a52e-481d2fbd3e8c` 存在性記錄於 artifact；存在 → 不做 truncate，僅 exact cleanup
+- [ ] CPU / RAM 記錄
+
+## Harness（§3）
+- [ ] 新增 dedicated W2 driver（重用 load-harness http/observer/metrics；每筆 submission 個別記錄 runId/participantId/questionId/requestId/requestStart/responseEnd/status/duration/commit proxy/broadcast observed/error class）
+- [ ] fixture 支援 poll（3 options）/ open_text / quiz（correctOptionRefs）
+
+## Artifacts（§16）
+- [x] `artifacts/w2-<type>-<runId>-{20,300}.json` + `-pg-observer-*.json`；不覆寫舊檔
+- [ ] Commit policy: run/smoke/fixture JSON 已入版控；5 個 3.7–14 MB 之 `-300-pg-observer.json` raw dumps 未提交（維持既有 ≤20 KB/檔 慣例），保留於工作目錄
+
+## Cleanup（§19）
+- [ ] 每 run exact cleanup：僅本次 teacher/course/question/options/session/sessionQuestion(s)/session options/participants/submissions/events/counter/test-only auth rows；依 FK 相依順序；禁止 TRUNCATE/broad DELETE；protected orphan 不可動；artifacts 保留
+- [ ] Post-cleanup exact count 驗證記錄
+
+## 禁止（§20）
+- W1 architecture / tuning / W3–W8 / infra changes / destructive reset — 若發現瓶頸僅記錄 evidence
+
+## Results
+
+### 2026-09-20 — W2 CONCENTRATED SUBMISSION — EXECUTED (functional PASS, performance baseline RECORDED)
+
+- **Authorization scope honored:** W2 only; W1 untouched; no tuning; no W3–W8; no TRUNCATE/broad delete; protected orphan untouched (still absent); pre-existing `cp3-*` rows untouched.
+- **Environment:** commit `7efe7b3e3563b1f728a95520835a2f912d6c9a20` (dirty W1 tree preserved, unmodified); Node v26.5.1; PostgreSQL 16.15; DB `smartlearning_test` (migrations up to date); backend `node dist/src/main.js` on 127.0.0.1:3001 (NODE_ENV=test, Redis off/local adapter); 16 vCPU / 16 GB RAM WSL2.
+- **Harness:** dedicated `scripts/load-harness/w2/` (create-fixture.ts fresh teacher/course/question/session per type; run-w2.ts per-submission records + socket observer + DB reconcile + run-once/artifact-overwrite guards; exact cleanup + post-cleanup verify; protected-ID preflight).
+- **Smokes (20 each):** poll `b5480915…` 20/20; open_text `d7b3f66b…` 20/20; quiz `fa4491f0…` 20/20 — 0 duplicates, 0 functional errors, all initiation windows ≤ ~1.9 s.
+- **Formal 300 runs (fresh fixture each, pg observer 250 ms):**
+  - Poll `b2e1b227…`: window 8970.7 ms ✓; 300/300, 0 dup, 0 err; aggregate exactly 100/100/100; events 600/600; DB c2b p50 64742 / p95 110811 / p99 116451 / max 117904 ms; client receipts 105/300 (gap recorded); observer 606 samples, 401 blocking edges.
+  - Open Text `08106bc2…`: window 8970.5 ms ✓; 300/300, 300 unique texts, exact content match, 0 dup, 0 err; DB c2b p50 72905 / p95 113878 / p99 117521 / max 118436 ms; client receipts 100/300 (gap recorded); observer 1106 samples, 557 edges.
+  - Quiz `8b18cc2f…`: window 8970.5 ms ✓; 300/300, 0 dup, 0 err; correct/incorrect exactly 200/100 (driver expectation); DB c2b p50 82811 / p95 123927 / p99 127532 / max 128350 ms; client receipts 100/300 (gap recorded); observer 782 samples, 373 edges.
+- **Verdict (no existing W2 latency threshold in repo → no invented threshold):**
+  - **W2 Functional = PASS** (all three types: 300 participants, all starts within 10 s, 300 valid submissions, 0% functional error rate, 0 duplicates, exact DB/aggregate reconciliation, DB-delivered broadcast set complete).
+  - **W2 Performance Baseline = RECORDED** (Submit API and commit-to-broadcast percentiles above; commit timing is a documented proxy — `COMMIT TIMING EVIDENCE GAP`).
+- **Findings recorded (no tuning performed, per §20):**
+  1. Durable publisher drains ≈1 event/sec (all claims `claimedCount=1`); with 600-event backlogs the targeted-event drain takes ~2 min — this dominates DB commit-to-broadcast at 300 scale.
+  2. Client-side targeted-receipt loss observed intermittently (~45% at 20 sockets, ~65–67% at 300 sockets) even with drain settled and sockets connected; server logs show no errors, no retries, no unauthorized disconnects. Unresolved; evidence preserved in artifacts (receipt indexes + eventSeq uniqueness 1:1).
+  3. Observer `exactMatch=False` is a model mismatch: observer expected.events=300 vs 603 actual (3 fixture + 300 teacher join snapshots + 300 results). Driver DB reconciliation is the authoritative exact gate.
+- **Cleanup:** all run-owned chains exact-deleted (teachers, courses, questions/options, sessions, session questions/options, selections, participants, submissions, events, sequence rows, test-only web sessions). Final totals match pre-W2 baseline exactly (1 live session [cp3, pre-existing], 3 accounts [cp3-*], 0 submissions, 2 participants, 1 course, 1 question); protected orphan chain absent before and after. All artifacts preserved.
+- **Verification bundle:** typecheck PASS; lint:check PASS (0 problems); format:check PASS; build PASS; unit 61 suites / 406 tests PASS; `git diff --check` clean. DB-backed suites not run in this phase (no code changes; workloads executed directly against authorized `smartlearning_test`).
+- **Stopped after W2.** No W2 optimization, no W3–W8.

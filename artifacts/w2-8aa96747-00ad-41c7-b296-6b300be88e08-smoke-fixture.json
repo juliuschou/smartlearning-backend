@@ -1,0 +1,30 @@
+{
+  "fixture": {
+    "runId": "8aa96747-00ad-41c7-b296-6b300be88e08",
+    "questionType": "poll",
+    "username": "local-w1-w2-1789893762814-10b01f26",
+    "courseId": "01a0bdfb-624a-7214-99f3-5462051ecae4",
+    "questionId": "01a0bdfb-625b-766f-bab8-a8f4c8dd6f71",
+    "liveSessionId": "01a0bdfb-6270-7077-98d6-dcb1e6a2cb82",
+    "sessionQuestionId": "01a0bdfb-629c-759b-a263-264a9c92bda6",
+    "sessionCode": "LEJDHEV2",
+    "expectedParticipants": 20,
+    "options": [
+      {
+        "id": "01a0bdfb-629c-759b-a263-297a41da8345",
+        "optionRef": "alpha",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0bdfb-629c-759b-a263-2de0308af177",
+        "optionRef": "beta",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0bdfb-629c-759b-a263-32df18169d48",
+        "optionRef": "gamma",
+        "isCorrect": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "fixture": {
+    "runId": "b5480915-0324-4d76-b3ad-bec009d4a41e",
+    "questionType": "poll",
+    "username": "local-w1-w2-1789895440033-f0052c3b",
+    "courseId": "01a0be14-f9b8-7129-89bc-ea248bc1a419",
+    "questionId": "01a0be14-f9dc-7381-a23a-077a2c0ef8ca",
+    "liveSessionId": "01a0be14-f9f2-7695-8811-c83f34e314b1",
+    "sessionQuestionId": "01a0be14-fa17-73c6-b2f4-5d77cb0bcd79",
+    "sessionCode": "YR5HEELE",
+    "options": [
+      {
+        "id": "01a0be14-fa17-73c6-b2f4-61be9df8eb88",
+        "optionRef": "alpha",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0be14-fa17-73c6-b2f4-67638b9173cf",
+        "optionRef": "beta",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0be14-fa17-73c6-b2f4-68b77a8f2219",
+        "optionRef": "gamma",
+        "isCorrect": false
+      }
+    ],
+    "expectedParticipants": 20
+  }
+}

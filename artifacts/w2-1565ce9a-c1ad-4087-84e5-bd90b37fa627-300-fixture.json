@@ -1,0 +1,30 @@
+{
+  "fixture": {
+    "runId": "1565ce9a-c1ad-4087-84e5-bd90b37fa627",
+    "questionType": "quiz",
+    "username": "local-w1-w2-1789900908457-6af0a3f9",
+    "courseId": "01a0be68-6a89-70df-b76d-5e8e55edc7e1",
+    "questionId": "01a0be68-6a96-7419-8b97-5012a33dff76",
+    "liveSessionId": "01a0be68-6ab1-76b3-8e1a-c8e36962d6b3",
+    "sessionQuestionId": "01a0be68-6aea-7748-b189-4af4249234bc",
+    "sessionCode": "BP7K95BK",
+    "options": [
+      {
+        "id": "01a0be68-6aea-7748-b189-4e0b5a2e9116",
+        "optionRef": "correct",
+        "isCorrect": true
+      },
+      {
+        "id": "01a0be68-6aea-7748-b189-500f5fbc7766",
+        "optionRef": "wrong1",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0be68-6aea-7748-b189-54eb2bcd6db6",
+        "optionRef": "wrong2",
+        "isCorrect": false
+      }
+    ],
+    "expectedParticipants": 300
+  }
+}

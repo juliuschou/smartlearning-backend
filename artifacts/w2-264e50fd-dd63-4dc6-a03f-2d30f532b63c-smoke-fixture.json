@@ -1,0 +1,30 @@
+{
+  "fixture": {
+    "runId": "264e50fd-dd63-4dc6-a03f-2d30f532b63c",
+    "questionType": "poll",
+    "username": "local-w1-w2-1789896042451-3e9d0b30",
+    "courseId": "01a0be1e-2ae0-766a-a6f3-2656963e66f0",
+    "questionId": "01a0be1e-2aee-726a-8cab-11051ec6fdec",
+    "liveSessionId": "01a0be1e-2b04-73df-822c-78fbad451f1f",
+    "sessionQuestionId": "01a0be1e-2b1f-72e4-8005-511f9f2bf567",
+    "sessionCode": "LJULYBQG",
+    "options": [
+      {
+        "id": "01a0be1e-2b1f-72e4-8005-569420a85def",
+        "optionRef": "alpha",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0be1e-2b1f-72e4-8005-5a077bd8940a",
+        "optionRef": "beta",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0be1e-2b1f-72e4-8005-5fb609d5efd6",
+        "optionRef": "gamma",
+        "isCorrect": false
+      }
+    ],
+    "expectedParticipants": 20
+  }
+}

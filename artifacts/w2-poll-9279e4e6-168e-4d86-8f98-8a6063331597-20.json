@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 1,
+  "phase": "W2-concentrated-submission",
+  "runId": "9279e4e6-168e-4d86-8f98-8a6063331597",
+  "questionType": "poll",
+  "participantCount": 20,
+  "isSmoke": true,
+  "fixture": {
+    "courseId": "01a0be25-e335-7736-8ea7-610954a7a1f5",
+    "questionId": "01a0be25-e343-745a-827e-512816fc5870",
+    "liveSessionId": "01a0be25-e351-712e-9300-b9e7a1b62203",
+    "sessionQuestionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+    "sessionCode": "K93DK54X"
+  },
+  "initiation": {
+    "windowMs": 2000,
+    "proofMaxMinusMinMs": 1900.9987790000002,
+    "within10s": true,
+    "submitStageStartMs": 155.408322,
+    "submitStageEndMs": 2228.107495,
+    "pacingDelayMs": 100
+  },
+  "submitLatency": {
+    "submitClientDurationMs": {
+      "count": 20,
+      "p50": 56.096046,
+      "p95": 171.38674300000002,
+      "p99": 191.36091500000003,
+      "max": 191.36091500000003
+    },
+    "note": "commitToBroadcastMs uses client responseEnd as the commit-time proxy — COMMIT TIMING EVIDENCE GAP (no exact DB commit timestamp exposed); documented, not exact."
+  },
+  "commitToBroadcastMs": {
+    "count": 9,
+    "p50": 1557.8480720000002,
+    "p95": 4303.5381689999995,
+    "p99": 4303.5381689999995,
+    "max": 4303.5381689999995
+  },
+  "broadcastSettle": {
+    "settleWaitMs": 120171.671769,
+    "deadlineMs": 120000
+  },
+  "attempted": 20,
+  "successful": 20,
+  "failed": 0,
+  "functionalErrorRate": 0,
+  "duplicateSubmissionIds": 0,
+  "errorClassification": {},
+  "realtime": {
+    "socketConnectErrors": 0,
+    "expectedBroadcasts": 20,
+    "observedBroadcasts": 9,
+    "missingBroadcasts": 11,
+    "duplicateEventSeqs": 0
+  },
+  "dbReconcile": {
+    "submissionCount": 20,
+    "participants": 20,
+    "events": {
+      "n": 43,
+      "uniq": 43
+    },
+    "lastEventSeq": "43",
+    "submissions": [
+      {
+        "participantId": "01a0be25-e576-736d-8cec-b9125bb35f23",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c0e1e1da1438"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e546-77ac-b4cd-658d8ec8ba52",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c420048262aa"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e568-72c0-8068-bb4e71c8184e",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c8f4caeb511c"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e56a-7254-8a3c-9f5944a04d5c",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c0e1e1da1438"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e571-752a-9202-2ad68ce87af6",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c420048262aa"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e573-701d-b601-ee5ecba1b507",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c8f4caeb511c"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e578-74ce-9ea7-6a321a21d5b2",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c0e1e1da1438"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e549-7036-80da-45219a1b1d1a",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c420048262aa"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e54b-76ef-bd4a-b853a3b8769b",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c8f4caeb511c"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e54a-7377-8804-e1f989fe5fb0",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c0e1e1da1438"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e54f-73a4-a9ce-3a3cb7ea6137",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c420048262aa"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e54b-76ef-bd4a-be37f665f7bf",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c8f4caeb511c"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e55e-72ee-a23c-a5f03cf8044c",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c0e1e1da1438"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e54a-7377-8804-e605c9e716b5",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c420048262aa"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e555-723f-856d-10852b0c1963",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c8f4caeb511c"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e567-72be-bb40-2bce09a37feb",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c0e1e1da1438"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e556-72d6-9098-c2a0ac150764",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c420048262aa"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e562-706c-9b3a-91c1b8afc3cb",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c8f4caeb511c"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e560-7788-b13c-6a89eaec19ce",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c0e1e1da1438"
+        ],
+        "textAnswer": null
+      },
+      {
+        "participantId": "01a0be25-e55d-703d-b183-1fa6bd4ee47a",
+        "selectedOptionRefs": [
+          "01a0be25-e374-7299-856f-c420048262aa"
+        ],
+        "textAnswer": null
+      }
+    ]
+  },
+  "expectations": {
+    "submissions": 20,
+    "participants": 20,
+    "pollDistribution": {
+      "01a0be25-e374-7299-856f-c0e1e1da1438": 7,
+      "01a0be25-e374-7299-856f-c420048262aa": 7,
+      "01a0be25-e374-7299-856f-c8f4caeb511c": 6
+    }
+  },
+  "records": [
+    {
+      "participantIndex": 0,
+      "participantId": "01a0be25-e576-736d-8cec-b9125bb35f23",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-0",
+      "idempotencyKey": "951c4f25-2dea-4939-8977-4bc33f63edca",
+      "requestStartMs": 155.713008,
+      "responseEndMs": 202.250604,
+      "submitClientDurationMs": 46.53759600000001,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e5ce-7375-9e57-c15611395b30"
+    },
+    {
+      "participantIndex": 1,
+      "participantId": "01a0be25-e546-77ac-b4cd-658d8ec8ba52",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-1",
+      "idempotencyKey": "4b5da480-e6ce-4851-ad80-530945d3683e",
+      "requestStartMs": 256.78132899999997,
+      "responseEndMs": 448.142244,
+      "submitClientDurationMs": 191.36091500000003,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e6c5-731b-8f35-2c4050b06e1e"
+    },
+    {
+      "participantIndex": 2,
+      "participantId": "01a0be25-e568-72c0-8068-bb4e71c8184e",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-2",
+      "idempotencyKey": "c9f6d84e-c5a1-4c1b-bfc5-27eeeceb93ab",
+      "requestStartMs": 356.732867,
+      "responseEndMs": 468.867521,
+      "submitClientDurationMs": 112.13465400000001,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e6da-767b-b85c-f4216fa5055a"
+    },
+    {
+      "participantIndex": 3,
+      "participantId": "01a0be25-e56a-7254-8a3c-9f5944a04d5c",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-3",
+      "idempotencyKey": "c1f7533b-9a44-48da-b551-b0da943638e3",
+      "requestStartMs": 456.450018,
+      "responseEndMs": 490.68481199999997,
+      "submitClientDurationMs": 34.234793999999965,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e6f0-720c-a1f1-2c94411b190b"
+    },
+    {
+      "participantIndex": 4,
+      "participantId": "01a0be25-e571-752a-9202-2ad68ce87af6",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-4",
+      "idempotencyKey": "898cab74-5495-4af5-befc-e6efc3450439",
+      "requestStartMs": 556.334128,
+      "responseEndMs": 688.431318,
+      "submitClientDurationMs": 132.09719000000007,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e7b3-771b-8f3d-e25900b1b3bd"
+    },
+    {
+      "participantIndex": 5,
+      "participantId": "01a0be25-e573-701d-b601-ee5ecba1b507",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-5",
+      "idempotencyKey": "7ae63edf-312a-4e07-891c-6288215be7e0",
+      "requestStartMs": 657.252897,
+      "responseEndMs": 713.348943,
+      "submitClientDurationMs": 56.096046,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e7cc-75b3-bec4-bfcab8bfdadf"
+    },
+    {
+      "participantIndex": 6,
+      "participantId": "01a0be25-e578-74ce-9ea7-6a321a21d5b2",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-6",
+      "idempotencyKey": "e89db549-c725-43e1-b75b-0f76da99da8b",
+      "requestStartMs": 756.780793,
+      "responseEndMs": 889.69704,
+      "submitClientDurationMs": 132.916247,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e878-77ee-b162-07c999f00143"
+    },
+    {
+      "participantIndex": 7,
+      "participantId": "01a0be25-e549-7036-80da-45219a1b1d1a",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-7",
+      "idempotencyKey": "b9fc158a-7ade-4221-8d9c-a4101567e566",
+      "requestStartMs": 856.620487,
+      "responseEndMs": 909.879569,
+      "submitClientDurationMs": 53.25908199999992,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e893-76ec-8e43-0733b2e9ea29"
+    },
+    {
+      "participantIndex": 8,
+      "participantId": "01a0be25-e54b-76ef-bd4a-b853a3b8769b",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-8",
+      "idempotencyKey": "5868d0e5-ea91-4625-af82-ecb25ab54f16",
+      "requestStartMs": 956.1704259999999,
+      "responseEndMs": 1075.550019,
+      "submitClientDurationMs": 119.37959300000011,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e939-75c2-bca2-1f65368985f8"
+    },
+    {
+      "participantIndex": 9,
+      "participantId": "01a0be25-e54a-7377-8804-e1f989fe5fb0",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-9",
+      "idempotencyKey": "161714ee-9f84-4f36-8042-d64dd0949dde",
+      "requestStartMs": 1057.145392,
+      "responseEndMs": 1092.028691,
+      "submitClientDurationMs": 34.88329900000008,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e94a-73a8-91ed-5065521972cb"
+    },
+    {
+      "participantIndex": 10,
+      "participantId": "01a0be25-e54f-73a4-a9ce-3a3cb7ea6137",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-10",
+      "idempotencyKey": "3a7a408e-72df-439c-803a-0c046e7f93e7",
+      "requestStartMs": 1156.3098889999999,
+      "responseEndMs": 1206.802266,
+      "submitClientDurationMs": 50.49237700000003,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-e9bd-7714-81cd-40e296927a75"
+    },
+    {
+      "participantIndex": 11,
+      "participantId": "01a0be25-e54b-76ef-bd4a-be37f665f7bf",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-11",
+      "idempotencyKey": "0b101882-9ced-4f8c-a4ae-d9431f83df8d",
+      "requestStartMs": 1256.042331,
+      "responseEndMs": 1387.437954,
+      "submitClientDurationMs": 131.3956229999999,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-ea6a-705c-8c57-23264bc482b1"
+    },
+    {
+      "participantIndex": 12,
+      "participantId": "01a0be25-e55e-72ee-a23c-a5f03cf8044c",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-12",
+      "idempotencyKey": "afae39fa-4369-43e9-9a05-f2ce4fa6aee2",
+      "requestStartMs": 1356.96734,
+      "responseEndMs": 1412.741486,
+      "submitClientDurationMs": 55.77414599999997,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-ea8b-720b-bbbb-61ad39c3c952"
+    },
+    {
+      "participantIndex": 13,
+      "participantId": "01a0be25-e54a-7377-8804-e605c9e716b5",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-13",
+      "idempotencyKey": "55bad9ff-6c33-4b90-beb6-e95fb8161923",
+      "requestStartMs": 1455.969531,
+      "responseEndMs": 1576.638112,
+      "submitClientDurationMs": 120.66858100000013,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-eb2e-7368-9178-01e0130ccc98"
+    },
+    {
+      "participantIndex": 14,
+      "participantId": "01a0be25-e555-723f-856d-10852b0c1963",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-14",
+      "idempotencyKey": "4e86f0b2-e235-4275-ab35-cd8a7a5ee0e3",
+      "requestStartMs": 1556.927114,
+      "responseEndMs": 1596.6081609999999,
+      "submitClientDurationMs": 39.68104699999981,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-eb41-775a-a37e-1985d6c6d32e"
+    },
+    {
+      "participantIndex": 15,
+      "participantId": "01a0be25-e567-72be-bb40-2bce09a37feb",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-15",
+      "idempotencyKey": "10a47998-6af5-47fb-b1d2-1cbe9c0e3b12",
+      "requestStartMs": 1656.863411,
+      "responseEndMs": 1709.213876,
+      "submitClientDurationMs": 52.350464999999986,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-ebb0-7372-bcc0-6467cb30db2a"
+    },
+    {
+      "participantIndex": 16,
+      "participantId": "01a0be25-e556-72d6-9098-c2a0ac150764",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-16",
+      "idempotencyKey": "14d878db-d865-4edc-b4c5-535e46cb0df3",
+      "requestStartMs": 1756.411362,
+      "responseEndMs": 1905.83768,
+      "submitClientDurationMs": 149.42631800000004,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-ec73-71a7-9245-e18ccdb429da"
+    },
+    {
+      "participantIndex": 17,
+      "participantId": "01a0be25-e562-706c-9b3a-91c1b8afc3cb",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-17",
+      "idempotencyKey": "6fc1a993-6e6f-4218-afcf-57691f4d5ad9",
+      "requestStartMs": 1856.317541,
+      "responseEndMs": 1939.912687,
+      "submitClientDurationMs": 83.59514600000011,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-ec8f-75ab-94a3-74a8860903e1"
+    },
+    {
+      "participantIndex": 18,
+      "participantId": "01a0be25-e560-7788-b13c-6a89eaec19ce",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-18",
+      "idempotencyKey": "6b2475cd-d6ee-40e8-ba92-5f25c0c381e6",
+      "requestStartMs": 1956.1477759999998,
+      "responseEndMs": 1987.984669,
+      "submitClientDurationMs": 31.836893000000146,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-eccb-7132-8d76-47c2096a9472"
+    },
+    {
+      "participantIndex": 19,
+      "participantId": "01a0be25-e55d-703d-b183-1fa6bd4ee47a",
+      "questionId": "01a0be25-e374-7299-856f-bcf4bd91f368",
+      "requestId": "w2-9279e4e6-168e-4d86-8f98-8a6063331597-19",
+      "idempotencyKey": "1f0ae045-ca9c-48e8-a8f7-6a28e6455853",
+      "requestStartMs": 2056.711787,
+      "responseEndMs": 2228.09853,
+      "submitClientDurationMs": 171.38674300000002,
+      "httpStatus": 201,
+      "submissionId": "01a0be25-edb9-7608-9751-8f30d68bc34c"
+    }
+  ]
+}

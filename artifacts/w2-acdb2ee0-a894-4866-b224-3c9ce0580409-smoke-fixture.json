@@ -1,0 +1,14 @@
+{
+  "fixture": {
+    "runId": "acdb2ee0-a894-4866-b224-3c9ce0580409",
+    "questionType": "open_text",
+    "username": "local-w1-w2-1789899523409-26cecdbc",
+    "courseId": "01a0be53-4836-7319-a61b-fc6bb3941d2b",
+    "questionId": "01a0be53-4842-75a4-b580-fcceb2c475fa",
+    "liveSessionId": "01a0be53-4850-7359-bb5e-821f80171e3d",
+    "sessionQuestionId": "01a0be53-4873-713e-80d4-d52791b5ee52",
+    "sessionCode": "L2FUYBRA",
+    "options": [],
+    "expectedParticipants": 20
+  }
+}

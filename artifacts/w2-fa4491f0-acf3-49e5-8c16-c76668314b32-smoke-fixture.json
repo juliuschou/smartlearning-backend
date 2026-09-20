@@ -1,0 +1,30 @@
+{
+  "fixture": {
+    "runId": "fa4491f0-acf3-49e5-8c16-c76668314b32",
+    "questionType": "quiz",
+    "username": "local-w1-w2-1789899811372-c73cd2ff",
+    "courseId": "01a0be57-ad0e-765b-92cf-9ec561a04b16",
+    "questionId": "01a0be57-ad24-7258-a1cc-ebe7936805be",
+    "liveSessionId": "01a0be57-ad3a-7707-ae9e-742e65dd6731",
+    "sessionQuestionId": "01a0be57-ad82-74dc-91e7-f9a74b3eeab3",
+    "sessionCode": "SVMPWAWD",
+    "options": [
+      {
+        "id": "01a0be57-ad82-74dc-91e7-fdb9947287d7",
+        "optionRef": "correct",
+        "isCorrect": true
+      },
+      {
+        "id": "01a0be57-ad82-74dc-91e8-0269a991f2fa",
+        "optionRef": "wrong1",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0be57-ad82-74dc-91e8-06d82d5ad0d1",
+        "optionRef": "wrong2",
+        "isCorrect": false
+      }
+    ],
+    "expectedParticipants": 20
+  }
+}

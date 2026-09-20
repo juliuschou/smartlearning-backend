@@ -1,0 +1,14 @@
+{
+  "fixture": {
+    "runId": "d7b3f66b-c4fe-48b7-84fb-acda588b91ed",
+    "questionType": "open_text",
+    "username": "local-w1-w2-1789899554477-40279483",
+    "courseId": "01a0be53-c1a0-760f-8dc4-1f6103380079",
+    "questionId": "01a0be53-c1ad-77eb-bdec-0dfaf3148cec",
+    "liveSessionId": "01a0be53-c1ba-709f-8dc6-7c962c4af4af",
+    "sessionQuestionId": "01a0be53-c1da-73f6-b2ab-0353ee694914",
+    "sessionCode": "6GPQE2A5",
+    "options": [],
+    "expectedParticipants": 20
+  }
+}

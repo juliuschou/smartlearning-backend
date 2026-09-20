@@ -413,9 +413,44 @@
 - Detection signal: FAILs attributed to wrong rejection reasons or to line numbers that did not correspond to the visible code.
 - Prevention rule: build each rejection-reason fixture by mutating exactly the field it tests (keep all other marker occurrences intact); give every fixture case a unique run id so its diagnostics survive; after any Bash quoting-heavy fixture edit, run `bash -n` plus a smoke of the fixture string before the suite.
 - Tripwire: the mocked suite asserts each rejection reason by exact string in the per-case `source-correlation.tsv`, and the container-free parser fixtures assert both exit status and `SOURCE_IDENTITY` value for the real captured-format line.
+
+## 2026-09-20 — Guarded full-table test cleanup can conflict with retained-resource exclusions
+
+- **Failure mode:** Authorized DB-backed suites were allowed to call `truncateAll()` on `smartlearning_test` even though the same task required a historically retained W1 candidate to remain untouched. The candidate's exact IDs were not checked immediately before the first truncating suite, so later absence cannot be attributed: it may have been absent beforehand or removed by suite cleanup.
+- **Detection signal:** Post-W1 exact cleanup verification found retained candidate LiveSession `01a0bacc-83f9-7417-a52e-481d2fbd3e8c` absent, but no pre-suite row-existence artifact had been captured.
+- **Prevention rule:** Before authorizing any suite whose setup performs full-table TRUNCATE, reconcile every retained-resource exclusion against the target database. If any excluded row exists, do not run the suite against that database; create a fresh disposable database or use non-truncating targeted setup. Record before/after exact-ID existence even when the expected result is zero.
+- **Tripwire:** A pre-DB-test script must list only counts for every protected exact ID and fail closed if any count is nonzero; preserve that output before migration/truncation begins.
+
 ## 2026-09-20 — Freeze verified W1 performance baselines before further diagnosis
 
 - **Failure mode:** A performance experiment can be incorrectly treated as a new acceptance result, allowing an effective-but-insufficient improvement to overwrite the prior comparison baseline or invite another tuning round before governance status is recorded.
 - **Detection signal:** W1-300 C+B correctness was exact, but Join p95 remained 1280.57 ms against the 1000 ms formal threshold; the remaining contention location was not directly proven.
 - **Prevention rule:** Freeze the verified `W1 PERFORMANCE BASELINE — C+B` in `tasks/todo.md`, preserve the accepted lock/sequence/response-path architecture, classify Formal W1 as FAIL solely on latency, and record unresolved bottlenecks only as hypotheses until direct evidence exists.
 - **Tripwire:** Before any future optimization, compare against client p50/p95/p99/max `922.52/1280.57/1311.13/1318.49` ms, transaction p95 `774.21` ms, service p95 `1037.24` ms, and `postCommitSnapshot` response-path = NO; reject any report that omits correctness and formal-threshold verdicts.
+
+## 2026-09-20 — W2 harness: fixture option ids must be SessionQuestion snapshot ids
+
+- **Failure mode:** W2 fixture provisioning wrote QuestionDefinition option ids; the submit API validates against the SessionQuestion snapshot option ids (different UUIDs). 300/300 submissions failed with `OPTION_REF_INVALID` while the fixture file looked complete.
+- **Detection signal:** every submit returns 400 `OPTION_REF_INVALID` with valid-looking option UUIDs; `session_question_option.id` ≠ `question_option.id` for the same optionRef.
+- **Prevention rule:** capture fixture options from the SessionQuestion snapshot (teacher snapshot re-read after `startLiveSession`), and take quiz `isCorrect` from the teacher results projection (the session DTO does not expose it).
+- **Tripwire:** create-fixture must fail if snapshot options are missing or all-false for a quiz; targeted smoke (20) before any 300 gate.
+
+## 2026-09-20 — W2 harness: run-once guards are mandatory for load drivers
+
+- **Failure mode:** `run-w2.ts` was accidentally executed twice against one fixture: two join waves (80 participants) and two submission waves (40 successful) while only the last artifact survived. Anonymous join does not dedupe by displayName, so both waves "succeeded" and the first artifact was lost.
+- **Detection signal:** duplicate display names with `n=4`; 40 server-side 201s for a 20-participant smoke; missing first-wave artifact.
+- **Prevention rule:** load drivers must refuse to overwrite an existing artifact and must not run twice against the same fixture; every run requires a fresh fixture/runId.
+- **Tripwire:** artifact-overwrite refusal in the driver (implemented).
+
+## 2026-09-20 — W2: premature socket disconnect caused apparent broadcast loss
+
+- **Failure mode:** the driver disconnected realtime sockets immediately after the DB reconcile; the durable publisher drains sequentially (≈1 event/sec; 625/625 claims were `claimedCount=1`), so most targeted `RESULT_UPDATED` emissions happened after sockets were dropped — observed receipts ≈50% of expected.
+- **Detection signal:** client receipts ~half of DB-delivered events across runs; delivery_state='delivered' in DB with no client receipt.
+- **Prevention rule:** settle on the DB outbox drain (all `result.updated` delivered, bounded) before closing sockets; report commit-to-broadcast from DB correlation (submitted_at → delivered_at by participantId/event_seq) and mark client receipts as auxiliary with the documented `COMMIT TIMING EVIDENCE GAP`.
+- **Tripwire:** a targeted-socket probe (solo receipt) before the 300 gates; drain-settle before disconnect.
+
+## 2026-09-20 — Protected-ID preflight must precede any truncating suite (revalidated)
+
+- **Failure mode:** (prior lesson) truncating suites ran without checking the protected W1 candidate. This session re-verified: protected teacher `local-w1-1789840353701-82cd63fa` and LiveSession `01a0bacc-83f9-7417-a52e-481d2fbd3e8c` are absent from `smartlearning_test`; pre-existing `cp3-*` rows were left untouched (no truncate used at any point in W2).
+- **Detection signal:** exact-ID existence query recorded before any cleanup (protected-check.mjs).
+- **Prevention rule:** every DB-backed W2 run begins with the exact protected-ID existence artifact; cleanup is exact-ID FK-traceable deletes only.

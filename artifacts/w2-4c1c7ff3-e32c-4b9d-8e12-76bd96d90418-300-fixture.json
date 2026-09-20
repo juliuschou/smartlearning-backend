@@ -1,0 +1,30 @@
+{
+  "fixture": {
+    "runId": "4c1c7ff3-e32c-4b9d-8e12-76bd96d90418",
+    "questionType": "quiz",
+    "username": "local-w1-w2-1789900588922-70e7a6a6",
+    "courseId": "01a0be63-8a98-770c-a55a-2bb886c17310",
+    "questionId": "01a0be63-8aa8-708b-aa52-359879309e9b",
+    "liveSessionId": "01a0be63-8ab8-75ec-a640-29e01b4ae2b1",
+    "sessionQuestionId": "01a0be63-8ae1-71c3-8581-e6657fddb9b9",
+    "sessionCode": "UQEHUSAT",
+    "options": [
+      {
+        "id": "01a0be63-8ae1-71c3-8581-ea7daff9ae20",
+        "optionRef": "correct",
+        "isCorrect": true
+      },
+      {
+        "id": "01a0be63-8ae1-71c3-8581-ed7d3237274e",
+        "optionRef": "wrong1",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0be63-8ae1-71c3-8581-f0d2c5639e26",
+        "optionRef": "wrong2",
+        "isCorrect": false
+      }
+    ],
+    "expectedParticipants": 300
+  }
+}
