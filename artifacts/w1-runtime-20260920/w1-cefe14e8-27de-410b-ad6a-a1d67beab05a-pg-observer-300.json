@@ -1,0 +1,933 @@
+{
+  "schemaVersion": 2,
+  "enabled": true,
+  "target": "smartlearning_test",
+  "sampling": {
+    "startedAt": "2026-09-19T17:08:48.924Z",
+    "finishedAt": "2026-09-19T17:08:51.754Z",
+    "intervalMs": 1000
+  },
+  "samples": [
+    {
+      "capturedAt": "2026-09-19T17:08:48.932Z",
+      "activeCount": 1,
+      "activity": [
+        {
+          "pid": 727,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:02:05.401Z",
+          "state_change": "2026-09-19T15:02:05.401Z"
+        },
+        {
+          "pid": 736,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:02:05.703Z",
+          "state_change": "2026-09-19T15:02:05.703Z"
+        },
+        {
+          "pid": 740,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:05:33.917Z",
+          "state_change": "2026-09-19T15:05:33.917Z"
+        },
+        {
+          "pid": 745,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:05:33.904Z",
+          "state_change": "2026-09-19T15:05:33.904Z"
+        },
+        {
+          "pid": 818,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:51:05.964Z",
+          "state_change": "2026-09-19T15:51:05.964Z"
+        },
+        {
+          "pid": 821,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:51:05.978Z",
+          "state_change": "2026-09-19T15:51:05.978Z"
+        },
+        {
+          "pid": 913,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:48.368Z",
+          "state_change": "2026-09-19T17:08:48.368Z"
+        },
+        {
+          "pid": 929,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:43.357Z",
+          "state_change": "2026-09-19T17:08:43.357Z"
+        },
+        {
+          "pid": 990,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:48.760Z",
+          "state_change": "2026-09-19T17:08:48.761Z"
+        },
+        {
+          "pid": 996,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:48.359Z",
+          "state_change": "2026-09-19T17:08:48.359Z"
+        },
+        {
+          "pid": 998,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:48.805Z",
+          "state_change": "2026-09-19T17:08:48.806Z"
+        },
+        {
+          "pid": 999,
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:48.929Z",
+          "state_change": "2026-09-19T17:08:48.929Z"
+        }
+      ],
+      "locks": {
+        "total": 0,
+        "granted": 0,
+        "waiting": 0,
+        "modes": {},
+        "objects": {}
+      }
+    },
+    {
+      "capturedAt": "2026-09-19T17:08:49.932Z",
+      "activeCount": 11,
+      "activity": [
+        {
+          "pid": 727,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:02:05.401Z",
+          "state_change": "2026-09-19T15:02:05.401Z"
+        },
+        {
+          "pid": 736,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:02:05.703Z",
+          "state_change": "2026-09-19T15:02:05.703Z"
+        },
+        {
+          "pid": 740,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:05:33.917Z",
+          "state_change": "2026-09-19T15:05:33.917Z"
+        },
+        {
+          "pid": 745,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:05:33.904Z",
+          "state_change": "2026-09-19T15:05:33.904Z"
+        },
+        {
+          "pid": 818,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:51:05.964Z",
+          "state_change": "2026-09-19T15:51:05.964Z"
+        },
+        {
+          "pid": 821,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:51:05.978Z",
+          "state_change": "2026-09-19T15:51:05.978Z"
+        },
+        {
+          "pid": 913,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.734Z",
+          "state_change": "2026-09-19T17:08:49.734Z"
+        },
+        {
+          "pid": 929,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:43.357Z",
+          "state_change": "2026-09-19T17:08:43.357Z"
+        },
+        {
+          "pid": 990,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.907Z",
+          "state_change": "2026-09-19T17:08:49.907Z"
+        },
+        {
+          "pid": 996,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.730Z",
+          "state_change": "2026-09-19T17:08:49.730Z"
+        },
+        {
+          "pid": 998,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.897Z",
+          "state_change": "2026-09-19T17:08:49.897Z"
+        },
+        {
+          "pid": 999,
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.929Z",
+          "state_change": "2026-09-19T17:08:49.929Z"
+        },
+        {
+          "pid": 1000,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.927Z",
+          "state_change": "2026-09-19T17:08:49.927Z"
+        },
+        {
+          "pid": 1001,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.866Z",
+          "state_change": "2026-09-19T17:08:49.866Z"
+        },
+        {
+          "pid": 1002,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.871Z",
+          "state_change": "2026-09-19T17:08:49.871Z"
+        },
+        {
+          "pid": 1003,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.920Z",
+          "state_change": "2026-09-19T17:08:49.920Z"
+        },
+        {
+          "pid": 1004,
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.929Z",
+          "state_change": "2026-09-19T17:08:49.929Z"
+        },
+        {
+          "pid": 1005,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.859Z",
+          "state_change": "2026-09-19T17:08:49.859Z"
+        },
+        {
+          "pid": 1006,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.914Z",
+          "state_change": "2026-09-19T17:08:49.914Z"
+        },
+        {
+          "pid": 1007,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:49.888Z",
+          "state_change": "2026-09-19T17:08:49.888Z"
+        }
+      ],
+      "locks": {
+        "total": 95,
+        "granted": 86,
+        "waiting": 9,
+        "modes": {
+          "AccessShareLock": 6,
+          "RowExclusiveLock": 8,
+          "RowShareLock": 60,
+          "ExclusiveLock": 11,
+          "ShareLock": 1,
+          "AccessExclusiveLock": 9
+        },
+        "objects": {
+          "relation": 83,
+          "transactionid": 2,
+          "virtualxid": 10
+        }
+      }
+    },
+    {
+      "capturedAt": "2026-09-19T17:08:50.933Z",
+      "activeCount": 11,
+      "activity": [
+        {
+          "pid": 727,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:02:05.401Z",
+          "state_change": "2026-09-19T15:02:05.401Z"
+        },
+        {
+          "pid": 736,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:02:05.703Z",
+          "state_change": "2026-09-19T15:02:05.703Z"
+        },
+        {
+          "pid": 740,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:05:33.917Z",
+          "state_change": "2026-09-19T15:05:33.917Z"
+        },
+        {
+          "pid": 745,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:05:33.904Z",
+          "state_change": "2026-09-19T15:05:33.904Z"
+        },
+        {
+          "pid": 818,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:51:05.964Z",
+          "state_change": "2026-09-19T15:51:05.964Z"
+        },
+        {
+          "pid": 821,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:51:05.978Z",
+          "state_change": "2026-09-19T15:51:05.978Z"
+        },
+        {
+          "pid": 913,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.369Z",
+          "state_change": "2026-09-19T17:08:50.369Z"
+        },
+        {
+          "pid": 929,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:43.357Z",
+          "state_change": "2026-09-19T17:08:43.357Z"
+        },
+        {
+          "pid": 990,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.897Z",
+          "state_change": "2026-09-19T17:08:50.897Z"
+        },
+        {
+          "pid": 996,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.419Z",
+          "state_change": "2026-09-19T17:08:50.420Z"
+        },
+        {
+          "pid": 998,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.891Z",
+          "state_change": "2026-09-19T17:08:50.891Z"
+        },
+        {
+          "pid": 999,
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.930Z",
+          "state_change": "2026-09-19T17:08:50.930Z"
+        },
+        {
+          "pid": 1000,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.906Z",
+          "state_change": "2026-09-19T17:08:50.906Z"
+        },
+        {
+          "pid": 1001,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.922Z",
+          "state_change": "2026-09-19T17:08:50.922Z"
+        },
+        {
+          "pid": 1002,
+          "state": "active",
+          "wait_event_type": "IO",
+          "wait_event": "WALSync",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.930Z",
+          "state_change": "2026-09-19T17:08:50.930Z"
+        },
+        {
+          "pid": 1003,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.901Z",
+          "state_change": "2026-09-19T17:08:50.901Z"
+        },
+        {
+          "pid": 1004,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.927Z",
+          "state_change": "2026-09-19T17:08:50.927Z"
+        },
+        {
+          "pid": 1005,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.916Z",
+          "state_change": "2026-09-19T17:08:50.916Z"
+        },
+        {
+          "pid": 1006,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.911Z",
+          "state_change": "2026-09-19T17:08:50.911Z"
+        },
+        {
+          "pid": 1007,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:50.886Z",
+          "state_change": "2026-09-19T17:08:50.886Z"
+        }
+      ],
+      "locks": {
+        "total": 80,
+        "granted": 72,
+        "waiting": 8,
+        "modes": {
+          "AccessShareLock": 6,
+          "RowShareLock": 54,
+          "ExclusiveLock": 11,
+          "ShareLock": 1,
+          "AccessExclusiveLock": 8
+        },
+        "objects": {
+          "relation": 68,
+          "transactionid": 2,
+          "virtualxid": 10
+        }
+      }
+    },
+    {
+      "capturedAt": "2026-09-19T17:08:51.749Z",
+      "activeCount": 1,
+      "activity": [
+        {
+          "pid": 727,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:02:05.401Z",
+          "state_change": "2026-09-19T15:02:05.401Z"
+        },
+        {
+          "pid": 736,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:02:05.703Z",
+          "state_change": "2026-09-19T15:02:05.703Z"
+        },
+        {
+          "pid": 740,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:05:33.917Z",
+          "state_change": "2026-09-19T15:05:33.917Z"
+        },
+        {
+          "pid": 745,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:05:33.904Z",
+          "state_change": "2026-09-19T15:05:33.904Z"
+        },
+        {
+          "pid": 818,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:51:05.964Z",
+          "state_change": "2026-09-19T15:51:05.964Z"
+        },
+        {
+          "pid": 821,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T15:51:05.978Z",
+          "state_change": "2026-09-19T15:51:05.978Z"
+        },
+        {
+          "pid": 913,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.371Z",
+          "state_change": "2026-09-19T17:08:51.371Z"
+        },
+        {
+          "pid": 929,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:43.357Z",
+          "state_change": "2026-09-19T17:08:43.357Z"
+        },
+        {
+          "pid": 990,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.689Z",
+          "state_change": "2026-09-19T17:08:51.689Z"
+        },
+        {
+          "pid": 996,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.377Z",
+          "state_change": "2026-09-19T17:08:51.377Z"
+        },
+        {
+          "pid": 998,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.689Z",
+          "state_change": "2026-09-19T17:08:51.689Z"
+        },
+        {
+          "pid": 999,
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.747Z",
+          "state_change": "2026-09-19T17:08:51.747Z"
+        },
+        {
+          "pid": 1000,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.687Z",
+          "state_change": "2026-09-19T17:08:51.687Z"
+        },
+        {
+          "pid": 1001,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.688Z",
+          "state_change": "2026-09-19T17:08:51.688Z"
+        },
+        {
+          "pid": 1002,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.687Z",
+          "state_change": "2026-09-19T17:08:51.687Z"
+        },
+        {
+          "pid": 1003,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.689Z",
+          "state_change": "2026-09-19T17:08:51.689Z"
+        },
+        {
+          "pid": 1004,
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.748Z",
+          "state_change": "2026-09-19T17:08:51.748Z"
+        },
+        {
+          "pid": 1005,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.688Z",
+          "state_change": "2026-09-19T17:08:51.688Z"
+        },
+        {
+          "pid": 1006,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.689Z",
+          "state_change": "2026-09-19T17:08:51.689Z"
+        },
+        {
+          "pid": 1007,
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "query_start": "2026-09-19T17:08:51.690Z",
+          "state_change": "2026-09-19T17:08:51.690Z"
+        }
+      ],
+      "locks": {
+        "total": 14,
+        "granted": 14,
+        "waiting": 0,
+        "modes": {
+          "AccessShareLock": 6,
+          "RowShareLock": 6,
+          "ExclusiveLock": 2
+        },
+        "objects": {
+          "relation": 12,
+          "transactionid": 1,
+          "virtualxid": 1
+        }
+      }
+    }
+  ],
+  "connectionObservations": [
+    {
+      "capturedAt": "2026-09-19T17:08:48.932Z",
+      "total": 12,
+      "active": 1,
+      "idle": 11,
+      "waiting": 11
+    },
+    {
+      "capturedAt": "2026-09-19T17:08:49.932Z",
+      "total": 20,
+      "active": 11,
+      "idle": 9,
+      "waiting": 18
+    },
+    {
+      "capturedAt": "2026-09-19T17:08:50.933Z",
+      "total": 20,
+      "active": 11,
+      "idle": 9,
+      "waiting": 19
+    },
+    {
+      "capturedAt": "2026-09-19T17:08:51.749Z",
+      "total": 20,
+      "active": 1,
+      "idle": 18,
+      "waiting": 19
+    }
+  ],
+  "observerErrors": [],
+  "reconciliation": {
+    "liveSessionId": "01a0baa4-5bb8-779c-9582-29230864f00d",
+    "sessionQuestionId": "01a0baa4-5bda-768e-b291-85d2ec68154f",
+    "before": {
+      "participants": 0,
+      "events": 3
+    },
+    "after": {
+      "participants": 300,
+      "events": 303
+    },
+    "delta": {
+      "participants": 300,
+      "events": 300
+    },
+    "expected": {
+      "participants": 300
+    },
+    "persisted": {
+      "participants": 300
+    },
+    "exactMatch": true
+  },
+  "plans": {
+    "findByCode": {
+      "label": "representative find-by-code query",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Sort",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 15.55,
+            "Total Cost": 15.8,
+            "Plan Rows": 100,
+            "Plan Width": 124,
+            "Sort Key": [
+              "sq.\"position\"",
+              "sq.id"
+            ],
+            "Plans": [
+              {
+                "Node Type": "Nested Loop",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Left",
+                "Startup Cost": 0.15,
+                "Total Cost": 12.22,
+                "Plan Rows": 100,
+                "Plan Width": 124,
+                "Inner Unique": false,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "live_session",
+                    "Alias": "ls",
+                    "Startup Cost": 0,
+                    "Total Cost": 4.05,
+                    "Plan Rows": 1,
+                    "Plan Width": 32,
+                    "Filter": "(session_code = 'JRKTTGAL'::text)"
+                  },
+                  {
+                    "Node Type": "Index Scan",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Forward",
+                    "Index Name": "idx_session_question_session_position",
+                    "Relation Name": "session_question",
+                    "Alias": "sq",
+                    "Startup Cost": 0.15,
+                    "Total Cost": 8.17,
+                    "Plan Rows": 1,
+                    "Plan Width": 108,
+                    "Index Cond": "(live_session_id = ls.id)"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "getSnapshot": {
+      "label": "representative get-snapshot query",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Sort",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 12.23,
+            "Total Cost": 12.24,
+            "Plan Rows": 1,
+            "Plan Width": 124,
+            "Sort Key": [
+              "sq.\"position\"",
+              "sq.id"
+            ],
+            "Plans": [
+              {
+                "Node Type": "Nested Loop",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Left",
+                "Startup Cost": 0.15,
+                "Total Cost": 12.22,
+                "Plan Rows": 1,
+                "Plan Width": 124,
+                "Inner Unique": false,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "live_session",
+                    "Alias": "ls",
+                    "Startup Cost": 0,
+                    "Total Cost": 4.05,
+                    "Plan Rows": 1,
+                    "Plan Width": 32,
+                    "Filter": "(id = '01a0baa4-5bb8-779c-9582-29230864f00d'::uuid)"
+                  },
+                  {
+                    "Node Type": "Index Scan",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Forward",
+                    "Index Name": "idx_session_question_session_position",
+                    "Relation Name": "session_question",
+                    "Alias": "sq",
+                    "Startup Cost": 0.15,
+                    "Total Cost": 8.17,
+                    "Plan Rows": 1,
+                    "Plan Width": 108,
+                    "Index Cond": "(live_session_id = '01a0baa4-5bb8-779c-9582-29230864f00d'::uuid)"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "safety": {
+    "readOnly": true,
+    "writes": false,
+    "schemaChanges": false,
+    "indexChanges": false,
+    "poolChanges": false,
+    "lockChanges": false
+  }
+}

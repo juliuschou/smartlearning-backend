@@ -1,0 +1,980 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "runId": "1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6",
+    "startedAt": "2026-09-19T17:06:42.410Z",
+    "finishedAt": "2026-09-19T17:06:43.252Z",
+    "baseUrl": "http://127.0.0.1:3001",
+    "scenarios": [
+      "W1"
+    ],
+    "participantCount": 100,
+    "fixtureMode": "existing"
+  },
+  "scenarios": [
+    {
+      "name": "W1",
+      "status": "passed",
+      "durationMs": 841.055528,
+      "operations": [
+        {
+          "name": "join",
+          "transport": "http",
+          "count": 100,
+          "successCount": 100,
+          "errorCount": 0,
+          "errorRate": 0,
+          "latencyMs": {
+            "count": 100,
+            "p50": 805.757395,
+            "p95": 821.28288,
+            "p99": 821.819304,
+            "max": 823.0019480000001
+          },
+          "errors": {}
+        }
+      ],
+      "correctness": {
+        "joined": 100,
+        "duplicateParticipantIds": 0
+      }
+    }
+  ],
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  },
+  "diagnostics": {
+    "enabled": true,
+    "clientRequests": [
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-c2390961-3168-4443-a852-c202021405bb",
+        "durationMs": 790.4645979999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-b410bf4a-88d6-44a2-bd81-b4de6d67ecba",
+        "durationMs": 792.031902
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-40d59346-7b14-455a-9d61-2915c2a8bb4e",
+        "durationMs": 800.5016169999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-ec401a77-87f8-469f-9268-9ec978fba32b",
+        "durationMs": 796.4155370000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-2f47c087-bf8c-499a-b221-fa929e491716",
+        "durationMs": 793.2125659999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-60b6b690-addc-4551-a94b-bfbf97ec1499",
+        "durationMs": 793.570445
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-d885fb57-dcb5-4ced-af86-e3d326b86d2b",
+        "durationMs": 794.524672
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-5e329aee-2780-47d1-82a7-9f167c34d3f7",
+        "durationMs": 794.13365
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-3bac3a52-58a4-4f70-ae5b-b0f16f7c7fe8",
+        "durationMs": 794.459175
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-05c31f06-c5bc-40ab-a95e-ee4424f6903c",
+        "durationMs": 795.102561
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-34de847e-a886-40ee-bcff-7a320e02d4cd",
+        "durationMs": 795.75215
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-49a72e59-44ac-4476-b8d3-164997062d90",
+        "durationMs": 796.9251489999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-4f11e725-c07f-4300-b26f-6a092947cd3f",
+        "durationMs": 797.345153
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-d1342a30-adf5-4ffb-9db3-c93a779795b3",
+        "durationMs": 797.280259
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-0c794464-4823-4dda-8861-6e44a62e75db",
+        "durationMs": 797.637279
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-92964268-91f5-44c8-b53b-c3ca977e3453",
+        "durationMs": 797.157681
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-5e5f5c80-040c-458d-9b01-fa445cf2addb",
+        "durationMs": 797.56598
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-8059b869-0aec-4f2f-994a-78c35500f305",
+        "durationMs": 798.097189
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-bc0aedc7-aaaa-481f-a344-7f7970e5367d",
+        "durationMs": 797.753682
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-c73e603c-d0ee-4e79-a584-25bda4c5d28d",
+        "durationMs": 802.235458
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-711b01a2-3ad8-43db-8d6b-bd96c354dc9c",
+        "durationMs": 802.897201
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-100b7a35-5149-4d3c-8552-f4b1389ec08a",
+        "durationMs": 798.554312
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-c72f8134-29f7-481f-a896-d8bc61c36d60",
+        "durationMs": 798.546515
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-0e83e2c0-e8d0-4b1c-b360-036787c40b42",
+        "durationMs": 803.2327009999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-6639f22a-206d-4135-aa1d-a57d1c178688",
+        "durationMs": 799.067142
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-8d916c9e-cc0c-4492-b137-1449b3a6b1ce",
+        "durationMs": 800.256383
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-1a47647c-010c-408a-9a97-604bf0657758",
+        "durationMs": 799.8389729999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-0540d30f-abac-4908-966a-cdda97d77345",
+        "durationMs": 803.238691
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-00cf3529-c8c4-4bb9-82ea-850ed6237a11",
+        "durationMs": 803.9672330000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-d3d570d2-1a76-4e5f-ae61-73d036b02a03",
+        "durationMs": 804.5402889999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-4451ebf0-0d60-42eb-9b03-11c30f1e4fed",
+        "durationMs": 799.7483960000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-8aa81b96-e9ed-4fe1-a522-12bf688eae0d",
+        "durationMs": 801.046666
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-fb919431-ea42-4ac3-927d-eac5d72a2281",
+        "durationMs": 804.894061
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-817110a8-7644-4472-adde-d71918fc8d19",
+        "durationMs": 800.8915569999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-17966fe7-d56e-400f-a234-39a8854c7ae4",
+        "durationMs": 803.453057
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-e6ac0ca8-0894-44f5-9084-8cd329576add",
+        "durationMs": 801.5128339999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-8b418912-658d-428d-bee9-0568c9b01fc8",
+        "durationMs": 803.549918
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-15be59b5-32ec-4080-9243-6394fc7d042b",
+        "durationMs": 802.487498
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-79fb5c97-38b3-4588-8c5c-0a62dfd9c935",
+        "durationMs": 803.9449569999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-b546d967-e207-4f75-bbb7-5b52e16f9ff1",
+        "durationMs": 804.2960410000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-efa3a68c-f1e0-47df-af20-7d397be23565",
+        "durationMs": 802.722043
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-536614bb-a371-4916-8b06-710c44a3f0c8",
+        "durationMs": 803.120476
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-a287a0e8-9382-4c9d-9b76-cde71180563c",
+        "durationMs": 804.0439939999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-4f383546-d855-4dd5-9571-19e4d368b2d3",
+        "durationMs": 803.975741
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-19dfd0fc-093a-460b-9fa0-810852de4b49",
+        "durationMs": 804.233116
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-8cc1f4b3-c60e-4611-95c8-aba0b1d55d44",
+        "durationMs": 804.218563
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-837a15fd-fe1a-4a04-94c8-ef89221922a4",
+        "durationMs": 804.44191
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-660fc5c1-edb0-40ed-8815-80ec183dc924",
+        "durationMs": 806.097075
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-fbd1aabc-4921-4763-8dea-5592b02a9ac3",
+        "durationMs": 804.5995800000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-20b4e6a1-89ee-4108-894d-8fcea2bc4f8d",
+        "durationMs": 805.757395
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-beda6a13-5c24-47ef-90c6-52b69ee80863",
+        "durationMs": 805.103517
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-fc2b5cb9-1d01-4f74-8b21-831d4db8fdf5",
+        "durationMs": 805.7748829999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-7b7b0555-ca11-4b0f-a135-47dc68312511",
+        "durationMs": 806.2685839999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-c3b986fe-36b9-4e85-8a8d-9d40412bbcfd",
+        "durationMs": 805.826734
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-6c73aeeb-2d80-4ad4-a9de-3042a780392f",
+        "durationMs": 805.9700789999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-0b05891f-1b90-4a7b-a879-23d67d153bbe",
+        "durationMs": 806.093658
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-9936a364-a1e6-4fa4-b4ce-28e2bcda36b5",
+        "durationMs": 806.9193270000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-689ca201-8da1-488d-a80a-aa2e3207d3da",
+        "durationMs": 806.9908499999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-9432060b-1836-403e-bbfe-29699652d0a6",
+        "durationMs": 806.683317
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-7f55b974-0036-48cc-9bf3-678f21f35633",
+        "durationMs": 808.379604
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-9e689d42-c77d-4cd5-ba0f-a22e0f57d6c5",
+        "durationMs": 810.2885170000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-d99ebe94-bd9b-4be2-a5fa-ff2985c4e0df",
+        "durationMs": 807.582305
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-603aee33-4854-4fe9-8955-0e34a8d1905b",
+        "durationMs": 808.1971369999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-332e911d-c1f4-4c25-8f49-d0f523a242f4",
+        "durationMs": 808.875164
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-8682b118-6821-4cd3-9b82-08f40752208e",
+        "durationMs": 807.973667
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-ea4483b2-370d-4ddf-970b-c62915c95afd",
+        "durationMs": 808.86383
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-c12791d2-a28c-4e50-9f6d-fcd648672779",
+        "durationMs": 809.854714
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-9840b10e-e09a-4b80-999f-8422edb7532b",
+        "durationMs": 809.358229
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-668ed63c-a6f5-45ba-9624-5daa5748ae66",
+        "durationMs": 811.633914
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-51bed776-3ca8-435a-8337-490fd84c63c3",
+        "durationMs": 810.329978
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-d6682333-a8a2-4289-aea4-a1de87b07b29",
+        "durationMs": 809.33653
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-94c1aa95-c328-420b-a6bc-15e6726567ea",
+        "durationMs": 810.499222
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-1ccb9aaa-acaf-49f4-97f1-5664e4bd01c8",
+        "durationMs": 821.28288
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-e1ab6c90-347b-4241-bdcc-8518fc2c73f7",
+        "durationMs": 809.526264
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-ef274d8f-0e83-4b70-944f-69cb717548ac",
+        "durationMs": 811.8079749999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-ca0af49b-8bbd-4c3f-a167-ac93290cb66a",
+        "durationMs": 813.8580810000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-529a7883-55a3-4a9c-8f16-24fb6eb33d23",
+        "durationMs": 813.0308829999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-e3e60ca4-2520-44a6-a634-402b96893b48",
+        "durationMs": 810.6315000000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-eddbc335-afea-4d95-80ec-207d9cc0f67b",
+        "durationMs": 811.06302
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-a4cec7f2-733b-4551-bf0c-41423c38cd67",
+        "durationMs": 814.0890119999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-2cb16010-b3da-4c88-8473-a9f64be0516e",
+        "durationMs": 813.664036
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-e54a4738-dace-4f8d-aee5-2e151ae9844a",
+        "durationMs": 815.032951
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-66ca021b-ea73-4e7b-a83d-d568f7845556",
+        "durationMs": 814.2778490000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-3400bc10-f81b-40f2-b1ec-3a1589ab693b",
+        "durationMs": 814.483349
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-992f0388-7469-4529-aca7-cf2ff1a87a53",
+        "durationMs": 815.922461
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-9e7fec95-62cf-47ac-b8e0-9f29e6f09545",
+        "durationMs": 816.026971
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-97721e39-9493-4603-a9dd-47d9e00363c7",
+        "durationMs": 815.286231
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-c7429458-dd4e-4641-b7f8-1f780118cfa0",
+        "durationMs": 815.6592119999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-09dfd40a-d1fc-4c78-a8d2-25916c9f9e27",
+        "durationMs": 816.455703
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-6943819a-b61e-41ac-a825-e3e01a946937",
+        "durationMs": 816.736949
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-3e4b7ea5-c1ba-45b6-9f81-f93e2d7299af",
+        "durationMs": 817.146859
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-482d831d-b830-4cf2-9ae8-6edd3861f9e1",
+        "durationMs": 817.664173
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-64124b72-d2b0-4afa-b093-a52c40fb7fd3",
+        "durationMs": 819.638889
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-957b9818-4417-469e-965f-6684353de347",
+        "durationMs": 820.079831
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-412fce40-00d9-4d2b-844a-477c800e581a",
+        "durationMs": 821.617953
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-bd0834e7-a460-49d5-bcdf-f6721d56ad6c",
+        "durationMs": 819.365219
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-12afa309-2f63-49de-96a2-82766559aa21",
+        "durationMs": 821.5907109999999
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-8895467f-377c-4c57-8fc8-bc91c93ec89e",
+        "durationMs": 821.785055
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-d6c70682-ca3a-4609-83f4-1740e7b741de",
+        "durationMs": 823.0019480000001
+      },
+      {
+        "requestId": "w1-1dd5e27f-f4d9-44ad-a759-dd32ac73fbc6-b0b4f832-4e68-4541-80d0-ff7726937d5f",
+        "durationMs": 821.819304
+      }
+    ],
+    "effectiveClientConcurrency": {
+      "peak": 100,
+      "measured": true
+    },
+    "phases": {},
+    "pool": {
+      "totalCount": null,
+      "idleCount": null,
+      "waitingCount": null,
+      "status": "unavailable",
+      "reason": "Prisma adapter pool is not exposed by the current application."
+    },
+    "runtime": {
+      "client": {
+        "rssBytes": 94658560,
+        "cpuUserMicros": 137065,
+        "cpuSystemMicros": 18422,
+        "eventLoopDelayMs": null
+      },
+      "backend": "unavailable",
+      "postgres": "unavailable"
+    },
+    "attribution": {
+      "directlyMeasured": [
+        "effective client concurrency",
+        "client process RSS and CPU"
+      ],
+      "inferred": [
+        "shared LiveSession row lock remains architectural constraint"
+      ],
+      "unavailable": [
+        "pool totalCount/idleCount/waitingCount",
+        "isolated PostgreSQL lock-wait duration",
+        "backend CPU/RSS and PostgreSQL CPU/memory/active connections",
+        "event-loop delay",
+        "publisher timing before HTTP response"
+      ]
+    }
+  },
+  "postgresObserver": {
+    "schemaVersion": 2,
+    "enabled": true,
+    "target": "smartlearning_test",
+    "sampling": {
+      "startedAt": "2026-09-19T17:06:42.331Z",
+      "finishedAt": "2026-09-19T17:06:43.305Z",
+      "intervalMs": 1000
+    },
+    "samples": [
+      {
+        "capturedAt": "2026-09-19T17:06:42.340Z",
+        "activeCount": 1,
+        "activity": [
+          {
+            "pid": 727,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:02:05.401Z",
+            "state_change": "2026-09-19T15:02:05.401Z"
+          },
+          {
+            "pid": 736,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:02:05.703Z",
+            "state_change": "2026-09-19T15:02:05.703Z"
+          },
+          {
+            "pid": 740,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:05:33.917Z",
+            "state_change": "2026-09-19T15:05:33.917Z"
+          },
+          {
+            "pid": 745,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:05:33.904Z",
+            "state_change": "2026-09-19T15:05:33.904Z"
+          },
+          {
+            "pid": 818,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:51:05.964Z",
+            "state_change": "2026-09-19T15:51:05.964Z"
+          },
+          {
+            "pid": 821,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:51:05.978Z",
+            "state_change": "2026-09-19T15:51:05.978Z"
+          },
+          {
+            "pid": 913,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:42.307Z",
+            "state_change": "2026-09-19T17:06:42.307Z"
+          },
+          {
+            "pid": 929,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:42.291Z",
+            "state_change": "2026-09-19T17:06:42.291Z"
+          },
+          {
+            "pid": 930,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:42.167Z",
+            "state_change": "2026-09-19T17:06:42.168Z"
+          },
+          {
+            "pid": 982,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:42.199Z",
+            "state_change": "2026-09-19T17:06:42.199Z"
+          },
+          {
+            "pid": 983,
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:42.337Z",
+            "state_change": "2026-09-19T17:06:42.337Z"
+          }
+        ],
+        "locks": {
+          "total": 0,
+          "granted": 0,
+          "waiting": 0,
+          "modes": {},
+          "objects": {}
+        }
+      },
+      {
+        "capturedAt": "2026-09-19T17:06:43.300Z",
+        "activeCount": 1,
+        "activity": [
+          {
+            "pid": 727,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:02:05.401Z",
+            "state_change": "2026-09-19T15:02:05.401Z"
+          },
+          {
+            "pid": 736,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:02:05.703Z",
+            "state_change": "2026-09-19T15:02:05.703Z"
+          },
+          {
+            "pid": 740,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:05:33.917Z",
+            "state_change": "2026-09-19T15:05:33.917Z"
+          },
+          {
+            "pid": 745,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:05:33.904Z",
+            "state_change": "2026-09-19T15:05:33.904Z"
+          },
+          {
+            "pid": 818,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:51:05.964Z",
+            "state_change": "2026-09-19T15:51:05.964Z"
+          },
+          {
+            "pid": 821,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:51:05.978Z",
+            "state_change": "2026-09-19T15:51:05.978Z"
+          },
+          {
+            "pid": 913,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.065Z",
+            "state_change": "2026-09-19T17:06:43.065Z"
+          },
+          {
+            "pid": 929,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.298Z",
+            "state_change": "2026-09-19T17:06:43.298Z"
+          },
+          {
+            "pid": 930,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.248Z",
+            "state_change": "2026-09-19T17:06:43.248Z"
+          },
+          {
+            "pid": 982,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.247Z",
+            "state_change": "2026-09-19T17:06:43.247Z"
+          },
+          {
+            "pid": 983,
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.298Z",
+            "state_change": "2026-09-19T17:06:43.298Z"
+          },
+          {
+            "pid": 984,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.248Z",
+            "state_change": "2026-09-19T17:06:43.248Z"
+          },
+          {
+            "pid": 985,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.247Z",
+            "state_change": "2026-09-19T17:06:43.247Z"
+          },
+          {
+            "pid": 986,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.248Z",
+            "state_change": "2026-09-19T17:06:43.248Z"
+          },
+          {
+            "pid": 987,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.246Z",
+            "state_change": "2026-09-19T17:06:43.246Z"
+          },
+          {
+            "pid": 988,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.247Z",
+            "state_change": "2026-09-19T17:06:43.247Z"
+          },
+          {
+            "pid": 989,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.248Z",
+            "state_change": "2026-09-19T17:06:43.248Z"
+          },
+          {
+            "pid": 990,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.278Z",
+            "state_change": "2026-09-19T17:06:43.279Z"
+          },
+          {
+            "pid": 991,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:43.248Z",
+            "state_change": "2026-09-19T17:06:43.248Z"
+          }
+        ],
+        "locks": {
+          "total": 0,
+          "granted": 0,
+          "waiting": 0,
+          "modes": {},
+          "objects": {}
+        }
+      }
+    ],
+    "connectionObservations": [
+      {
+        "capturedAt": "2026-09-19T17:06:42.340Z",
+        "total": 11,
+        "active": 1,
+        "idle": 10,
+        "waiting": 10
+      },
+      {
+        "capturedAt": "2026-09-19T17:06:43.300Z",
+        "total": 19,
+        "active": 1,
+        "idle": 18,
+        "waiting": 18
+      }
+    ],
+    "observerErrors": [],
+    "reconciliation": {
+      "liveSessionId": "01a0baa2-6d39-74d8-b8e6-78c184a86706",
+      "sessionQuestionId": "01a0baa2-6d5a-721d-be22-c6e4d1e2d677",
+      "before": {
+        "participants": 0,
+        "events": 3
+      },
+      "after": {
+        "participants": 100,
+        "events": 103
+      },
+      "delta": {
+        "participants": 100,
+        "events": 100
+      },
+      "expected": {
+        "participants": 100
+      },
+      "persisted": {
+        "participants": 100
+      },
+      "exactMatch": true
+    },
+    "plans": {
+      "findByCode": {
+        "label": "representative find-by-code query",
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Sort",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 16.35,
+              "Total Cost": 16.36,
+              "Plan Rows": 1,
+              "Plan Width": 124,
+              "Sort Key": [
+                "sq.\"position\"",
+                "sq.id"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Nested Loop",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Left",
+                  "Startup Cost": 0.3,
+                  "Total Cost": 16.34,
+                  "Plan Rows": 1,
+                  "Plan Width": 124,
+                  "Inner Unique": false,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "live_session_session_code_key",
+                      "Relation Name": "live_session",
+                      "Alias": "ls",
+                      "Startup Cost": 0.15,
+                      "Total Cost": 8.17,
+                      "Plan Rows": 1,
+                      "Plan Width": 32,
+                      "Index Cond": "(session_code = 'KVC4FGCG'::text)"
+                    },
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "idx_session_question_session_position",
+                      "Relation Name": "session_question",
+                      "Alias": "sq",
+                      "Startup Cost": 0.15,
+                      "Total Cost": 8.17,
+                      "Plan Rows": 1,
+                      "Plan Width": 108,
+                      "Index Cond": "(live_session_id = ls.id)"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "getSnapshot": {
+        "label": "representative get-snapshot query",
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Sort",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 16.35,
+              "Total Cost": 16.36,
+              "Plan Rows": 1,
+              "Plan Width": 124,
+              "Sort Key": [
+                "sq.\"position\"",
+                "sq.id"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Nested Loop",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Left",
+                  "Startup Cost": 0.3,
+                  "Total Cost": 16.34,
+                  "Plan Rows": 1,
+                  "Plan Width": 124,
+                  "Inner Unique": false,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "uq_live_session_id_course",
+                      "Relation Name": "live_session",
+                      "Alias": "ls",
+                      "Startup Cost": 0.15,
+                      "Total Cost": 8.17,
+                      "Plan Rows": 1,
+                      "Plan Width": 32,
+                      "Index Cond": "(id = '01a0baa2-6d39-74d8-b8e6-78c184a86706'::uuid)"
+                    },
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "idx_session_question_session_position",
+                      "Relation Name": "session_question",
+                      "Alias": "sq",
+                      "Startup Cost": 0.15,
+                      "Total Cost": 8.17,
+                      "Plan Rows": 1,
+                      "Plan Width": 108,
+                      "Index Cond": "(live_session_id = '01a0baa2-6d39-74d8-b8e6-78c184a86706'::uuid)"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "safety": {
+      "readOnly": true,
+      "writes": false,
+      "schemaChanges": false,
+      "indexChanges": false,
+      "poolChanges": false,
+      "lockChanges": false
+    }
+  }
+}

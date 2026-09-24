@@ -1,0 +1,1 @@
+{"status":"ok","timestamp":"2026-09-21T12:50:51.530Z","checks":{"db":{"healthy":true,"latencyMs":1},"redis":{"healthy":true,"mode":"off","adapter":"local","readiness":"healthy"},"loginRateLimit":{"healthy":true,"mode":"memory","readiness":"healthy"}}}

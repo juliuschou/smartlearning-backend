@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "phase": "W3-realtime-result-broadcast",
+  "runId": "83f36d1e-3451-42ae-9488-86e03238e07f",
+  "questionType": "poll",
+  "participants": 20,
+  "verdict": {
+    "correctness": "FAIL",
+    "performance": "NOT_MEASURED"
+  },
+  "reason": "W3 ACCESS-CONTROL FAIL: restricted result leaked while open.",
+  "connectionManifest": {
+    "teacherConnected": true,
+    "teacherSocketId": "2cyaqshN3J7vNkUAAAAp",
+    "participantsRequested": 20,
+    "participantsConnected": 20,
+    "participantsJoined": 20,
+    "duplicateSocketIds": 0,
+    "connectErrors": [],
+    "manifest": [
+      {
+        "participantId": "01a0beb8-107b-7393-8459-493eea5fc592",
+        "participantIndex": 0,
+        "socketId": "e6f-t62X4-N0FFM3AAAa",
+        "connected": true,
+        "connectedAtMs": 346.34127800000005,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1052-7277-acf7-ca892d0f6f9c",
+        "participantIndex": 1,
+        "socketId": "dhqkvrpLYUUyaZMMAAAP",
+        "connected": true,
+        "connectedAtMs": 339.45366599999994,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1060-7326-b17d-254d0188cb8c",
+        "participantIndex": 2,
+        "socketId": "XlqZyL-MkODG3sIKAAAQ",
+        "connected": true,
+        "connectedAtMs": 340.517843,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-106f-73ff-b437-98f6cccced0a",
+        "participantIndex": 3,
+        "socketId": "8xfbiIUqadDXJ65qAAAU",
+        "connected": true,
+        "connectedAtMs": 342.442435,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1074-7744-908d-957fe5c8bb3a",
+        "participantIndex": 4,
+        "socketId": "7c8mTr2ccMD1ZJFQAAAR",
+        "connected": true,
+        "connectedAtMs": 341.059859,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1075-70df-8a41-cb22619b7909",
+        "participantIndex": 5,
+        "socketId": "0EfjW4u0UepkTQZRAAAT",
+        "connected": true,
+        "connectedAtMs": 341.863485,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1076-7349-8268-d57d0644fd7e",
+        "participantIndex": 6,
+        "socketId": "sQE4UrTXk51Ea5ImAAAV",
+        "connected": true,
+        "connectedAtMs": 343.15539499999994,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1077-72c1-a15f-cfbddad0a5cc",
+        "participantIndex": 7,
+        "socketId": "JW2xL26Ah-1kmTVvAAAX",
+        "connected": true,
+        "connectedAtMs": 344.251288,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1044-7336-b1b9-98501fe560dc",
+        "participantIndex": 8,
+        "socketId": "oTxMPPTYXvWRfl5UAAAS",
+        "connected": true,
+        "connectedAtMs": 341.805686,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1046-73fc-a860-b3a7fbb81bc0",
+        "participantIndex": 9,
+        "socketId": "92o335tOAH9Ys8kJAAAY",
+        "connected": true,
+        "connectedAtMs": 345.25779500000004,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1046-73fc-a860-b76e69748a40",
+        "participantIndex": 10,
+        "socketId": "y0seQqup5Ii9nEzaAAAc",
+        "connected": true,
+        "connectedAtMs": 348.03880999999996,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1045-773b-bd19-f7ae2a7f2466",
+        "participantIndex": 11,
+        "socketId": "Zi2DNeNA61kDOxolAAAe",
+        "connected": true,
+        "connectedAtMs": 348.88487000000003,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1046-73fc-a860-b9c2c56abca2",
+        "participantIndex": 12,
+        "socketId": "8JwN7ci_0Y1xBH0PAAAd",
+        "connected": true,
+        "connectedAtMs": 348.442203,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-104e-740a-be78-8092fdbd7249",
+        "participantIndex": 13,
+        "socketId": "-qCUM4zGKsvYcwgIAAAZ",
+        "connected": true,
+        "connectedAtMs": 345.79034699999994,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-104e-740a-be78-7f0903d6888c",
+        "participantIndex": 14,
+        "socketId": "kOmtfW9Y4G9lbQMBAAAi",
+        "connected": true,
+        "connectedAtMs": 352.10581999999994,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1056-75cf-9786-7bfb59b43e6c",
+        "participantIndex": 15,
+        "socketId": "XGVQaUZiI78lR8HSAAAg",
+        "connected": true,
+        "connectedAtMs": 350.655195,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-105c-713f-b749-da8e19f08193",
+        "participantIndex": 16,
+        "socketId": "Fur_5bCyj3SaecSaAAAk",
+        "connected": true,
+        "connectedAtMs": 352.71045399999997,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1064-74d6-8f46-586f3b1deabc",
+        "participantIndex": 17,
+        "socketId": "B4jusvayrzzZNFKgAAAm",
+        "connected": true,
+        "connectedAtMs": 353.302699,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-1069-7154-b5ee-134d0fd55364",
+        "participantIndex": 18,
+        "socketId": "jkc-J0nPSVk3UUMDAAAn",
+        "connected": true,
+        "connectedAtMs": 353.86069200000003,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beb8-105c-713f-b749-d632ada763ff",
+        "participantIndex": 19,
+        "socketId": "rSQfFsLNjhX-2IRMAAAW",
+        "connected": true,
+        "connectedAtMs": 343.59522,
+        "everConnected": true,
+        "hasDisconnected": false
+      }
+    ]
+  },
+  "phaseA": {
+    "openResultEventCount": 0,
+    "participantsWithRestrictedReceiptBeforeAnswering": 0,
+    "leakingParticipants": [],
+    "teacherSawAggregate": true,
+    "abstainerProbe": {
+      "status": 409,
+      "errorCode": "RESULTS_NOT_REVEALED",
+      "refused": false
+    },
+    "leakage": true
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  }
+}

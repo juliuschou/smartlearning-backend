@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "courseId": "01a0baa1-d8dc-743a-8c1c-8fab32113d5b",
+    "liveSessionId": "01a0baa1-d925-737c-99d2-89eb90c81843",
+    "sessionQuestionId": "01a0baa1-d96e-7338-9b58-8c40b20edcf5",
+    "sessionCode": "HDVTXQRT",
+    "expectedParticipants": 20
+  }
+}

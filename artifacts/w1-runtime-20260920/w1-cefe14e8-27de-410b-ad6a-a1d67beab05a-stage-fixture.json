@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "courseId": "01a0baa4-5b91-74ed-842c-c3d9ce0b3b9c",
+    "liveSessionId": "01a0baa4-5bb8-779c-9582-29230864f00d",
+    "sessionQuestionId": "01a0baa4-5bda-768e-b291-85d2ec68154f",
+    "sessionCode": "JRKTTGAL",
+    "expectedParticipants": 300
+  }
+}

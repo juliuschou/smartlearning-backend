@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "courseId": "01a0bca9-2651-73aa-8f07-d73e21492c5b",
+    "liveSessionId": "01a0bca9-2670-73cd-b4f8-70adb0307698",
+    "sessionQuestionId": "01a0bca9-2691-7775-91b4-c90227197cf7",
+    "sessionCode": "AG49YAFN",
+    "expectedParticipants": 100
+  }
+}

@@ -1,0 +1,1307 @@
+{
+  "schemaVersion": 1,
+  "phase": "W3-realtime-result-broadcast",
+  "runId": "cd4f6a1b-788d-43f9-8a74-3b1e663891e5",
+  "questionType": "poll",
+  "participants": 20,
+  "fixture": {
+    "courseId": "01a0bec2-2499-74a9-ac3a-dd3f729afbec",
+    "questionId": "01a0bec2-24ac-706a-bdba-2e917c9a96c6",
+    "liveSessionId": "01a0bec2-24c3-7619-8fc1-d12f6ed7b986",
+    "sessionQuestionId": "01a0bec2-24f5-736d-8299-91b6e32f8f2a",
+    "sessionCode": "FM4D7EMZ"
+  },
+  "connectionManifest": {
+    "teacherConnected": true,
+    "teacherSocketId": "t9JbeinvozJGWZHkAAB9",
+    "participantsRequested": 20,
+    "participantsConnected": 20,
+    "participantsJoined": 20,
+    "duplicateSocketIds": 0,
+    "connectErrors": [],
+    "manifest": [
+      {
+        "participantId": "01a0bec2-6991-76ec-939d-08366bcbe681",
+        "participantIndex": 0,
+        "socketId": "1iQrh_mfjXt3aH-6AABo",
+        "connected": true,
+        "connectedAtMs": 306.016173,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6972-729a-8b05-f606bd394b8c",
+        "participantIndex": 1,
+        "socketId": "ikFvyCF4m5PyVM1wAABv",
+        "connected": true,
+        "connectedAtMs": 308.73351,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-698e-745b-b070-0e994bc8f571",
+        "participantIndex": 2,
+        "socketId": "mGU6J4Lmvqhc9FH1AABr",
+        "connected": true,
+        "connectedAtMs": 306.376265,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-696c-7718-8ff5-47f9ad4ecc4b",
+        "participantIndex": 3,
+        "socketId": "3GFXONPDLWWHRk1aAABt",
+        "connected": true,
+        "connectedAtMs": 308.631244,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6961-757e-ba51-1e338931989b",
+        "participantIndex": 4,
+        "socketId": "X3C7uISvgbWjnp9TAABp",
+        "connected": true,
+        "connectedAtMs": 306.304657,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6966-73ef-9870-d2053f91ce00",
+        "participantIndex": 5,
+        "socketId": "6x2iilAJvcPNW455AABz",
+        "connected": true,
+        "connectedAtMs": 311.185384,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6965-768e-bf4f-30d9506f9756",
+        "participantIndex": 6,
+        "socketId": "aHBBviFyPKfu3uhRAABu",
+        "connected": true,
+        "connectedAtMs": 308.701498,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6981-70f6-8ca5-9838fd77473f",
+        "participantIndex": 7,
+        "socketId": "IXzzQaV-jouIdmj1AABy",
+        "connected": true,
+        "connectedAtMs": 311.050938,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-698a-74ea-a271-67d1fe4eba57",
+        "participantIndex": 8,
+        "socketId": "H04xZfZu_QvrTLW6AABq",
+        "connected": true,
+        "connectedAtMs": 306.347001,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-698d-734f-a68d-57337400ec10",
+        "participantIndex": 9,
+        "socketId": "wyw6mYmCjQdI4IK1AABs",
+        "connected": true,
+        "connectedAtMs": 306.410692,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-697c-724a-833b-83848cf5f966",
+        "participantIndex": 10,
+        "socketId": "qqtUaif7O1BiTtc1AABw",
+        "connected": true,
+        "connectedAtMs": 308.762933,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-699d-70fb-8008-a6f376ffaff2",
+        "participantIndex": 11,
+        "socketId": "UkHvKjjFV-Tw92xIAABx",
+        "connected": true,
+        "connectedAtMs": 310.258257,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-698e-745b-b070-0949dbb3657f",
+        "participantIndex": 12,
+        "socketId": "3P4ir9yc6HGnQYWPAAB5",
+        "connected": true,
+        "connectedAtMs": 313.879721,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6977-76d3-8f30-bc0d33dde439",
+        "participantIndex": 13,
+        "socketId": "_DoxOQmaaut5SFOiAAB0",
+        "connected": true,
+        "connectedAtMs": 311.560566,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6962-703b-b9f4-7bdc02e86cdd",
+        "participantIndex": 14,
+        "socketId": "S-CySBGGIphklACyAAB3",
+        "connected": true,
+        "connectedAtMs": 312.71712,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6978-71b1-84ba-f5ab455e18ea",
+        "participantIndex": 15,
+        "socketId": "7MqTbsMhe9cUxElAAAB4",
+        "connected": true,
+        "connectedAtMs": 313.198987,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6969-761b-b6b1-615adbfd3862",
+        "participantIndex": 16,
+        "socketId": "7hh9hD5xMsm6BiO6AAB1",
+        "connected": true,
+        "connectedAtMs": 311.873446,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-696f-7238-b5b4-11b28a4a60e1",
+        "participantIndex": 17,
+        "socketId": "AocYi47W1Ho3NNxsAAB7",
+        "connected": true,
+        "connectedAtMs": 314.593123,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-6962-703b-b9f4-7cf420442146",
+        "participantIndex": 18,
+        "socketId": "bOPUkPvcnGbQRg4eAAB6",
+        "connected": true,
+        "connectedAtMs": 314.232546,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0bec2-697f-741c-9a36-c51100f74606",
+        "participantIndex": 19,
+        "socketId": "ccD3AwomqiwivMDbAAB2",
+        "connected": true,
+        "connectedAtMs": 312.256343,
+        "everConnected": true,
+        "hasDisconnected": false
+      }
+    ]
+  },
+  "stabilizeProbes": [
+    {
+      "atMs": 617.901642,
+      "connected": 20
+    },
+    {
+      "atMs": 919.7674880000001,
+      "connected": 20
+    },
+    {
+      "atMs": 1221.4707360000002,
+      "connected": 20
+    }
+  ],
+  "socketTimelines": [
+    {
+      "label": "p0",
+      "participantId": "01a0bec2-6991-76ec-939d-08366bcbe681",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 306.016173,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "28"
+      ]
+    },
+    {
+      "label": "p1",
+      "participantId": "01a0bec2-6972-729a-8b05-f606bd394b8c",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 308.73351,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p2",
+      "participantId": "01a0bec2-698e-745b-b070-0e994bc8f571",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 306.376265,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p3",
+      "participantId": "01a0bec2-696c-7718-8ff5-47f9ad4ecc4b",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 308.631244,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p4",
+      "participantId": "01a0bec2-6961-757e-ba51-1e338931989b",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 306.304657,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p5",
+      "participantId": "01a0bec2-6966-73ef-9870-d2053f91ce00",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 311.185384,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p6",
+      "participantId": "01a0bec2-6965-768e-bf4f-30d9506f9756",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 308.701498,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p7",
+      "participantId": "01a0bec2-6981-70f6-8ca5-9838fd77473f",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 311.050938,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p8",
+      "participantId": "01a0bec2-698a-74ea-a271-67d1fe4eba57",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 306.347001,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p9",
+      "participantId": "01a0bec2-698d-734f-a68d-57337400ec10",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 306.410692,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p10",
+      "participantId": "01a0bec2-697c-724a-833b-83848cf5f966",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 308.762933,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "25"
+      ]
+    },
+    {
+      "label": "p11",
+      "participantId": "01a0bec2-699d-70fb-8008-a6f376ffaff2",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 310.258257,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p12",
+      "participantId": "01a0bec2-698e-745b-b070-0949dbb3657f",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 313.879721,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p13",
+      "participantId": "01a0bec2-6977-76d3-8f30-bc0d33dde439",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 311.560566,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p14",
+      "participantId": "01a0bec2-6962-703b-b9f4-7bdc02e86cdd",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 312.71712,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p15",
+      "participantId": "01a0bec2-6978-71b1-84ba-f5ab455e18ea",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 313.198987,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p16",
+      "participantId": "01a0bec2-6969-761b-b6b1-615adbfd3862",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 311.873446,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "31"
+      ]
+    },
+    {
+      "label": "p17",
+      "participantId": "01a0bec2-696f-7238-b5b4-11b28a4a60e1",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 314.593123,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p18",
+      "participantId": "01a0bec2-6962-703b-b9f4-7cf420442146",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 314.232546,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "p19",
+      "participantId": "01a0bec2-697f-741c-9a36-c51100f74606",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 312.256343,
+      "disconnectedAtMs": null,
+      "receiptCount": 2,
+      "resultUpdatedSeqs": []
+    },
+    {
+      "label": "teacher",
+      "participantId": null,
+      "isTeacher": true,
+      "everConnected": true,
+      "connectedAtMs": 316.980943,
+      "disconnectedAtMs": null,
+      "receiptCount": 21,
+      "resultUpdatedSeqs": [
+        "25",
+        "28",
+        "31"
+      ]
+    }
+  ],
+  "phaseA": {
+    "openResultEventCount": 0,
+    "participantsWithRestrictedReceiptBeforeAnswering": 0,
+    "leakingParticipants": [],
+    "teacherSawAggregate": true,
+    "abstainerProbe": {
+      "status": 409,
+      "errorCode": "RESULTS_NOT_REVEALED",
+      "refused": true
+    },
+    "leakage": false
+  },
+  "phaseB": {
+    "answeredCount": 10,
+    "abstainedCount": 10,
+    "expectedYes": 10,
+    "actualYes": 3,
+    "expectedNo": 10,
+    "forbiddenDelivery": 0,
+    "missingYes": 7,
+    "delayedButReceived": 0,
+    "votePermanentMissing": 7,
+    "voteResultEvents": 10,
+    "drainWaitMs": 7030.791508,
+    "recipientMatrix": [
+      {
+        "client": "p0",
+        "participantId": "01a0bec2-6991-76ec-939d-08366bcbe681",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "28",
+        "actualReceipt": true,
+        "receiptEventSeq": "28",
+        "receiptAtMs": 7339.573144
+      },
+      {
+        "client": "p1",
+        "participantId": "01a0bec2-6972-729a-8b05-f606bd394b8c",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p2",
+        "participantId": "01a0bec2-698e-745b-b070-0e994bc8f571",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "26",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p3",
+        "participantId": "01a0bec2-696c-7718-8ff5-47f9ad4ecc4b",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p4",
+        "participantId": "01a0bec2-6961-757e-ba51-1e338931989b",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "32",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p5",
+        "participantId": "01a0bec2-6966-73ef-9870-d2053f91ce00",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p6",
+        "participantId": "01a0bec2-6965-768e-bf4f-30d9506f9756",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "27",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p7",
+        "participantId": "01a0bec2-6981-70f6-8ca5-9838fd77473f",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p8",
+        "participantId": "01a0bec2-698a-74ea-a271-67d1fe4eba57",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "29",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p9",
+        "participantId": "01a0bec2-698d-734f-a68d-57337400ec10",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p10",
+        "participantId": "01a0bec2-697c-724a-833b-83848cf5f966",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "25",
+        "actualReceipt": true,
+        "receiptEventSeq": "25",
+        "receiptAtMs": 6334.631574999999
+      },
+      {
+        "client": "p11",
+        "participantId": "01a0bec2-699d-70fb-8008-a6f376ffaff2",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p12",
+        "participantId": "01a0bec2-698e-745b-b070-0949dbb3657f",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "24",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p13",
+        "participantId": "01a0bec2-6977-76d3-8f30-bc0d33dde439",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p14",
+        "participantId": "01a0bec2-6962-703b-b9f4-7bdc02e86cdd",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "33",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p15",
+        "participantId": "01a0bec2-6978-71b1-84ba-f5ab455e18ea",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p16",
+        "participantId": "01a0bec2-6969-761b-b6b1-615adbfd3862",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "31",
+        "actualReceipt": true,
+        "receiptEventSeq": "31",
+        "receiptAtMs": 8345.139904
+      },
+      {
+        "client": "p17",
+        "participantId": "01a0bec2-696f-7238-b5b4-11b28a4a60e1",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p18",
+        "participantId": "01a0bec2-6962-703b-b9f4-7cf420442146",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "30",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p19",
+        "participantId": "01a0bec2-697f-741c-9a36-c51100f74606",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      }
+    ],
+    "missingClassification": [
+      {
+        "label": "p2",
+        "eventSeq": "26",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p4",
+        "eventSeq": "32",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p6",
+        "eventSeq": "27",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p8",
+        "eventSeq": "29",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p12",
+        "eventSeq": "24",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p14",
+        "eventSeq": "33",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p18",
+        "eventSeq": "30",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      }
+    ],
+    "duplicateDeliveries": [],
+    "voteLatency": {
+      "stats": {
+        "count": 3,
+        "p50": 4456.082935,
+        "p95": 5413.396370999999,
+        "p99": 5413.396370999999,
+        "max": 5413.396370999999
+      },
+      "fastest": {
+        "id": "p10",
+        "value": 3499.9116279999994
+      },
+      "median": {
+        "id": "p0",
+        "value": 4456.082935
+      },
+      "p95Near": {
+        "id": "p0",
+        "value": 4456.082935
+      },
+      "slowest": {
+        "id": "p16",
+        "value": 5413.396370999999
+      }
+    },
+    "votePublishLatency": {
+      "stats": {
+        "count": 3,
+        "p50": 5398,
+        "p95": 6404,
+        "p99": 6404,
+        "max": 6404
+      },
+      "fastest": {
+        "id": "p10",
+        "value": 4393
+      },
+      "median": {
+        "id": "p0",
+        "value": 5398
+      },
+      "p95Near": {
+        "id": "p0",
+        "value": 5398
+      },
+      "slowest": {
+        "id": "p16",
+        "value": 6404
+      }
+    },
+    "teacherPhaseB": {
+      "note": "Teacher receives a teacher-visibility result.updated per claimed result row (emitTeacherResults). Measured separately; excluded from the participant required-delivery gate.",
+      "receiptCount": 3,
+      "expectedAtLeast": 10,
+      "eventSeqs": [
+        "25",
+        "28",
+        "31"
+      ]
+    },
+    "authoritativeOptions": [
+      {
+        "optionId": "01a0bec2-24f5-736d-8299-96855bee1316",
+        "count": 4
+      },
+      {
+        "optionId": "01a0bec2-24f5-736d-8299-984132ab3c5b",
+        "count": 3
+      },
+      {
+        "optionId": "01a0bec2-24f5-736d-8299-9de2cbb805c4",
+        "count": 3
+      }
+    ]
+  },
+  "phaseC": {
+    "closeSeq": "35",
+    "closeRows": 1,
+    "closeRequestStartMs": 12036.903129,
+    "closeResponseEndMs": 12067.038387,
+    "closeDrainMs": 1006.1888309999995,
+    "closedExpected": 21,
+    "closedActual": 0,
+    "closedMissing": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4",
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9",
+      "p10",
+      "p11",
+      "p12",
+      "p13",
+      "p14",
+      "p15",
+      "p16",
+      "p17",
+      "p18",
+      "p19",
+      "teacher"
+    ],
+    "closedMissingClassification": [
+      {
+        "label": "p0",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received session.snapshot and other result.updated events but not this one, while connected."
+      },
+      {
+        "label": "p1",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p2",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p3",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p4",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p5",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p6",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p7",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p8",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p9",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p10",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received session.snapshot and other result.updated events but not this one, while connected."
+      },
+      {
+        "label": "p11",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p12",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p13",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p14",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p15",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p16",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received session.snapshot and other result.updated events but not this one, while connected."
+      },
+      {
+        "label": "p17",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p18",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "p19",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+      },
+      {
+        "label": "teacher",
+        "eventSeq": "35",
+        "classification": "CLIENT NOT RECEIVED",
+        "detail": "Socket received session.snapshot and other result.updated events but not this one, while connected."
+      }
+    ],
+    "duplicateDeliveries": [],
+    "recipients": [
+      {
+        "client": "p0",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p1",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p2",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p3",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p4",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p5",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p6",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p7",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p8",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p9",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p10",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p11",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p12",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p13",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p14",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p15",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p16",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p17",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p18",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p19",
+        "kind": "participant",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "teacher",
+        "kind": "teacher",
+        "expected": true,
+        "received": false,
+        "receiptEventSeq": "25",
+        "receiptAtMs": null
+      }
+    ],
+    "closeLatency": {
+      "stats": {
+        "count": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      }
+    },
+    "closePublishLatency": {
+      "stats": {
+        "count": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      }
+    }
+  },
+  "missingClassification": [
+    {
+      "label": "p2",
+      "eventSeq": "26",
+      "classification": "CLIENT NOT RECEIVED",
+      "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+    },
+    {
+      "label": "p4",
+      "eventSeq": "32",
+      "classification": "CLIENT NOT RECEIVED",
+      "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+    },
+    {
+      "label": "p6",
+      "eventSeq": "27",
+      "classification": "CLIENT NOT RECEIVED",
+      "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+    },
+    {
+      "label": "p8",
+      "eventSeq": "29",
+      "classification": "CLIENT NOT RECEIVED",
+      "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+    },
+    {
+      "label": "p12",
+      "eventSeq": "24",
+      "classification": "CLIENT NOT RECEIVED",
+      "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+    },
+    {
+      "label": "p14",
+      "eventSeq": "33",
+      "classification": "CLIENT NOT RECEIVED",
+      "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+    },
+    {
+      "label": "p18",
+      "eventSeq": "30",
+      "classification": "CLIENT NOT RECEIVED",
+      "detail": "Socket received its session.snapshot (listener/transport proven live) and the row was dispatched, but this socket saw no result.updated event."
+    }
+  ],
+  "authoritative": {
+    "dbSubmissionCount": 10,
+    "expectedSubmissionCount": 10,
+    "options": [
+      {
+        "optionId": "01a0bec2-24f5-736d-8299-96855bee1316",
+        "count": 4
+      },
+      {
+        "optionId": "01a0bec2-24f5-736d-8299-984132ab3c5b",
+        "count": 3
+      },
+      {
+        "optionId": "01a0bec2-24f5-736d-8299-9de2cbb805c4",
+        "count": 3
+      }
+    ],
+    "dbOptionCounts": {
+      "01a0bec2-24f5-736d-8299-96855bee1316": 4,
+      "01a0bec2-24f5-736d-8299-984132ab3c5b": 3,
+      "01a0bec2-24f5-736d-8299-9de2cbb805c4": 3
+    },
+    "exact": true,
+    "participantAfterClose": {
+      "status": 200,
+      "options": [
+        {
+          "optionId": "01a0bec2-24f5-736d-8299-96855bee1316",
+          "count": 4
+        },
+        {
+          "optionId": "01a0bec2-24f5-736d-8299-984132ab3c5b",
+          "count": 3
+        },
+        {
+          "optionId": "01a0bec2-24f5-736d-8299-9de2cbb805c4",
+          "count": 3
+        }
+      ],
+      "exact": true
+    }
+  },
+  "latency": {
+    "threshold": {
+      "commitToBroadcastP95Ms": 2000,
+      "commitToBroadcastP99Ms": 5000,
+      "source": "../docs/智學互動平台/00_專案規劃/MVP 效能目標.md"
+    },
+    "commitToBroadcastNote": "COMMIT TIMING EVIDENCE GAP: exact commit timestamp unavailable (track_commit_timestamp=off); submit/close response end used as the closest explainable proxy, per W2 precedent.",
+    "voteToReveal": {
+      "stats": {
+        "count": 3,
+        "p50": 4456.082935,
+        "p95": 5413.396370999999,
+        "p99": 5413.396370999999,
+        "max": 5413.396370999999
+      },
+      "fastest": {
+        "id": "p10",
+        "value": 3499.9116279999994
+      },
+      "median": {
+        "id": "p0",
+        "value": 4456.082935
+      },
+      "p95Near": {
+        "id": "p0",
+        "value": 4456.082935
+      },
+      "slowest": {
+        "id": "p16",
+        "value": 5413.396370999999
+      }
+    },
+    "voteToRevealPublishProxy": {
+      "stats": {
+        "count": 3,
+        "p50": 5398,
+        "p95": 6404,
+        "p99": 6404,
+        "max": 6404
+      },
+      "fastest": {
+        "id": "p10",
+        "value": 4393
+      },
+      "median": {
+        "id": "p0",
+        "value": 5398
+      },
+      "p95Near": {
+        "id": "p0",
+        "value": 5398
+      },
+      "slowest": {
+        "id": "p16",
+        "value": 6404
+      }
+    },
+    "finalBroadcast": {
+      "stats": {
+        "count": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      }
+    },
+    "finalBroadcastPublishProxy": {
+      "stats": {
+        "count": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      }
+    }
+  },
+  "verdict": {
+    "correctness": "FAIL",
+    "performance": "FAIL",
+    "performanceSignal": "W3 PERFORMANCE THRESHOLD FAIL SIGNAL"
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  }
+}

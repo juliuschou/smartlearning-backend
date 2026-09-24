@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "courseId": "01a0bd77-3f6f-74ba-8f1c-2c8ff4d92e6b",
+    "liveSessionId": "01a0bd77-3fb8-768b-b06a-215b7157fd21",
+    "sessionQuestionId": "01a0bd77-3ff5-72fe-98de-347ecb857572",
+    "sessionCode": "5GAVCVDD",
+    "expectedParticipants": 300
+  }
+}

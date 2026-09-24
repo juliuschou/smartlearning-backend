@@ -1,0 +1,5 @@
+2026-09-21T12:50:50Z gate_a_preflight database=smartlearning_test run=w3diag-20260921T125050Z-ff64377d
+2026-09-21T12:50:50Z backend_started
+2026-09-21T12:50:51Z backend_ready
+2026-09-21T12:50:52Z fixture_created
+2026-09-21T12:50:52Z workload_complete

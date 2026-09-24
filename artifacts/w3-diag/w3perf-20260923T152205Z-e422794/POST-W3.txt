@@ -1,0 +1,12 @@
+2026-09-23T15:25:18Z
+--- process
+  16470     351 Wed Sep 23 23:22:05 2026 node dist/src/main.js
+--- listeners
+LISTEN 0      511                 *:3001            *:*    users:(("node-MainThread",pid=16470,fd=31))
+--- pg
+191|smartlearning|psql|active||
+183|smartlearning||idle|Client|ClientRead
+--- trace-summary
+{'processId': 16470, 'backendInstanceId': '01a0cedc-1b46-723d-b269-8abdb7bf0e7f', 'runId': 'w3perf-20260923T152205Z-e422794', 'recordedCount': 164, 'droppedCount': 0, 'dispatchedEventCount': 35}
+timings 10
+records 164

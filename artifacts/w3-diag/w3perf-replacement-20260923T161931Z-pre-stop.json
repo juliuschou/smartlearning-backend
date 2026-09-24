@@ -1,0 +1,35 @@
+{
+  "runId": "w3perf-replacement-20260923T161931Z",
+  "capturedAt": "2026-09-23T16:19:31.560Z",
+  "pid": 16470,
+  "process": {
+    "ps": "captured separately",
+    "cwd": "/home/user/projects/smartLearning/smartLearning-backend",
+    "cmdline": "node dist/src/main.js",
+    "exe": "/home/user/.local/share/mise/installs/node/26.5.1/bin/node"
+  },
+  "port": "3001 listener owner verified as PID 16470",
+  "backendInstanceId": "01a0cedc-1b46-723d-b269-8abdb7bf0e7f",
+  "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+  "traceServiceInstanceId": "01a0cedc-1c01-758e-8418-b395c435df65",
+  "pgStatActivity": [
+    {
+      "pid": 198,
+      "usename": "smartlearning",
+      "datname": "smartlearning_test",
+      "state": "idle",
+      "application_name": "",
+      "client_addr": "172.17.0.1",
+      "backend_start": "2026-09-23T15:31:06.936Z"
+    },
+    {
+      "pid": 292,
+      "usename": "smartlearning",
+      "datname": "smartlearning_test",
+      "state": "active",
+      "application_name": "",
+      "client_addr": "172.17.0.1",
+      "backend_start": "2026-09-23T16:19:31.547Z"
+    }
+  ]
+}

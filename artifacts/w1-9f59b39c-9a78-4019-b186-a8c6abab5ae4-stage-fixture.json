@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "courseId": "01a0bcdb-b0bb-73ea-87db-cc354b2d7fd6",
+    "liveSessionId": "01a0bcdb-b0e4-724e-824f-8b12fb3aef43",
+    "sessionQuestionId": "01a0bcdb-b109-7328-bd1e-032fac9e3b50",
+    "sessionCode": "A2A2MKSW",
+    "expectedParticipants": 300
+  }
+}

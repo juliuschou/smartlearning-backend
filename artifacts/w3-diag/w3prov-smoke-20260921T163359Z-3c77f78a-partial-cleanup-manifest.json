@@ -1,0 +1,28 @@
+{
+  "runId": "w3prov-smoke-20260921T163359Z-3c77f78a",
+  "ownership": {
+    "accounts": [
+      {
+        "id": "01a0c4d1-3b38-7649-91b8-10d12b4f66c4",
+        "username": "local-w1-w3prov-smoke-20260921T163359Z-3c77f78a",
+        "role": "teacher",
+        "status": "active",
+        "created_by": "01a0bd6f-f4ed-7486-83de-847c336f6d95"
+      }
+    ],
+    "web_sessions": [
+      {
+        "id": "01a0c4d1-3be8-743c-ade0-3032567dabeb",
+        "account_id": "01a0c4d1-3b38-7649-91b8-10d12b4f66c4",
+        "revoked_at": null
+      }
+    ],
+    "courses": [],
+    "questions": [],
+    "live_sessions": [],
+    "participants": [],
+    "submissions": [],
+    "events": []
+  },
+  "notes": "Exact username equality lookup; provisioning smoke created no course/question/live-session chain."
+}

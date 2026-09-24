@@ -1,0 +1,3995 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+    "startedAt": "2026-09-20T06:18:24.885Z",
+    "finishedAt": "2026-09-20T06:18:25.410Z",
+    "baseUrl": "http://127.0.0.1:3001",
+    "scenarios": [
+      "W1"
+    ],
+    "participantCount": 100,
+    "fixtureMode": "existing"
+  },
+  "scenarios": [
+    {
+      "name": "W1",
+      "status": "passed",
+      "durationMs": 525.0551459999999,
+      "operations": [
+        {
+          "name": "join",
+          "transport": "http",
+          "count": 100,
+          "successCount": 100,
+          "errorCount": 0,
+          "errorRate": 0,
+          "latencyMs": {
+            "count": 100,
+            "p50": 368.083185,
+            "p95": 494.423128,
+            "p99": 502.52296600000005,
+            "max": 507.06772500000005
+          },
+          "errors": {}
+        }
+      ],
+      "correctness": {
+        "joined": 100,
+        "duplicateParticipantIds": 0
+      }
+    }
+  ],
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  },
+  "diagnostics": {
+    "enabled": true,
+    "clientRequests": [
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-15404317-11cb-47bd-9440-2ff49aa1c230",
+        "durationMs": 235.807709
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-8e729385-5a91-44a6-aea0-7bfad54a62a2",
+        "durationMs": 232.798792
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ed226236-7173-4cbe-9dd2-dfbed3803071",
+        "durationMs": 234.86918300000002
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-7a1708ba-f62b-4207-a2b9-012977f5c23d",
+        "durationMs": 235.880085
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-782585d4-c29b-41f5-9204-7af40565a823",
+        "durationMs": 239.366555
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-0cc97115-7981-4a39-95d3-88fda4cc814f",
+        "durationMs": 244.68478500000003
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-45f3d28a-e8a5-4f8c-8c6b-e3a3634d607d",
+        "durationMs": 248.30966700000002
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-986bc80d-89e3-4a04-90e0-aa467ea22c33",
+        "durationMs": 248.29717699999998
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-eb9677b3-bf22-40ad-b9bf-13b7e95d616c",
+        "durationMs": 252.74052500000002
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-9902359c-0cfb-4e4a-bcfb-b3e8e7efb383",
+        "durationMs": 254.318023
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-869fb62c-909e-415a-b46a-737b790e3421",
+        "durationMs": 260.41839400000003
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-c4fce8e6-fc4a-42f8-9d72-4cc5537a719f",
+        "durationMs": 260.50960399999997
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-d0e6d4ff-b04d-44c7-894b-c13fe055ea01",
+        "durationMs": 264.272627
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-5e928778-451d-4474-9a33-64d63384d08d",
+        "durationMs": 266.859262
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-cdb134da-cec3-49bf-a51b-4561b5874dae",
+        "durationMs": 268.668453
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-3bb00c4f-4a60-4b42-9b11-09ef838c6619",
+        "durationMs": 269.36459199999996
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-c241c966-d446-47e8-9772-639e8a435f4a",
+        "durationMs": 275.669221
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-de2f09b7-1c69-438b-bd82-1891049282c3",
+        "durationMs": 275.32017599999995
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-755cda94-ef40-4a5d-9280-d699828c1909",
+        "durationMs": 277.431889
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-f45b83ab-bb0b-44c8-8102-471827ecfe61",
+        "durationMs": 282.16642299999995
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-fd5072e6-c195-4504-aa8d-7cc54582bd29",
+        "durationMs": 284.17172
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-1b997eb0-7ce1-4ffe-af04-16d708ad57a8",
+        "durationMs": 286.49707
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b8345b6b-2a30-49f8-af3d-2623c3a76167",
+        "durationMs": 288.748604
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-4b3cf0b8-8180-4ce5-bd13-53f9cdbd1b66",
+        "durationMs": 291.36226700000003
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-028da9df-9988-4a1f-8a62-b6cbd8d167e0",
+        "durationMs": 294.416919
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-3aada5d4-ab11-4f36-8331-9cd2314de8ac",
+        "durationMs": 297.908194
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-486c1361-9b27-4cc1-9fb1-bee397152bf8",
+        "durationMs": 301.697294
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-e4abef8b-dfd7-4368-b19b-853cf77ab844",
+        "durationMs": 304.287563
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-4be51275-6b4f-4d5b-9241-c116a5b05e19",
+        "durationMs": 306.71028
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-bae11548-0f3b-4625-8cef-06f282c7bee9",
+        "durationMs": 307.738168
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-62fecd43-8f85-4c33-8ea9-7a5217cc1021",
+        "durationMs": 313.016636
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-e6e9502b-c9d7-40ed-8420-3c8d41b93e35",
+        "durationMs": 313.40019600000005
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-0429f494-4bea-4e47-913f-b9e6854f54c4",
+        "durationMs": 317.201684
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-551bdd9c-3cc3-45e4-be40-af128ecc0016",
+        "durationMs": 319.146683
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-bc215019-9ce4-4f8b-8877-0b1791ac6485",
+        "durationMs": 323.54818
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-f890fec5-198d-44f5-b4b3-8248a4e5673b",
+        "durationMs": 325.416474
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b6abce6f-6a00-40b1-aac9-b0e4642abcb8",
+        "durationMs": 335.161377
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-65645bee-b70e-4fa0-9a9f-f5bf5f9e9d89",
+        "durationMs": 333.00632499999995
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-6cc7a04d-6626-4910-99c3-fbf1f49a4869",
+        "durationMs": 335.875956
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-a2369ca9-fb5a-41ae-b671-6a54b4ca595a",
+        "durationMs": 339.88777999999996
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-a0cc3c92-c727-47d3-9e21-ebc85ef97ea3",
+        "durationMs": 343.292824
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-82ccec99-b845-4e99-9fdc-67715462b414",
+        "durationMs": 348.812717
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-de2facd8-b1f7-4545-b494-22636b47b38f",
+        "durationMs": 348.56277
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-f489b115-38b5-4a94-88df-b3009c11f51d",
+        "durationMs": 350.45810900000004
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-879d1c3d-0c7f-4f2f-9f2b-a116c3b92322",
+        "durationMs": 355.265556
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-77f9b9e6-883e-4059-9016-05187e215697",
+        "durationMs": 358.040841
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-a11badfe-8fa1-479a-8be4-d7d5ddae1106",
+        "durationMs": 360.240635
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-a137d77e-9ff2-411e-b269-313656cc325a",
+        "durationMs": 363.841811
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-fec131b7-1696-4720-b760-1484f4c8a7f9",
+        "durationMs": 366.62308800000005
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-c344e7a4-b9a1-47ad-a6dc-fcb809deac36",
+        "durationMs": 368.083185
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-fc2250e7-4077-4439-9c73-5cbbd410d4a4",
+        "durationMs": 371.111385
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-1dcdaaa0-88ff-46a5-ac28-00983381c1f3",
+        "durationMs": 373.87577699999997
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-454ef4e1-1fcf-4f1f-8734-e9747b564d29",
+        "durationMs": 379.095663
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-22e47ede-cfee-4b24-89a8-51e6ea0a6725",
+        "durationMs": 378.91424700000005
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-3c2ee7e1-3ccf-4e10-9b20-d3c09bc90e2b",
+        "durationMs": 382.378709
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-198b33bb-b5fb-4c9c-85b5-471d198db243",
+        "durationMs": 388.14686099999994
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-597bf566-222d-4395-83c3-6e3bc84c0027",
+        "durationMs": 385.482325
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b5b872b2-0f75-4c73-b47f-9671ac53acc3",
+        "durationMs": 389.266033
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-1d8a47cb-9247-4719-8783-ec9c5270a493",
+        "durationMs": 391.94401200000004
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-d3bad8bd-324c-421c-b449-42c246213c41",
+        "durationMs": 393.70813599999997
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-6942b315-d9be-4d26-9bd9-cd73137fbc34",
+        "durationMs": 397.635398
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-c3e9b042-a977-4897-9638-ad3a76aa52da",
+        "durationMs": 399.544863
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ef30d0da-2064-4485-85e2-896c36e12d29",
+        "durationMs": 400.7902270000001
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-70697000-e4bf-4b0d-b528-964e2e88d409",
+        "durationMs": 403.94832700000006
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-8783aa61-e138-4d1e-b644-8a18d7c55070",
+        "durationMs": 407.140792
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-aed721f5-3361-45c7-b37f-c771efd58083",
+        "durationMs": 410.33535299999994
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-39b2afa7-f8ad-4520-a0ac-5fdb91101949",
+        "durationMs": 413.48287100000005
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b4d76d98-a23d-4beb-83e4-286eec36da89",
+        "durationMs": 416.5331120000001
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-14612946-01ea-41ce-a74e-91fe77a9aab3",
+        "durationMs": 421.582075
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-33d7eafe-e9b0-4dbe-b9fc-7324aa53420f",
+        "durationMs": 422.17642800000004
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-6825c92c-8e14-40ac-902b-23aa0edf0efd",
+        "durationMs": 425.954458
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-0f5af3b8-11ce-4bec-911d-5f1e11437aef",
+        "durationMs": 427.7905129999999
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-fea9a5b0-30bd-4ea2-9d44-810581afd8d1",
+        "durationMs": 432.70286999999996
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-eb3dd7f4-c79f-4c7c-8425-8e05d8ac23b2",
+        "durationMs": 433.75209899999993
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-02046799-cdde-4ce6-a927-0ea5c01344e4",
+        "durationMs": 438.218841
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-526899ba-a701-4694-bf60-8ac8ce105728",
+        "durationMs": 440.86585499999995
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-cad8fb83-cf2f-4052-acef-a78beedb47b6",
+        "durationMs": 442.6826
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-994b268e-79ad-4954-983e-f90bcc0e09eb",
+        "durationMs": 446.95020999999997
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-518ee81d-a698-4b08-ba2b-63e2b98a8b6f",
+        "durationMs": 451.35198
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-513fa3da-6635-4358-96fc-e987ae05c375",
+        "durationMs": 453.01021399999996
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-9cfba85e-44ab-4ef6-9aac-b37255223c67",
+        "durationMs": 455.39576999999997
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-e5549894-9e2a-4edf-92c7-d4a11807b6d2",
+        "durationMs": 457.674618
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-9d2d6c53-b6ad-4794-bcca-fbeda3d3a55c",
+        "durationMs": 461.339943
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-bcde498d-a2eb-4d60-ad94-9920062cbcf9",
+        "durationMs": 462.851227
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-3efcec11-f19a-4694-83d7-1f4ba50cee22",
+        "durationMs": 468.24760599999996
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-8df5c907-949c-42ea-9950-1864da5c4001",
+        "durationMs": 467.79780400000004
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-344ffa7f-3be4-42b2-9fb9-072f651846af",
+        "durationMs": 473.68480400000004
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b42d77da-07c6-4077-bd1f-59251f52b6aa",
+        "durationMs": 474.3945279999999
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-0e0d5d14-cce0-409e-b303-c09d082201ec",
+        "durationMs": 478.558574
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-cda36a37-44c6-40a3-bc62-ef7ed5a924aa",
+        "durationMs": 478.35671099999996
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-68218b59-92a2-4a14-a381-8f3dc01b04d6",
+        "durationMs": 483.25289000000004
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ac188f2c-a605-4733-8552-66797eb35fad",
+        "durationMs": 486.71935599999995
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-60d8a36e-ef7e-483d-8b3f-61736d34a695",
+        "durationMs": 487.05984900000004
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-062a751e-4aea-4aaa-90ba-657989a32bcd",
+        "durationMs": 490.88308100000006
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-1d43e60c-47de-4646-a1dd-a132e6fd5354",
+        "durationMs": 494.423128
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ce5a5c52-f32f-4aaf-9dac-8e045c272f60",
+        "durationMs": 495.440849
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ec4fb30c-d3c6-4c0c-97cf-69df820b0e1c",
+        "durationMs": 497.86990800000007
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-64db38b3-b652-404c-bd0c-e1644206f25e",
+        "durationMs": 500.43561
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-96054eb2-3504-4d4f-9d08-2857d3e8454c",
+        "durationMs": 502.52296600000005
+      },
+      {
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-818a99ad-d065-4d6d-8641-a4aa16609d33",
+        "durationMs": 507.06772500000005
+      }
+    ],
+    "backendRequests": [
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-15404317-11cb-47bd-9440-2ff49aa1c230",
+        "phases": {
+          "findByCode": 123.8902139999991,
+          "liveSessionLockRead": 1.9316859999962617,
+          "participantInsert": 1.9316859999962617,
+          "outboxAppend": 4.487712999994983,
+          "transaction": 34.1320379999961,
+          "postCommitSnapshot": 0,
+          "total": 158.12915599999542
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-8e729385-5a91-44a6-aea0-7bfad54a62a2",
+        "phases": {
+          "findByCode": 123.75516299999435,
+          "liveSessionLockRead": 2.759731999991345,
+          "participantInsert": 2.759731999991345,
+          "outboxAppend": 7.495289999991655,
+          "transaction": 37.629203000004054,
+          "postCommitSnapshot": 0,
+          "total": 161.46077499999956
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ed226236-7173-4cbe-9dd2-dfbed3803071",
+        "phases": {
+          "findByCode": 123.73273099999642,
+          "liveSessionLockRead": 2.638428999998723,
+          "participantInsert": 2.638428999998723,
+          "outboxAppend": 8.689079999996466,
+          "transaction": 40.854682000004686,
+          "postCommitSnapshot": 0,
+          "total": 164.6152640000073
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-7a1708ba-f62b-4207-a2b9-012977f5c23d",
+        "phases": {
+          "findByCode": 118.19938900000125,
+          "liveSessionLockRead": 1.411072000002605,
+          "participantInsert": 1.411072000002605,
+          "outboxAppend": 6.752141999997548,
+          "transaction": 42.61845599999651,
+          "postCommitSnapshot": 0,
+          "total": 160.86511700000847
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-782585d4-c29b-41f5-9204-7af40565a823",
+        "phases": {
+          "findByCode": 121.58090299999458,
+          "liveSessionLockRead": 1.1931909999984782,
+          "participantInsert": 1.1931909999984782,
+          "outboxAppend": 13.86281500000041,
+          "transaction": 45.76713199999358,
+          "postCommitSnapshot": 0,
+          "total": 167.39330500000506
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-0cc97115-7981-4a39-95d3-88fda4cc814f",
+        "phases": {
+          "findByCode": 119.95841000000655,
+          "liveSessionLockRead": 1.2224019999994198,
+          "participantInsert": 1.2224019999994198,
+          "outboxAppend": 19.614136999996845,
+          "transaction": 52.16814900000463,
+          "postCommitSnapshot": 0,
+          "total": 172.1614419999969
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-45f3d28a-e8a5-4f8c-8c6b-e3a3634d607d",
+        "phases": {
+          "findByCode": 121.70182600000408,
+          "liveSessionLockRead": 1.0178339999984019,
+          "participantInsert": 1.0178339999984019,
+          "outboxAppend": 25.317298000009032,
+          "transaction": 55.54023600000073,
+          "postCommitSnapshot": 0,
+          "total": 177.308852999995
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-986bc80d-89e3-4a04-90e0-aa467ea22c33",
+        "phases": {
+          "findByCode": 117.06298099999549,
+          "liveSessionLockRead": 3.0609540000004927,
+          "participantInsert": 3.0609540000004927,
+          "outboxAppend": 7.54615000000922,
+          "transaction": 55.01560899999458,
+          "postCommitSnapshot": 0,
+          "total": 172.11200799999642
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-eb9677b3-bf22-40ad-b9bf-13b7e95d616c",
+        "phases": {
+          "findByCode": 118.19907400000375,
+          "liveSessionLockRead": 1.7408470000082161,
+          "participantInsert": 1.7408470000082161,
+          "outboxAppend": 16.70020399999339,
+          "transaction": 59.29960399999982,
+          "postCommitSnapshot": 0,
+          "total": 177.55826199999137
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-9902359c-0cfb-4e4a-bcfb-b3e8e7efb383",
+        "phases": {
+          "findByCode": 116.68459699999948,
+          "liveSessionLockRead": 2.391734999997425,
+          "participantInsert": 2.391734999997425,
+          "outboxAppend": 11.522358999995049,
+          "transaction": 60.663446999998996,
+          "postCommitSnapshot": 0,
+          "total": 177.37759799999185
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-869fb62c-909e-415a-b46a-737b790e3421",
+        "phases": {
+          "findByCode": 122.21518499999365,
+          "liveSessionLockRead": 2.541669999991427,
+          "participantInsert": 2.541669999991427,
+          "outboxAppend": 37.97010500000033,
+          "transaction": 67.90402699999686,
+          "postCommitSnapshot": 0,
+          "total": 190.1520509999973
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-c4fce8e6-fc4a-42f8-9d72-4cc5537a719f",
+        "phases": {
+          "findByCode": 121.08107300000847,
+          "liveSessionLockRead": 0.9955689999915194,
+          "participantInsert": 0.9955689999915194,
+          "outboxAppend": 4.67176300000574,
+          "transaction": 65.52402500000608,
+          "postCommitSnapshot": 0,
+          "total": 186.63419300000533
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-d0e6d4ff-b04d-44c7-894b-c13fe055ea01",
+        "phases": {
+          "findByCode": 121.93275399999402,
+          "liveSessionLockRead": 1.2454370000050403,
+          "participantInsert": 1.2454370000050403,
+          "outboxAppend": 38.92460399999982,
+          "transaction": 71.04283999999461,
+          "postCommitSnapshot": 0,
+          "total": 193.06172300000617
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-5e928778-451d-4474-9a33-64d63384d08d",
+        "phases": {
+          "findByCode": 122.1915030000091,
+          "liveSessionLockRead": 2.7354249999916647,
+          "participantInsert": 2.7354249999916647,
+          "outboxAppend": 41.99686600000132,
+          "transaction": 74.20861800000421,
+          "postCommitSnapshot": 0,
+          "total": 196.42280699999537
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-cdb134da-cec3-49bf-a51b-4561b5874dae",
+        "phases": {
+          "findByCode": 121.20773699998972,
+          "liveSessionLockRead": 1.169540999995661,
+          "participantInsert": 1.169540999995661,
+          "outboxAppend": 18.337312999996357,
+          "transaction": 73.74405999999726,
+          "postCommitSnapshot": 0,
+          "total": 194.99094999999215
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-3bb00c4f-4a60-4b42-9b11-09ef838c6619",
+        "phases": {
+          "findByCode": 115.0881570000056,
+          "liveSessionLockRead": 1.0407189999968978,
+          "participantInsert": 1.0407189999968978,
+          "outboxAppend": 9.66520999999193,
+          "transaction": 74.88740999999573,
+          "postCommitSnapshot": 0,
+          "total": 190.0087280000007
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-c241c966-d446-47e8-9772-639e8a435f4a",
+        "phases": {
+          "findByCode": 123.37988700000278,
+          "liveSessionLockRead": 2.4824229999940144,
+          "participantInsert": 2.4824229999940144,
+          "outboxAppend": 52.00112900001113,
+          "transaction": 82.21328899999207,
+          "postCommitSnapshot": 0,
+          "total": 205.61787699999695
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-de2f09b7-1c69-438b-bd82-1891049282c3",
+        "phases": {
+          "findByCode": 115.37296100000094,
+          "liveSessionLockRead": 0.924207000003662,
+          "participantInsert": 0.924207000003662,
+          "outboxAppend": 17.8866779999953,
+          "transaction": 80.86141599999974,
+          "postCommitSnapshot": 0,
+          "total": 196.27291400000104
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-755cda94-ef40-4a5d-9280-d699828c1909",
+        "phases": {
+          "findByCode": 110.54108399999677,
+          "liveSessionLockRead": 1.0929290000058245,
+          "participantInsert": 1.0929290000058245,
+          "outboxAppend": 7.941267999995034,
+          "transaction": 82.20660599999246,
+          "postCommitSnapshot": 0,
+          "total": 192.77505500000552
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-f45b83ab-bb0b-44c8-8102-471827ecfe61",
+        "phases": {
+          "findByCode": 117.14270899999246,
+          "liveSessionLockRead": 1.2286719999974594,
+          "participantInsert": 1.2286719999974594,
+          "outboxAppend": 51.08874999999534,
+          "transaction": 89.51830299998983,
+          "postCommitSnapshot": 0,
+          "total": 206.6913579999964
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-fd5072e6-c195-4504-aa8d-7cc54582bd29",
+        "phases": {
+          "findByCode": 117.7821840000106,
+          "liveSessionLockRead": 0.8860480000003008,
+          "participantInsert": 0.8860480000003008,
+          "outboxAppend": 21.69064499999513,
+          "transaction": 88.54583599999023,
+          "postCommitSnapshot": 0,
+          "total": 206.40046799999254
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-1b997eb0-7ce1-4ffe-af04-16d708ad57a8",
+        "phases": {
+          "findByCode": 116.30690300000424,
+          "liveSessionLockRead": 1.072695000009844,
+          "participantInsert": 1.072695000009844,
+          "outboxAppend": 40.59915499998897,
+          "transaction": 92.79578899999615,
+          "postCommitSnapshot": 0,
+          "total": 209.13437800000247
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b8345b6b-2a30-49f8-af3d-2623c3a76167",
+        "phases": {
+          "findByCode": 116.15236700000241,
+          "liveSessionLockRead": 1.1020859999989625,
+          "participantInsert": 1.1020859999989625,
+          "outboxAppend": 7.590744000000996,
+          "transaction": 91.83514999999898,
+          "postCommitSnapshot": 0,
+          "total": 208.0126489999966
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-4b3cf0b8-8180-4ce5-bd13-53f9cdbd1b66",
+        "phases": {
+          "findByCode": 111.46745900000678,
+          "liveSessionLockRead": 0.8965710000047693,
+          "participantInsert": 0.8965710000047693,
+          "outboxAppend": 27.502124000006006,
+          "transaction": 96.53497199999401,
+          "postCommitSnapshot": 0,
+          "total": 208.03060900000855
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-028da9df-9988-4a1f-8a62-b6cbd8d167e0",
+        "phases": {
+          "findByCode": 116.06566199999361,
+          "liveSessionLockRead": 1.0793339999945601,
+          "participantInsert": 1.0793339999945601,
+          "outboxAppend": 7.432971000001999,
+          "transaction": 96.5680549999961,
+          "postCommitSnapshot": 0,
+          "total": 212.69319399999222
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-3aada5d4-ab11-4f36-8331-9cd2314de8ac",
+        "phases": {
+          "findByCode": 111.01213600000483,
+          "liveSessionLockRead": 0.9194710000010673,
+          "participantInsert": 0.9194710000010673,
+          "outboxAppend": 31.07336999999825,
+          "transaction": 102.7082989999908,
+          "postCommitSnapshot": 0,
+          "total": 213.7513889999973
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-486c1361-9b27-4cc1-9fb1-bee397152bf8",
+        "phases": {
+          "findByCode": 113.14226499998767,
+          "liveSessionLockRead": 1.0095899999869289,
+          "participantInsert": 1.0095899999869289,
+          "outboxAppend": 25.53294800000731,
+          "transaction": 105.59687999999733,
+          "postCommitSnapshot": 0,
+          "total": 218.76800300000468
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-e4abef8b-dfd7-4368-b19b-853cf77ab844",
+        "phases": {
+          "findByCode": 113.98585300000559,
+          "liveSessionLockRead": 0.8893879999959609,
+          "participantInsert": 0.8893879999959609,
+          "outboxAppend": 26.527858000001288,
+          "transaction": 107.73045200000342,
+          "postCommitSnapshot": 0,
+          "total": 221.74400099999912
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-4be51275-6b4f-4d5b-9241-c116a5b05e19",
+        "phases": {
+          "findByCode": 111.12743600000977,
+          "liveSessionLockRead": 1.0967059999966295,
+          "participantInsert": 1.0967059999966295,
+          "outboxAppend": 23.16031700000167,
+          "transaction": 110.50500000000466,
+          "postCommitSnapshot": 0,
+          "total": 221.67141399999673
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-bae11548-0f3b-4625-8cef-06f282c7bee9",
+        "phases": {
+          "findByCode": 108.9454609999957,
+          "liveSessionLockRead": 1.3824170000007143,
+          "participantInsert": 1.3824170000007143,
+          "outboxAppend": 7.595548999990569,
+          "transaction": 110.94452599999204,
+          "postCommitSnapshot": 0,
+          "total": 219.91677399999753
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-62fecd43-8f85-4c33-8ea9-7a5217cc1021",
+        "phases": {
+          "findByCode": 119.88797399999748,
+          "liveSessionLockRead": 1.0131249999976717,
+          "participantInsert": 1.0131249999976717,
+          "outboxAppend": 23.959313999992446,
+          "transaction": 114.93833699999959,
+          "postCommitSnapshot": 0,
+          "total": 234.85749999999825
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-e6e9502b-c9d7-40ed-8420-3c8d41b93e35",
+        "phases": {
+          "findByCode": 108.06023899999855,
+          "liveSessionLockRead": 0.8695759999973234,
+          "participantInsert": 0.8695759999973234,
+          "outboxAppend": 8.245045000003302,
+          "transaction": 116.2611409999954,
+          "postCommitSnapshot": 0,
+          "total": 224.34665800000948
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-0429f494-4bea-4e47-913f-b9e6854f54c4",
+        "phases": {
+          "findByCode": 111.7663070000126,
+          "liveSessionLockRead": 1.1568330000009155,
+          "participantInsert": 1.1568330000009155,
+          "outboxAppend": 20.250115000002552,
+          "transaction": 119.73557900000014,
+          "postCommitSnapshot": 0,
+          "total": 231.5304790000082
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-551bdd9c-3cc3-45e4-be40-af128ecc0016",
+        "phases": {
+          "findByCode": 106.41064699999697,
+          "liveSessionLockRead": 0.9317559999908553,
+          "participantInsert": 0.9317559999908553,
+          "outboxAppend": 8.366911999997683,
+          "transaction": 122.11802100000205,
+          "postCommitSnapshot": 0,
+          "total": 228.55406300000323
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-bc215019-9ce4-4f8b-8877-0b1791ac6485",
+        "phases": {
+          "findByCode": 109.2032770000078,
+          "liveSessionLockRead": 1.0228680000000168,
+          "participantInsert": 1.0228680000000168,
+          "outboxAppend": 8.971736999999848,
+          "transaction": 125.21755800000392,
+          "postCommitSnapshot": 0,
+          "total": 234.45823600000585
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-f890fec5-198d-44f5-b4b3-8248a4e5673b",
+        "phases": {
+          "findByCode": 105.90890500000387,
+          "liveSessionLockRead": 0.9878769999922952,
+          "participantInsert": 0.9878769999922952,
+          "outboxAppend": 6.859091999998782,
+          "transaction": 127.98972599999979,
+          "postCommitSnapshot": 0,
+          "total": 233.9279899999965
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b6abce6f-6a00-40b1-aac9-b0e4642abcb8",
+        "phases": {
+          "findByCode": 122.25741500000004,
+          "liveSessionLockRead": 1.0459240000054706,
+          "participantInsert": 1.0459240000054706,
+          "outboxAppend": 82.20960499999637,
+          "transaction": 140.0688819999923,
+          "postCommitSnapshot": 0,
+          "total": 262.376854999995
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-65645bee-b70e-4fa0-9a9f-f5bf5f9e9d89",
+        "phases": {
+          "findByCode": 106.92447800000082,
+          "liveSessionLockRead": 0.9558490000054007,
+          "participantInsert": 0.9558490000054007,
+          "outboxAppend": 24.99843899998814,
+          "transaction": 135.9771069999988,
+          "postCommitSnapshot": 0,
+          "total": 242.92394900000363
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-6cc7a04d-6626-4910-99c3-fbf1f49a4869",
+        "phases": {
+          "findByCode": 105.1644809999998,
+          "liveSessionLockRead": 1.2653559999889694,
+          "participantInsert": 1.2653559999889694,
+          "outboxAppend": 9.83908099999826,
+          "transaction": 138.26239099999657,
+          "postCommitSnapshot": 0,
+          "total": 243.44890500001202
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-a2369ca9-fb5a-41ae-b671-6a54b4ca595a",
+        "phases": {
+          "findByCode": 105.56872399999702,
+          "liveSessionLockRead": 0.909073000002536,
+          "participantInsert": 0.909073000002536,
+          "outboxAppend": 17.40133799999603,
+          "transaction": 142.5228700000007,
+          "postCommitSnapshot": 0,
+          "total": 248.11846399999922
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-a0cc3c92-c727-47d3-9e21-ebc85ef97ea3",
+        "phases": {
+          "findByCode": 107.9909680000128,
+          "liveSessionLockRead": 0.9402630000113277,
+          "participantInsert": 0.9402630000113277,
+          "outboxAppend": 26.855325999989873,
+          "transaction": 145.58868600000278,
+          "postCommitSnapshot": 0,
+          "total": 253.60006399999838
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-82ccec99-b845-4e99-9fdc-67715462b414",
+        "phases": {
+          "findByCode": 118.02000200000475,
+          "liveSessionLockRead": 0.8537140000116779,
+          "participantInsert": 0.8537140000116779,
+          "outboxAppend": 56.72892500000307,
+          "transaction": 150.62610300000233,
+          "postCommitSnapshot": 0,
+          "total": 268.71390200000315
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-de2facd8-b1f7-4545-b494-22636b47b38f",
+        "phases": {
+          "findByCode": 105.6978220000019,
+          "liveSessionLockRead": 0.9396080000005895,
+          "participantInsert": 0.9396080000005895,
+          "outboxAppend": 9.647073999993154,
+          "transaction": 150.23454600000696,
+          "postCommitSnapshot": 0,
+          "total": 255.95693099999335
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-f489b115-38b5-4a94-88df-b3009c11f51d",
+        "phases": {
+          "findByCode": 103.876912000007,
+          "liveSessionLockRead": 1.0714279999956489,
+          "participantInsert": 1.0714279999956489,
+          "outboxAppend": 2.3348629999964032,
+          "transaction": 151.6982560000033,
+          "postCommitSnapshot": 0,
+          "total": 255.5968670000002
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-879d1c3d-0c7f-4f2f-9f2b-a116c3b92322",
+        "phases": {
+          "findByCode": 105.05280100001255,
+          "liveSessionLockRead": 1.08374499999627,
+          "participantInsert": 1.08374499999627,
+          "outboxAppend": 11.856715000001714,
+          "transaction": 156.7674410000036,
+          "postCommitSnapshot": 0,
+          "total": 261.85089900001185
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-77f9b9e6-883e-4059-9016-05187e215697",
+        "phases": {
+          "findByCode": 103.83617100000265,
+          "liveSessionLockRead": 1.935725999996066,
+          "participantInsert": 1.935725999996066,
+          "outboxAppend": 22.828314999991562,
+          "transaction": 159.87083499999426,
+          "postCommitSnapshot": 0,
+          "total": 263.7469890000066
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-a11badfe-8fa1-479a-8be4-d7d5ddae1106",
+        "phases": {
+          "findByCode": 103.81570900000224,
+          "liveSessionLockRead": 1.9224839999951655,
+          "participantInsert": 1.9224839999951655,
+          "outboxAppend": 7.156742999999551,
+          "transaction": 161.21473100000003,
+          "postCommitSnapshot": 0,
+          "total": 265.0588800000114
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-a137d77e-9ff2-411e-b269-313656cc325a",
+        "phases": {
+          "findByCode": 107.1186289999896,
+          "liveSessionLockRead": 1.707367000009981,
+          "participantInsert": 1.707367000009981,
+          "outboxAppend": 34.04853099999309,
+          "transaction": 165.57909199999995,
+          "postCommitSnapshot": 0,
+          "total": 272.7216279999993
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-fec131b7-1696-4720-b760-1484f4c8a7f9",
+        "phases": {
+          "findByCode": 109.68122100000619,
+          "liveSessionLockRead": 1.186215000008815,
+          "participantInsert": 1.186215000008815,
+          "outboxAppend": 63.15531100000953,
+          "transaction": 169.31788299999607,
+          "postCommitSnapshot": 0,
+          "total": 279.0230889999948
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-c344e7a4-b9a1-47ad-a6dc-fcb809deac36",
+        "phases": {
+          "findByCode": 102.91193999999086,
+          "liveSessionLockRead": 1.2083819999970729,
+          "participantInsert": 1.2083819999970729,
+          "outboxAppend": 7.3707980000035604,
+          "transaction": 168.8075519999984,
+          "postCommitSnapshot": 0,
+          "total": 271.7453349999996
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-fc2250e7-4077-4439-9c73-5cbbd410d4a4",
+        "phases": {
+          "findByCode": 103.79091799999878,
+          "liveSessionLockRead": 0.8988189999945462,
+          "participantInsert": 0.8988189999945462,
+          "outboxAppend": 13.423056999992696,
+          "transaction": 171.85287200000312,
+          "postCommitSnapshot": 0,
+          "total": 275.66581599999336
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-1dcdaaa0-88ff-46a5-ac28-00983381c1f3",
+        "phases": {
+          "findByCode": 101.69818900000246,
+          "liveSessionLockRead": 1.0273140000062995,
+          "participantInsert": 1.0273140000062995,
+          "outboxAppend": 8.436034000013024,
+          "transaction": 174.13229000000865,
+          "postCommitSnapshot": 0,
+          "total": 275.85677600000054
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-454ef4e1-1fcf-4f1f-8734-e9747b564d29",
+        "phases": {
+          "findByCode": 109.75347299998975,
+          "liveSessionLockRead": 1.8145110000041313,
+          "participantInsert": 1.8145110000041313,
+          "outboxAppend": 83.8156389999931,
+          "transaction": 182.4428779999871,
+          "postCommitSnapshot": 0,
+          "total": 292.2299110000022
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-22e47ede-cfee-4b24-89a8-51e6ea0a6725",
+        "phases": {
+          "findByCode": 102.03674900000624,
+          "liveSessionLockRead": 0.9130030000087572,
+          "participantInsert": 0.9130030000087572,
+          "outboxAppend": 16.232021000003442,
+          "transaction": 179.6763110000029,
+          "postCommitSnapshot": 0,
+          "total": 281.7405010000075
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-3c2ee7e1-3ccf-4e10-9b20-d3c09bc90e2b",
+        "phases": {
+          "findByCode": 103.53307600000699,
+          "liveSessionLockRead": 1.1636639999924228,
+          "participantInsert": 1.1636639999924228,
+          "outboxAppend": 46.68726500000048,
+          "transaction": 184.4881710000045,
+          "postCommitSnapshot": 0,
+          "total": 288.04752399999416
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-198b33bb-b5fb-4c9c-85b5-471d198db243",
+        "phases": {
+          "findByCode": 114.01260499999626,
+          "liveSessionLockRead": 1.129413000002387,
+          "participantInsert": 1.129413000002387,
+          "outboxAppend": 115.8850289999973,
+          "transaction": 192.3850240000029,
+          "postCommitSnapshot": 0,
+          "total": 306.4212489999918
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-597bf566-222d-4395-83c3-6e3bc84c0027",
+        "phases": {
+          "findByCode": 99.45343099998718,
+          "liveSessionLockRead": 0.9571180000057211,
+          "participantInsert": 0.9571180000057211,
+          "outboxAppend": 4.475015000003623,
+          "transaction": 185.53605500000413,
+          "postCommitSnapshot": 0,
+          "total": 285.0078919999942
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b5b872b2-0f75-4c73-b47f-9671ac53acc3",
+        "phases": {
+          "findByCode": 101.08538699999917,
+          "liveSessionLockRead": 1.1456690000050003,
+          "participantInsert": 1.1456690000050003,
+          "outboxAppend": 18.055640999999014,
+          "transaction": 189.54263899999205,
+          "postCommitSnapshot": 0,
+          "total": 290.6594999999943
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-1d8a47cb-9247-4719-8783-ec9c5270a493",
+        "phases": {
+          "findByCode": 102.17011000000639,
+          "liveSessionLockRead": 0.8818259999970905,
+          "participantInsert": 0.8818259999970905,
+          "outboxAppend": 47.51948699999775,
+          "transaction": 193.7228630000027,
+          "postCommitSnapshot": 0,
+          "total": 295.93099999999686
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-d3bad8bd-324c-421c-b449-42c246213c41",
+        "phases": {
+          "findByCode": 100.5527529999963,
+          "liveSessionLockRead": 1.1005399999994552,
+          "participantInsert": 1.1005399999994552,
+          "outboxAppend": 14.986973999999464,
+          "transaction": 193.76165099999344,
+          "postCommitSnapshot": 0,
+          "total": 294.3342529999936
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-6942b315-d9be-4d26-9bd9-cd73137fbc34",
+        "phases": {
+          "findByCode": 101.76600800000597,
+          "liveSessionLockRead": 1.086366999996244,
+          "participantInsert": 1.086366999996244,
+          "outboxAppend": 23.2286749999912,
+          "transaction": 197.47159499999543,
+          "postCommitSnapshot": 0,
+          "total": 299.26210900000297
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-c3e9b042-a977-4897-9638-ad3a76aa52da",
+        "phases": {
+          "findByCode": 99.19654499999888,
+          "liveSessionLockRead": 1.070607999994536,
+          "participantInsert": 1.070607999994536,
+          "outboxAppend": 32.498591999989,
+          "transaction": 200.4513530000113,
+          "postCommitSnapshot": 0,
+          "total": 299.6690149999922
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ef30d0da-2064-4485-85e2-896c36e12d29",
+        "phases": {
+          "findByCode": 98.01659299999301,
+          "liveSessionLockRead": 0.9606389999971725,
+          "participantInsert": 0.9606389999971725,
+          "outboxAppend": 5.017571000003954,
+          "transaction": 200.01860500000475,
+          "postCommitSnapshot": 0,
+          "total": 298.06365700000606
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-70697000-e4bf-4b0d-b528-964e2e88d409",
+        "phases": {
+          "findByCode": 97.64402800000971,
+          "liveSessionLockRead": 0.9638879999984056,
+          "participantInsert": 0.9638879999984056,
+          "outboxAppend": 16.103243000005023,
+          "transaction": 204.08527100000356,
+          "postCommitSnapshot": 0,
+          "total": 301.7507910000131
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-8783aa61-e138-4d1e-b644-8a18d7c55070",
+        "phases": {
+          "findByCode": 93.67316500000015,
+          "liveSessionLockRead": 0.8927160000021104,
+          "participantInsert": 0.8927160000021104,
+          "outboxAppend": 13.545261000006576,
+          "transaction": 207.19918399999733,
+          "postCommitSnapshot": 0,
+          "total": 300.92096799999126
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-aed721f5-3361-45c7-b37f-c771efd58083",
+        "phases": {
+          "findByCode": 95.14099300000817,
+          "liveSessionLockRead": 1.124790000001667,
+          "participantInsert": 1.124790000001667,
+          "outboxAppend": 7.955533000000287,
+          "transaction": 209.33099799999036,
+          "postCommitSnapshot": 0,
+          "total": 304.4995120000094
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-39b2afa7-f8ad-4520-a0ac-5fdb91101949",
+        "phases": {
+          "findByCode": 98.06398300000001,
+          "liveSessionLockRead": 1.2869210000062594,
+          "participantInsert": 1.2869210000062594,
+          "outboxAppend": 27.037079999994603,
+          "transaction": 213.67487899999833,
+          "postCommitSnapshot": 0,
+          "total": 311.75925799999095
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b4d76d98-a23d-4beb-83e4-286eec36da89",
+        "phases": {
+          "findByCode": 95.81971399999748,
+          "liveSessionLockRead": 1.0544410000002244,
+          "participantInsert": 1.0544410000002244,
+          "outboxAppend": 15.966655999989598,
+          "transaction": 215.53672299999744,
+          "postCommitSnapshot": 0,
+          "total": 311.3834780000034
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-14612946-01ea-41ce-a74e-91fe77a9aab3",
+        "phases": {
+          "findByCode": 101.90006899999571,
+          "liveSessionLockRead": 1.7349520000134362,
+          "participantInsert": 1.7349520000134362,
+          "outboxAppend": 66.49762200000987,
+          "transaction": 222.68364400000428,
+          "postCommitSnapshot": 0,
+          "total": 324.61025599999994
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-33d7eafe-e9b0-4dbe-b9fc-7324aa53420f",
+        "phases": {
+          "findByCode": 95.02987600000051,
+          "liveSessionLockRead": 1.4393440000130795,
+          "participantInsert": 1.4393440000130795,
+          "outboxAppend": 3.708998000001884,
+          "transaction": 220.29881699998805,
+          "postCommitSnapshot": 0,
+          "total": 315.3834920000081
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-6825c92c-8e14-40ac-902b-23aa0edf0efd",
+        "phases": {
+          "findByCode": 98.94720500000403,
+          "liveSessionLockRead": 1.020950999998604,
+          "participantInsert": 1.020950999998604,
+          "outboxAppend": 34.0123489999969,
+          "transaction": 225.5972369999945,
+          "postCommitSnapshot": 0,
+          "total": 324.57012499999837
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-0f5af3b8-11ce-4bec-911d-5f1e11437aef",
+        "phases": {
+          "findByCode": 92.15927200000442,
+          "liveSessionLockRead": 1.0899009999993723,
+          "participantInsert": 1.0899009999993723,
+          "outboxAppend": 21.074674999996205,
+          "transaction": 226.91306799999438,
+          "postCommitSnapshot": 0,
+          "total": 319.094729000004
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-fea9a5b0-30bd-4ea2-9d44-810581afd8d1",
+        "phases": {
+          "findByCode": 100.96107900000061,
+          "liveSessionLockRead": 0.9213849999941885,
+          "participantInsert": 0.9213849999941885,
+          "outboxAppend": 55.44780399999581,
+          "transaction": 232.5288290000026,
+          "postCommitSnapshot": 0,
+          "total": 333.5118829999992
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-eb3dd7f4-c79f-4c7c-8425-8e05d8ac23b2",
+        "phases": {
+          "findByCode": 90.26936099999875,
+          "liveSessionLockRead": 1.5005070000042906,
+          "participantInsert": 1.5005070000042906,
+          "outboxAppend": 9.748980999997002,
+          "transaction": 231.40137900000263,
+          "postCommitSnapshot": 0,
+          "total": 321.73325099999784
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-02046799-cdde-4ce6-a927-0ea5c01344e4",
+        "phases": {
+          "findByCode": 91.39506599999731,
+          "liveSessionLockRead": 0.9101729999965755,
+          "participantInsert": 0.9101729999965755,
+          "outboxAppend": 25.212367000000086,
+          "transaction": 236.94049699998868,
+          "postCommitSnapshot": 0,
+          "total": 328.3611489999894
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-526899ba-a701-4694-bf60-8ac8ce105728",
+        "phases": {
+          "findByCode": 92.49635900001158,
+          "liveSessionLockRead": 0.8803789999947185,
+          "participantInsert": 0.8803789999947185,
+          "outboxAppend": 37.67729999999574,
+          "transaction": 240.0000560000044,
+          "postCommitSnapshot": 0,
+          "total": 332.5206629999884
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-cad8fb83-cf2f-4052-acef-a78beedb47b6",
+        "phases": {
+          "findByCode": 89.63741099998879,
+          "liveSessionLockRead": 1.2210510000004433,
+          "participantInsert": 1.2210510000004433,
+          "outboxAppend": 4.9943809999967925,
+          "transaction": 239.90964700000768,
+          "postCommitSnapshot": 0,
+          "total": 329.57205899999826
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-994b268e-79ad-4954-983e-f90bcc0e09eb",
+        "phases": {
+          "findByCode": 92.26530800000182,
+          "liveSessionLockRead": 1.0275949999922886,
+          "participantInsert": 1.0275949999922886,
+          "outboxAppend": 18.561279000001377,
+          "transaction": 243.8648749999993,
+          "postCommitSnapshot": 0,
+          "total": 336.2119410000014
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-518ee81d-a698-4b08-ba2b-63e2b98a8b6f",
+        "phases": {
+          "findByCode": 94.41247900000599,
+          "liveSessionLockRead": 1.2311570000019856,
+          "participantInsert": 1.2311570000019856,
+          "outboxAppend": 30.594235000011395,
+          "transaction": 249.2297649999964,
+          "postCommitSnapshot": 0,
+          "total": 343.6976410000061
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-513fa3da-6635-4358-96fc-e987ae05c375",
+        "phases": {
+          "findByCode": 92.27945099999488,
+          "liveSessionLockRead": 0.8762320000096224,
+          "participantInsert": 0.8762320000096224,
+          "outboxAppend": 9.428575000012643,
+          "transaction": 248.40616600000067,
+          "postCommitSnapshot": 0,
+          "total": 340.73189500000444
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-9cfba85e-44ab-4ef6-9aac-b37255223c67",
+        "phases": {
+          "findByCode": 91.86788900000101,
+          "liveSessionLockRead": 1.1964099999895552,
+          "participantInsert": 1.1964099999895552,
+          "outboxAppend": 25.18137900000147,
+          "transaction": 252.26433800000814,
+          "postCommitSnapshot": 0,
+          "total": 344.1657509999932
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-e5549894-9e2a-4edf-92c7-d4a11807b6d2",
+        "phases": {
+          "findByCode": 89.95427099999506,
+          "liveSessionLockRead": 1.4470739999960642,
+          "participantInsert": 1.4470739999960642,
+          "outboxAppend": 24.310495999990962,
+          "transaction": 254.9707849999977,
+          "postCommitSnapshot": 0,
+          "total": 344.95574099999794
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-9d2d6c53-b6ad-4794-bcca-fbeda3d3a55c",
+        "phases": {
+          "findByCode": 92.43743900000118,
+          "liveSessionLockRead": 1.1663700000062818,
+          "participantInsert": 1.1663700000062818,
+          "outboxAppend": 14.702708999990136,
+          "transaction": 256.2166239999933,
+          "postCommitSnapshot": 0,
+          "total": 348.6925879999908
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-bcde498d-a2eb-4d60-ad94-9920062cbcf9",
+        "phases": {
+          "findByCode": 143.79831800000102,
+          "liveSessionLockRead": 0.8974569999991218,
+          "participantInsert": 0.8974569999991218,
+          "outboxAppend": 7.5979800000059186,
+          "transaction": 198.52865100000054,
+          "postCommitSnapshot": 0,
+          "total": 342.36468500000774
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-3efcec11-f19a-4694-83d7-1f4ba50cee22",
+        "phases": {
+          "findByCode": 98.99374599999283,
+          "liveSessionLockRead": 0.9052720000036061,
+          "participantInsert": 0.9052720000036061,
+          "outboxAppend": 84.40331600001082,
+          "transaction": 268.1899279999925,
+          "postCommitSnapshot": 0,
+          "total": 367.2034580000036
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-8df5c907-949c-42ea-9950-1864da5c4001",
+        "phases": {
+          "findByCode": 128.17095400000107,
+          "liveSessionLockRead": 1.0339319999911822,
+          "participantInsert": 1.0339319999911822,
+          "outboxAppend": 13.741445000006934,
+          "transaction": 221.87235999999393,
+          "postCommitSnapshot": 0,
+          "total": 350.08544399999664
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-344ffa7f-3be4-42b2-9fb9-072f651846af",
+        "phases": {
+          "findByCode": 91.90902500000084,
+          "liveSessionLockRead": 1.5623800000030315,
+          "participantInsert": 1.5623800000030315,
+          "outboxAppend": 62.459746000007726,
+          "transaction": 272.09803499998816,
+          "postCommitSnapshot": 0,
+          "total": 364.0339760000061
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-b42d77da-07c6-4077-bd1f-59251f52b6aa",
+        "phases": {
+          "findByCode": 201.61547699999937,
+          "liveSessionLockRead": 1.0317349999968428,
+          "participantInsert": 1.0317349999968428,
+          "outboxAppend": 14.054680999994162,
+          "transaction": 148.2933550000016,
+          "postCommitSnapshot": 0,
+          "total": 349.9539460000087
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-0e0d5d14-cce0-409e-b303-c09d082201ec",
+        "phases": {
+          "findByCode": 89.34106199999223,
+          "liveSessionLockRead": 1.5166969999991124,
+          "participantInsert": 1.5166969999991124,
+          "outboxAppend": 37.53472399999737,
+          "transaction": 275.0376779999933,
+          "postCommitSnapshot": 0,
+          "total": 364.4034920000122
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-cda36a37-44c6-40a3-bc62-ef7ed5a924aa",
+        "phases": {
+          "findByCode": 285.77056799999264,
+          "liveSessionLockRead": 1.1339790000056382,
+          "participantInsert": 1.1339790000056382,
+          "outboxAppend": 8.947924000007333,
+          "transaction": 61.23868299998867,
+          "postCommitSnapshot": 0,
+          "total": 347.05062599999656
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-68218b59-92a2-4a14-a381-8f3dc01b04d6",
+        "phases": {
+          "findByCode": 217.80905700000585,
+          "liveSessionLockRead": 0.9192520000069635,
+          "participantInsert": 0.9192520000069635,
+          "outboxAppend": 19.740382000003592,
+          "transaction": 138.79735999999684,
+          "postCommitSnapshot": 0,
+          "total": 356.64614599999913
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ac188f2c-a605-4733-8552-66797eb35fad",
+        "phases": {
+          "findByCode": 92.57026700000279,
+          "liveSessionLockRead": 0.9409600000071805,
+          "participantInsert": 0.9409600000071805,
+          "outboxAppend": 62.004784999997355,
+          "transaction": 283.9745660000044,
+          "postCommitSnapshot": 0,
+          "total": 376.577151999998
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-60d8a36e-ef7e-483d-8b3f-61736d34a695",
+        "phases": {
+          "findByCode": 311.26921199999924,
+          "liveSessionLockRead": 1.5766349999903468,
+          "participantInsert": 1.5766349999903468,
+          "outboxAppend": 13.646215999993728,
+          "transaction": 42.101147000008496,
+          "postCommitSnapshot": 0,
+          "total": 353.4185049999942
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-062a751e-4aea-4aaa-90ba-657989a32bcd",
+        "phases": {
+          "findByCode": 313.19488999999885,
+          "liveSessionLockRead": 0.8811719999939669,
+          "participantInsert": 0.8811719999939669,
+          "outboxAppend": 13.35144099999161,
+          "transaction": 43.29933000000892,
+          "postCommitSnapshot": 0,
+          "total": 356.535950999998
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-1d43e60c-47de-4646-a1dd-a132e6fd5354",
+        "phases": {
+          "findByCode": 95.0357570000051,
+          "liveSessionLockRead": 1.174819000007119,
+          "participantInsert": 1.174819000007119,
+          "outboxAppend": 40.86665999999968,
+          "transaction": 282.6199909999996,
+          "postCommitSnapshot": 0,
+          "total": 377.70995600000606
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ce5a5c52-f32f-4aaf-9dac-8e045c272f60",
+        "phases": {
+          "findByCode": 311.45672499999637,
+          "liveSessionLockRead": 1.0653869999950984,
+          "participantInsert": 1.0653869999950984,
+          "outboxAppend": 14.794727000000421,
+          "transaction": 47.413251999998465,
+          "postCommitSnapshot": 0,
+          "total": 358.9076170000044
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-ec4fb30c-d3c6-4c0c-97cf-69df820b0e1c",
+        "phases": {
+          "findByCode": 260.0764119999949,
+          "liveSessionLockRead": 1.0278200000029756,
+          "participantInsert": 1.0278200000029756,
+          "outboxAppend": 32.46106799998961,
+          "transaction": 109.4159970000037,
+          "postCommitSnapshot": 0,
+          "total": 369.52892299999075
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-64db38b3-b652-404c-bd0c-e1644206f25e",
+        "phases": {
+          "findByCode": 310.10915699999896,
+          "liveSessionLockRead": 0.966180000003078,
+          "participantInsert": 0.966180000003078,
+          "outboxAppend": 17.155386999991606,
+          "transaction": 51.57741699999315,
+          "postCommitSnapshot": 0,
+          "total": 361.72366200000397
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-96054eb2-3504-4d4f-9d08-2857d3e8454c",
+        "phases": {
+          "findByCode": 280.61568600000464,
+          "liveSessionLockRead": 1.1216940000012983,
+          "participantInsert": 1.1216940000012983,
+          "outboxAppend": 34.84477300000435,
+          "transaction": 90.93870400000014,
+          "postCommitSnapshot": 0,
+          "total": 371.597649000003
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      },
+      {
+        "schemaVersion": 2,
+        "runId": "c00072a4-8c2b-4774-b14e-51f16efdb154",
+        "requestId": "w1-c00072a4-8c2b-4774-b14e-51f16efdb154-818a99ad-d065-4d6d-8641-a4aa16609d33",
+        "phases": {
+          "findByCode": 162.18947900000785,
+          "liveSessionLockRead": 0.943901000006008,
+          "participantInsert": 0.943901000006008,
+          "outboxAppend": 49.77850899999612,
+          "transaction": 222.00305600000138,
+          "postCommitSnapshot": 0,
+          "total": 384.2402879999863
+        },
+        "phaseSemantics": {
+          "liveSessionLockRead": "joinabilityGuardSharedLockAndConditionalParticipantInsert",
+          "outboxAppend": "transactionalSequenceAllocationAndOutboxInsert"
+        },
+        "architecture": {
+          "joinabilitySynchronization": "live_session_for_share_vs_lifecycle_for_update",
+          "sequenceAllocation": "live_session_event_sequence_row"
+        },
+        "publisher": "fire-and-forget; not measured on response path",
+        "snapshotOnResponsePath": false
+      }
+    ],
+    "correlation": {
+      "received": 100,
+      "matched": 100,
+      "missingBackend": 0,
+      "malformedBackend": 0,
+      "mismatchedRunId": 0
+    },
+    "effectiveClientConcurrency": {
+      "peak": 100,
+      "measured": true
+    },
+    "phases": {
+      "findByCode": {
+        "count": 100,
+        "p50": 108.06023899999855,
+        "p95": 280.61568600000464,
+        "p99": 311.45672499999637,
+        "max": 313.19488999999885
+      },
+      "liveSessionLockRead": {
+        "count": 100,
+        "p50": 1.0793339999945601,
+        "p95": 2.4824229999940144,
+        "p99": 2.759731999991345,
+        "max": 3.0609540000004927
+      },
+      "participantInsert": {
+        "count": 100,
+        "p50": 1.0793339999945601,
+        "p95": 2.4824229999940144,
+        "p99": 2.759731999991345,
+        "max": 3.0609540000004927
+      },
+      "outboxAppend": {
+        "count": 100,
+        "p50": 18.055640999999014,
+        "p95": 63.15531100000953,
+        "p99": 84.40331600001082,
+        "max": 115.8850289999973
+      },
+      "transaction": {
+        "count": 100,
+        "p50": 148.2933550000016,
+        "p95": 256.2166239999933,
+        "p99": 282.6199909999996,
+        "max": 283.9745660000044
+      },
+      "postCommitSnapshot": {
+        "count": 100,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "total": {
+        "count": 100,
+        "p50": 275.66581599999336,
+        "p95": 367.2034580000036,
+        "p99": 377.70995600000606,
+        "max": 384.2402879999863
+      }
+    },
+    "pool": {
+      "totalCount": null,
+      "idleCount": null,
+      "waitingCount": null,
+      "status": "unavailable",
+      "reason": "POOL ACQUISITION EVIDENCE GAP: Prisma adapter pool is not exposed by the current application."
+    },
+    "runtime": {
+      "client": {
+        "rssBytes": 95813632,
+        "cpuUserMicros": 151759,
+        "cpuSystemMicros": 17391,
+        "eventLoopDelayMs": null
+      },
+      "backend": "unavailable",
+      "postgres": "unavailable"
+    },
+    "attribution": {
+      "directlyMeasured": [
+        "effective client concurrency",
+        "client process RSS and CPU",
+        "correlated backend Join phases",
+        "findByCode",
+        "liveSessionLockRead",
+        "participantInsert",
+        "outboxAppend",
+        "transaction",
+        "postCommitSnapshot",
+        "total"
+      ],
+      "inferred": [
+        "Join lifecycle synchronization uses a shared live_session guard that conflicts with lifecycle FOR UPDATE",
+        "per-session event ordering remains serialized on live_session_event_sequence"
+      ],
+      "unavailable": [
+        "Prisma pool acquisition duration and waitingCount",
+        "isolated PostgreSQL lock-wait duration",
+        "backend CPU/RSS and PostgreSQL CPU/memory/active connections",
+        "event-loop delay",
+        "publisher timing before HTTP response"
+      ]
+    }
+  },
+  "postgresObserver": {
+    "schemaVersion": 4,
+    "enabled": true,
+    "target": "smartlearning_test",
+    "sampling": {
+      "startedAt": "2026-09-20T06:18:24.802Z",
+      "finishedAt": "2026-09-20T06:18:25.463Z",
+      "intervalMs": 250
+    },
+    "samples": [
+      {
+        "capturedAt": "2026-09-20T06:18:24.812Z",
+        "activeCount": 0,
+        "activity": [
+          {
+            "pid": 2609,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.783Z",
+            "state_change": "2026-09-20T06:18:24.783Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "25.995000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2665,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.215Z",
+            "state_change": "2026-09-20T06:18:24.215Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "593.511000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2667,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.548Z",
+            "state_change": "2026-09-20T06:18:24.549Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "260.744000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2671,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.535Z",
+            "state_change": "2026-09-20T06:18:24.536Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "274.024000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2673,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.607Z",
+            "state_change": "2026-09-20T06:18:24.608Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "201.634000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2674,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.559Z",
+            "state_change": "2026-09-20T06:18:24.559Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "250.359000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2675,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.552Z",
+            "state_change": "2026-09-20T06:18:24.552Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "257.415000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2676,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.555Z",
+            "state_change": "2026-09-20T06:18:24.556Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "253.894000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2677,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.562Z",
+            "state_change": "2026-09-20T06:18:24.563Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "246.910000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2678,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.545Z",
+            "state_change": "2026-09-20T06:18:24.546Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "263.974000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2679,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.542Z",
+            "state_change": "2026-09-20T06:18:24.543Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "266.810000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2680,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.539Z",
+            "state_change": "2026-09-20T06:18:24.539Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "270.392000",
+            "blocking_pids": []
+          }
+        ],
+        "locks": {
+          "total": 0,
+          "granted": 0,
+          "waiting": 0,
+          "modes": {},
+          "objects": {}
+        },
+        "blockingEdges": []
+      },
+      {
+        "capturedAt": "2026-09-20T06:18:25.061Z",
+        "activeCount": 0,
+        "activity": [
+          {
+            "pid": 2609,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.783Z",
+            "state_change": "2026-09-20T06:18:24.783Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "275.854000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2665,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.215Z",
+            "state_change": "2026-09-20T06:18:24.215Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "843.365000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2667,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.058Z",
+            "state_change": "2026-09-20T06:18:25.058Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "1.151000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2671,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.058Z",
+            "state_change": "2026-09-20T06:18:25.058Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "1.189000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2673,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.058Z",
+            "state_change": "2026-09-20T06:18:25.058Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "1.236000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2674,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.057Z",
+            "state_change": "2026-09-20T06:18:25.057Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "1.418000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2675,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.058Z",
+            "state_change": "2026-09-20T06:18:25.058Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "0.454000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2676,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.059Z",
+            "state_change": "2026-09-20T06:18:25.059Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "0.208000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2677,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.058Z",
+            "state_change": "2026-09-20T06:18:25.058Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "1.104000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2678,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.057Z",
+            "state_change": "2026-09-20T06:18:25.057Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "1.706000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2679,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.058Z",
+            "state_change": "2026-09-20T06:18:25.058Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "0.404000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2680,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": null,
+            "wait_event": null,
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.058Z",
+            "state_change": "2026-09-20T06:18:25.058Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "1.234000",
+            "blocking_pids": []
+          }
+        ],
+        "locks": {
+          "total": 7,
+          "granted": 7,
+          "waiting": 0,
+          "modes": {
+            "AccessShareLock": 6,
+            "ExclusiveLock": 1
+          },
+          "objects": {
+            "relation:idx_session_question_session_position": 1,
+            "relation:session_question": 1,
+            "relation:session_question_pkey": 1,
+            "relation:uq_session_question_id_live_session": 1,
+            "relation:uq_session_question_one_open": 1,
+            "relation:uq_session_question_session_position": 1,
+            "virtualxid": 1
+          }
+        },
+        "blockingEdges": []
+      },
+      {
+        "capturedAt": "2026-09-20T06:18:25.311Z",
+        "activeCount": 9,
+        "activity": [
+          {
+            "pid": 2609,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.783Z",
+            "state_change": "2026-09-20T06:18:24.783Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "525.604000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2665,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.217Z",
+            "query_start": "2026-09-20T06:18:25.218Z",
+            "state_change": "2026-09-20T06:18:25.218Z",
+            "transaction_age_ms": "91.294000",
+            "query_age_ms": "90.741000",
+            "blocking_pids": [
+              2676
+            ]
+          },
+          {
+            "pid": 2667,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.280Z",
+            "query_start": "2026-09-20T06:18:25.282Z",
+            "state_change": "2026-09-20T06:18:25.282Z",
+            "transaction_age_ms": "28.116000",
+            "query_age_ms": "26.341000",
+            "blocking_pids": [
+              2671
+            ]
+          },
+          {
+            "pid": 2671,
+            "application_name": "",
+            "state": "idle in transaction",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.299Z",
+            "query_start": "2026-09-20T06:18:25.308Z",
+            "state_change": "2026-09-20T06:18:25.308Z",
+            "transaction_age_ms": "9.374000",
+            "query_age_ms": "0.524000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2673,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.283Z",
+            "query_start": "2026-09-20T06:18:25.285Z",
+            "state_change": "2026-09-20T06:18:25.285Z",
+            "transaction_age_ms": "25.639000",
+            "query_age_ms": "23.430000",
+            "blocking_pids": [
+              2671
+            ]
+          },
+          {
+            "pid": 2674,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.273Z",
+            "query_start": "2026-09-20T06:18:25.274Z",
+            "state_change": "2026-09-20T06:18:25.274Z",
+            "transaction_age_ms": "35.809000",
+            "query_age_ms": "34.071000",
+            "blocking_pids": [
+              2671
+            ]
+          },
+          {
+            "pid": 2675,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.297Z",
+            "query_start": "2026-09-20T06:18:25.299Z",
+            "state_change": "2026-09-20T06:18:25.299Z",
+            "transaction_age_ms": "11.908000",
+            "query_age_ms": "9.905000",
+            "blocking_pids": [
+              2671
+            ]
+          },
+          {
+            "pid": 2676,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.249Z",
+            "query_start": "2026-09-20T06:18:25.252Z",
+            "state_change": "2026-09-20T06:18:25.252Z",
+            "transaction_age_ms": "59.903000",
+            "query_age_ms": "56.382000",
+            "blocking_pids": [
+              2671
+            ]
+          },
+          {
+            "pid": 2677,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.301Z",
+            "query_start": "2026-09-20T06:18:25.303Z",
+            "state_change": "2026-09-20T06:18:25.303Z",
+            "transaction_age_ms": "7.549000",
+            "query_age_ms": "5.449000",
+            "blocking_pids": [
+              2671
+            ]
+          },
+          {
+            "pid": 2678,
+            "application_name": "",
+            "state": "idle in transaction",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.308Z",
+            "query_start": "2026-09-20T06:18:25.308Z",
+            "state_change": "2026-09-20T06:18:25.308Z",
+            "transaction_age_ms": "0.656000",
+            "query_age_ms": "0.656000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2679,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.304Z",
+            "query_start": "2026-09-20T06:18:25.306Z",
+            "state_change": "2026-09-20T06:18:25.306Z",
+            "transaction_age_ms": "4.503000",
+            "query_age_ms": "2.627000",
+            "blocking_pids": [
+              2671
+            ]
+          },
+          {
+            "pid": 2680,
+            "application_name": "",
+            "state": "active",
+            "wait_event_type": "Lock",
+            "wait_event": "transactionid",
+            "backend_type": "client backend",
+            "xact_start": "2026-09-20T06:18:25.288Z",
+            "query_start": "2026-09-20T06:18:25.290Z",
+            "state_change": "2026-09-20T06:18:25.290Z",
+            "transaction_age_ms": "20.101000",
+            "query_age_ms": "18.223000",
+            "blocking_pids": [
+              2671
+            ]
+          }
+        ],
+        "locks": {
+          "total": 114,
+          "granted": 106,
+          "waiting": 8,
+          "modes": {
+            "RowShareLock": 60,
+            "ShareLock": 8,
+            "AccessExclusiveLock": 1,
+            "ExclusiveLock": 20,
+            "RowExclusiveLock": 25
+          },
+          "objects": {
+            "relation:idx_live_session_course": 10,
+            "relation:live_session": 11,
+            "relation:live_session_pkey": 10,
+            "relation:live_session_session_code_key": 10,
+            "relation:uq_live_session_course_open": 10,
+            "relation:uq_live_session_id_course": 10,
+            "transactionid": 17,
+            "virtualxid": 10,
+            "relation:live_session_event_sequence": 9,
+            "relation:live_session_event_sequence_pkey": 8,
+            "relation:participant": 9
+          }
+        },
+        "blockingEdges": [
+          {
+            "blockedPid": 2665,
+            "blockingPid": 2676,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          },
+          {
+            "blockedPid": 2667,
+            "blockingPid": 2671,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          },
+          {
+            "blockedPid": 2673,
+            "blockingPid": 2671,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          },
+          {
+            "blockedPid": 2674,
+            "blockingPid": 2671,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          },
+          {
+            "blockedPid": 2675,
+            "blockingPid": 2671,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          },
+          {
+            "blockedPid": 2676,
+            "blockingPid": 2671,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          },
+          {
+            "blockedPid": 2677,
+            "blockingPid": 2671,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          },
+          {
+            "blockedPid": 2679,
+            "blockingPid": 2671,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          },
+          {
+            "blockedPid": 2680,
+            "blockingPid": 2671,
+            "waitEventType": "Lock",
+            "waitEvent": "transactionid"
+          }
+        ]
+      },
+      {
+        "capturedAt": "2026-09-20T06:18:25.458Z",
+        "activeCount": 0,
+        "activity": [
+          {
+            "pid": 2609,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:24.783Z",
+            "state_change": "2026-09-20T06:18:24.783Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "673.951000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2665,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.415Z",
+            "state_change": "2026-09-20T06:18:25.415Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "41.971000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2667,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.404Z",
+            "state_change": "2026-09-20T06:18:25.405Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "52.418000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2671,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.397Z",
+            "state_change": "2026-09-20T06:18:25.398Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "59.826000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2673,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.387Z",
+            "state_change": "2026-09-20T06:18:25.387Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "70.034000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2674,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.392Z",
+            "state_change": "2026-09-20T06:18:25.393Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "64.472000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2675,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.402Z",
+            "state_change": "2026-09-20T06:18:25.403Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "54.896000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2676,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.439Z",
+            "state_change": "2026-09-20T06:18:25.440Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "17.477000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2677,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.399Z",
+            "state_change": "2026-09-20T06:18:25.400Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "57.472000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2678,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.390Z",
+            "state_change": "2026-09-20T06:18:25.391Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "66.624000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2679,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.408Z",
+            "state_change": "2026-09-20T06:18:25.409Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "48.750000",
+            "blocking_pids": []
+          },
+          {
+            "pid": 2680,
+            "application_name": "",
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "xact_start": null,
+            "query_start": "2026-09-20T06:18:25.395Z",
+            "state_change": "2026-09-20T06:18:25.395Z",
+            "transaction_age_ms": null,
+            "query_age_ms": "62.231000",
+            "blocking_pids": []
+          }
+        ],
+        "locks": {
+          "total": 0,
+          "granted": 0,
+          "waiting": 0,
+          "modes": {},
+          "objects": {}
+        },
+        "blockingEdges": []
+      }
+    ],
+    "connectionObservations": [
+      {
+        "capturedAt": "2026-09-20T06:18:24.812Z",
+        "total": 12,
+        "active": 0,
+        "idle": 12,
+        "waiting": 12
+      },
+      {
+        "capturedAt": "2026-09-20T06:18:25.061Z",
+        "total": 12,
+        "active": 0,
+        "idle": 12,
+        "waiting": 11
+      },
+      {
+        "capturedAt": "2026-09-20T06:18:25.311Z",
+        "total": 12,
+        "active": 9,
+        "idle": 1,
+        "waiting": 12
+      },
+      {
+        "capturedAt": "2026-09-20T06:18:25.458Z",
+        "total": 12,
+        "active": 0,
+        "idle": 12,
+        "waiting": 12
+      }
+    ],
+    "observerErrors": [],
+    "reconciliation": {
+      "liveSessionId": "01a0bd77-3fb8-768b-b06a-215b7157fd21",
+      "sessionQuestionId": "01a0bd77-3ff5-72fe-98de-347ecb857572",
+      "before": {
+        "participants": 20,
+        "events": 23,
+        "eventSequence": "23"
+      },
+      "after": {
+        "participants": 120,
+        "events": 123,
+        "eventSequence": "123"
+      },
+      "delta": {
+        "participants": 100,
+        "events": 100,
+        "eventSequence": "100"
+      },
+      "expected": {
+        "participants": 100,
+        "events": 100,
+        "eventSequence": 100
+      },
+      "persisted": {
+        "participants": 100,
+        "events": 100,
+        "eventSequence": "100"
+      },
+      "exactMatch": true
+    },
+    "plans": {
+      "findByCode": {
+        "label": "representative find-by-code query",
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Sort",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 2.04,
+              "Total Cost": 2.05,
+              "Plan Rows": 1,
+              "Plan Width": 77,
+              "Sort Key": [
+                "sq.\"position\"",
+                "sq.id"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Nested Loop",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Left",
+                  "Startup Cost": 0,
+                  "Total Cost": 2.04,
+                  "Plan Rows": 1,
+                  "Plan Width": 77,
+                  "Inner Unique": false,
+                  "Join Filter": "(sq.live_session_id = ls.id)",
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "live_session",
+                      "Alias": "ls",
+                      "Startup Cost": 0,
+                      "Total Cost": 1.01,
+                      "Plan Rows": 1,
+                      "Plan Width": 32,
+                      "Filter": "(session_code = '5GAVCVDD'::text)"
+                    },
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "session_question",
+                      "Alias": "sq",
+                      "Startup Cost": 0,
+                      "Total Cost": 1.01,
+                      "Plan Rows": 1,
+                      "Plan Width": 61
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "getSnapshot": {
+        "label": "representative get-snapshot query",
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Sort",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 2.04,
+              "Total Cost": 2.05,
+              "Plan Rows": 1,
+              "Plan Width": 77,
+              "Sort Key": [
+                "sq.\"position\"",
+                "sq.id"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Nested Loop",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Left",
+                  "Startup Cost": 0,
+                  "Total Cost": 2.03,
+                  "Plan Rows": 1,
+                  "Plan Width": 77,
+                  "Inner Unique": false,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "live_session",
+                      "Alias": "ls",
+                      "Startup Cost": 0,
+                      "Total Cost": 1.01,
+                      "Plan Rows": 1,
+                      "Plan Width": 32,
+                      "Filter": "(id = '01a0bd77-3fb8-768b-b06a-215b7157fd21'::uuid)"
+                    },
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "session_question",
+                      "Alias": "sq",
+                      "Startup Cost": 0,
+                      "Total Cost": 1.01,
+                      "Plan Rows": 1,
+                      "Plan Width": 61,
+                      "Filter": "(live_session_id = '01a0bd77-3fb8-768b-b06a-215b7157fd21'::uuid)"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "safety": {
+      "readOnly": true,
+      "writes": false,
+      "schemaChanges": false,
+      "indexChanges": false,
+      "poolChanges": false,
+      "lockChanges": false
+    }
+  }
+}

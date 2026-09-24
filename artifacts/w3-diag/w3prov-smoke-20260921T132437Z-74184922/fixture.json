@@ -1,0 +1,30 @@
+{
+  "fixture": {
+    "runId": "w3prov-smoke-20260921T132437Z-74184922",
+    "questionType": "poll",
+    "username": "local-w1-w3-1789997078900-89afbd03",
+    "courseId": "01a0c423-dcaf-723f-8ec3-2a1dfce562aa",
+    "questionId": "01a0c423-dcc6-7523-88a0-d20bda30f363",
+    "liveSessionId": "01a0c423-dce6-776c-b30a-a74c55f07ec7",
+    "sessionQuestionId": "01a0c423-dd10-7201-a706-f75d7409d69a",
+    "sessionCode": "8NRV2YWH",
+    "options": [
+      {
+        "id": "01a0c423-dd10-7201-a706-f9cb6f5e35eb",
+        "optionRef": "alpha",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0c423-dd10-7201-a706-fc2976a6d874",
+        "optionRef": "beta",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0c423-dd10-7201-a707-02293ffe67cf",
+        "optionRef": "gamma",
+        "isCorrect": false
+      }
+    ],
+    "credentialPresent": true
+  }
+}

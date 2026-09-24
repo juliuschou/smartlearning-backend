@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "courseId": "01a0bcdb-3ad5-7548-bc0c-d825bc461e04",
+    "liveSessionId": "01a0bcdb-3b08-751b-a817-9bc18408e62b",
+    "sessionQuestionId": "01a0bcdb-3b33-73ea-947f-753cd528b70a",
+    "sessionCode": "ZDCKMWGT",
+    "expectedParticipants": 100
+  }
+}

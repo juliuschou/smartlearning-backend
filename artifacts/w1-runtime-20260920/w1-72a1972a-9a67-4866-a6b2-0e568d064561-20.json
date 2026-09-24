@@ -1,0 +1,660 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "runId": "72a1972a-9a67-4866-a6b2-0e568d064561",
+    "startedAt": "2026-09-19T17:06:04.599Z",
+    "finishedAt": "2026-09-19T17:06:04.816Z",
+    "baseUrl": "http://127.0.0.1:3001",
+    "scenarios": [
+      "W1"
+    ],
+    "participantCount": 20,
+    "fixtureMode": "existing"
+  },
+  "scenarios": [
+    {
+      "name": "W1",
+      "status": "passed",
+      "durationMs": 216.12874699999998,
+      "operations": [
+        {
+          "name": "join",
+          "transport": "http",
+          "count": 20,
+          "successCount": 20,
+          "errorCount": 0,
+          "errorRate": 0,
+          "latencyMs": {
+            "count": 20,
+            "p50": 154.40463499999998,
+            "p95": 201.99126,
+            "p99": 208.455074,
+            "max": 208.455074
+          },
+          "errors": {}
+        }
+      ],
+      "correctness": {
+        "joined": 20,
+        "duplicateParticipantIds": 0
+      }
+    }
+  ],
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  },
+  "diagnostics": {
+    "enabled": true,
+    "clientRequests": [
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-8217757b-9e3f-48cf-a397-f595fe5dbc05",
+        "durationMs": 129.963629
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-6e4c327e-8339-4fbd-9f73-6df96ede3b67",
+        "durationMs": 126.49641799999999
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-9ce9137b-9c42-4bb6-b92d-9e9d726df03d",
+        "durationMs": 122.62560900000001
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-6d6c7e62-5cca-4b46-9709-71ac4cce44fa",
+        "durationMs": 131.109065
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-5954f5e7-2a84-4c3e-9d2e-7eb28500275b",
+        "durationMs": 131.12318799999997
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-895d591f-78e9-46bd-ac4f-39c70688057a",
+        "durationMs": 140.58120399999996
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-80da9886-7cc8-4166-99ff-598e0af3930f",
+        "durationMs": 145.716523
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-5f234621-104f-47bc-aa1b-931294c94334",
+        "durationMs": 147.65855200000001
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-e3f47b4c-3042-4b41-8542-f8198dd5e913",
+        "durationMs": 153.67694600000002
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-8fecb29c-6868-48a3-b49c-4e3d49833a4e",
+        "durationMs": 154.40463499999998
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-5e6b585a-249f-48c7-b3f8-71aa49606a3d",
+        "durationMs": 155.51764099999997
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-6d33e52a-03a2-4a83-ace0-a74cb8e94252",
+        "durationMs": 157.96011599999997
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-1b3dde8e-5100-4804-8526-a6cf693c1cc6",
+        "durationMs": 159.82755
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-38642905-9179-410a-9238-c5712dc1725a",
+        "durationMs": 159.583485
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-ddebb362-0e61-4f85-b9d9-8d73b1238ccc",
+        "durationMs": 166.43977900000004
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-bba6b536-2045-4593-bd35-499dfd4c7c2b",
+        "durationMs": 184.81769099999997
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-fbf366c1-2c1b-4363-a25c-23affa6ee675",
+        "durationMs": 191.164982
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-bf42284d-0102-44b6-af9e-13f116bd85ab",
+        "durationMs": 196.567863
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-788439e8-0148-4ae1-9118-860813f6bea2",
+        "durationMs": 201.99126
+      },
+      {
+        "requestId": "w1-72a1972a-9a67-4866-a6b2-0e568d064561-acee36db-5c78-4703-94a2-118ee4c7be47",
+        "durationMs": 208.455074
+      }
+    ],
+    "effectiveClientConcurrency": {
+      "peak": 20,
+      "measured": true
+    },
+    "phases": {},
+    "pool": {
+      "totalCount": null,
+      "idleCount": null,
+      "waitingCount": null,
+      "status": "unavailable",
+      "reason": "Prisma adapter pool is not exposed by the current application."
+    },
+    "runtime": {
+      "client": {
+        "rssBytes": 88002560,
+        "cpuUserMicros": 64349,
+        "cpuSystemMicros": 4492,
+        "eventLoopDelayMs": null
+      },
+      "backend": "unavailable",
+      "postgres": "unavailable"
+    },
+    "attribution": {
+      "directlyMeasured": [
+        "effective client concurrency",
+        "client process RSS and CPU"
+      ],
+      "inferred": [
+        "shared LiveSession row lock remains architectural constraint"
+      ],
+      "unavailable": [
+        "pool totalCount/idleCount/waitingCount",
+        "isolated PostgreSQL lock-wait duration",
+        "backend CPU/RSS and PostgreSQL CPU/memory/active connections",
+        "event-loop delay",
+        "publisher timing before HTTP response"
+      ]
+    }
+  },
+  "postgresObserver": {
+    "schemaVersion": 2,
+    "enabled": true,
+    "target": "smartlearning_test",
+    "sampling": {
+      "startedAt": "2026-09-19T17:06:04.545Z",
+      "finishedAt": "2026-09-19T17:06:04.867Z",
+      "intervalMs": 1000
+    },
+    "samples": [
+      {
+        "capturedAt": "2026-09-19T17:06:04.558Z",
+        "activeCount": 1,
+        "activity": [
+          {
+            "pid": 727,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:02:05.401Z",
+            "state_change": "2026-09-19T15:02:05.401Z"
+          },
+          {
+            "pid": 736,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:02:05.703Z",
+            "state_change": "2026-09-19T15:02:05.703Z"
+          },
+          {
+            "pid": 740,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:05:33.917Z",
+            "state_change": "2026-09-19T15:05:33.917Z"
+          },
+          {
+            "pid": 745,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:05:33.904Z",
+            "state_change": "2026-09-19T15:05:33.904Z"
+          },
+          {
+            "pid": 818,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:51:05.964Z",
+            "state_change": "2026-09-19T15:51:05.964Z"
+          },
+          {
+            "pid": 821,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:51:05.978Z",
+            "state_change": "2026-09-19T15:51:05.978Z"
+          },
+          {
+            "pid": 913,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.291Z",
+            "state_change": "2026-09-19T17:06:04.291Z"
+          },
+          {
+            "pid": 929,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.276Z",
+            "state_change": "2026-09-19T17:06:04.276Z"
+          },
+          {
+            "pid": 930,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.340Z",
+            "state_change": "2026-09-19T17:06:04.342Z"
+          },
+          {
+            "pid": 969,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.394Z",
+            "state_change": "2026-09-19T17:06:04.395Z"
+          },
+          {
+            "pid": 970,
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.549Z",
+            "state_change": "2026-09-19T17:06:04.549Z"
+          }
+        ],
+        "locks": {
+          "total": 0,
+          "granted": 0,
+          "waiting": 0,
+          "modes": {},
+          "objects": {}
+        }
+      },
+      {
+        "capturedAt": "2026-09-19T17:06:04.863Z",
+        "activeCount": 1,
+        "activity": [
+          {
+            "pid": 727,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:02:05.401Z",
+            "state_change": "2026-09-19T15:02:05.401Z"
+          },
+          {
+            "pid": 736,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:02:05.703Z",
+            "state_change": "2026-09-19T15:02:05.703Z"
+          },
+          {
+            "pid": 740,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:05:33.917Z",
+            "state_change": "2026-09-19T15:05:33.917Z"
+          },
+          {
+            "pid": 745,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:05:33.904Z",
+            "state_change": "2026-09-19T15:05:33.904Z"
+          },
+          {
+            "pid": 818,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:51:05.964Z",
+            "state_change": "2026-09-19T15:51:05.964Z"
+          },
+          {
+            "pid": 821,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T15:51:05.978Z",
+            "state_change": "2026-09-19T15:51:05.978Z"
+          },
+          {
+            "pid": 913,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.291Z",
+            "state_change": "2026-09-19T17:06:04.291Z"
+          },
+          {
+            "pid": 929,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.276Z",
+            "state_change": "2026-09-19T17:06:04.276Z"
+          },
+          {
+            "pid": 930,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.849Z",
+            "state_change": "2026-09-19T17:06:04.849Z"
+          },
+          {
+            "pid": 969,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.773Z",
+            "state_change": "2026-09-19T17:06:04.773Z"
+          },
+          {
+            "pid": 970,
+            "state": "active",
+            "wait_event_type": null,
+            "wait_event": null,
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.861Z",
+            "state_change": "2026-09-19T17:06:04.861Z"
+          },
+          {
+            "pid": 971,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.765Z",
+            "state_change": "2026-09-19T17:06:04.765Z"
+          },
+          {
+            "pid": 972,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.787Z",
+            "state_change": "2026-09-19T17:06:04.787Z"
+          },
+          {
+            "pid": 973,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.806Z",
+            "state_change": "2026-09-19T17:06:04.806Z"
+          },
+          {
+            "pid": 974,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.801Z",
+            "state_change": "2026-09-19T17:06:04.801Z"
+          },
+          {
+            "pid": 975,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.814Z",
+            "state_change": "2026-09-19T17:06:04.814Z"
+          },
+          {
+            "pid": 976,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.814Z",
+            "state_change": "2026-09-19T17:06:04.814Z"
+          },
+          {
+            "pid": 977,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.794Z",
+            "state_change": "2026-09-19T17:06:04.794Z"
+          },
+          {
+            "pid": 978,
+            "state": "idle",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "backend_type": "client backend",
+            "query_start": "2026-09-19T17:06:04.814Z",
+            "state_change": "2026-09-19T17:06:04.814Z"
+          }
+        ],
+        "locks": {
+          "total": 0,
+          "granted": 0,
+          "waiting": 0,
+          "modes": {},
+          "objects": {}
+        }
+      }
+    ],
+    "connectionObservations": [
+      {
+        "capturedAt": "2026-09-19T17:06:04.558Z",
+        "total": 11,
+        "active": 1,
+        "idle": 10,
+        "waiting": 10
+      },
+      {
+        "capturedAt": "2026-09-19T17:06:04.863Z",
+        "total": 19,
+        "active": 1,
+        "idle": 18,
+        "waiting": 18
+      }
+    ],
+    "observerErrors": [],
+    "reconciliation": {
+      "liveSessionId": "01a0baa1-d925-737c-99d2-89eb90c81843",
+      "sessionQuestionId": "01a0baa1-d96e-7338-9b58-8c40b20edcf5",
+      "before": {
+        "participants": 0,
+        "events": 3
+      },
+      "after": {
+        "participants": 20,
+        "events": 23
+      },
+      "delta": {
+        "participants": 20,
+        "events": 20
+      },
+      "expected": {
+        "participants": 20
+      },
+      "persisted": {
+        "participants": 20
+      },
+      "exactMatch": true
+    },
+    "plans": {
+      "findByCode": {
+        "label": "representative find-by-code query",
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Sort",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 16.35,
+              "Total Cost": 16.36,
+              "Plan Rows": 1,
+              "Plan Width": 124,
+              "Sort Key": [
+                "sq.\"position\"",
+                "sq.id"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Nested Loop",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Left",
+                  "Startup Cost": 0.3,
+                  "Total Cost": 16.34,
+                  "Plan Rows": 1,
+                  "Plan Width": 124,
+                  "Inner Unique": false,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "live_session_session_code_key",
+                      "Relation Name": "live_session",
+                      "Alias": "ls",
+                      "Startup Cost": 0.15,
+                      "Total Cost": 8.17,
+                      "Plan Rows": 1,
+                      "Plan Width": 32,
+                      "Index Cond": "(session_code = 'HDVTXQRT'::text)"
+                    },
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "idx_session_question_session_position",
+                      "Relation Name": "session_question",
+                      "Alias": "sq",
+                      "Startup Cost": 0.15,
+                      "Total Cost": 8.17,
+                      "Plan Rows": 1,
+                      "Plan Width": 108,
+                      "Index Cond": "(live_session_id = ls.id)"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "getSnapshot": {
+        "label": "representative get-snapshot query",
+        "plan": [
+          {
+            "Plan": {
+              "Node Type": "Sort",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 16.35,
+              "Total Cost": 16.36,
+              "Plan Rows": 1,
+              "Plan Width": 124,
+              "Sort Key": [
+                "sq.\"position\"",
+                "sq.id"
+              ],
+              "Plans": [
+                {
+                  "Node Type": "Nested Loop",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Left",
+                  "Startup Cost": 0.3,
+                  "Total Cost": 16.34,
+                  "Plan Rows": 1,
+                  "Plan Width": 124,
+                  "Inner Unique": false,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "uq_live_session_id_course",
+                      "Relation Name": "live_session",
+                      "Alias": "ls",
+                      "Startup Cost": 0.15,
+                      "Total Cost": 8.17,
+                      "Plan Rows": 1,
+                      "Plan Width": 32,
+                      "Index Cond": "(id = '01a0baa1-d925-737c-99d2-89eb90c81843'::uuid)"
+                    },
+                    {
+                      "Node Type": "Index Scan",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Scan Direction": "Forward",
+                      "Index Name": "idx_session_question_session_position",
+                      "Relation Name": "session_question",
+                      "Alias": "sq",
+                      "Startup Cost": 0.15,
+                      "Total Cost": 8.17,
+                      "Plan Rows": 1,
+                      "Plan Width": 108,
+                      "Index Cond": "(live_session_id = '01a0baa1-d925-737c-99d2-89eb90c81843'::uuid)"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "safety": {
+      "readOnly": true,
+      "writes": false,
+      "schemaChanges": false,
+      "indexChanges": false,
+      "poolChanges": false,
+      "lockChanges": false
+    }
+  }
+}

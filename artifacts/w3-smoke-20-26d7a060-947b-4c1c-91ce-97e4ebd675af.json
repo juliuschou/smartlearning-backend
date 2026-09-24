@@ -1,0 +1,1241 @@
+{
+  "schemaVersion": 1,
+  "phase": "W3-realtime-result-broadcast",
+  "runId": "26d7a060-947b-4c1c-91ce-97e4ebd675af",
+  "questionType": "poll",
+  "participants": 20,
+  "fixture": {
+    "courseId": "01a0beba-5182-77bf-a78a-ef904febf99b",
+    "questionId": "01a0beba-5193-766f-9ff0-ff9222e6bdc8",
+    "liveSessionId": "01a0beba-51a5-7349-97ee-6dd4f243cc94",
+    "sessionQuestionId": "01a0beba-51bf-702f-9a35-25458b4f3944",
+    "sessionCode": "BH8HGP5W"
+  },
+  "connectionManifest": {
+    "teacherConnected": true,
+    "teacherSocketId": "LU9ip4n8WxM8oMTzAABT",
+    "participantsRequested": 20,
+    "participantsConnected": 20,
+    "participantsJoined": 20,
+    "duplicateSocketIds": 0,
+    "connectErrors": [],
+    "manifest": [
+      {
+        "participantId": "01a0beba-a39c-7105-8bb0-8a264216572a",
+        "participantIndex": 0,
+        "socketId": "XvtMHzppEz_KKktBAAA-",
+        "connected": true,
+        "connectedAtMs": 337.51381599999996,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3be-73d8-be6c-98994c4a3f0c",
+        "participantIndex": 1,
+        "socketId": "sPmHVlp7GlqFGJFJAABA",
+        "connected": true,
+        "connectedAtMs": 342.297256,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3aa-7305-bece-6b3e586ee0d2",
+        "participantIndex": 2,
+        "socketId": "Itt5SeBWfndUb5umAABD",
+        "connected": true,
+        "connectedAtMs": 341.986293,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3c9-75d7-a5b2-45ccc3f61524",
+        "participantIndex": 3,
+        "socketId": "sHdkIjx-2eW2blsFAABH",
+        "connected": true,
+        "connectedAtMs": 342.212058,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3d0-775f-9816-92c127fb2329",
+        "participantIndex": 4,
+        "socketId": "FcGX4dD4QSjFiiZtAABF",
+        "connected": true,
+        "connectedAtMs": 342.126559,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3d5-7389-b621-b37566eeb100",
+        "participantIndex": 5,
+        "socketId": "Pka6cwRdFwUNhN9aAABL",
+        "connected": true,
+        "connectedAtMs": 344.92003099999994,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3d6-762d-9f9c-bd80315a3ff6",
+        "participantIndex": 6,
+        "socketId": "FwBRe22j05Q2WyMXAABB",
+        "connected": true,
+        "connectedAtMs": 342.326849,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3d7-775b-b3b1-172a671859a6",
+        "participantIndex": 7,
+        "socketId": "1sYy1Ufk6l3ffycJAAA_",
+        "connected": true,
+        "connectedAtMs": 342.264382,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3d8-75b9-9248-c787a8fd77b8",
+        "participantIndex": 8,
+        "socketId": "zO3j99Zw-eatsxbhAABJ",
+        "connected": true,
+        "connectedAtMs": 343.97224,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3db-7579-88d7-ba3abac96161",
+        "participantIndex": 9,
+        "socketId": "Xxmbr7xZoojI7xwSAABM",
+        "connected": true,
+        "connectedAtMs": 345.20212499999997,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3b6-72bc-aac4-ad44f54bb062",
+        "participantIndex": 10,
+        "socketId": "X71UWxL9E0NNTt_EAABI",
+        "connected": true,
+        "connectedAtMs": 343.29431400000004,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3a3-7635-b872-57d7b9339e8c",
+        "participantIndex": 11,
+        "socketId": "6JJr185kwC83rHKpAABC",
+        "connected": true,
+        "connectedAtMs": 342.38675299999994,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3a5-768d-9dac-5f4e68324947",
+        "participantIndex": 12,
+        "socketId": "1iCV9nEs_SHJctrNAABG",
+        "connected": true,
+        "connectedAtMs": 342.159427,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3a6-7029-80c6-4a85e532acc6",
+        "participantIndex": 13,
+        "socketId": "0AauWXN8VPvJGb7VAABK",
+        "connected": true,
+        "connectedAtMs": 344.315412,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3a7-7183-832e-c57c3df9efb9",
+        "participantIndex": 14,
+        "socketId": "9O97ucQgtFEEKWrkAABE",
+        "connected": true,
+        "connectedAtMs": 342.077921,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3c5-749c-90bf-44f5c1d22b72",
+        "participantIndex": 15,
+        "socketId": "vjtiWib5HpTMPKGUAABN",
+        "connected": true,
+        "connectedAtMs": 345.45929699999994,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3ab-77c8-8ed8-3c19fe7acc15",
+        "participantIndex": 16,
+        "socketId": "GTxQ4F6mYzTAd5k2AABR",
+        "connected": true,
+        "connectedAtMs": 347.515192,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3b7-7539-a57b-4a98de579151",
+        "participantIndex": 17,
+        "socketId": "hwkS3rkLc8Wpw2tAAABP",
+        "connected": true,
+        "connectedAtMs": 346.927832,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3b0-73da-ade3-62d7995d75e0",
+        "participantIndex": 18,
+        "socketId": "nFgPnltVIaCNAqCQAABO",
+        "connected": true,
+        "connectedAtMs": 346.46752299999997,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0beba-a3c4-71fa-980e-376108d4db0e",
+        "participantIndex": 19,
+        "socketId": "1q5M6Ezr1QRtN0laAABQ",
+        "connected": true,
+        "connectedAtMs": 347.185686,
+        "everConnected": true,
+        "hasDisconnected": false
+      }
+    ]
+  },
+  "stabilizeProbes": [
+    {
+      "atMs": 650.756138,
+      "connected": 20
+    },
+    {
+      "atMs": 952.53756,
+      "connected": 20
+    },
+    {
+      "atMs": 1253.435425,
+      "connected": 20
+    }
+  ],
+  "socketTimelines": [
+    {
+      "label": "p0",
+      "participantId": "01a0beba-a39c-7105-8bb0-8a264216572a",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 337.51381599999996,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p1",
+      "participantId": "01a0beba-a3be-73d8-be6c-98994c4a3f0c",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.297256,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p2",
+      "participantId": "01a0beba-a3aa-7305-bece-6b3e586ee0d2",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 341.986293,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "28",
+        "35"
+      ]
+    },
+    {
+      "label": "p3",
+      "participantId": "01a0beba-a3c9-75d7-a5b2-45ccc3f61524",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.212058,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p4",
+      "participantId": "01a0beba-a3d0-775f-9816-92c127fb2329",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.126559,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p5",
+      "participantId": "01a0beba-a3d5-7389-b621-b37566eeb100",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 344.92003099999994,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p6",
+      "participantId": "01a0beba-a3d6-762d-9f9c-bd80315a3ff6",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.326849,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "30",
+        "35"
+      ]
+    },
+    {
+      "label": "p7",
+      "participantId": "01a0beba-a3d7-775b-b3b1-172a671859a6",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.264382,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p8",
+      "participantId": "01a0beba-a3d8-75b9-9248-c787a8fd77b8",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 343.97224,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "26",
+        "35"
+      ]
+    },
+    {
+      "label": "p9",
+      "participantId": "01a0beba-a3db-7579-88d7-ba3abac96161",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 345.20212499999997,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p10",
+      "participantId": "01a0beba-a3b6-72bc-aac4-ad44f54bb062",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 343.29431400000004,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p11",
+      "participantId": "01a0beba-a3a3-7635-b872-57d7b9339e8c",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.38675299999994,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p12",
+      "participantId": "01a0beba-a3a5-768d-9dac-5f4e68324947",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.159427,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "32",
+        "35"
+      ]
+    },
+    {
+      "label": "p13",
+      "participantId": "01a0beba-a3a6-7029-80c6-4a85e532acc6",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 344.315412,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p14",
+      "participantId": "01a0beba-a3a7-7183-832e-c57c3df9efb9",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.077921,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p15",
+      "participantId": "01a0beba-a3c5-749c-90bf-44f5c1d22b72",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 345.45929699999994,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p16",
+      "participantId": "01a0beba-a3ab-77c8-8ed8-3c19fe7acc15",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 347.515192,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "24",
+        "35"
+      ]
+    },
+    {
+      "label": "p17",
+      "participantId": "01a0beba-a3b7-7539-a57b-4a98de579151",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 346.927832,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p18",
+      "participantId": "01a0beba-a3b0-73da-ade3-62d7995d75e0",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 346.46752299999997,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p19",
+      "participantId": "01a0beba-a3c4-71fa-980e-376108d4db0e",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 347.185686,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "teacher",
+      "participantId": null,
+      "isTeacher": true,
+      "everConnected": true,
+      "connectedAtMs": 349.77980399999996,
+      "disconnectedAtMs": null,
+      "receiptCount": 35,
+      "resultUpdatedSeqs": [
+        "24",
+        "26",
+        "28",
+        "30",
+        "32",
+        "35"
+      ]
+    }
+  ],
+  "phaseA": {
+    "openResultEventCount": 0,
+    "participantsWithRestrictedReceiptBeforeAnswering": 0,
+    "leakingParticipants": [],
+    "teacherSawAggregate": true,
+    "abstainerProbe": {
+      "status": 409,
+      "errorCode": "RESULTS_NOT_REVEALED",
+      "refused": true
+    },
+    "leakage": false
+  },
+  "phaseB": {
+    "answeredCount": 10,
+    "abstainedCount": 10,
+    "expectedYes": 10,
+    "actualYes": 5,
+    "expectedNo": 10,
+    "forbiddenDelivery": 0,
+    "missingYes": 5,
+    "delayedButReceived": 0,
+    "voteResultEvents": 10,
+    "drainWaitMs": 11049.074587,
+    "recipientMatrix": [
+      {
+        "client": "p0",
+        "participantId": "01a0beba-a39c-7105-8bb0-8a264216572a",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "29",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p1",
+        "participantId": "01a0beba-a3be-73d8-be6c-98994c4a3f0c",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p2",
+        "participantId": "01a0beba-a3aa-7305-bece-6b3e586ee0d2",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "28",
+        "actualReceipt": true,
+        "receiptEventSeq": "28",
+        "receiptAtMs": 11213.980571999999
+      },
+      {
+        "client": "p3",
+        "participantId": "01a0beba-a3c9-75d7-a5b2-45ccc3f61524",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p4",
+        "participantId": "01a0beba-a3d0-775f-9816-92c127fb2329",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "27",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p5",
+        "participantId": "01a0beba-a3d5-7389-b621-b37566eeb100",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p6",
+        "participantId": "01a0beba-a3d6-762d-9f9c-bd80315a3ff6",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "30",
+        "actualReceipt": true,
+        "receiptEventSeq": "30",
+        "receiptAtMs": 12185.372904
+      },
+      {
+        "client": "p7",
+        "participantId": "01a0beba-a3d7-775b-b3b1-172a671859a6",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p8",
+        "participantId": "01a0beba-a3d8-75b9-9248-c787a8fd77b8",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "26",
+        "actualReceipt": true,
+        "receiptEventSeq": "26",
+        "receiptAtMs": 10185.099580999999
+      },
+      {
+        "client": "p9",
+        "participantId": "01a0beba-a3db-7579-88d7-ba3abac96161",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p10",
+        "participantId": "01a0beba-a3b6-72bc-aac4-ad44f54bb062",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "31",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p11",
+        "participantId": "01a0beba-a3a3-7635-b872-57d7b9339e8c",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p12",
+        "participantId": "01a0beba-a3a5-768d-9dac-5f4e68324947",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "32",
+        "actualReceipt": true,
+        "receiptEventSeq": "32",
+        "receiptAtMs": 13186.334111999999
+      },
+      {
+        "client": "p13",
+        "participantId": "01a0beba-a3a6-7029-80c6-4a85e532acc6",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p14",
+        "participantId": "01a0beba-a3a7-7183-832e-c57c3df9efb9",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "25",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p15",
+        "participantId": "01a0beba-a3c5-749c-90bf-44f5c1d22b72",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p16",
+        "participantId": "01a0beba-a3ab-77c8-8ed8-3c19fe7acc15",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "24",
+        "actualReceipt": true,
+        "receiptEventSeq": "24",
+        "receiptAtMs": 9193.289413999999
+      },
+      {
+        "client": "p17",
+        "participantId": "01a0beba-a3b7-7539-a57b-4a98de579151",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p18",
+        "participantId": "01a0beba-a3b0-73da-ade3-62d7995d75e0",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "33",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p19",
+        "participantId": "01a0beba-a3c4-71fa-980e-376108d4db0e",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      }
+    ],
+    "missingClassification": [
+      {
+        "label": "p0",
+        "eventSeq": "29",
+        "classification": "UNKNOWN",
+        "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+      },
+      {
+        "label": "p4",
+        "eventSeq": "27",
+        "classification": "UNKNOWN",
+        "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+      },
+      {
+        "label": "p10",
+        "eventSeq": "31",
+        "classification": "UNKNOWN",
+        "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+      },
+      {
+        "label": "p14",
+        "eventSeq": "25",
+        "classification": "UNKNOWN",
+        "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+      },
+      {
+        "label": "p18",
+        "eventSeq": "33",
+        "classification": "UNKNOWN",
+        "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+      }
+    ],
+    "duplicateDeliveries": [],
+    "voteLatency": {
+      "stats": {
+        "count": 5,
+        "p50": 8300.761496,
+        "p95": 10210.159812999998,
+        "p99": 10210.159812999998,
+        "max": 10210.159812999998
+      },
+      "fastest": {
+        "id": "p16",
+        "value": 6352.781672999999
+      },
+      "median": {
+        "id": "p2",
+        "value": 8300.761496
+      },
+      "p95Near": {
+        "id": "p6",
+        "value": 9239.917245999999
+      },
+      "slowest": {
+        "id": "p12",
+        "value": 10210.159812999998
+      }
+    },
+    "votePublishLatency": {
+      "stats": {
+        "count": 5,
+        "p50": -1789906288597.123,
+        "p95": -1789906286624.7693,
+        "p99": -1789906286624.7693,
+        "max": -1789906286624.7693
+      },
+      "fastest": {
+        "id": "p16",
+        "value": -1789906290617.8142
+      },
+      "median": {
+        "id": "p2",
+        "value": -1789906288597.123
+      },
+      "p95Near": {
+        "id": "p6",
+        "value": -1789906287625.7307
+      },
+      "slowest": {
+        "id": "p12",
+        "value": -1789906286624.7693
+      }
+    },
+    "teacherPhaseB": {
+      "note": "Teacher receives a teacher-visibility result.updated per claimed result row (emitTeacherResults). Measured separately; excluded from the participant required-delivery gate.",
+      "receiptCount": 5,
+      "expectedAtLeast": 10,
+      "eventSeqs": [
+        "24",
+        "26",
+        "28",
+        "30",
+        "32"
+      ]
+    },
+    "authoritativeOptions": [
+      {
+        "optionId": "01a0beba-51bf-702f-9a35-29982bf27644",
+        "count": 4
+      },
+      {
+        "optionId": "01a0beba-51bf-702f-9a35-2ed5acda1a08",
+        "count": 3
+      },
+      {
+        "optionId": "01a0beba-51bf-702f-9a35-32c8c7af7123",
+        "count": 3
+      }
+    ]
+  },
+  "phaseC": {
+    "closeSeq": "35",
+    "closeRows": 1,
+    "closeRequestStartMs": 16081.742934,
+    "closeResponseEndMs": 16138.521901,
+    "closeDrainMs": 1005.9309219999996,
+    "closedExpected": 21,
+    "closedActual": 21,
+    "closedMissing": [],
+    "closedMissingClassification": [],
+    "duplicateDeliveries": [],
+    "recipients": [
+      {
+        "client": "p0",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16209.261211
+      },
+      {
+        "client": "p1",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16241.739468999998
+      },
+      {
+        "client": "p2",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16317.127493999998
+      },
+      {
+        "client": "p3",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16347.336023999998
+      },
+      {
+        "client": "p4",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16227.924548
+      },
+      {
+        "client": "p5",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16329.229926999998
+      },
+      {
+        "client": "p6",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16220.301045999999
+      },
+      {
+        "client": "p7",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16284.307776
+      },
+      {
+        "client": "p8",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16323.055027
+      },
+      {
+        "client": "p9",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16252.653491
+      },
+      {
+        "client": "p10",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16360.756361999998
+      },
+      {
+        "client": "p11",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16262.677145
+      },
+      {
+        "client": "p12",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16334.603543
+      },
+      {
+        "client": "p13",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16354.486414999998
+      },
+      {
+        "client": "p14",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16309.961261999999
+      },
+      {
+        "client": "p15",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16292.704993999998
+      },
+      {
+        "client": "p16",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16340.954071999999
+      },
+      {
+        "client": "p17",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16373.297964
+      },
+      {
+        "client": "p18",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16272.241395
+      },
+      {
+        "client": "p19",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 16367.880761999999
+      },
+      {
+        "client": "teacher",
+        "kind": "teacher",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "24",
+        "receiptAtMs": 16191.390345
+      }
+    ],
+    "closeLatency": {
+      "stats": {
+        "count": 21,
+        "p50": 171.43936099999883,
+        "p95": 229.3588609999988,
+        "p99": 234.77606299999934,
+        "max": 234.77606299999934
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 52.86844399999973
+      },
+      "median": {
+        "id": "p14",
+        "value": 171.43936099999883
+      },
+      "p95Near": {
+        "id": "p19",
+        "value": 229.3588609999988
+      },
+      "slowest": {
+        "id": "p17",
+        "value": 234.77606299999934
+      }
+    },
+    "closePublishLatency": {
+      "stats": {
+        "count": 21,
+        "p50": -1789906296501.1423,
+        "p95": -1789906296443.2227,
+        "p99": -1789906296437.8057,
+        "max": -1789906296437.8057
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": -1789906296619.7131
+      },
+      "median": {
+        "id": "p14",
+        "value": -1789906296501.1423
+      },
+      "p95Near": {
+        "id": "p19",
+        "value": -1789906296443.2227
+      },
+      "slowest": {
+        "id": "p17",
+        "value": -1789906296437.8057
+      }
+    }
+  },
+  "missingClassification": [
+    {
+      "label": "p0",
+      "eventSeq": "29",
+      "classification": "UNKNOWN",
+      "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+    },
+    {
+      "label": "p4",
+      "eventSeq": "27",
+      "classification": "UNKNOWN",
+      "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+    },
+    {
+      "label": "p10",
+      "eventSeq": "31",
+      "classification": "UNKNOWN",
+      "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+    },
+    {
+      "label": "p14",
+      "eventSeq": "25",
+      "classification": "UNKNOWN",
+      "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+    },
+    {
+      "label": "p18",
+      "eventSeq": "33",
+      "classification": "UNKNOWN",
+      "detail": "Connected socket with a snapshot, but neither the target nor a neighbour result event was seen."
+    }
+  ],
+  "authoritative": {
+    "dbSubmissionCount": 10,
+    "expectedSubmissionCount": 10,
+    "options": [
+      {
+        "optionId": "01a0beba-51bf-702f-9a35-29982bf27644",
+        "count": 4
+      },
+      {
+        "optionId": "01a0beba-51bf-702f-9a35-2ed5acda1a08",
+        "count": 3
+      },
+      {
+        "optionId": "01a0beba-51bf-702f-9a35-32c8c7af7123",
+        "count": 3
+      }
+    ],
+    "dbOptionCounts": {
+      "01a0beba-51bf-702f-9a35-2ed5acda1a08": 3,
+      "01a0beba-51bf-702f-9a35-32c8c7af7123": 3,
+      "01a0beba-51bf-702f-9a35-29982bf27644": 4
+    },
+    "exact": true,
+    "participantAfterClose": {
+      "status": 200,
+      "options": [
+        {
+          "optionId": "01a0beba-51bf-702f-9a35-29982bf27644",
+          "count": 4
+        },
+        {
+          "optionId": "01a0beba-51bf-702f-9a35-2ed5acda1a08",
+          "count": 3
+        },
+        {
+          "optionId": "01a0beba-51bf-702f-9a35-32c8c7af7123",
+          "count": 3
+        }
+      ],
+      "exact": true
+    }
+  },
+  "latency": {
+    "threshold": {
+      "commitToBroadcastP95Ms": 2000,
+      "commitToBroadcastP99Ms": 5000,
+      "source": "../docs/智學互動平台/00_專案規劃/MVP 效能目標.md"
+    },
+    "commitToBroadcastNote": "COMMIT TIMING EVIDENCE GAP: exact commit timestamp unavailable (track_commit_timestamp=off); submit/close response end used as the closest explainable proxy, per W2 precedent.",
+    "voteToReveal": {
+      "stats": {
+        "count": 5,
+        "p50": 8300.761496,
+        "p95": 10210.159812999998,
+        "p99": 10210.159812999998,
+        "max": 10210.159812999998
+      },
+      "fastest": {
+        "id": "p16",
+        "value": 6352.781672999999
+      },
+      "median": {
+        "id": "p2",
+        "value": 8300.761496
+      },
+      "p95Near": {
+        "id": "p6",
+        "value": 9239.917245999999
+      },
+      "slowest": {
+        "id": "p12",
+        "value": 10210.159812999998
+      }
+    },
+    "voteToRevealPublishProxy": {
+      "stats": {
+        "count": 5,
+        "p50": -1789906288597.123,
+        "p95": -1789906286624.7693,
+        "p99": -1789906286624.7693,
+        "max": -1789906286624.7693
+      },
+      "fastest": {
+        "id": "p16",
+        "value": -1789906290617.8142
+      },
+      "median": {
+        "id": "p2",
+        "value": -1789906288597.123
+      },
+      "p95Near": {
+        "id": "p6",
+        "value": -1789906287625.7307
+      },
+      "slowest": {
+        "id": "p12",
+        "value": -1789906286624.7693
+      }
+    },
+    "finalBroadcast": {
+      "stats": {
+        "count": 21,
+        "p50": 171.43936099999883,
+        "p95": 229.3588609999988,
+        "p99": 234.77606299999934,
+        "max": 234.77606299999934
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 52.86844399999973
+      },
+      "median": {
+        "id": "p14",
+        "value": 171.43936099999883
+      },
+      "p95Near": {
+        "id": "p19",
+        "value": 229.3588609999988
+      },
+      "slowest": {
+        "id": "p17",
+        "value": 234.77606299999934
+      }
+    },
+    "finalBroadcastPublishProxy": {
+      "stats": {
+        "count": 21,
+        "p50": -1789906296501.1423,
+        "p95": -1789906296443.2227,
+        "p99": -1789906296437.8057,
+        "max": -1789906296437.8057
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": -1789906296619.7131
+      },
+      "median": {
+        "id": "p14",
+        "value": -1789906296501.1423
+      },
+      "p95Near": {
+        "id": "p19",
+        "value": -1789906296443.2227
+      },
+      "slowest": {
+        "id": "p17",
+        "value": -1789906296437.8057
+      }
+    }
+  },
+  "verdict": {
+    "correctness": "PASS",
+    "performance": "FAIL",
+    "performanceSignal": "W3 PERFORMANCE THRESHOLD FAIL SIGNAL"
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  }
+}

@@ -1,0 +1,2562 @@
+{
+  "schemaVersion": 1,
+  "phase": "W3-realtime-result-broadcast",
+  "runId": "w3diag-20260921T164039Z-6d2aa3f3",
+  "questionType": "poll",
+  "participants": 20,
+  "fixture": {
+    "courseId": "01a0c4d8-11ad-7759-bf46-078b851d5892",
+    "questionId": "01a0c4d8-11c7-71f2-b521-eae32f9bc674",
+    "liveSessionId": "01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+    "sessionQuestionId": "01a0c4d8-1232-72e2-9990-750e9cd5f1d2",
+    "sessionCode": "4GZGPEGR"
+  },
+  "connectionManifest": {
+    "teacherConnected": true,
+    "teacherSocketId": "vNmY3IHh-pHatWw9AAAp",
+    "participantsRequested": 20,
+    "participantsConnected": 20,
+    "participantsJoined": 20,
+    "duplicateSocketIds": 0,
+    "connectErrors": [],
+    "manifest": [
+      {
+        "participantId": "01a0c4d8-8ee6-775e-b145-b3e68c28e1b9",
+        "participantIndex": 0,
+        "socketId": "iMKkd2cv0dHwgro7AAAF",
+        "connected": true,
+        "connectedAtMs": 323.870937,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8eb8-749c-9b71-4ad6dbed052f",
+        "participantIndex": 1,
+        "socketId": "_YWEg0P3U4gR-gzEAAAH",
+        "connected": true,
+        "connectedAtMs": 338.808654,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ed4-764f-b82b-1014a5270c6a",
+        "participantIndex": 2,
+        "socketId": "V8pmpvwdba_9UGusAAAJ",
+        "connected": true,
+        "connectedAtMs": 338.984163,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ecb-72e8-9cec-402921b09b94",
+        "participantIndex": 3,
+        "socketId": "e9mjzhmXoFc44a6xAAAI",
+        "connected": true,
+        "connectedAtMs": 338.909576,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8edb-72ec-a957-951484491d1b",
+        "participantIndex": 4,
+        "socketId": "PDP6xXfylE5bRKakAAAU",
+        "connected": true,
+        "connectedAtMs": 342.013803,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ee7-742b-ae42-03d7ce9ed764",
+        "participantIndex": 5,
+        "socketId": "KklUG2G4zyoRsQoQAAAK",
+        "connected": true,
+        "connectedAtMs": 339.021592,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ee9-709a-a6fb-c1cee231a19f",
+        "participantIndex": 6,
+        "socketId": "QPu1n1qzB6upiiFXAAAT",
+        "connected": true,
+        "connectedAtMs": 341.363433,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ee9-709a-a6fb-c78ef29e015f",
+        "participantIndex": 7,
+        "socketId": "NAfhJ6wRvJUrJWzSAAAV",
+        "connected": true,
+        "connectedAtMs": 342.420226,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8eec-72fa-a4a8-76a8d7ff4b6a",
+        "participantIndex": 8,
+        "socketId": "2opxiAyQOlCEzIuvAAAW",
+        "connected": true,
+        "connectedAtMs": 342.941191,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8eb6-74f9-af04-3fbbeb2f6489",
+        "participantIndex": 9,
+        "socketId": "Y6w--A9qoRPosQaqAAAc",
+        "connected": true,
+        "connectedAtMs": 345.531713,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8eb7-77a9-ac11-73b40031f202",
+        "participantIndex": 10,
+        "socketId": "Kc7n1K2dkBpb-n_eAAAY",
+        "connected": true,
+        "connectedAtMs": 344.222474,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ec1-7195-b856-54e937092e0f",
+        "participantIndex": 11,
+        "socketId": "HHnOps2gMft3P0e0AAAn",
+        "connected": true,
+        "connectedAtMs": 356.990866,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8eb7-77a9-ac11-6d1d1e98f63a",
+        "participantIndex": 12,
+        "socketId": "6xBy3HbBLpiaMrpvAAAi",
+        "connected": true,
+        "connectedAtMs": 353.54810200000003,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ec4-71a1-8c6a-9870ccafc898",
+        "participantIndex": 13,
+        "socketId": "TSVDd_-KLaHh8WqzAAAm",
+        "connected": true,
+        "connectedAtMs": 356.130817,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8eb8-749c-9b71-445a8ace4d9d",
+        "participantIndex": 14,
+        "socketId": "L6Epo5z2Ni3a1sJnAAAb",
+        "connected": true,
+        "connectedAtMs": 345.264187,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ecc-729f-980b-39f7f1f2ecac",
+        "participantIndex": 15,
+        "socketId": "4lTGQfxnu2KY5AvfAAAZ",
+        "connected": true,
+        "connectedAtMs": 344.666445,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ec5-7651-8fc0-c737b9db629c",
+        "participantIndex": 16,
+        "socketId": "ehJuxEJhBUoiN0TnAAAk",
+        "connected": true,
+        "connectedAtMs": 355.148778,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8eb7-77a9-ac11-773a380e0403",
+        "participantIndex": 17,
+        "socketId": "46y-8wT3kwdHN5zhAAAa",
+        "connected": true,
+        "connectedAtMs": 344.949834,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ed3-7443-8d1a-1254450287e1",
+        "participantIndex": 18,
+        "socketId": "8wRHIZJUddgpZb5bAAAg",
+        "connected": true,
+        "connectedAtMs": 349.80012,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0c4d8-8ec8-721d-af88-aff698ce27ac",
+        "participantIndex": 19,
+        "socketId": "b8xpAgVZhLZcDwNCAAAe",
+        "connected": true,
+        "connectedAtMs": 347.22445700000003,
+        "everConnected": true,
+        "hasDisconnected": false
+      }
+    ]
+  },
+  "stabilizeProbes": [
+    {
+      "atMs": 661.128163,
+      "connected": 20
+    },
+    {
+      "atMs": 961.193611,
+      "connected": 20
+    },
+    {
+      "atMs": 1261.6652009999998,
+      "connected": 20
+    }
+  ],
+  "socketTimelines": [
+    {
+      "label": "p0",
+      "participantId": "01a0c4d8-8ee6-775e-b145-b3e68c28e1b9",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 323.870937,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p1",
+      "participantId": "01a0c4d8-8eb8-749c-9b71-4ad6dbed052f",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 338.808654,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p2",
+      "participantId": "01a0c4d8-8ed4-764f-b82b-1014a5270c6a",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 338.984163,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p3",
+      "participantId": "01a0c4d8-8ecb-72e8-9cec-402921b09b94",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 338.909576,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p4",
+      "participantId": "01a0c4d8-8edb-72ec-a957-951484491d1b",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.013803,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p5",
+      "participantId": "01a0c4d8-8ee7-742b-ae42-03d7ce9ed764",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 339.021592,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p6",
+      "participantId": "01a0c4d8-8ee9-709a-a6fb-c1cee231a19f",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 341.363433,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "29",
+        "35"
+      ]
+    },
+    {
+      "label": "p7",
+      "participantId": "01a0c4d8-8ee9-709a-a6fb-c78ef29e015f",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.420226,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p8",
+      "participantId": "01a0c4d8-8eec-72fa-a4a8-76a8d7ff4b6a",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 342.941191,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p9",
+      "participantId": "01a0c4d8-8eb6-74f9-af04-3fbbeb2f6489",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 345.531713,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p10",
+      "participantId": "01a0c4d8-8eb7-77a9-ac11-73b40031f202",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 344.222474,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p11",
+      "participantId": "01a0c4d8-8ec1-7195-b856-54e937092e0f",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 356.990866,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p12",
+      "participantId": "01a0c4d8-8eb7-77a9-ac11-6d1d1e98f63a",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 353.54810200000003,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p13",
+      "participantId": "01a0c4d8-8ec4-71a1-8c6a-9870ccafc898",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 356.130817,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p14",
+      "participantId": "01a0c4d8-8eb8-749c-9b71-445a8ace4d9d",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 345.264187,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "32",
+        "35"
+      ]
+    },
+    {
+      "label": "p15",
+      "participantId": "01a0c4d8-8ecc-729f-980b-39f7f1f2ecac",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 344.666445,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p16",
+      "participantId": "01a0c4d8-8ec5-7651-8fc0-c737b9db629c",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 355.148778,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p17",
+      "participantId": "01a0c4d8-8eb7-77a9-ac11-773a380e0403",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 344.949834,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p18",
+      "participantId": "01a0c4d8-8ed3-7443-8d1a-1254450287e1",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 349.80012,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "26",
+        "35"
+      ]
+    },
+    {
+      "label": "p19",
+      "participantId": "01a0c4d8-8ec8-721d-af88-aff698ce27ac",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 347.22445700000003,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "teacher",
+      "participantId": null,
+      "isTeacher": true,
+      "everConnected": true,
+      "connectedAtMs": 359.77984100000003,
+      "disconnectedAtMs": null,
+      "receiptCount": 27,
+      "resultUpdatedSeqs": [
+        "26",
+        "29",
+        "32",
+        "35"
+      ]
+    }
+  ],
+  "phaseA": {
+    "openResultEventCount": 0,
+    "participantsWithRestrictedReceiptBeforeAnswering": 0,
+    "leakingParticipants": [],
+    "teacherSawAggregate": true,
+    "abstainerProbe": {
+      "status": 409,
+      "errorCode": "RESULTS_NOT_REVEALED",
+      "refused": true
+    },
+    "leakage": false
+  },
+  "phaseB": {
+    "answeredCount": 10,
+    "abstainedCount": 10,
+    "expectedYes": 10,
+    "actualYes": 3,
+    "expectedNo": 10,
+    "forbiddenDelivery": 0,
+    "missingYes": 7,
+    "delayedButReceived": 0,
+    "votePermanentMissing": 7,
+    "voteResultEvents": 10,
+    "coalescedCount": 0,
+    "dispatchedCount": 10,
+    "gatewayEmittedCount": 3,
+    "clientReceivedCount": 3,
+    "voteEventMatrix": [
+      {
+        "eventId": "01a0c4d8-9976-727d-af0b-6fce134d728c",
+        "eventSeq": "24",
+        "expectedParticipantId": "01a0c4d8-8ed4-764f-b82b-1014a5270c6a",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": false,
+        "gatewayEmitted": false,
+        "clientReceived": false,
+        "finalClassification": "UNRESOLVED"
+      },
+      {
+        "eventId": "01a0c4d8-998b-7201-939a-c524692e4a7c",
+        "eventSeq": "25",
+        "expectedParticipantId": "01a0c4d8-8ec5-7651-8fc0-c737b9db629c",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": false,
+        "gatewayEmitted": false,
+        "clientReceived": false,
+        "finalClassification": "UNRESOLVED"
+      },
+      {
+        "eventId": "01a0c4d8-999b-77fc-9a1e-31f5a76b99ff",
+        "eventSeq": "26",
+        "expectedParticipantId": "01a0c4d8-8ed3-7443-8d1a-1254450287e1",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DISPATCHED_DELIVERED"
+      },
+      {
+        "eventId": "01a0c4d8-99aa-73bd-94f8-19a87aee95ba",
+        "eventSeq": "27",
+        "expectedParticipantId": "01a0c4d8-8edb-72ec-a957-951484491d1b",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": false,
+        "gatewayEmitted": false,
+        "clientReceived": false,
+        "finalClassification": "UNRESOLVED"
+      },
+      {
+        "eventId": "01a0c4d8-99bc-7070-8978-91fabcc5d95c",
+        "eventSeq": "28",
+        "expectedParticipantId": "01a0c4d8-8ee6-775e-b145-b3e68c28e1b9",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": false,
+        "gatewayEmitted": false,
+        "clientReceived": false,
+        "finalClassification": "UNRESOLVED"
+      },
+      {
+        "eventId": "01a0c4d8-99ce-7724-9c9e-3a588641d41e",
+        "eventSeq": "29",
+        "expectedParticipantId": "01a0c4d8-8ee9-709a-a6fb-c1cee231a19f",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DISPATCHED_DELIVERED"
+      },
+      {
+        "eventId": "01a0c4d8-99df-779b-bedc-df77856469c3",
+        "eventSeq": "30",
+        "expectedParticipantId": "01a0c4d8-8eb7-77a9-ac11-6d1d1e98f63a",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": false,
+        "gatewayEmitted": false,
+        "clientReceived": false,
+        "finalClassification": "UNRESOLVED"
+      },
+      {
+        "eventId": "01a0c4d8-99f4-7644-b8de-7a7e85f7cdff",
+        "eventSeq": "31",
+        "expectedParticipantId": "01a0c4d8-8eec-72fa-a4a8-76a8d7ff4b6a",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": false,
+        "gatewayEmitted": false,
+        "clientReceived": false,
+        "finalClassification": "UNRESOLVED"
+      },
+      {
+        "eventId": "01a0c4d8-9a0a-72c9-b8d6-f1d517eb33cb",
+        "eventSeq": "32",
+        "expectedParticipantId": "01a0c4d8-8eb8-749c-9b71-445a8ace4d9d",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DISPATCHED_DELIVERED"
+      },
+      {
+        "eventId": "01a0c4d8-9a23-7111-9236-cb21f3fbf9ab",
+        "eventSeq": "33",
+        "expectedParticipantId": "01a0c4d8-8eb7-77a9-ac11-73b40031f202",
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": false,
+        "gatewayEmitted": false,
+        "clientReceived": false,
+        "finalClassification": "UNRESOLVED"
+      }
+    ],
+    "drainWaitMs": 7017.762614,
+    "recipientMatrix": [
+      {
+        "client": "p0",
+        "participantId": "01a0c4d8-8ee6-775e-b145-b3e68c28e1b9",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "28",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p1",
+        "participantId": "01a0c4d8-8eb8-749c-9b71-4ad6dbed052f",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p2",
+        "participantId": "01a0c4d8-8ed4-764f-b82b-1014a5270c6a",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "24",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p3",
+        "participantId": "01a0c4d8-8ecb-72e8-9cec-402921b09b94",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p4",
+        "participantId": "01a0c4d8-8edb-72ec-a957-951484491d1b",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "27",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p5",
+        "participantId": "01a0c4d8-8ee7-742b-ae42-03d7ce9ed764",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p6",
+        "participantId": "01a0c4d8-8ee9-709a-a6fb-c1cee231a19f",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "29",
+        "actualReceipt": true,
+        "receiptEventSeq": "29",
+        "receiptAtMs": 8859.185447
+      },
+      {
+        "client": "p7",
+        "participantId": "01a0c4d8-8ee9-709a-a6fb-c78ef29e015f",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p8",
+        "participantId": "01a0c4d8-8eec-72fa-a4a8-76a8d7ff4b6a",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "31",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p9",
+        "participantId": "01a0c4d8-8eb6-74f9-af04-3fbbeb2f6489",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p10",
+        "participantId": "01a0c4d8-8eb7-77a9-ac11-73b40031f202",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "33",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p11",
+        "participantId": "01a0c4d8-8ec1-7195-b856-54e937092e0f",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p12",
+        "participantId": "01a0c4d8-8eb7-77a9-ac11-6d1d1e98f63a",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "30",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p13",
+        "participantId": "01a0c4d8-8ec4-71a1-8c6a-9870ccafc898",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p14",
+        "participantId": "01a0c4d8-8eb8-749c-9b71-445a8ace4d9d",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "32",
+        "actualReceipt": true,
+        "receiptEventSeq": "32",
+        "receiptAtMs": 9858.669864
+      },
+      {
+        "client": "p15",
+        "participantId": "01a0c4d8-8ecc-729f-980b-39f7f1f2ecac",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p16",
+        "participantId": "01a0c4d8-8ec5-7651-8fc0-c737b9db629c",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "25",
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p17",
+        "participantId": "01a0c4d8-8eb7-77a9-ac11-773a380e0403",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p18",
+        "participantId": "01a0c4d8-8ed3-7443-8d1a-1254450287e1",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "26",
+        "actualReceipt": true,
+        "receiptEventSeq": "26",
+        "receiptAtMs": 7839.964476
+      },
+      {
+        "client": "p19",
+        "participantId": "01a0c4d8-8ec8-721d-af88-aff698ce27ac",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      }
+    ],
+    "missingClassification": [
+      {
+        "label": "p0",
+        "eventSeq": "28",
+        "classification": "SERVER DID NOT EMIT",
+        "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+      },
+      {
+        "label": "p2",
+        "eventSeq": "24",
+        "classification": "SERVER DID NOT EMIT",
+        "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+      },
+      {
+        "label": "p4",
+        "eventSeq": "27",
+        "classification": "SERVER DID NOT EMIT",
+        "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+      },
+      {
+        "label": "p8",
+        "eventSeq": "31",
+        "classification": "SERVER DID NOT EMIT",
+        "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+      },
+      {
+        "label": "p10",
+        "eventSeq": "33",
+        "classification": "SERVER DID NOT EMIT",
+        "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+      },
+      {
+        "label": "p12",
+        "eventSeq": "30",
+        "classification": "SERVER DID NOT EMIT",
+        "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+      },
+      {
+        "label": "p16",
+        "eventSeq": "25",
+        "classification": "SERVER DID NOT EMIT",
+        "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+      }
+    ],
+    "duplicateDeliveries": [],
+    "voteLatency": {
+      "stats": {
+        "count": 3,
+        "p50": 5918.762236,
+        "p95": 6856.868109999999,
+        "p99": 6856.868109999999,
+        "max": 6856.868109999999
+      },
+      "fastest": {
+        "id": "p18",
+        "value": 4951.388403999999
+      },
+      "median": {
+        "id": "p6",
+        "value": 5918.762236
+      },
+      "p95Near": {
+        "id": "p6",
+        "value": 5918.762236
+      },
+      "slowest": {
+        "id": "p14",
+        "value": 6856.868109999999
+      }
+    },
+    "votePublishLatency": {
+      "stats": {
+        "count": 3,
+        "p50": 6546,
+        "p95": 7545,
+        "p99": 7545,
+        "max": 7545
+      },
+      "fastest": {
+        "id": "p18",
+        "value": 5527
+      },
+      "median": {
+        "id": "p6",
+        "value": 6546
+      },
+      "p95Near": {
+        "id": "p6",
+        "value": 6546
+      },
+      "slowest": {
+        "id": "p14",
+        "value": 7545
+      }
+    },
+    "teacherPhaseB": {
+      "note": "Teacher receives a teacher-visibility result.updated per claimed result row (emitTeacherResults). Measured separately; excluded from the participant required-delivery gate.",
+      "receiptCount": 3,
+      "expectedAtLeast": 10,
+      "eventSeqs": [
+        "26",
+        "29",
+        "32"
+      ]
+    },
+    "authoritativeOptions": [
+      {
+        "optionId": "01a0c4d8-1232-72e2-9990-78f99307bd11",
+        "count": 4
+      },
+      {
+        "optionId": "01a0c4d8-1232-72e2-9990-7f7e7ce06aa9",
+        "count": 3
+      },
+      {
+        "optionId": "01a0c4d8-1232-72e2-9990-823936c3593e",
+        "count": 3
+      }
+    ]
+  },
+  "phaseC": {
+    "closeSeq": "35",
+    "closeRows": 1,
+    "closeRequestStartMs": 12073.216604,
+    "closeResponseEndMs": 12095.253206,
+    "closeDrainMs": 1002.2308819999998,
+    "closedExpected": 21,
+    "closedActual": 21,
+    "closedMissing": [],
+    "closedMissingClassification": [],
+    "duplicateDeliveries": [],
+    "recipients": [
+      {
+        "client": "p0",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12879.988497999999
+      },
+      {
+        "client": "p1",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12981.699702999998
+      },
+      {
+        "client": "p2",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12942.416873999999
+      },
+      {
+        "client": "p3",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12971.519214999998
+      },
+      {
+        "client": "p4",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12917.413019
+      },
+      {
+        "client": "p5",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12961.57649
+      },
+      {
+        "client": "p6",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12953.068286
+      },
+      {
+        "client": "p7",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12907.007591
+      },
+      {
+        "client": "p8",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13005.611363
+      },
+      {
+        "client": "p9",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13016.725327999999
+      },
+      {
+        "client": "p10",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12989.627913999999
+      },
+      {
+        "client": "p11",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13051.189312999999
+      },
+      {
+        "client": "p12",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13034.082895
+      },
+      {
+        "client": "p13",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13039.863999
+      },
+      {
+        "client": "p14",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13011.252423
+      },
+      {
+        "client": "p15",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12998.762127
+      },
+      {
+        "client": "p16",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13045.929245
+      },
+      {
+        "client": "p17",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 12928.965870999999
+      },
+      {
+        "client": "p18",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13028.265409
+      },
+      {
+        "client": "p19",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 13022.073611
+      },
+      {
+        "client": "teacher",
+        "kind": "teacher",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "26",
+        "receiptAtMs": 12851.591611999998
+      }
+    ],
+    "closeLatency": {
+      "stats": {
+        "count": 21,
+        "p50": 894.3747079999994,
+        "p95": 950.676039,
+        "p99": 955.9361069999995,
+        "max": 955.9361069999995
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 756.3384059999989
+      },
+      "median": {
+        "id": "p10",
+        "value": 894.3747079999994
+      },
+      "p95Near": {
+        "id": "p16",
+        "value": 950.676039
+      },
+      "slowest": {
+        "id": "p11",
+        "value": 955.9361069999995
+      }
+    },
+    "closePublishLatency": {
+      "stats": {
+        "count": 21,
+        "p50": 1676,
+        "p95": 1733,
+        "p99": 1738,
+        "max": 1738
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 1538
+      },
+      "median": {
+        "id": "p10",
+        "value": 1676
+      },
+      "p95Near": {
+        "id": "p16",
+        "value": 1733
+      },
+      "slowest": {
+        "id": "p11",
+        "value": 1738
+      }
+    }
+  },
+  "missingClassification": [
+    {
+      "label": "p0",
+      "eventSeq": "28",
+      "classification": "SERVER DID NOT EMIT",
+      "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+    },
+    {
+      "label": "p2",
+      "eventSeq": "24",
+      "classification": "SERVER DID NOT EMIT",
+      "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+    },
+    {
+      "label": "p4",
+      "eventSeq": "27",
+      "classification": "SERVER DID NOT EMIT",
+      "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+    },
+    {
+      "label": "p8",
+      "eventSeq": "31",
+      "classification": "SERVER DID NOT EMIT",
+      "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+    },
+    {
+      "label": "p10",
+      "eventSeq": "33",
+      "classification": "SERVER DID NOT EMIT",
+      "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+    },
+    {
+      "label": "p12",
+      "eventSeq": "30",
+      "classification": "SERVER DID NOT EMIT",
+      "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+    },
+    {
+      "label": "p16",
+      "eventSeq": "25",
+      "classification": "SERVER DID NOT EMIT",
+      "detail": "Trace shows the publisher never entered dispatch for this row, yet the row is marked delivered."
+    }
+  ],
+  "authoritative": {
+    "dbSubmissionCount": 10,
+    "expectedSubmissionCount": 10,
+    "options": [
+      {
+        "optionId": "01a0c4d8-1232-72e2-9990-78f99307bd11",
+        "count": 4
+      },
+      {
+        "optionId": "01a0c4d8-1232-72e2-9990-7f7e7ce06aa9",
+        "count": 3
+      },
+      {
+        "optionId": "01a0c4d8-1232-72e2-9990-823936c3593e",
+        "count": 3
+      }
+    ],
+    "dbOptionCounts": {
+      "01a0c4d8-1232-72e2-9990-823936c3593e": 3,
+      "01a0c4d8-1232-72e2-9990-7f7e7ce06aa9": 3,
+      "01a0c4d8-1232-72e2-9990-78f99307bd11": 4
+    },
+    "exact": true,
+    "participantAfterClose": {
+      "status": 200,
+      "options": [
+        {
+          "optionId": "01a0c4d8-1232-72e2-9990-78f99307bd11",
+          "count": 4
+        },
+        {
+          "optionId": "01a0c4d8-1232-72e2-9990-7f7e7ce06aa9",
+          "count": 3
+        },
+        {
+          "optionId": "01a0c4d8-1232-72e2-9990-823936c3593e",
+          "count": 3
+        }
+      ],
+      "exact": true
+    }
+  },
+  "latency": {
+    "threshold": {
+      "commitToBroadcastP95Ms": 2000,
+      "commitToBroadcastP99Ms": 5000,
+      "source": "../docs/智學互動平台/00_專案規劃/MVP 效能目標.md"
+    },
+    "commitToBroadcastNote": "COMMIT TIMING EVIDENCE GAP: exact commit timestamp unavailable (track_commit_timestamp=off); submit/close response end used as the closest explainable proxy, per W2 precedent.",
+    "voteToReveal": {
+      "stats": {
+        "count": 3,
+        "p50": 5918.762236,
+        "p95": 6856.868109999999,
+        "p99": 6856.868109999999,
+        "max": 6856.868109999999
+      },
+      "fastest": {
+        "id": "p18",
+        "value": 4951.388403999999
+      },
+      "median": {
+        "id": "p6",
+        "value": 5918.762236
+      },
+      "p95Near": {
+        "id": "p6",
+        "value": 5918.762236
+      },
+      "slowest": {
+        "id": "p14",
+        "value": 6856.868109999999
+      }
+    },
+    "voteToRevealPublishProxy": {
+      "stats": {
+        "count": 3,
+        "p50": 6546,
+        "p95": 7545,
+        "p99": 7545,
+        "max": 7545
+      },
+      "fastest": {
+        "id": "p18",
+        "value": 5527
+      },
+      "median": {
+        "id": "p6",
+        "value": 6546
+      },
+      "p95Near": {
+        "id": "p6",
+        "value": 6546
+      },
+      "slowest": {
+        "id": "p14",
+        "value": 7545
+      }
+    },
+    "finalBroadcast": {
+      "stats": {
+        "count": 21,
+        "p50": 894.3747079999994,
+        "p95": 950.676039,
+        "p99": 955.9361069999995,
+        "max": 955.9361069999995
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 756.3384059999989
+      },
+      "median": {
+        "id": "p10",
+        "value": 894.3747079999994
+      },
+      "p95Near": {
+        "id": "p16",
+        "value": 950.676039
+      },
+      "slowest": {
+        "id": "p11",
+        "value": 955.9361069999995
+      }
+    },
+    "finalBroadcastPublishProxy": {
+      "stats": {
+        "count": 21,
+        "p50": 1676,
+        "p95": 1733,
+        "p99": 1738,
+        "max": 1738
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 1538
+      },
+      "median": {
+        "id": "p10",
+        "value": 1676
+      },
+      "p95Near": {
+        "id": "p16",
+        "value": 1733
+      },
+      "slowest": {
+        "id": "p11",
+        "value": 1738
+      }
+    }
+  },
+  "serverTrace": {
+    "traceEnabled": true,
+    "deliveryStateSemantics": "delivery_state='delivered' is split in this diagnostic: DISPATCHED_DELIVERED when the publisher dispatch path resolves, or COALESCED_SUPPRESSED when coalescing directly suppresses an older display event; neither means client-delivered.",
+    "documentedContract": {
+      "source": "../docs/智學互動平台/30_系統設計/即時同步與結果治理設計.md",
+      "summary": "Open vote-to-reveal results are targeted to the submitting participant; close publishes the final participant-safe result to all eligible participants. Latest non-authoritative result.updated notifications may coalesce.",
+      "contractAmbiguity": "High-level W3 wording does not explicitly require every answered participant to receive every intermediate aggregate update; repository API/runtime docs define the own-submit targeted event and final close fan-out."
+    },
+    "phaseB": {
+      "enabled": true,
+      "runId": "w3diag-20260921T164039Z-6d2aa3f3",
+      "fetchedAtMs": 12052.898523,
+      "records": 52,
+      "stats": {
+        "schemaVersion": 1,
+        "enabled": true,
+        "instanceId": "01a0c4d7-4f8f-7549-8787-55b782ceb59d",
+        "backendInstanceId": "01a0c4d7-4f48-7771-a0c8-98b4becc6adb",
+        "processId": 1879623,
+        "processStartIso": "2026-09-21T16:40:39.577Z",
+        "hostname": "DESKTOP-0KADDT9",
+        "lifecycle": [
+          {
+            "component": "traceService",
+            "instanceId": "01a0c4d7-4f8f-7549-8787-55b782ceb59d",
+            "constructedAtIso": "2026-09-21T16:40:40.079Z"
+          },
+          {
+            "component": "gateway",
+            "instanceId": "01a0c4d7-4f9c-7688-b500-d3b1a3f4a883",
+            "constructedAtIso": "2026-09-21T16:40:40.092Z"
+          },
+          {
+            "component": "publisher",
+            "instanceId": "01a0c4d7-4f9d-7039-85ee-bc25efd59b29",
+            "constructedAtIso": "2026-09-21T16:40:40.093Z"
+          }
+        ],
+        "runId": "w3diag-20260921T164039Z-6d2aa3f3",
+        "bufferSize": 20000,
+        "recordedCount": 52,
+        "droppedCount": 0,
+        "dispatchedEventCount": 16
+      },
+      "coverageComplete": true
+    },
+    "phaseC": {
+      "enabled": true,
+      "runId": "w3diag-20260921T164039Z-6d2aa3f3",
+      "fetchedAtMs": 15101.364746,
+      "records": 100,
+      "stats": {
+        "schemaVersion": 1,
+        "enabled": true,
+        "instanceId": "01a0c4d7-4f8f-7549-8787-55b782ceb59d",
+        "backendInstanceId": "01a0c4d7-4f48-7771-a0c8-98b4becc6adb",
+        "processId": 1879623,
+        "processStartIso": "2026-09-21T16:40:39.577Z",
+        "hostname": "DESKTOP-0KADDT9",
+        "lifecycle": [
+          {
+            "component": "traceService",
+            "instanceId": "01a0c4d7-4f8f-7549-8787-55b782ceb59d",
+            "constructedAtIso": "2026-09-21T16:40:40.079Z"
+          },
+          {
+            "component": "gateway",
+            "instanceId": "01a0c4d7-4f9c-7688-b500-d3b1a3f4a883",
+            "constructedAtIso": "2026-09-21T16:40:40.092Z"
+          },
+          {
+            "component": "publisher",
+            "instanceId": "01a0c4d7-4f9d-7039-85ee-bc25efd59b29",
+            "constructedAtIso": "2026-09-21T16:40:40.093Z"
+          }
+        ],
+        "runId": "w3diag-20260921T164039Z-6d2aa3f3",
+        "bufferSize": 20000,
+        "recordedCount": 100,
+        "droppedCount": 0,
+        "dispatchedEventCount": 18
+      },
+      "coverageComplete": true
+    },
+    "phaseBRollups": [
+      {
+        "eventSeq": "1",
+        "eventId": "01a0c4d8-11f6-71ac-8db6-e612b57196ee",
+        "eventType": "session.state_changed",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "2",
+        "eventId": "01a0c4d8-123b-71c0-a728-e372221dee57",
+        "eventType": "session.state_changed",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "3",
+        "eventId": "01a0c4d8-125c-70aa-9c62-25ddd4addbcb",
+        "eventType": "question.opened",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "4",
+        "eventId": "01a0c4d8-8ebb-71ef-b371-d117c5f3ff6f",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "5",
+        "eventId": "01a0c4d8-8ec0-70f8-bec0-e0fdd4ecd5de",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "6",
+        "eventId": "01a0c4d8-8ec3-72e0-be9f-ad0f3c3e616a",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "9",
+        "eventId": "01a0c4d8-8ece-75ba-9e55-fbeb6c22ef29",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "12",
+        "eventId": "01a0c4d8-8ee1-73be-9b1a-6aad0d2420c0",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "13",
+        "eventId": "01a0c4d8-8ee5-74f2-865a-bd7e2722509f",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "14",
+        "eventId": "01a0c4d8-8eea-74d2-aa82-f328b6e52d30",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "17",
+        "eventId": "01a0c4d8-8ef3-73ef-b0e0-a24f375cc56e",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "20",
+        "eventId": "01a0c4d8-8efb-7528-875a-cf4e5d7d6da8",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "23",
+        "eventId": "01a0c4d8-8f04-7208-8a56-88dab9506cd3",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "26",
+        "eventId": "01a0c4d8-999b-77fc-9a1e-31f5a76b99ff",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          },
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "_YWEg0P3U4gR-gzEAAAH",
+              "iMKkd2cv0dHwgro7AAAF",
+              "e9mjzhmXoFc44a6xAAAI",
+              "V8pmpvwdba_9UGusAAAJ",
+              "KklUG2G4zyoRsQoQAAAK",
+              "QPu1n1qzB6upiiFXAAAT",
+              "NAfhJ6wRvJUrJWzSAAAV",
+              "PDP6xXfylE5bRKakAAAU",
+              "Kc7n1K2dkBpb-n_eAAAY",
+              "46y-8wT3kwdHN5zhAAAa",
+              "4lTGQfxnu2KY5AvfAAAZ",
+              "2opxiAyQOlCEzIuvAAAW",
+              "L6Epo5z2Ni3a1sJnAAAb",
+              "Y6w--A9qoRPosQaqAAAc",
+              "b8xpAgVZhLZcDwNCAAAe",
+              "8wRHIZJUddgpZb5bAAAg",
+              "6xBy3HbBLpiaMrpvAAAi",
+              "TSVDd_-KLaHh8WqzAAAm",
+              "ehJuxEJhBUoiN0TnAAAk",
+              "HHnOps2gMft3P0e0AAAn",
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp",
+          "8wRHIZJUddgpZb5bAAAg"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "29",
+        "eventId": "01a0c4d8-99ce-7724-9c9e-3a588641d41e",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          },
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "_YWEg0P3U4gR-gzEAAAH",
+              "iMKkd2cv0dHwgro7AAAF",
+              "e9mjzhmXoFc44a6xAAAI",
+              "V8pmpvwdba_9UGusAAAJ",
+              "KklUG2G4zyoRsQoQAAAK",
+              "QPu1n1qzB6upiiFXAAAT",
+              "NAfhJ6wRvJUrJWzSAAAV",
+              "PDP6xXfylE5bRKakAAAU",
+              "Kc7n1K2dkBpb-n_eAAAY",
+              "46y-8wT3kwdHN5zhAAAa",
+              "4lTGQfxnu2KY5AvfAAAZ",
+              "2opxiAyQOlCEzIuvAAAW",
+              "L6Epo5z2Ni3a1sJnAAAb",
+              "Y6w--A9qoRPosQaqAAAc",
+              "b8xpAgVZhLZcDwNCAAAe",
+              "8wRHIZJUddgpZb5bAAAg",
+              "6xBy3HbBLpiaMrpvAAAi",
+              "TSVDd_-KLaHh8WqzAAAm",
+              "ehJuxEJhBUoiN0TnAAAk",
+              "HHnOps2gMft3P0e0AAAn",
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp",
+          "QPu1n1qzB6upiiFXAAAT"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "32",
+        "eventId": "01a0c4d8-9a0a-72c9-b8d6-f1d517eb33cb",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          },
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "_YWEg0P3U4gR-gzEAAAH",
+              "iMKkd2cv0dHwgro7AAAF",
+              "e9mjzhmXoFc44a6xAAAI",
+              "V8pmpvwdba_9UGusAAAJ",
+              "KklUG2G4zyoRsQoQAAAK",
+              "QPu1n1qzB6upiiFXAAAT",
+              "NAfhJ6wRvJUrJWzSAAAV",
+              "PDP6xXfylE5bRKakAAAU",
+              "Kc7n1K2dkBpb-n_eAAAY",
+              "46y-8wT3kwdHN5zhAAAa",
+              "4lTGQfxnu2KY5AvfAAAZ",
+              "2opxiAyQOlCEzIuvAAAW",
+              "L6Epo5z2Ni3a1sJnAAAb",
+              "Y6w--A9qoRPosQaqAAAc",
+              "b8xpAgVZhLZcDwNCAAAe",
+              "8wRHIZJUddgpZb5bAAAg",
+              "6xBy3HbBLpiaMrpvAAAi",
+              "TSVDd_-KLaHh8WqzAAAm",
+              "ehJuxEJhBUoiN0TnAAAk",
+              "HHnOps2gMft3P0e0AAAn",
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp",
+          "L6Epo5z2Ni3a1sJnAAAb"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "transitionTo": "delivered"
+      }
+    ],
+    "phaseCRollups": [
+      {
+        "eventSeq": "1",
+        "eventId": "01a0c4d8-11f6-71ac-8db6-e612b57196ee",
+        "eventType": "session.state_changed",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "2",
+        "eventId": "01a0c4d8-123b-71c0-a728-e372221dee57",
+        "eventType": "session.state_changed",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "3",
+        "eventId": "01a0c4d8-125c-70aa-9c62-25ddd4addbcb",
+        "eventType": "question.opened",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "4",
+        "eventId": "01a0c4d8-8ebb-71ef-b371-d117c5f3ff6f",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "5",
+        "eventId": "01a0c4d8-8ec0-70f8-bec0-e0fdd4ecd5de",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "6",
+        "eventId": "01a0c4d8-8ec3-72e0-be9f-ad0f3c3e616a",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "9",
+        "eventId": "01a0c4d8-8ece-75ba-9e55-fbeb6c22ef29",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "12",
+        "eventId": "01a0c4d8-8ee1-73be-9b1a-6aad0d2420c0",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "13",
+        "eventId": "01a0c4d8-8ee5-74f2-865a-bd7e2722509f",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "14",
+        "eventId": "01a0c4d8-8eea-74d2-aa82-f328b6e52d30",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "17",
+        "eventId": "01a0c4d8-8ef3-73ef-b0e0-a24f375cc56e",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "20",
+        "eventId": "01a0c4d8-8efb-7528-875a-cf4e5d7d6da8",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "23",
+        "eventId": "01a0c4d8-8f04-7208-8a56-88dab9506cd3",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "26",
+        "eventId": "01a0c4d8-999b-77fc-9a1e-31f5a76b99ff",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          },
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "_YWEg0P3U4gR-gzEAAAH",
+              "iMKkd2cv0dHwgro7AAAF",
+              "e9mjzhmXoFc44a6xAAAI",
+              "V8pmpvwdba_9UGusAAAJ",
+              "KklUG2G4zyoRsQoQAAAK",
+              "QPu1n1qzB6upiiFXAAAT",
+              "NAfhJ6wRvJUrJWzSAAAV",
+              "PDP6xXfylE5bRKakAAAU",
+              "Kc7n1K2dkBpb-n_eAAAY",
+              "46y-8wT3kwdHN5zhAAAa",
+              "4lTGQfxnu2KY5AvfAAAZ",
+              "2opxiAyQOlCEzIuvAAAW",
+              "L6Epo5z2Ni3a1sJnAAAb",
+              "Y6w--A9qoRPosQaqAAAc",
+              "b8xpAgVZhLZcDwNCAAAe",
+              "8wRHIZJUddgpZb5bAAAg",
+              "6xBy3HbBLpiaMrpvAAAi",
+              "TSVDd_-KLaHh8WqzAAAm",
+              "ehJuxEJhBUoiN0TnAAAk",
+              "HHnOps2gMft3P0e0AAAn",
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp",
+          "8wRHIZJUddgpZb5bAAAg"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "29",
+        "eventId": "01a0c4d8-99ce-7724-9c9e-3a588641d41e",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          },
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "_YWEg0P3U4gR-gzEAAAH",
+              "iMKkd2cv0dHwgro7AAAF",
+              "e9mjzhmXoFc44a6xAAAI",
+              "V8pmpvwdba_9UGusAAAJ",
+              "KklUG2G4zyoRsQoQAAAK",
+              "QPu1n1qzB6upiiFXAAAT",
+              "NAfhJ6wRvJUrJWzSAAAV",
+              "PDP6xXfylE5bRKakAAAU",
+              "Kc7n1K2dkBpb-n_eAAAY",
+              "46y-8wT3kwdHN5zhAAAa",
+              "4lTGQfxnu2KY5AvfAAAZ",
+              "2opxiAyQOlCEzIuvAAAW",
+              "L6Epo5z2Ni3a1sJnAAAb",
+              "Y6w--A9qoRPosQaqAAAc",
+              "b8xpAgVZhLZcDwNCAAAe",
+              "8wRHIZJUddgpZb5bAAAg",
+              "6xBy3HbBLpiaMrpvAAAi",
+              "TSVDd_-KLaHh8WqzAAAm",
+              "ehJuxEJhBUoiN0TnAAAk",
+              "HHnOps2gMft3P0e0AAAn",
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp",
+          "QPu1n1qzB6upiiFXAAAT"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "32",
+        "eventId": "01a0c4d8-9a0a-72c9-b8d6-f1d517eb33cb",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          },
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "_YWEg0P3U4gR-gzEAAAH",
+              "iMKkd2cv0dHwgro7AAAF",
+              "e9mjzhmXoFc44a6xAAAI",
+              "V8pmpvwdba_9UGusAAAJ",
+              "KklUG2G4zyoRsQoQAAAK",
+              "QPu1n1qzB6upiiFXAAAT",
+              "NAfhJ6wRvJUrJWzSAAAV",
+              "PDP6xXfylE5bRKakAAAU",
+              "Kc7n1K2dkBpb-n_eAAAY",
+              "46y-8wT3kwdHN5zhAAAa",
+              "4lTGQfxnu2KY5AvfAAAZ",
+              "2opxiAyQOlCEzIuvAAAW",
+              "L6Epo5z2Ni3a1sJnAAAb",
+              "Y6w--A9qoRPosQaqAAAc",
+              "b8xpAgVZhLZcDwNCAAAe",
+              "8wRHIZJUddgpZb5bAAAg",
+              "6xBy3HbBLpiaMrpvAAAi",
+              "TSVDd_-KLaHh8WqzAAAm",
+              "ehJuxEJhBUoiN0TnAAAk",
+              "HHnOps2gMft3P0e0AAAn",
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp",
+          "L6Epo5z2Ni3a1sJnAAAb"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "34",
+        "eventId": "01a0c4d8-bd8e-73fc-951e-a050a85f5d68",
+        "eventType": "question.closed",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 21,
+            "recipientCount": 21,
+            "memberSocketIds": [
+              "_YWEg0P3U4gR-gzEAAAH",
+              "iMKkd2cv0dHwgro7AAAF",
+              "e9mjzhmXoFc44a6xAAAI",
+              "V8pmpvwdba_9UGusAAAJ",
+              "KklUG2G4zyoRsQoQAAAK",
+              "QPu1n1qzB6upiiFXAAAT",
+              "NAfhJ6wRvJUrJWzSAAAV",
+              "PDP6xXfylE5bRKakAAAU",
+              "Kc7n1K2dkBpb-n_eAAAY",
+              "46y-8wT3kwdHN5zhAAAa",
+              "4lTGQfxnu2KY5AvfAAAZ",
+              "2opxiAyQOlCEzIuvAAAW",
+              "L6Epo5z2Ni3a1sJnAAAb",
+              "Y6w--A9qoRPosQaqAAAc",
+              "b8xpAgVZhLZcDwNCAAAe",
+              "8wRHIZJUddgpZb5bAAAg",
+              "6xBy3HbBLpiaMrpvAAAi",
+              "TSVDd_-KLaHh8WqzAAAm",
+              "ehJuxEJhBUoiN0TnAAAk",
+              "HHnOps2gMft3P0e0AAAn",
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          },
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "_YWEg0P3U4gR-gzEAAAH",
+          "iMKkd2cv0dHwgro7AAAF",
+          "e9mjzhmXoFc44a6xAAAI",
+          "V8pmpvwdba_9UGusAAAJ",
+          "KklUG2G4zyoRsQoQAAAK",
+          "QPu1n1qzB6upiiFXAAAT",
+          "NAfhJ6wRvJUrJWzSAAAV",
+          "PDP6xXfylE5bRKakAAAU",
+          "Kc7n1K2dkBpb-n_eAAAY",
+          "46y-8wT3kwdHN5zhAAAa",
+          "4lTGQfxnu2KY5AvfAAAZ",
+          "2opxiAyQOlCEzIuvAAAW",
+          "L6Epo5z2Ni3a1sJnAAAb",
+          "Y6w--A9qoRPosQaqAAAc",
+          "b8xpAgVZhLZcDwNCAAAe",
+          "8wRHIZJUddgpZb5bAAAg",
+          "6xBy3HbBLpiaMrpvAAAi",
+          "TSVDd_-KLaHh8WqzAAAm",
+          "ehJuxEJhBUoiN0TnAAAk",
+          "HHnOps2gMft3P0e0AAAn",
+          "vNmY3IHh-pHatWw9AAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "35",
+        "eventId": "01a0c4d8-bd91-7428-8b79-9059464d8d56",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          },
+          {
+            "room": "session:01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+            "memberCount": 21,
+            "recipientCount": 21,
+            "memberSocketIds": [
+              "_YWEg0P3U4gR-gzEAAAH",
+              "iMKkd2cv0dHwgro7AAAF",
+              "e9mjzhmXoFc44a6xAAAI",
+              "V8pmpvwdba_9UGusAAAJ",
+              "KklUG2G4zyoRsQoQAAAK",
+              "QPu1n1qzB6upiiFXAAAT",
+              "NAfhJ6wRvJUrJWzSAAAV",
+              "PDP6xXfylE5bRKakAAAU",
+              "Kc7n1K2dkBpb-n_eAAAY",
+              "46y-8wT3kwdHN5zhAAAa",
+              "4lTGQfxnu2KY5AvfAAAZ",
+              "2opxiAyQOlCEzIuvAAAW",
+              "L6Epo5z2Ni3a1sJnAAAb",
+              "Y6w--A9qoRPosQaqAAAc",
+              "b8xpAgVZhLZcDwNCAAAe",
+              "8wRHIZJUddgpZb5bAAAg",
+              "6xBy3HbBLpiaMrpvAAAi",
+              "TSVDd_-KLaHh8WqzAAAm",
+              "ehJuxEJhBUoiN0TnAAAk",
+              "HHnOps2gMft3P0e0AAAn",
+              "vNmY3IHh-pHatWw9AAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "vNmY3IHh-pHatWw9AAAp",
+          "iMKkd2cv0dHwgro7AAAF",
+          "NAfhJ6wRvJUrJWzSAAAV",
+          "PDP6xXfylE5bRKakAAAU",
+          "46y-8wT3kwdHN5zhAAAa",
+          "V8pmpvwdba_9UGusAAAJ",
+          "QPu1n1qzB6upiiFXAAAT",
+          "KklUG2G4zyoRsQoQAAAK",
+          "e9mjzhmXoFc44a6xAAAI",
+          "_YWEg0P3U4gR-gzEAAAH",
+          "Kc7n1K2dkBpb-n_eAAAY",
+          "4lTGQfxnu2KY5AvfAAAZ",
+          "2opxiAyQOlCEzIuvAAAW",
+          "L6Epo5z2Ni3a1sJnAAAb",
+          "Y6w--A9qoRPosQaqAAAc",
+          "b8xpAgVZhLZcDwNCAAAe",
+          "8wRHIZJUddgpZb5bAAAg",
+          "6xBy3HbBLpiaMrpvAAAi",
+          "TSVDd_-KLaHh8WqzAAAm",
+          "ehJuxEJhBUoiN0TnAAAk",
+          "HHnOps2gMft3P0e0AAAn"
+        ],
+        "guardSkips": [
+          {
+            "socketId": "vNmY3IHh-pHatWw9AAAp",
+            "guard": "identity_mismatch"
+          }
+        ],
+        "deliveryRejected": [],
+        "visibility": "participant",
+        "transitionTo": "delivered"
+      }
+    ]
+  },
+  "verdict": {
+    "correctness": "FAIL",
+    "performance": "FAIL",
+    "performanceSignal": "W3 PERFORMANCE THRESHOLD FAIL SIGNAL"
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  }
+}

@@ -1,0 +1,3940 @@
+{
+  "schemaVersion": 1,
+  "phase": "W3-realtime-result-broadcast",
+  "runId": "w3perf-20260923T152205Z-e422794",
+  "questionType": "poll",
+  "participants": 20,
+  "fixture": {
+    "courseId": "01a0cedd-1586-744b-b6a3-5b803439b34a",
+    "questionId": "01a0cedd-159c-747b-89cf-309b45d07b13",
+    "liveSessionId": "01a0cedd-15be-74c2-9bcb-5d807ef26606",
+    "sessionQuestionId": "01a0cedd-15f4-77e5-b13f-ef17c5768738",
+    "sessionCode": "JD9CYMQP"
+  },
+  "connectionManifest": {
+    "teacherConnected": true,
+    "teacherSocketId": "Whp18qoSVeyaN6WfAAAp",
+    "participantsRequested": 20,
+    "participantsConnected": 20,
+    "participantsJoined": 20,
+    "duplicateSocketIds": 0,
+    "connectErrors": [],
+    "manifest": [
+      {
+        "participantId": "01a0cede-0e25-7385-a2b2-43b47d82a9eb",
+        "participantIndex": 0,
+        "socketId": "WFxbEIfF4Q_YBbGgAAAL",
+        "connected": true,
+        "connectedAtMs": 349.085647,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e48-754f-80bc-f73db31e52a2",
+        "participantIndex": 1,
+        "socketId": "iVSI2u9KKbN3Ou0LAAAn",
+        "connected": true,
+        "connectedAtMs": 361.578207,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e35-770e-b5bb-7f95b75ced6d",
+        "participantIndex": 2,
+        "socketId": "VCIH3i9MJNVlbTmzAAAj",
+        "connected": true,
+        "connectedAtMs": 360.33283299999994,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e58-77e3-9a86-62903322da0a",
+        "participantIndex": 3,
+        "socketId": "SELIHKufhCnnMS3_AAAl",
+        "connected": true,
+        "connectedAtMs": 361.03527399999996,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e23-774c-8f69-f9479e1342b8",
+        "participantIndex": 4,
+        "socketId": "cSyNpCIAGN084k_GAAAK",
+        "connected": true,
+        "connectedAtMs": 347.924795,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e57-73c9-a40b-73e2c8be7e00",
+        "participantIndex": 5,
+        "socketId": "w_VaXIjYfBfU1JMCAAAm",
+        "connected": true,
+        "connectedAtMs": 361.198536,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e2e-7367-b605-bdf1a1acafd6",
+        "participantIndex": 6,
+        "socketId": "GgqPnDCwCcJUX2gzAAAi",
+        "connected": true,
+        "connectedAtMs": 360.1274659999999,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e23-774c-8f69-fd79d068a310",
+        "participantIndex": 7,
+        "socketId": "VM7XPeGwI7jUfuEpAAAJ",
+        "connected": true,
+        "connectedAtMs": 346.554703,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e38-705a-a4e5-9f90fd1d4c58",
+        "participantIndex": 8,
+        "socketId": "YnKtK6jOEtml1JnkAAAc",
+        "connected": true,
+        "connectedAtMs": 357.6460599999999,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e24-759d-b399-0e11ed2b8234",
+        "participantIndex": 9,
+        "socketId": "tuEkdpvPGyPM9khQAAAk",
+        "connected": true,
+        "connectedAtMs": 360.57211699999993,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e32-7756-82cc-f0a69b0ae246",
+        "participantIndex": 10,
+        "socketId": "TbDeAdVFOPxFgQ07AAAe",
+        "connected": true,
+        "connectedAtMs": 358.606764,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e4f-74cb-af8c-10815d9cfad4",
+        "participantIndex": 11,
+        "socketId": "NvaiYwGNaGyro3ZwAAAX",
+        "connected": true,
+        "connectedAtMs": 354.906475,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e57-73c9-a40b-6d7cfb96623b",
+        "participantIndex": 12,
+        "socketId": "WB-eRWlYCEAE_61xAAAY",
+        "connected": true,
+        "connectedAtMs": 355.564342,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e3b-77fd-8b5e-5d608ab25ea4",
+        "participantIndex": 13,
+        "socketId": "5linaipA3JQ0xKyKAAAa",
+        "connected": true,
+        "connectedAtMs": 356.72002299999997,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e24-759d-b399-119d76d7a3dd",
+        "participantIndex": 14,
+        "socketId": "OApE3AzFxgaJUk21AAAf",
+        "connected": true,
+        "connectedAtMs": 358.910672,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e58-77e3-9a86-595dc652d799",
+        "participantIndex": 15,
+        "socketId": "ZwMa8NZ1HtJ_g-mwAAAZ",
+        "connected": true,
+        "connectedAtMs": 356.158191,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e25-7385-a2b2-4424d5f3e099",
+        "participantIndex": 16,
+        "socketId": "VqXdT_NgK5Q-rSR_AAAg",
+        "connected": true,
+        "connectedAtMs": 359.6450679999999,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e42-76ec-b77e-5ea015ca50fd",
+        "participantIndex": 17,
+        "socketId": "JhIInOKoVqNFf1sEAAAb",
+        "connected": true,
+        "connectedAtMs": 357.20192,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e3e-727c-abd1-97f497fc1b09",
+        "participantIndex": 18,
+        "socketId": "abPb20632Dd4qH5jAAAd",
+        "connected": true,
+        "connectedAtMs": 358.224241,
+        "everConnected": true,
+        "hasDisconnected": false
+      },
+      {
+        "participantId": "01a0cede-0e58-77e3-9a86-5ccc33213f36",
+        "participantIndex": 19,
+        "socketId": "wlno_EmG_c8RFwADAAAh",
+        "connected": true,
+        "connectedAtMs": 359.6801479999999,
+        "everConnected": true,
+        "hasDisconnected": false
+      }
+    ]
+  },
+  "stabilizeProbes": [
+    {
+      "atMs": 672.328161,
+      "connected": 20
+    },
+    {
+      "atMs": 973.1014029999999,
+      "connected": 20
+    },
+    {
+      "atMs": 1273.41416,
+      "connected": 20
+    }
+  ],
+  "socketTimelines": [
+    {
+      "label": "p0",
+      "participantId": "01a0cede-0e25-7385-a2b2-43b47d82a9eb",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 349.085647,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "28",
+        "35"
+      ]
+    },
+    {
+      "label": "p1",
+      "participantId": "01a0cede-0e48-754f-80bc-f73db31e52a2",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 361.578207,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p2",
+      "participantId": "01a0cede-0e35-770e-b5bb-7f95b75ced6d",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 360.33283299999994,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "24",
+        "35"
+      ]
+    },
+    {
+      "label": "p3",
+      "participantId": "01a0cede-0e58-77e3-9a86-62903322da0a",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 361.03527399999996,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p4",
+      "participantId": "01a0cede-0e23-774c-8f69-f9479e1342b8",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 347.924795,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "30",
+        "35"
+      ]
+    },
+    {
+      "label": "p5",
+      "participantId": "01a0cede-0e57-73c9-a40b-73e2c8be7e00",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 361.198536,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p6",
+      "participantId": "01a0cede-0e2e-7367-b605-bdf1a1acafd6",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 360.1274659999999,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "25",
+        "35"
+      ]
+    },
+    {
+      "label": "p7",
+      "participantId": "01a0cede-0e23-774c-8f69-fd79d068a310",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 346.554703,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p8",
+      "participantId": "01a0cede-0e38-705a-a4e5-9f90fd1d4c58",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 357.6460599999999,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "26",
+        "35"
+      ]
+    },
+    {
+      "label": "p9",
+      "participantId": "01a0cede-0e24-759d-b399-0e11ed2b8234",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 360.57211699999993,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p10",
+      "participantId": "01a0cede-0e32-7756-82cc-f0a69b0ae246",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 358.606764,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "29",
+        "35"
+      ]
+    },
+    {
+      "label": "p11",
+      "participantId": "01a0cede-0e4f-74cb-af8c-10815d9cfad4",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 354.906475,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p12",
+      "participantId": "01a0cede-0e57-73c9-a40b-6d7cfb96623b",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 355.564342,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "33",
+        "35"
+      ]
+    },
+    {
+      "label": "p13",
+      "participantId": "01a0cede-0e3b-77fd-8b5e-5d608ab25ea4",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 356.72002299999997,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p14",
+      "participantId": "01a0cede-0e24-759d-b399-119d76d7a3dd",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 358.910672,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "27",
+        "35"
+      ]
+    },
+    {
+      "label": "p15",
+      "participantId": "01a0cede-0e58-77e3-9a86-595dc652d799",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 356.158191,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p16",
+      "participantId": "01a0cede-0e25-7385-a2b2-4424d5f3e099",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 359.6450679999999,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "32",
+        "35"
+      ]
+    },
+    {
+      "label": "p17",
+      "participantId": "01a0cede-0e42-76ec-b77e-5ea015ca50fd",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 357.20192,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "p18",
+      "participantId": "01a0cede-0e3e-727c-abd1-97f497fc1b09",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 358.224241,
+      "disconnectedAtMs": null,
+      "receiptCount": 4,
+      "resultUpdatedSeqs": [
+        "31",
+        "35"
+      ]
+    },
+    {
+      "label": "p19",
+      "participantId": "01a0cede-0e58-77e3-9a86-5ccc33213f36",
+      "isTeacher": false,
+      "everConnected": true,
+      "connectedAtMs": 359.6801479999999,
+      "disconnectedAtMs": null,
+      "receiptCount": 3,
+      "resultUpdatedSeqs": [
+        "35"
+      ]
+    },
+    {
+      "label": "teacher",
+      "participantId": null,
+      "isTeacher": true,
+      "everConnected": true,
+      "connectedAtMs": 372.631263,
+      "disconnectedAtMs": null,
+      "receiptCount": 59,
+      "resultUpdatedSeqs": [
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "35"
+      ]
+    }
+  ],
+  "phaseA": {
+    "openResultEventCount": 0,
+    "participantsWithRestrictedReceiptBeforeAnswering": 0,
+    "leakingParticipants": [],
+    "teacherSawAggregate": true,
+    "abstainerProbe": {
+      "status": 409,
+      "errorCode": "RESULTS_NOT_REVEALED",
+      "refused": true
+    },
+    "leakage": false
+  },
+  "phaseB": {
+    "answeredCount": 10,
+    "abstainedCount": 10,
+    "expectedYes": 10,
+    "actualYes": 10,
+    "expectedNo": 10,
+    "forbiddenDelivery": 0,
+    "missingYes": 0,
+    "delayedButReceived": 0,
+    "votePermanentMissing": 0,
+    "voteResultEvents": 10,
+    "coalescedCount": 0,
+    "coalescedBeforeClaimCount": 0,
+    "claimedNotDispatchedCount": 0,
+    "dispatchedNotDeliveredCount": 0,
+    "deliveredCount": 10,
+    "unresolvedDeliveredNoPublisherRecordCount": 0,
+    "dispatchedCount": 10,
+    "gatewayEmittedCount": 10,
+    "clientReceivedCount": 10,
+    "voteEventMatrix": [
+      {
+        "eventId": "01a0cede-18f5-73c8-812f-e87fac17945c",
+        "eventSeq": "24",
+        "expectedParticipantId": "01a0cede-0e35-770e-b5bb-7f95b75ced6d",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-1905-7646-8d82-e4a17dbbc41f",
+        "eventSeq": "25",
+        "expectedParticipantId": "01a0cede-0e2e-7367-b605-bdf1a1acafd6",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-1915-7017-9403-084a53877cad",
+        "eventSeq": "26",
+        "expectedParticipantId": "01a0cede-0e38-705a-a4e5-9f90fd1d4c58",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-1925-725a-bdf6-ef71bd88cca6",
+        "eventSeq": "27",
+        "expectedParticipantId": "01a0cede-0e24-759d-b399-119d76d7a3dd",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-1938-77fd-a003-5bba3f51deaa",
+        "eventSeq": "28",
+        "expectedParticipantId": "01a0cede-0e25-7385-a2b2-43b47d82a9eb",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-1956-76ec-a334-a1ce6940eac8",
+        "eventSeq": "29",
+        "expectedParticipantId": "01a0cede-0e32-7756-82cc-f0a69b0ae246",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-196a-715a-90c8-d44eec971d99",
+        "eventSeq": "30",
+        "expectedParticipantId": "01a0cede-0e23-774c-8f69-f9479e1342b8",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-198a-76f8-8819-c7e19cdecb56",
+        "eventSeq": "31",
+        "expectedParticipantId": "01a0cede-0e3e-727c-abd1-97f497fc1b09",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-199d-748c-ace3-004eb687a77a",
+        "eventSeq": "32",
+        "expectedParticipantId": "01a0cede-0e25-7385-a2b2-4424d5f3e099",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      },
+      {
+        "eventId": "01a0cede-19ad-749d-8f2a-f77e4af2a521",
+        "eventSeq": "33",
+        "expectedParticipantId": "01a0cede-0e57-73c9-a40b-6d7cfb96623b",
+        "deliveryState": "delivered",
+        "lastFailureClass": null,
+        "coalesced": false,
+        "supersedingEventId": null,
+        "supersedingEventSeq": null,
+        "dispatchEntered": true,
+        "gatewayEmitted": true,
+        "clientReceived": true,
+        "finalClassification": "DELIVERED"
+      }
+    ],
+    "drainWaitMs": 23091.139152,
+    "recipientMatrix": [
+      {
+        "client": "p0",
+        "participantId": "01a0cede-0e25-7385-a2b2-43b47d82a9eb",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "28",
+        "actualReceipt": true,
+        "receiptEventSeq": "28",
+        "receiptAtMs": 20308.072714
+      },
+      {
+        "client": "p1",
+        "participantId": "01a0cede-0e48-754f-80bc-f73db31e52a2",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p2",
+        "participantId": "01a0cede-0e35-770e-b5bb-7f95b75ced6d",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "24",
+        "actualReceipt": true,
+        "receiptEventSeq": "24",
+        "receiptAtMs": 16314.521901
+      },
+      {
+        "client": "p3",
+        "participantId": "01a0cede-0e58-77e3-9a86-62903322da0a",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p4",
+        "participantId": "01a0cede-0e23-774c-8f69-f9479e1342b8",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "30",
+        "actualReceipt": true,
+        "receiptEventSeq": "30",
+        "receiptAtMs": 22319.804276
+      },
+      {
+        "client": "p5",
+        "participantId": "01a0cede-0e57-73c9-a40b-73e2c8be7e00",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p6",
+        "participantId": "01a0cede-0e2e-7367-b605-bdf1a1acafd6",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "25",
+        "actualReceipt": true,
+        "receiptEventSeq": "25",
+        "receiptAtMs": 17299.823093
+      },
+      {
+        "client": "p7",
+        "participantId": "01a0cede-0e23-774c-8f69-fd79d068a310",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p8",
+        "participantId": "01a0cede-0e38-705a-a4e5-9f90fd1d4c58",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "26",
+        "actualReceipt": true,
+        "receiptEventSeq": "26",
+        "receiptAtMs": 18314.398079
+      },
+      {
+        "client": "p9",
+        "participantId": "01a0cede-0e24-759d-b399-0e11ed2b8234",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p10",
+        "participantId": "01a0cede-0e32-7756-82cc-f0a69b0ae246",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "29",
+        "actualReceipt": true,
+        "receiptEventSeq": "29",
+        "receiptAtMs": 21309.16472
+      },
+      {
+        "client": "p11",
+        "participantId": "01a0cede-0e4f-74cb-af8c-10815d9cfad4",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p12",
+        "participantId": "01a0cede-0e57-73c9-a40b-6d7cfb96623b",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "33",
+        "actualReceipt": true,
+        "receiptEventSeq": "33",
+        "receiptAtMs": 25327.941348
+      },
+      {
+        "client": "p13",
+        "participantId": "01a0cede-0e3b-77fd-8b5e-5d608ab25ea4",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p14",
+        "participantId": "01a0cede-0e24-759d-b399-119d76d7a3dd",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "27",
+        "actualReceipt": true,
+        "receiptEventSeq": "27",
+        "receiptAtMs": 19306.258095
+      },
+      {
+        "client": "p15",
+        "participantId": "01a0cede-0e58-77e3-9a86-595dc652d799",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p16",
+        "participantId": "01a0cede-0e25-7385-a2b2-4424d5f3e099",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "32",
+        "actualReceipt": true,
+        "receiptEventSeq": "32",
+        "receiptAtMs": 24329.671794
+      },
+      {
+        "client": "p17",
+        "participantId": "01a0cede-0e42-76ec-b77e-5ea015ca50fd",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      },
+      {
+        "client": "p18",
+        "participantId": "01a0cede-0e3e-727c-abd1-97f497fc1b09",
+        "answered": true,
+        "expectedReveal": true,
+        "expectedEventSeq": "31",
+        "actualReceipt": true,
+        "receiptEventSeq": "31",
+        "receiptAtMs": 23324.927266
+      },
+      {
+        "client": "p19",
+        "participantId": "01a0cede-0e58-77e3-9a86-5ccc33213f36",
+        "answered": false,
+        "expectedReveal": false,
+        "expectedEventSeq": null,
+        "actualReceipt": false,
+        "receiptEventSeq": null,
+        "receiptAtMs": null
+      }
+    ],
+    "missingClassification": [],
+    "duplicateDeliveries": [],
+    "voteLatency": {
+      "stats": {
+        "count": 10,
+        "p50": 17375.296794,
+        "p95": 22278.375667,
+        "p99": 22278.375667,
+        "max": 22278.375667
+      },
+      "fastest": {
+        "id": "p2",
+        "value": 13448.105619
+      },
+      "median": {
+        "id": "p0",
+        "value": 17375.296794
+      },
+      "p95Near": {
+        "id": "p16",
+        "value": 21296.417427
+      },
+      "slowest": {
+        "id": "p12",
+        "value": 22278.375667
+      }
+    },
+    "votePublishLatency": {
+      "stats": {
+        "count": 10,
+        "p50": 17459,
+        "p95": 22479,
+        "p99": 22479,
+        "max": 22479
+      },
+      "fastest": {
+        "id": "p2",
+        "value": 13466
+      },
+      "median": {
+        "id": "p0",
+        "value": 17459
+      },
+      "p95Near": {
+        "id": "p16",
+        "value": 21481
+      },
+      "slowest": {
+        "id": "p12",
+        "value": 22479
+      }
+    },
+    "teacherPhaseB": {
+      "note": "Teacher receives a teacher-visibility result.updated per claimed result row (emitTeacherResults). Measured separately; excluded from the participant required-delivery gate.",
+      "receiptCount": 10,
+      "expectedAtLeast": 10,
+      "eventSeqs": [
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33"
+      ]
+    },
+    "authoritativeOptions": [
+      {
+        "optionId": "01a0cedd-15f4-77e5-b13f-f35fef022cf2",
+        "count": 4
+      },
+      {
+        "optionId": "01a0cedd-15f4-77e5-b13f-f435174bd114",
+        "count": 3
+      },
+      {
+        "optionId": "01a0cedd-15f4-77e5-b13f-fa70a679f4bd",
+        "count": 3
+      }
+    ]
+  },
+  "phaseC": {
+    "closeSeq": "35",
+    "closeRows": 1,
+    "closeRequestStartMs": 28185.284669,
+    "closeResponseEndMs": 28213.270151,
+    "closeDrainMs": 1004.9359299999996,
+    "closedExpected": 21,
+    "closedActual": 21,
+    "closedMissing": [],
+    "closedMissingClassification": [],
+    "duplicateDeliveries": [],
+    "recipients": [
+      {
+        "client": "p0",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28416.095561000002
+      },
+      {
+        "client": "p1",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28475.660145
+      },
+      {
+        "client": "p2",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28382.938905
+      },
+      {
+        "client": "p3",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28439.598906
+      },
+      {
+        "client": "p4",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28520.443180000002
+      },
+      {
+        "client": "p5",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28455.472721000002
+      },
+      {
+        "client": "p6",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28490.480485
+      },
+      {
+        "client": "p7",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28462.904548
+      },
+      {
+        "client": "p8",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28389.94799
+      },
+      {
+        "client": "p9",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28431.792492
+      },
+      {
+        "client": "p10",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28407.26868
+      },
+      {
+        "client": "p11",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28448.500505
+      },
+      {
+        "client": "p12",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28348.398830000002
+      },
+      {
+        "client": "p13",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28365.705163
+      },
+      {
+        "client": "p14",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28399.355809
+      },
+      {
+        "client": "p15",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28424.480747
+      },
+      {
+        "client": "p16",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28543.747608
+      },
+      {
+        "client": "p17",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28356.248055
+      },
+      {
+        "client": "p18",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28373.599611
+      },
+      {
+        "client": "p19",
+        "kind": "participant",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "35",
+        "receiptAtMs": 28336.593612
+      },
+      {
+        "client": "teacher",
+        "kind": "teacher",
+        "expected": true,
+        "received": true,
+        "receiptEventSeq": "24",
+        "receiptAtMs": 28324.355672
+      }
+    ],
+    "closeLatency": {
+      "stats": {
+        "count": 21,
+        "p50": 202.82541000000128,
+        "p95": 307.1730290000014,
+        "p99": 330.47745700000087,
+        "max": 330.47745700000087
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 111.08552100000088
+      },
+      "median": {
+        "id": "p0",
+        "value": 202.82541000000128
+      },
+      "p95Near": {
+        "id": "p4",
+        "value": 307.1730290000014
+      },
+      "slowest": {
+        "id": "p16",
+        "value": 330.47745700000087
+      }
+    },
+    "closePublishLatency": {
+      "stats": {
+        "count": 21,
+        "p50": 568,
+        "p95": 672,
+        "p99": 695,
+        "max": 695
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 476
+      },
+      "median": {
+        "id": "p0",
+        "value": 568
+      },
+      "p95Near": {
+        "id": "p4",
+        "value": 672
+      },
+      "slowest": {
+        "id": "p16",
+        "value": 695
+      }
+    }
+  },
+  "missingClassification": [],
+  "authoritative": {
+    "dbSubmissionCount": 10,
+    "expectedSubmissionCount": 10,
+    "options": [
+      {
+        "optionId": "01a0cedd-15f4-77e5-b13f-f35fef022cf2",
+        "count": 4
+      },
+      {
+        "optionId": "01a0cedd-15f4-77e5-b13f-f435174bd114",
+        "count": 3
+      },
+      {
+        "optionId": "01a0cedd-15f4-77e5-b13f-fa70a679f4bd",
+        "count": 3
+      }
+    ],
+    "dbOptionCounts": {
+      "01a0cedd-15f4-77e5-b13f-fa70a679f4bd": 3,
+      "01a0cedd-15f4-77e5-b13f-f35fef022cf2": 4,
+      "01a0cedd-15f4-77e5-b13f-f435174bd114": 3
+    },
+    "exact": true,
+    "participantAfterClose": {
+      "status": 200,
+      "options": [
+        {
+          "optionId": "01a0cedd-15f4-77e5-b13f-f35fef022cf2",
+          "count": 4
+        },
+        {
+          "optionId": "01a0cedd-15f4-77e5-b13f-f435174bd114",
+          "count": 3
+        },
+        {
+          "optionId": "01a0cedd-15f4-77e5-b13f-fa70a679f4bd",
+          "count": 3
+        }
+      ],
+      "exact": true
+    }
+  },
+  "latency": {
+    "threshold": {
+      "commitToBroadcastP95Ms": 2000,
+      "commitToBroadcastP99Ms": 5000,
+      "source": "../docs/智學互動平台/00_專案規劃/MVP 效能目標.md"
+    },
+    "commitToBroadcastNote": "COMMIT TIMING EVIDENCE GAP: exact commit timestamp unavailable (track_commit_timestamp=off); submit/close response end used as the closest explainable proxy, per W2 precedent.",
+    "voteToReveal": {
+      "stats": {
+        "count": 10,
+        "p50": 17375.296794,
+        "p95": 22278.375667,
+        "p99": 22278.375667,
+        "max": 22278.375667
+      },
+      "fastest": {
+        "id": "p2",
+        "value": 13448.105619
+      },
+      "median": {
+        "id": "p0",
+        "value": 17375.296794
+      },
+      "p95Near": {
+        "id": "p16",
+        "value": 21296.417427
+      },
+      "slowest": {
+        "id": "p12",
+        "value": 22278.375667
+      }
+    },
+    "voteToRevealPublishProxy": {
+      "stats": {
+        "count": 10,
+        "p50": 17459,
+        "p95": 22479,
+        "p99": 22479,
+        "max": 22479
+      },
+      "fastest": {
+        "id": "p2",
+        "value": 13466
+      },
+      "median": {
+        "id": "p0",
+        "value": 17459
+      },
+      "p95Near": {
+        "id": "p16",
+        "value": 21481
+      },
+      "slowest": {
+        "id": "p12",
+        "value": 22479
+      }
+    },
+    "finalBroadcast": {
+      "stats": {
+        "count": 21,
+        "p50": 202.82541000000128,
+        "p95": 307.1730290000014,
+        "p99": 330.47745700000087,
+        "max": 330.47745700000087
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 111.08552100000088
+      },
+      "median": {
+        "id": "p0",
+        "value": 202.82541000000128
+      },
+      "p95Near": {
+        "id": "p4",
+        "value": 307.1730290000014
+      },
+      "slowest": {
+        "id": "p16",
+        "value": 330.47745700000087
+      }
+    },
+    "finalBroadcastPublishProxy": {
+      "stats": {
+        "count": 21,
+        "p50": 568,
+        "p95": 672,
+        "p99": 695,
+        "max": 695
+      },
+      "fastest": {
+        "id": "teacher",
+        "value": 476
+      },
+      "median": {
+        "id": "p0",
+        "value": 568
+      },
+      "p95Near": {
+        "id": "p4",
+        "value": 672
+      },
+      "slowest": {
+        "id": "p16",
+        "value": 695
+      }
+    }
+  },
+  "serverTrace": {
+    "traceEnabled": true,
+    "deliveryStateSemantics": "delivery_state='delivered' is split in this diagnostic: DELIVERED when the publisher claim→dispatch→ack path all succeeded, COALESCED_BEFORE_CLAIM when coalescing superseded the row before claim, or UNRESOLVED_DELIVERED_NO_PUBLISHER_RECORD when the row is delivered with no publisher record under complete coverage (delivered outside this trace's attribution scope); none of these mean client-delivered by themselves.",
+    "documentedContract": {
+      "source": "../docs/智學互動平台/30_系統設計/即時同步與結果治理設計.md",
+      "summary": "Open vote-to-reveal results are targeted to the submitting participant; close publishes the final participant-safe result to all eligible participants. Latest non-authoritative result.updated notifications may coalesce.",
+      "contractAmbiguity": "High-level W3 wording does not explicitly require every answered participant to receive every intermediate aggregate update; repository API/runtime docs define the own-submit targeted event and final close fan-out."
+    },
+    "phaseB": {
+      "enabled": true,
+      "runId": "w3perf-20260923T152205Z-e422794",
+      "fetchedAtMs": 28155.32009,
+      "records": 116,
+      "stats": {
+        "schemaVersion": 1,
+        "enabled": true,
+        "instanceId": "01a0cedc-1c01-758e-8418-b395c435df65",
+        "backendInstanceId": "01a0cedc-1b46-723d-b269-8abdb7bf0e7f",
+        "processId": 16470,
+        "processStartIso": "2026-09-23T15:22:05.601Z",
+        "hostname": "DESKTOP-0KADDT9",
+        "lifecycle": [
+          {
+            "component": "traceService",
+            "instanceId": "01a0cedc-1c01-758e-8418-b395c435df65",
+            "constructedAtIso": "2026-09-23T15:22:06.721Z"
+          },
+          {
+            "component": "gateway",
+            "instanceId": "01a0cedc-1c14-702e-bbe0-43d8f2f9000d",
+            "constructedAtIso": "2026-09-23T15:22:06.740Z"
+          },
+          {
+            "component": "publisher",
+            "instanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+            "constructedAtIso": "2026-09-23T15:22:06.740Z"
+          }
+        ],
+        "runId": "w3perf-20260923T152205Z-e422794",
+        "bufferSize": 5000,
+        "recordedCount": 116,
+        "droppedCount": 0,
+        "dispatchedEventCount": 33
+      },
+      "coverageComplete": true
+    },
+    "phaseC": {
+      "enabled": true,
+      "runId": "w3perf-20260923T152205Z-e422794",
+      "fetchedAtMs": 31222.958164,
+      "records": 164,
+      "stats": {
+        "schemaVersion": 1,
+        "enabled": true,
+        "instanceId": "01a0cedc-1c01-758e-8418-b395c435df65",
+        "backendInstanceId": "01a0cedc-1b46-723d-b269-8abdb7bf0e7f",
+        "processId": 16470,
+        "processStartIso": "2026-09-23T15:22:05.601Z",
+        "hostname": "DESKTOP-0KADDT9",
+        "lifecycle": [
+          {
+            "component": "traceService",
+            "instanceId": "01a0cedc-1c01-758e-8418-b395c435df65",
+            "constructedAtIso": "2026-09-23T15:22:06.721Z"
+          },
+          {
+            "component": "gateway",
+            "instanceId": "01a0cedc-1c14-702e-bbe0-43d8f2f9000d",
+            "constructedAtIso": "2026-09-23T15:22:06.740Z"
+          },
+          {
+            "component": "publisher",
+            "instanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+            "constructedAtIso": "2026-09-23T15:22:06.740Z"
+          }
+        ],
+        "runId": "w3perf-20260923T152205Z-e422794",
+        "bufferSize": 5000,
+        "recordedCount": 164,
+        "droppedCount": 0,
+        "dispatchedEventCount": 35
+      },
+      "coverageComplete": true
+    },
+    "phaseBRollups": [
+      {
+        "eventSeq": "1",
+        "eventId": "01a0cedd-15c8-77b9-9403-af99f06b2e7f",
+        "eventType": "session.state_changed",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "2",
+        "eventId": "01a0cedd-1600-7591-9937-d5c92af50d00",
+        "eventType": "session.state_changed",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "3",
+        "eventId": "01a0cedd-1621-768e-8941-66bdab1ce420",
+        "eventType": "question.opened",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "4",
+        "eventId": "01a0cede-0e2b-7243-8e16-4c863062babc",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "5",
+        "eventId": "01a0cede-0e2f-76cd-850f-b244b742a006",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "6",
+        "eventId": "01a0cede-0e35-770e-b5bb-7bc4c7a99c57",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "7",
+        "eventId": "01a0cede-0e3a-76d9-aa94-39ba0321d16b",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "8",
+        "eventId": "01a0cede-0e3e-727c-abd1-907733a81b77",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "9",
+        "eventId": "01a0cede-0e42-76ec-b77e-5a33ef251e28",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "10",
+        "eventId": "01a0cede-0e46-701c-ab0b-d048000accd7",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "11",
+        "eventId": "01a0cede-0e4a-772d-aa4d-c1e208161e8e",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "12",
+        "eventId": "01a0cede-0e4e-72ea-8569-0129dd3d3971",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "13",
+        "eventId": "01a0cede-0e51-750d-9ed0-397564c0f0fb",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "14",
+        "eventId": "01a0cede-0e55-7709-821c-8b8448920cfd",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "15",
+        "eventId": "01a0cede-0e5b-727e-ad07-87c7503f5f09",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "16",
+        "eventId": "01a0cede-0e5f-7128-9fdf-b5a6f4c53d4b",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "17",
+        "eventId": "01a0cede-0e63-74db-9a03-42bbc5c0b96e",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "18",
+        "eventId": "01a0cede-0e67-7359-a6ce-6fc671901721",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "19",
+        "eventId": "01a0cede-0e6a-7740-a1a1-4640729d3409",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "20",
+        "eventId": "01a0cede-0e6d-76bf-963b-f3b25bbec52b",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "21",
+        "eventId": "01a0cede-0e70-752b-80e9-b7f726698c2c",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "22",
+        "eventId": "01a0cede-0e73-75d7-80b0-d48119767113",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "23",
+        "eventId": "01a0cede-0e77-777a-9529-c140b174dfe5",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "24",
+        "eventId": "01a0cede-18f5-73c8-812f-e87fac17945c",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "VCIH3i9MJNVlbTmzAAAj"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "25",
+        "eventId": "01a0cede-1905-7646-8d82-e4a17dbbc41f",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "GgqPnDCwCcJUX2gzAAAi"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "26",
+        "eventId": "01a0cede-1915-7017-9403-084a53877cad",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "YnKtK6jOEtml1JnkAAAc"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "27",
+        "eventId": "01a0cede-1925-725a-bdf6-ef71bd88cca6",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "OApE3AzFxgaJUk21AAAf"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "28",
+        "eventId": "01a0cede-1938-77fd-a003-5bba3f51deaa",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "WFxbEIfF4Q_YBbGgAAAL"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "29",
+        "eventId": "01a0cede-1956-76ec-a334-a1ce6940eac8",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "TbDeAdVFOPxFgQ07AAAe"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "30",
+        "eventId": "01a0cede-196a-715a-90c8-d44eec971d99",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "cSyNpCIAGN084k_GAAAK"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "31",
+        "eventId": "01a0cede-198a-76f8-8819-c7e19cdecb56",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "abPb20632Dd4qH5jAAAd"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "32",
+        "eventId": "01a0cede-199d-748c-ace3-004eb687a77a",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "VqXdT_NgK5Q-rSR_AAAg"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "33",
+        "eventId": "01a0cede-19ad-749d-8f2a-f77e4af2a521",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "WB-eRWlYCEAE_61xAAAY"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      }
+    ],
+    "phaseCRollups": [
+      {
+        "eventSeq": "1",
+        "eventId": "01a0cedd-15c8-77b9-9403-af99f06b2e7f",
+        "eventType": "session.state_changed",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "2",
+        "eventId": "01a0cedd-1600-7591-9937-d5c92af50d00",
+        "eventType": "session.state_changed",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "3",
+        "eventId": "01a0cedd-1621-768e-8941-66bdab1ce420",
+        "eventType": "question.opened",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          },
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "4",
+        "eventId": "01a0cede-0e2b-7243-8e16-4c863062babc",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "5",
+        "eventId": "01a0cede-0e2f-76cd-850f-b244b742a006",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "6",
+        "eventId": "01a0cede-0e35-770e-b5bb-7bc4c7a99c57",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 0,
+            "recipientCount": 0,
+            "memberSocketIds": []
+          }
+        ],
+        "emittedSocketIds": [],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "7",
+        "eventId": "01a0cede-0e3a-76d9-aa94-39ba0321d16b",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "8",
+        "eventId": "01a0cede-0e3e-727c-abd1-907733a81b77",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "9",
+        "eventId": "01a0cede-0e42-76ec-b77e-5a33ef251e28",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "10",
+        "eventId": "01a0cede-0e46-701c-ab0b-d048000accd7",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "11",
+        "eventId": "01a0cede-0e4a-772d-aa4d-c1e208161e8e",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "12",
+        "eventId": "01a0cede-0e4e-72ea-8569-0129dd3d3971",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "13",
+        "eventId": "01a0cede-0e51-750d-9ed0-397564c0f0fb",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "14",
+        "eventId": "01a0cede-0e55-7709-821c-8b8448920cfd",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "15",
+        "eventId": "01a0cede-0e5b-727e-ad07-87c7503f5f09",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "16",
+        "eventId": "01a0cede-0e5f-7128-9fdf-b5a6f4c53d4b",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "17",
+        "eventId": "01a0cede-0e63-74db-9a03-42bbc5c0b96e",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "18",
+        "eventId": "01a0cede-0e67-7359-a6ce-6fc671901721",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "19",
+        "eventId": "01a0cede-0e6a-7740-a1a1-4640729d3409",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "20",
+        "eventId": "01a0cede-0e6d-76bf-963b-f3b25bbec52b",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "21",
+        "eventId": "01a0cede-0e70-752b-80e9-b7f726698c2c",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "22",
+        "eventId": "01a0cede-0e73-75d7-80b0-d48119767113",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "23",
+        "eventId": "01a0cede-0e77-777a-9529-c140b174dfe5",
+        "eventType": "session.snapshot",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "teacher",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "24",
+        "eventId": "01a0cede-18f5-73c8-812f-e87fac17945c",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "VCIH3i9MJNVlbTmzAAAj"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "25",
+        "eventId": "01a0cede-1905-7646-8d82-e4a17dbbc41f",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "GgqPnDCwCcJUX2gzAAAi"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "26",
+        "eventId": "01a0cede-1915-7017-9403-084a53877cad",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "YnKtK6jOEtml1JnkAAAc"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "27",
+        "eventId": "01a0cede-1925-725a-bdf6-ef71bd88cca6",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "OApE3AzFxgaJUk21AAAf"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "28",
+        "eventId": "01a0cede-1938-77fd-a003-5bba3f51deaa",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "WFxbEIfF4Q_YBbGgAAAL"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "29",
+        "eventId": "01a0cede-1956-76ec-a334-a1ce6940eac8",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "TbDeAdVFOPxFgQ07AAAe"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "30",
+        "eventId": "01a0cede-196a-715a-90c8-d44eec971d99",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "cSyNpCIAGN084k_GAAAK"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "31",
+        "eventId": "01a0cede-198a-76f8-8819-c7e19cdecb56",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "abPb20632Dd4qH5jAAAd"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "32",
+        "eventId": "01a0cede-199d-748c-ace3-004eb687a77a",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "VqXdT_NgK5Q-rSR_AAAg"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "33",
+        "eventId": "01a0cede-19ad-749d-8f2a-f77e4af2a521",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "WB-eRWlYCEAE_61xAAAY"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "participant_after_submit",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "34",
+        "eventId": "01a0cede-7bf4-7330-a92c-771a65e42987",
+        "eventType": "question.closed",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 21,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "wlno_EmG_c8RFwADAAAh",
+          "WB-eRWlYCEAE_61xAAAY",
+          "5linaipA3JQ0xKyKAAAa",
+          "VCIH3i9MJNVlbTmzAAAj",
+          "OApE3AzFxgaJUk21AAAf",
+          "ZwMa8NZ1HtJ_g-mwAAAZ",
+          "NvaiYwGNaGyro3ZwAAAX",
+          "VM7XPeGwI7jUfuEpAAAJ",
+          "WFxbEIfF4Q_YBbGgAAAL",
+          "cSyNpCIAGN084k_GAAAK",
+          "JhIInOKoVqNFf1sEAAAb",
+          "abPb20632Dd4qH5jAAAd",
+          "YnKtK6jOEtml1JnkAAAc",
+          "TbDeAdVFOPxFgQ07AAAe",
+          "tuEkdpvPGyPM9khQAAAk",
+          "SELIHKufhCnnMS3_AAAl",
+          "w_VaXIjYfBfU1JMCAAAm",
+          "iVSI2u9KKbN3Ou0LAAAn",
+          "GgqPnDCwCcJUX2gzAAAi",
+          "VqXdT_NgK5Q-rSR_AAAg",
+          "Whp18qoSVeyaN6WfAAAp"
+        ],
+        "guardSkips": [],
+        "deliveryRejected": [],
+        "visibility": "session",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      },
+      {
+        "eventSeq": "35",
+        "eventId": "01a0cede-7bf8-7485-86db-72a26e7afc54",
+        "eventType": "result.updated",
+        "gatewayDispatchCalled": true,
+        "claimOnly": true,
+        "coalesced": false,
+        "rooms": [
+          {
+            "room": "teacher:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 1,
+            "recipientCount": 1,
+            "memberSocketIds": [
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          },
+          {
+            "room": "session:01a0cedd-15be-74c2-9bcb-5d807ef26606",
+            "memberCount": 21,
+            "recipientCount": 21,
+            "memberSocketIds": [
+              "wlno_EmG_c8RFwADAAAh",
+              "WB-eRWlYCEAE_61xAAAY",
+              "5linaipA3JQ0xKyKAAAa",
+              "VCIH3i9MJNVlbTmzAAAj",
+              "OApE3AzFxgaJUk21AAAf",
+              "ZwMa8NZ1HtJ_g-mwAAAZ",
+              "NvaiYwGNaGyro3ZwAAAX",
+              "VM7XPeGwI7jUfuEpAAAJ",
+              "WFxbEIfF4Q_YBbGgAAAL",
+              "cSyNpCIAGN084k_GAAAK",
+              "JhIInOKoVqNFf1sEAAAb",
+              "abPb20632Dd4qH5jAAAd",
+              "YnKtK6jOEtml1JnkAAAc",
+              "TbDeAdVFOPxFgQ07AAAe",
+              "tuEkdpvPGyPM9khQAAAk",
+              "SELIHKufhCnnMS3_AAAl",
+              "w_VaXIjYfBfU1JMCAAAm",
+              "iVSI2u9KKbN3Ou0LAAAn",
+              "GgqPnDCwCcJUX2gzAAAi",
+              "VqXdT_NgK5Q-rSR_AAAg",
+              "Whp18qoSVeyaN6WfAAAp"
+            ]
+          }
+        ],
+        "emittedSocketIds": [
+          "Whp18qoSVeyaN6WfAAAp",
+          "wlno_EmG_c8RFwADAAAh",
+          "WB-eRWlYCEAE_61xAAAY",
+          "JhIInOKoVqNFf1sEAAAb",
+          "5linaipA3JQ0xKyKAAAa",
+          "abPb20632Dd4qH5jAAAd",
+          "VCIH3i9MJNVlbTmzAAAj",
+          "YnKtK6jOEtml1JnkAAAc",
+          "OApE3AzFxgaJUk21AAAf",
+          "TbDeAdVFOPxFgQ07AAAe",
+          "WFxbEIfF4Q_YBbGgAAAL",
+          "ZwMa8NZ1HtJ_g-mwAAAZ",
+          "tuEkdpvPGyPM9khQAAAk",
+          "SELIHKufhCnnMS3_AAAl",
+          "NvaiYwGNaGyro3ZwAAAX",
+          "w_VaXIjYfBfU1JMCAAAm",
+          "VM7XPeGwI7jUfuEpAAAJ",
+          "iVSI2u9KKbN3Ou0LAAAn",
+          "GgqPnDCwCcJUX2gzAAAi",
+          "cSyNpCIAGN084k_GAAAK",
+          "VqXdT_NgK5Q-rSR_AAAg"
+        ],
+        "guardSkips": [
+          {
+            "socketId": "Whp18qoSVeyaN6WfAAAp",
+            "guard": "identity_mismatch"
+          }
+        ],
+        "deliveryRejected": [],
+        "visibility": "participant",
+        "publisherClaimToken": "01a0cedc-1c14-702e-bbe0-4a31773049c5",
+        "publisherInstanceId": "01a0cedc-1c14-702e-bbe0-46422c25b500",
+        "transitionTo": "delivered"
+      }
+    ]
+  },
+  "verdict": {
+    "correctness": "PASS",
+    "performance": "FAIL",
+    "performanceSignal": "W3 PERFORMANCE THRESHOLD FAIL SIGNAL"
+  },
+  "safety": {
+    "secretsRedacted": true,
+    "destructiveCleanup": false
+  }
+}

@@ -1,0 +1,4201 @@
+{
+  "schemaVersion": 3,
+  "enabled": true,
+  "target": "smartlearning_test",
+  "sampling": {
+    "startedAt": "2026-09-20T02:34:56.280Z",
+    "finishedAt": "2026-09-20T02:34:59.046Z",
+    "intervalMs": 250
+  },
+  "samples": [
+    {
+      "capturedAt": "2026-09-20T02:34:56.288Z",
+      "activeCount": 0,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:55.931Z",
+          "state_change": "2026-09-20T02:34:55.931Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "355.240000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.188Z",
+          "state_change": "2026-09-20T02:34:56.188Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "98.136000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.115Z",
+          "state_change": "2026-09-20T02:34:56.116Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "171.172000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.146Z",
+          "state_change": "2026-09-20T02:34:56.147Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "140.010000",
+          "blocking_pids": []
+        }
+      ],
+      "locks": {
+        "total": 0,
+        "granted": 0,
+        "waiting": 0,
+        "modes": {},
+        "objects": {}
+      },
+      "blockingEdges": []
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:56.537Z",
+      "activeCount": 0,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:55.931Z",
+          "state_change": "2026-09-20T02:34:55.931Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "604.123000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.188Z",
+          "state_change": "2026-09-20T02:34:56.188Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "346.997000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.529Z",
+          "state_change": "2026-09-20T02:34:56.529Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "5.810000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.529Z",
+          "state_change": "2026-09-20T02:34:56.529Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "5.840000",
+          "blocking_pids": []
+        }
+      ],
+      "locks": {
+        "total": 0,
+        "granted": 0,
+        "waiting": 0,
+        "modes": {},
+        "objects": {}
+      },
+      "blockingEdges": []
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:56.787Z",
+      "activeCount": 3,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:55.931Z",
+          "state_change": "2026-09-20T02:34:55.931Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "853.944000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.188Z",
+          "state_change": "2026-09-20T02:34:56.188Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "596.814000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.785Z",
+          "state_change": "2026-09-20T02:34:56.785Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.257000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:56.785Z",
+          "query_start": "2026-09-20T02:34:56.785Z",
+          "state_change": "2026-09-20T02:34:56.785Z",
+          "transaction_age_ms": "0.095000",
+          "query_age_ms": "0.095000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.784Z",
+          "state_change": "2026-09-20T02:34:56.784Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.608000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:56.785Z",
+          "query_start": "2026-09-20T02:34:56.785Z",
+          "state_change": "2026-09-20T02:34:56.785Z",
+          "transaction_age_ms": "0.110000",
+          "query_age_ms": "0.111000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.785Z",
+          "state_change": "2026-09-20T02:34:56.785Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.256000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.785Z",
+          "state_change": "2026-09-20T02:34:56.785Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.384000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:56.785Z",
+          "query_start": "2026-09-20T02:34:56.785Z",
+          "state_change": "2026-09-20T02:34:56.785Z",
+          "transaction_age_ms": "0.235000",
+          "query_age_ms": "0.096000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.785Z",
+          "state_change": "2026-09-20T02:34:56.785Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.299000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.784Z",
+          "state_change": "2026-09-20T02:34:56.784Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "1.007000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.784Z",
+          "state_change": "2026-09-20T02:34:56.784Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "1.078000",
+          "blocking_pids": []
+        }
+      ],
+      "locks": {
+        "total": 0,
+        "granted": 0,
+        "waiting": 0,
+        "modes": {},
+        "objects": {}
+      },
+      "blockingEdges": []
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:57.038Z",
+      "activeCount": 8,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.812Z",
+          "state_change": "2026-09-20T02:34:56.812Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "223.278000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.188Z",
+          "state_change": "2026-09-20T02:34:56.188Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "846.964000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.010Z",
+          "query_start": "2026-09-20T02:34:57.011Z",
+          "state_change": "2026-09-20T02:34:57.011Z",
+          "transaction_age_ms": "24.705000",
+          "query_age_ms": "23.716000",
+          "blocking_pids": [
+            2115,
+            2119,
+            2120,
+            2114,
+            2116
+          ]
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.017Z",
+          "query_start": "2026-09-20T02:34:57.018Z",
+          "state_change": "2026-09-20T02:34:57.018Z",
+          "transaction_age_ms": "17.947000",
+          "query_age_ms": "16.815000",
+          "blocking_pids": [
+            2115,
+            2119,
+            2120,
+            2114,
+            2116,
+            2100
+          ]
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:56.968Z",
+          "query_start": "2026-09-20T02:34:56.968Z",
+          "state_change": "2026-09-20T02:34:57.034Z",
+          "transaction_age_ms": "67.472000",
+          "query_age_ms": "66.639000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:56.996Z",
+          "query_start": "2026-09-20T02:34:56.997Z",
+          "state_change": "2026-09-20T02:34:56.997Z",
+          "transaction_age_ms": "38.966000",
+          "query_age_ms": "38.189000",
+          "blocking_pids": [
+            2115,
+            2119,
+            2120
+          ]
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:56.974Z",
+          "query_start": "2026-09-20T02:34:56.975Z",
+          "state_change": "2026-09-20T02:34:56.975Z",
+          "transaction_age_ms": "60.805000",
+          "query_age_ms": "60.059000",
+          "blocking_pids": [
+            2113
+          ]
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.003Z",
+          "query_start": "2026-09-20T02:34:57.004Z",
+          "state_change": "2026-09-20T02:34:57.004Z",
+          "transaction_age_ms": "31.970000",
+          "query_age_ms": "30.909000",
+          "blocking_pids": [
+            2115,
+            2119,
+            2120,
+            2114
+          ]
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:57.033Z",
+          "state_change": "2026-09-20T02:34:57.034Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "2.100000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.026Z",
+          "query_start": "2026-09-20T02:34:57.027Z",
+          "state_change": "2026-09-20T02:34:57.027Z",
+          "transaction_age_ms": "8.972000",
+          "query_age_ms": "7.573000",
+          "blocking_pids": [
+            2115,
+            2119,
+            2120,
+            2114,
+            2116,
+            2100,
+            2111
+          ]
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:56.980Z",
+          "query_start": "2026-09-20T02:34:56.981Z",
+          "state_change": "2026-09-20T02:34:56.981Z",
+          "transaction_age_ms": "54.989000",
+          "query_age_ms": "53.720000",
+          "blocking_pids": [
+            2115
+          ]
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:56.989Z",
+          "query_start": "2026-09-20T02:34:56.990Z",
+          "state_change": "2026-09-20T02:34:56.990Z",
+          "transaction_age_ms": "45.643000",
+          "query_age_ms": "44.646000",
+          "blocking_pids": [
+            2115,
+            2119
+          ]
+        }
+      ],
+      "locks": {
+        "total": 87,
+        "granted": 78,
+        "waiting": 9,
+        "modes": {
+          "RowShareLock": 60,
+          "AccessExclusiveLock": 9,
+          "ExclusiveLock": 11,
+          "AccessShareLock": 6,
+          "ShareLock": 1
+        },
+        "objects": {
+          "relation": 75,
+          "virtualxid": 10,
+          "transactionid": 2
+        }
+      },
+      "blockingEdges": [
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "transactionid"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        }
+      ]
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:57.288Z",
+      "activeCount": 9,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.812Z",
+          "state_change": "2026-09-20T02:34:56.812Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "473.706000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:57.241Z",
+          "state_change": "2026-09-20T02:34:57.242Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "44.339000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.272Z",
+          "query_start": "2026-09-20T02:34:57.272Z",
+          "state_change": "2026-09-20T02:34:57.272Z",
+          "transaction_age_ms": "13.841000",
+          "query_age_ms": "13.040000",
+          "blocking_pids": [
+            2113,
+            2115,
+            2119,
+            2120,
+            2114,
+            2116
+          ]
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.277Z",
+          "query_start": "2026-09-20T02:34:57.277Z",
+          "state_change": "2026-09-20T02:34:57.277Z",
+          "transaction_age_ms": "8.957000",
+          "query_age_ms": "8.140000",
+          "blocking_pids": [
+            2113,
+            2115,
+            2119,
+            2120,
+            2114,
+            2116,
+            2100
+          ]
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.233Z",
+          "query_start": "2026-09-20T02:34:57.234Z",
+          "state_change": "2026-09-20T02:34:57.234Z",
+          "transaction_age_ms": "52.719000",
+          "query_age_ms": "51.955000",
+          "blocking_pids": [
+            2117
+          ]
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.260Z",
+          "query_start": "2026-09-20T02:34:57.261Z",
+          "state_change": "2026-09-20T02:34:57.261Z",
+          "transaction_age_ms": "25.422000",
+          "query_age_ms": "24.598000",
+          "blocking_pids": [
+            2113,
+            2115,
+            2119,
+            2120
+          ]
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.238Z",
+          "query_start": "2026-09-20T02:34:57.239Z",
+          "state_change": "2026-09-20T02:34:57.239Z",
+          "transaction_age_ms": "47.636000",
+          "query_age_ms": "46.752000",
+          "blocking_pids": [
+            2113
+          ]
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.265Z",
+          "query_start": "2026-09-20T02:34:57.266Z",
+          "state_change": "2026-09-20T02:34:57.266Z",
+          "transaction_age_ms": "20.196000",
+          "query_age_ms": "19.373000",
+          "blocking_pids": [
+            2113,
+            2115,
+            2119,
+            2120,
+            2114
+          ]
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.227Z",
+          "query_start": "2026-09-20T02:34:57.285Z",
+          "state_change": "2026-09-20T02:34:57.285Z",
+          "transaction_age_ms": "58.890000",
+          "query_age_ms": "0.535000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.283Z",
+          "query_start": "2026-09-20T02:34:57.284Z",
+          "state_change": "2026-09-20T02:34:57.284Z",
+          "transaction_age_ms": "2.877000",
+          "query_age_ms": "1.824000",
+          "blocking_pids": [
+            2113,
+            2115,
+            2119,
+            2120,
+            2114,
+            2116,
+            2100,
+            2111
+          ]
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.248Z",
+          "query_start": "2026-09-20T02:34:57.250Z",
+          "state_change": "2026-09-20T02:34:57.250Z",
+          "transaction_age_ms": "37.367000",
+          "query_age_ms": "35.879000",
+          "blocking_pids": [
+            2113,
+            2115
+          ]
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.255Z",
+          "query_start": "2026-09-20T02:34:57.256Z",
+          "state_change": "2026-09-20T02:34:57.256Z",
+          "transaction_age_ms": "30.915000",
+          "query_age_ms": "29.799000",
+          "blocking_pids": [
+            2113,
+            2115,
+            2119
+          ]
+        }
+      ],
+      "locks": {
+        "total": 95,
+        "granted": 86,
+        "waiting": 9,
+        "modes": {
+          "RowShareLock": 60,
+          "AccessExclusiveLock": 9,
+          "ExclusiveLock": 11,
+          "ShareLock": 1,
+          "AccessShareLock": 6,
+          "RowExclusiveLock": 8
+        },
+        "objects": {
+          "relation": 83,
+          "virtualxid": 10,
+          "transactionid": 2
+        }
+      },
+      "blockingEdges": [
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "transactionid"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        }
+      ]
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:57.539Z",
+      "activeCount": 9,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.812Z",
+          "state_change": "2026-09-20T02:34:56.812Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "724.658000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:57.241Z",
+          "state_change": "2026-09-20T02:34:57.242Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "295.291000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.515Z",
+          "query_start": "2026-09-20T02:34:57.516Z",
+          "state_change": "2026-09-20T02:34:57.516Z",
+          "transaction_age_ms": "21.554000",
+          "query_age_ms": "20.713000",
+          "blocking_pids": [
+            2119,
+            2120,
+            2114,
+            2116
+          ]
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.520Z",
+          "query_start": "2026-09-20T02:34:57.520Z",
+          "state_change": "2026-09-20T02:34:57.520Z",
+          "transaction_age_ms": "16.758000",
+          "query_age_ms": "16.014000",
+          "blocking_pids": [
+            2119,
+            2120,
+            2114,
+            2116,
+            2100
+          ]
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.535Z",
+          "query_start": "2026-09-20T02:34:57.536Z",
+          "state_change": "2026-09-20T02:34:57.536Z",
+          "transaction_age_ms": "1.098000",
+          "query_age_ms": "0.349000",
+          "blocking_pids": [
+            2119,
+            2120,
+            2114,
+            2116,
+            2100,
+            2111,
+            2118,
+            2117
+          ]
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.504Z",
+          "query_start": "2026-09-20T02:34:57.505Z",
+          "state_change": "2026-09-20T02:34:57.505Z",
+          "transaction_age_ms": "32.283000",
+          "query_age_ms": "30.958000",
+          "blocking_pids": [
+            2119,
+            2120
+          ]
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.487Z",
+          "query_start": "2026-09-20T02:34:57.536Z",
+          "state_change": "2026-09-20T02:34:57.536Z",
+          "transaction_age_ms": "49.042000",
+          "query_age_ms": "0.352000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.510Z",
+          "query_start": "2026-09-20T02:34:57.511Z",
+          "state_change": "2026-09-20T02:34:57.511Z",
+          "transaction_age_ms": "26.422000",
+          "query_age_ms": "25.114000",
+          "blocking_pids": [
+            2119,
+            2120,
+            2114
+          ]
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.531Z",
+          "query_start": "2026-09-20T02:34:57.532Z",
+          "state_change": "2026-09-20T02:34:57.532Z",
+          "transaction_age_ms": "5.571000",
+          "query_age_ms": "4.855000",
+          "blocking_pids": [
+            2119,
+            2120,
+            2114,
+            2116,
+            2100,
+            2111,
+            2118
+          ]
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.525Z",
+          "query_start": "2026-09-20T02:34:57.526Z",
+          "state_change": "2026-09-20T02:34:57.526Z",
+          "transaction_age_ms": "11.056000",
+          "query_age_ms": "10.263000",
+          "blocking_pids": [
+            2119,
+            2120,
+            2114,
+            2116,
+            2100,
+            2111
+          ]
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.493Z",
+          "query_start": "2026-09-20T02:34:57.494Z",
+          "state_change": "2026-09-20T02:34:57.494Z",
+          "transaction_age_ms": "43.694000",
+          "query_age_ms": "42.893000",
+          "blocking_pids": [
+            2115
+          ]
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.498Z",
+          "query_start": "2026-09-20T02:34:57.499Z",
+          "state_change": "2026-09-20T02:34:57.499Z",
+          "transaction_age_ms": "38.189000",
+          "query_age_ms": "37.478000",
+          "blocking_pids": [
+            2119
+          ]
+        }
+      ],
+      "locks": {
+        "total": 94,
+        "granted": 85,
+        "waiting": 9,
+        "modes": {
+          "RowShareLock": 60,
+          "AccessExclusiveLock": 9,
+          "ExclusiveLock": 11,
+          "AccessShareLock": 6,
+          "RowExclusiveLock": 7,
+          "ShareLock": 1
+        },
+        "objects": {
+          "relation": 82,
+          "virtualxid": 10,
+          "transactionid": 2
+        }
+      },
+      "blockingEdges": [
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "transactionid"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        }
+      ]
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:57.789Z",
+      "activeCount": 10,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:56.812Z",
+          "state_change": "2026-09-20T02:34:56.812Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "975.241000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:57.241Z",
+          "state_change": "2026-09-20T02:34:57.242Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "545.874000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.740Z",
+          "query_start": "2026-09-20T02:34:57.741Z",
+          "state_change": "2026-09-20T02:34:57.741Z",
+          "transaction_age_ms": "46.933000",
+          "query_age_ms": "46.105000",
+          "blocking_pids": [
+            2120,
+            2114,
+            2116
+          ]
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.746Z",
+          "query_start": "2026-09-20T02:34:57.748Z",
+          "state_change": "2026-09-20T02:34:57.748Z",
+          "transaction_age_ms": "40.993000",
+          "query_age_ms": "39.019000",
+          "blocking_pids": [
+            2120,
+            2114,
+            2116,
+            2100
+          ]
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.771Z",
+          "query_start": "2026-09-20T02:34:57.773Z",
+          "state_change": "2026-09-20T02:34:57.773Z",
+          "transaction_age_ms": "15.931000",
+          "query_age_ms": "14.375000",
+          "blocking_pids": [
+            2120,
+            2114,
+            2116,
+            2100,
+            2111,
+            2118,
+            2117
+          ]
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.728Z",
+          "query_start": "2026-09-20T02:34:57.728Z",
+          "state_change": "2026-09-20T02:34:57.728Z",
+          "transaction_age_ms": "59.341000",
+          "query_age_ms": "58.603000",
+          "blocking_pids": [
+            2120
+          ]
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.780Z",
+          "query_start": "2026-09-20T02:34:57.783Z",
+          "state_change": "2026-09-20T02:34:57.783Z",
+          "transaction_age_ms": "6.715000",
+          "query_age_ms": "3.846000",
+          "blocking_pids": [
+            2120,
+            2114,
+            2116,
+            2100,
+            2111,
+            2118,
+            2117,
+            2113
+          ]
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.734Z",
+          "query_start": "2026-09-20T02:34:57.736Z",
+          "state_change": "2026-09-20T02:34:57.736Z",
+          "transaction_age_ms": "53.236000",
+          "query_age_ms": "51.305000",
+          "blocking_pids": [
+            2120,
+            2114
+          ]
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.764Z",
+          "query_start": "2026-09-20T02:34:57.765Z",
+          "state_change": "2026-09-20T02:34:57.765Z",
+          "transaction_age_ms": "23.144000",
+          "query_age_ms": "21.972000",
+          "blocking_pids": [
+            2120,
+            2114,
+            2116,
+            2100,
+            2111,
+            2118
+          ]
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.757Z",
+          "query_start": "2026-09-20T02:34:57.759Z",
+          "state_change": "2026-09-20T02:34:57.759Z",
+          "transaction_age_ms": "29.794000",
+          "query_age_ms": "28.115000",
+          "blocking_pids": [
+            2120,
+            2114,
+            2116,
+            2100,
+            2111
+          ]
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.716Z",
+          "query_start": "2026-09-20T02:34:57.787Z",
+          "state_change": "2026-09-20T02:34:57.787Z",
+          "transaction_age_ms": "70.683000",
+          "query_age_ms": "0.178000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.722Z",
+          "query_start": "2026-09-20T02:34:57.723Z",
+          "state_change": "2026-09-20T02:34:57.723Z",
+          "transaction_age_ms": "65.019000",
+          "query_age_ms": "63.907000",
+          "blocking_pids": [
+            2119
+          ]
+        }
+      ],
+      "locks": {
+        "total": 95,
+        "granted": 86,
+        "waiting": 9,
+        "modes": {
+          "RowShareLock": 60,
+          "AccessExclusiveLock": 9,
+          "ExclusiveLock": 11,
+          "AccessShareLock": 6,
+          "RowExclusiveLock": 8,
+          "ShareLock": 1
+        },
+        "objects": {
+          "relation": 83,
+          "virtualxid": 10,
+          "transactionid": 2
+        }
+      },
+      "blockingEdges": [
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "transactionid"
+        }
+      ]
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:58.039Z",
+      "activeCount": 8,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:57.842Z",
+          "state_change": "2026-09-20T02:34:57.842Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "194.779000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:57.241Z",
+          "state_change": "2026-09-20T02:34:57.242Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "795.702000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.973Z",
+          "query_start": "2026-09-20T02:34:57.975Z",
+          "state_change": "2026-09-20T02:34:57.975Z",
+          "transaction_age_ms": "63.639000",
+          "query_age_ms": "61.653000",
+          "blocking_pids": [
+            2116
+          ]
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.983Z",
+          "query_start": "2026-09-20T02:34:57.984Z",
+          "state_change": "2026-09-20T02:34:57.984Z",
+          "transaction_age_ms": "53.999000",
+          "query_age_ms": "52.859000",
+          "blocking_pids": [
+            2100
+          ]
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.004Z",
+          "query_start": "2026-09-20T02:34:58.005Z",
+          "state_change": "2026-09-20T02:34:58.005Z",
+          "transaction_age_ms": "32.770000",
+          "query_age_ms": "31.660000",
+          "blocking_pids": [
+            2100,
+            2111,
+            2118,
+            2117
+          ]
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.035Z",
+          "query_start": "2026-09-20T02:34:58.035Z",
+          "state_change": "2026-09-20T02:34:58.035Z",
+          "transaction_age_ms": "1.530000",
+          "query_age_ms": "1.531000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.011Z",
+          "query_start": "2026-09-20T02:34:58.012Z",
+          "state_change": "2026-09-20T02:34:58.012Z",
+          "transaction_age_ms": "25.579000",
+          "query_age_ms": "24.611000",
+          "blocking_pids": [
+            2100,
+            2111,
+            2118,
+            2117,
+            2113
+          ]
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.966Z",
+          "query_start": "2026-09-20T02:34:58.035Z",
+          "state_change": "2026-09-20T02:34:58.035Z",
+          "transaction_age_ms": "70.986000",
+          "query_age_ms": "1.394000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.996Z",
+          "query_start": "2026-09-20T02:34:57.997Z",
+          "state_change": "2026-09-20T02:34:57.997Z",
+          "transaction_age_ms": "40.471000",
+          "query_age_ms": "39.466000",
+          "blocking_pids": [
+            2100,
+            2111,
+            2118
+          ]
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:57.991Z",
+          "query_start": "2026-09-20T02:34:57.992Z",
+          "state_change": "2026-09-20T02:34:57.992Z",
+          "transaction_age_ms": "45.912000",
+          "query_age_ms": "45.038000",
+          "blocking_pids": [
+            2100,
+            2111
+          ]
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.019Z",
+          "query_start": "2026-09-20T02:34:58.020Z",
+          "state_change": "2026-09-20T02:34:58.020Z",
+          "transaction_age_ms": "18.211000",
+          "query_age_ms": "16.977000",
+          "blocking_pids": [
+            2100,
+            2111,
+            2118,
+            2117,
+            2113,
+            2115
+          ]
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.028Z",
+          "query_start": "2026-09-20T02:34:58.029Z",
+          "state_change": "2026-09-20T02:34:58.029Z",
+          "transaction_age_ms": "9.076000",
+          "query_age_ms": "7.766000",
+          "blocking_pids": [
+            2100,
+            2111,
+            2118,
+            2117,
+            2113,
+            2115,
+            2119
+          ]
+        }
+      ],
+      "locks": {
+        "total": 88,
+        "granted": 79,
+        "waiting": 9,
+        "modes": {
+          "RowShareLock": 60,
+          "ShareLock": 1,
+          "AccessExclusiveLock": 9,
+          "ExclusiveLock": 11,
+          "AccessShareLock": 6,
+          "RowExclusiveLock": 1
+        },
+        "objects": {
+          "relation": 76,
+          "transactionid": 2,
+          "virtualxid": 10
+        }
+      },
+      "blockingEdges": [
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "transactionid"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2118,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2111,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        }
+      ]
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:58.289Z",
+      "activeCount": 9,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.043Z",
+          "state_change": "2026-09-20T02:34:58.043Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "244.221000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.199Z",
+          "state_change": "2026-09-20T02:34:58.200Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "87.846000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.281Z",
+          "query_start": "2026-09-20T02:34:58.282Z",
+          "state_change": "2026-09-20T02:34:58.282Z",
+          "transaction_age_ms": "6.221000",
+          "query_age_ms": "5.403000",
+          "blocking_pids": [
+            2117,
+            2113,
+            2115,
+            2119,
+            2120,
+            2114,
+            2116
+          ]
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.286Z",
+          "query_start": "2026-09-20T02:34:58.287Z",
+          "state_change": "2026-09-20T02:34:58.287Z",
+          "transaction_age_ms": "0.950000",
+          "query_age_ms": "0.296000",
+          "blocking_pids": [
+            2117,
+            2113,
+            2115,
+            2119,
+            2120,
+            2114,
+            2116,
+            2100
+          ]
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.250Z",
+          "query_start": "2026-09-20T02:34:58.250Z",
+          "state_change": "2026-09-20T02:34:58.250Z",
+          "transaction_age_ms": "37.584000",
+          "query_age_ms": "36.865000",
+          "blocking_pids": [
+            2117
+          ]
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.271Z",
+          "query_start": "2026-09-20T02:34:58.272Z",
+          "state_change": "2026-09-20T02:34:58.272Z",
+          "transaction_age_ms": "16.161000",
+          "query_age_ms": "15.501000",
+          "blocking_pids": [
+            2117,
+            2113,
+            2115,
+            2119,
+            2120
+          ]
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.256Z",
+          "query_start": "2026-09-20T02:34:58.257Z",
+          "state_change": "2026-09-20T02:34:58.257Z",
+          "transaction_age_ms": "30.973000",
+          "query_age_ms": "29.871000",
+          "blocking_pids": [
+            2117,
+            2113
+          ]
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.276Z",
+          "query_start": "2026-09-20T02:34:58.277Z",
+          "state_change": "2026-09-20T02:34:58.277Z",
+          "transaction_age_ms": "11.494000",
+          "query_age_ms": "10.678000",
+          "blocking_pids": [
+            2117,
+            2113,
+            2115,
+            2119,
+            2120,
+            2114
+          ]
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.245Z",
+          "query_start": "2026-09-20T02:34:58.245Z",
+          "state_change": "2026-09-20T02:34:58.245Z",
+          "transaction_age_ms": "42.713000",
+          "query_age_ms": "41.935000",
+          "blocking_pids": [
+            2118
+          ]
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.240Z",
+          "query_start": "2026-09-20T02:34:58.287Z",
+          "state_change": "2026-09-20T02:34:58.287Z",
+          "transaction_age_ms": "47.702000",
+          "query_age_ms": "0.373000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.261Z",
+          "query_start": "2026-09-20T02:34:58.262Z",
+          "state_change": "2026-09-20T02:34:58.262Z",
+          "transaction_age_ms": "26.329000",
+          "query_age_ms": "25.493000",
+          "blocking_pids": [
+            2117,
+            2113,
+            2115
+          ]
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.266Z",
+          "query_start": "2026-09-20T02:34:58.267Z",
+          "state_change": "2026-09-20T02:34:58.267Z",
+          "transaction_age_ms": "20.901000",
+          "query_age_ms": "20.200000",
+          "blocking_pids": [
+            2117,
+            2113,
+            2115,
+            2119
+          ]
+        }
+      ],
+      "locks": {
+        "total": 88,
+        "granted": 79,
+        "waiting": 9,
+        "modes": {
+          "RowShareLock": 60,
+          "AccessExclusiveLock": 9,
+          "ExclusiveLock": 11,
+          "ShareLock": 1,
+          "AccessShareLock": 6,
+          "RowExclusiveLock": 1
+        },
+        "objects": {
+          "relation": 76,
+          "virtualxid": 10,
+          "transactionid": 2
+        }
+      },
+      "blockingEdges": [
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2111,
+          "blockingPid": 2100,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "transactionid"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        }
+      ]
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:58.539Z",
+      "activeCount": 8,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.043Z",
+          "state_change": "2026-09-20T02:34:58.043Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "494.752000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.199Z",
+          "state_change": "2026-09-20T02:34:58.200Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "338.379000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.532Z",
+          "query_start": "2026-09-20T02:34:58.533Z",
+          "state_change": "2026-09-20T02:34:58.533Z",
+          "transaction_age_ms": "5.537000",
+          "query_age_ms": "4.652000",
+          "blocking_pids": [
+            2117,
+            2115,
+            2119,
+            2113,
+            2120,
+            2114,
+            2116
+          ]
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.538Z",
+          "query_start": "2026-09-20T02:34:58.538Z",
+          "state_change": "2026-09-20T02:34:58.538Z",
+          "transaction_age_ms": "0.123000",
+          "query_age_ms": "0.124000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.514Z",
+          "query_start": "2026-09-20T02:34:58.515Z",
+          "state_change": "2026-09-20T02:34:58.515Z",
+          "transaction_age_ms": "23.800000",
+          "query_age_ms": "23.170000",
+          "blocking_pids": [
+            2117,
+            2115,
+            2119
+          ]
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.524Z",
+          "query_start": "2026-09-20T02:34:58.525Z",
+          "state_change": "2026-09-20T02:34:58.525Z",
+          "transaction_age_ms": "14.018000",
+          "query_age_ms": "13.145000",
+          "blocking_pids": [
+            2117,
+            2115,
+            2119,
+            2113,
+            2120
+          ]
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.505Z",
+          "query_start": "2026-09-20T02:34:58.506Z",
+          "state_change": "2026-09-20T02:34:58.506Z",
+          "transaction_age_ms": "33.050000",
+          "query_age_ms": "32.321000",
+          "blocking_pids": [
+            2117
+          ]
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.528Z",
+          "query_start": "2026-09-20T02:34:58.528Z",
+          "state_change": "2026-09-20T02:34:58.528Z",
+          "transaction_age_ms": "10.224000",
+          "query_age_ms": "9.543000",
+          "blocking_pids": [
+            2117,
+            2115,
+            2119,
+            2113,
+            2120,
+            2114
+          ]
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.500Z",
+          "query_start": "2026-09-20T02:34:58.501Z",
+          "state_change": "2026-09-20T02:34:58.501Z",
+          "transaction_age_ms": "37.937000",
+          "query_age_ms": "37.191000",
+          "blocking_pids": [
+            2118
+          ]
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "idle in transaction",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.495Z",
+          "query_start": "2026-09-20T02:34:58.538Z",
+          "state_change": "2026-09-20T02:34:58.538Z",
+          "transaction_age_ms": "43.129000",
+          "query_age_ms": "0.138000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.510Z",
+          "query_start": "2026-09-20T02:34:58.510Z",
+          "state_change": "2026-09-20T02:34:58.510Z",
+          "transaction_age_ms": "28.052000",
+          "query_age_ms": "27.405000",
+          "blocking_pids": [
+            2117,
+            2115
+          ]
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.519Z",
+          "query_start": "2026-09-20T02:34:58.520Z",
+          "state_change": "2026-09-20T02:34:58.520Z",
+          "transaction_age_ms": "18.981000",
+          "query_age_ms": "18.288000",
+          "blocking_pids": [
+            2117,
+            2115,
+            2119,
+            2113
+          ]
+        }
+      ],
+      "locks": {
+        "total": 88,
+        "granted": 79,
+        "waiting": 9,
+        "modes": {
+          "RowShareLock": 60,
+          "AccessExclusiveLock": 9,
+          "ExclusiveLock": 11,
+          "ShareLock": 1,
+          "AccessShareLock": 6,
+          "RowExclusiveLock": 1
+        },
+        "objects": {
+          "relation": 76,
+          "virtualxid": 10,
+          "transactionid": 2
+        }
+      },
+      "blockingEdges": [
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2100,
+          "blockingPid": 2116,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2113,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2114,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2115,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2120,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2116,
+          "blockingPid": 2114,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2117,
+          "blockingPid": 2118,
+          "waitEventType": "Lock",
+          "waitEvent": "transactionid"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2119,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2117,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2115,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2119,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        },
+        {
+          "blockedPid": 2120,
+          "blockingPid": 2113,
+          "waitEventType": "Lock",
+          "waitEvent": "tuple"
+        }
+      ]
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:58.791Z",
+      "activeCount": 2,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.043Z",
+          "state_change": "2026-09-20T02:34:58.043Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "745.638000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.199Z",
+          "state_change": "2026-09-20T02:34:58.200Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "589.262000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.789Z",
+          "state_change": "2026-09-20T02:34:58.789Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.181000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.789Z",
+          "query_start": "2026-09-20T02:34:58.789Z",
+          "state_change": "2026-09-20T02:34:58.789Z",
+          "transaction_age_ms": "0.085000",
+          "query_age_ms": "0.086000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.788Z",
+          "state_change": "2026-09-20T02:34:58.788Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "1.012000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.788Z",
+          "state_change": "2026-09-20T02:34:58.788Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.774000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.788Z",
+          "state_change": "2026-09-20T02:34:58.788Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.486000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.789Z",
+          "state_change": "2026-09-20T02:34:58.789Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.232000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.788Z",
+          "state_change": "2026-09-20T02:34:58.788Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.966000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "active",
+          "wait_event_type": null,
+          "wait_event": null,
+          "backend_type": "client backend",
+          "xact_start": "2026-09-20T02:34:58.789Z",
+          "query_start": "2026-09-20T02:34:58.789Z",
+          "state_change": "2026-09-20T02:34:58.789Z",
+          "transaction_age_ms": "0.104000",
+          "query_age_ms": "0.104000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.788Z",
+          "state_change": "2026-09-20T02:34:58.788Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.363000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.788Z",
+          "state_change": "2026-09-20T02:34:58.788Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "0.730000",
+          "blocking_pids": []
+        }
+      ],
+      "locks": {
+        "total": 1,
+        "granted": 1,
+        "waiting": 0,
+        "modes": {
+          "ExclusiveLock": 1
+        },
+        "objects": {
+          "virtualxid": 1
+        }
+      },
+      "blockingEdges": []
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:59.040Z",
+      "activeCount": 0,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.822Z",
+          "state_change": "2026-09-20T02:34:58.823Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "216.570000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.199Z",
+          "state_change": "2026-09-20T02:34:58.200Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "839.239000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.978Z",
+          "state_change": "2026-09-20T02:34:58.978Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "60.991000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:59.035Z",
+          "state_change": "2026-09-20T02:34:59.035Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "3.849000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.980Z",
+          "state_change": "2026-09-20T02:34:58.980Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "58.981000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.981Z",
+          "state_change": "2026-09-20T02:34:58.981Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "57.282000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.981Z",
+          "state_change": "2026-09-20T02:34:58.981Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "58.153000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.979Z",
+          "state_change": "2026-09-20T02:34:58.979Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "59.452000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.974Z",
+          "state_change": "2026-09-20T02:34:58.974Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "64.639000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.979Z",
+          "state_change": "2026-09-20T02:34:58.979Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "59.756000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.978Z",
+          "state_change": "2026-09-20T02:34:58.978Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "60.464000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.977Z",
+          "state_change": "2026-09-20T02:34:58.977Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "61.391000",
+          "blocking_pids": []
+        }
+      ],
+      "locks": {
+        "total": 0,
+        "granted": 0,
+        "waiting": 0,
+        "modes": {},
+        "objects": {}
+      },
+      "blockingEdges": []
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:59.042Z",
+      "activeCount": 0,
+      "activity": [
+        {
+          "pid": 2023,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.822Z",
+          "state_change": "2026-09-20T02:34:58.823Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "218.977000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2094,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.199Z",
+          "state_change": "2026-09-20T02:34:58.200Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "841.645000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2100,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.978Z",
+          "state_change": "2026-09-20T02:34:58.978Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "63.397000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2111,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:59.035Z",
+          "state_change": "2026-09-20T02:34:59.035Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "6.255000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2113,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.980Z",
+          "state_change": "2026-09-20T02:34:58.980Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "61.387000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2114,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.981Z",
+          "state_change": "2026-09-20T02:34:58.981Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "59.688000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2115,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.981Z",
+          "state_change": "2026-09-20T02:34:58.981Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "60.559000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2116,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.979Z",
+          "state_change": "2026-09-20T02:34:58.979Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "61.858000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2117,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.974Z",
+          "state_change": "2026-09-20T02:34:58.974Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "67.045000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2118,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.979Z",
+          "state_change": "2026-09-20T02:34:58.979Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "62.162000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2119,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.978Z",
+          "state_change": "2026-09-20T02:34:58.978Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "62.870000",
+          "blocking_pids": []
+        },
+        {
+          "pid": 2120,
+          "application_name": "",
+          "state": "idle",
+          "wait_event_type": "Client",
+          "wait_event": "ClientRead",
+          "backend_type": "client backend",
+          "xact_start": null,
+          "query_start": "2026-09-20T02:34:58.977Z",
+          "state_change": "2026-09-20T02:34:58.977Z",
+          "transaction_age_ms": null,
+          "query_age_ms": "63.797000",
+          "blocking_pids": []
+        }
+      ],
+      "locks": {
+        "total": 0,
+        "granted": 0,
+        "waiting": 0,
+        "modes": {},
+        "objects": {}
+      },
+      "blockingEdges": []
+    }
+  ],
+  "connectionObservations": [
+    {
+      "capturedAt": "2026-09-20T02:34:56.288Z",
+      "total": 4,
+      "active": 0,
+      "idle": 4,
+      "waiting": 4
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:56.537Z",
+      "total": 4,
+      "active": 0,
+      "idle": 4,
+      "waiting": 4
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:56.787Z",
+      "total": 12,
+      "active": 3,
+      "idle": 9,
+      "waiting": 9
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:57.038Z",
+      "total": 12,
+      "active": 8,
+      "idle": 3,
+      "waiting": 12
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:57.288Z",
+      "total": 12,
+      "active": 9,
+      "idle": 2,
+      "waiting": 12
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:57.539Z",
+      "total": 12,
+      "active": 9,
+      "idle": 2,
+      "waiting": 12
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:57.789Z",
+      "total": 12,
+      "active": 10,
+      "idle": 2,
+      "waiting": 11
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:58.039Z",
+      "total": 12,
+      "active": 8,
+      "idle": 2,
+      "waiting": 12
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:58.289Z",
+      "total": 12,
+      "active": 9,
+      "idle": 2,
+      "waiting": 12
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:58.539Z",
+      "total": 12,
+      "active": 8,
+      "idle": 2,
+      "waiting": 12
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:58.791Z",
+      "total": 12,
+      "active": 2,
+      "idle": 10,
+      "waiting": 8
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:59.040Z",
+      "total": 12,
+      "active": 0,
+      "idle": 12,
+      "waiting": 12
+    },
+    {
+      "capturedAt": "2026-09-20T02:34:59.042Z",
+      "total": 12,
+      "active": 0,
+      "idle": 12,
+      "waiting": 12
+    }
+  ],
+  "observerErrors": [],
+  "reconciliation": {
+    "liveSessionId": "01a0bcaa-a8a8-73d9-b813-885b34095bc1",
+    "sessionQuestionId": "01a0bcaa-a8ca-72c9-a76c-e38b32f08af3",
+    "before": {
+      "participants": 0,
+      "events": 3
+    },
+    "after": {
+      "participants": 300,
+      "events": 303
+    },
+    "delta": {
+      "participants": 300,
+      "events": 300
+    },
+    "expected": {
+      "participants": 300
+    },
+    "persisted": {
+      "participants": 300
+    },
+    "exactMatch": true
+  },
+  "plans": {
+    "findByCode": {
+      "label": "representative find-by-code query",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Sort",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 17.86,
+            "Total Cost": 18.36,
+            "Plan Rows": 200,
+            "Plan Width": 80,
+            "Sort Key": [
+              "sq.\"position\"",
+              "sq.id"
+            ],
+            "Plans": [
+              {
+                "Node Type": "Nested Loop",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Left",
+                "Startup Cost": 0.15,
+                "Total Cost": 10.21,
+                "Plan Rows": 200,
+                "Plan Width": 80,
+                "Inner Unique": false,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "live_session",
+                    "Alias": "ls",
+                    "Startup Cost": 0,
+                    "Total Cost": 2.04,
+                    "Plan Rows": 1,
+                    "Plan Width": 32,
+                    "Filter": "(session_code = '3GJTD78D'::text)"
+                  },
+                  {
+                    "Node Type": "Index Scan",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Forward",
+                    "Index Name": "idx_session_question_session_position",
+                    "Relation Name": "session_question",
+                    "Alias": "sq",
+                    "Startup Cost": 0.15,
+                    "Total Cost": 8.17,
+                    "Plan Rows": 1,
+                    "Plan Width": 64,
+                    "Index Cond": "(live_session_id = ls.id)"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "getSnapshot": {
+      "label": "representative get-snapshot query",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Sort",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 10.22,
+            "Total Cost": 10.23,
+            "Plan Rows": 1,
+            "Plan Width": 80,
+            "Sort Key": [
+              "sq.\"position\"",
+              "sq.id"
+            ],
+            "Plans": [
+              {
+                "Node Type": "Nested Loop",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Left",
+                "Startup Cost": 0.15,
+                "Total Cost": 10.21,
+                "Plan Rows": 1,
+                "Plan Width": 80,
+                "Inner Unique": false,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "live_session",
+                    "Alias": "ls",
+                    "Startup Cost": 0,
+                    "Total Cost": 2.04,
+                    "Plan Rows": 1,
+                    "Plan Width": 32,
+                    "Filter": "(id = '01a0bcaa-a8a8-73d9-b813-885b34095bc1'::uuid)"
+                  },
+                  {
+                    "Node Type": "Index Scan",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Forward",
+                    "Index Name": "idx_session_question_session_position",
+                    "Relation Name": "session_question",
+                    "Alias": "sq",
+                    "Startup Cost": 0.15,
+                    "Total Cost": 8.17,
+                    "Plan Rows": 1,
+                    "Plan Width": 64,
+                    "Index Cond": "(live_session_id = '01a0bcaa-a8a8-73d9-b813-885b34095bc1'::uuid)"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "safety": {
+    "readOnly": true,
+    "writes": false,
+    "schemaChanges": false,
+    "indexChanges": false,
+    "poolChanges": false,
+    "lockChanges": false
+  }
+}

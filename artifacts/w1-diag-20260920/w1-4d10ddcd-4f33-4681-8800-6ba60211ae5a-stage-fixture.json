@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "courseId": "01a0bacd-e4ae-768b-b3d9-bc8fddf6c656",
+    "liveSessionId": "01a0bacd-e4cc-7298-94a1-9fc11437b9f0",
+    "sessionQuestionId": "01a0bacd-e4ef-746e-81c9-15a897ae64e7",
+    "sessionCode": "KWUZ8RGT",
+    "expectedParticipants": 100
+  }
+}

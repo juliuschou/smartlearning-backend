@@ -1,0 +1,554 @@
+{
+ "runId": "w3diag-20260921T144147Z-47b2da56",
+ "fixture": {
+  "runId": "w3diag-20260921T144147Z-47b2da56",
+  "questionType": "poll",
+  "username": "local-w1-w3-1790001767131-c3552023",
+  "courseId": "01a0c46b-6607-776c-8928-36192aa3d72d",
+  "questionId": "01a0c46b-6624-7415-9566-64e670367048",
+  "liveSessionId": "01a0c46b-6646-70bc-988e-eb3fb75d3eef",
+  "sessionQuestionId": "01a0c46b-667c-704e-a738-e052ddb4b9db",
+  "sessionCode": "HR65NVBH",
+  "options": [
+   {
+    "id": "01a0c46b-667c-704e-a738-e6274caad787",
+    "optionRef": "alpha",
+    "isCorrect": false
+   },
+   {
+    "id": "01a0c46b-667c-704e-a738-e8829aea2f23",
+    "optionRef": "beta",
+    "isCorrect": false
+   },
+   {
+    "id": "01a0c46b-667c-704e-a738-ed5672d6e828",
+    "optionRef": "gamma",
+    "isCorrect": false
+   }
+  ],
+  "credentialPresent": true,
+  "credentialFile": "/tmp/w3diag-cred-w3diag-20260921T144147Z-47b2da56"
+ },
+ "ownership": {
+  "accounts": [
+   {
+    "id": "01a0c46b-6536-742c-90de-b823af905636",
+    "username": "local-w1-w3-1790001767131-c3552023",
+    "role": "teacher",
+    "status": "active",
+    "created_by": "01a0bd6f-f4ed-7486-83de-847c336f6d95"
+   }
+  ],
+  "web_sessions": [
+   {
+    "id": "01a0c46b-65e0-76b7-a2f2-125cd820dabe",
+    "account_id": "01a0c46b-6536-742c-90de-b823af905636",
+    "revoked_at": null
+   },
+   {
+    "id": "01a0c46b-a40e-7133-be97-949e498cfb12",
+    "account_id": "01a0c46b-6536-742c-90de-b823af905636",
+    "revoked_at": null
+   }
+  ],
+  "course": [
+   {
+    "id": "01a0c46b-6607-776c-8928-36192aa3d72d",
+    "owner_account_id": "01a0c46b-6536-742c-90de-b823af905636"
+   }
+  ],
+  "question": [
+   {
+    "id": "01a0c46b-6624-7415-9566-64e670367048",
+    "course_id": "01a0c46b-6607-776c-8928-36192aa3d72d"
+   }
+  ],
+  "question_options": [
+   {
+    "id": "01a0c46b-6625-71fd-8d91-9c4e5b85ef14"
+   },
+   {
+    "id": "01a0c46b-6625-71fd-8d91-a2bd290b10ed"
+   },
+   {
+    "id": "01a0c46b-6625-71fd-8d91-a48d958edaf7"
+   }
+  ],
+  "live_session": [
+   {
+    "id": "01a0c46b-6646-70bc-988e-eb3fb75d3eef",
+    "course_id": "01a0c46b-6607-776c-8928-36192aa3d72d",
+    "status": "active"
+   }
+  ],
+  "session_questions": [
+   {
+    "id": "01a0c46b-667c-704e-a738-e052ddb4b9db",
+    "question_definition_id": "01a0c46b-6624-7415-9566-64e670367048"
+   }
+  ],
+  "session_question_options": [
+   {
+    "id": "01a0c46b-667c-704e-a738-e6274caad787"
+   },
+   {
+    "id": "01a0c46b-667c-704e-a738-e8829aea2f23"
+   },
+   {
+    "id": "01a0c46b-667c-704e-a738-ed5672d6e828"
+   }
+  ],
+  "selections": [
+   {
+    "id": "01a0c46b-664d-75c8-99d7-9005c55e01ef"
+   }
+  ],
+  "participants": [
+   {
+    "id": "01a0c46b-a327-72e8-8f81-e57b77c135d2",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a328-7544-9ee0-7ce05c09712e",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a328-7544-9ee0-836f3fe13f4b",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a329-71f8-8ab6-f5e2f9db7812",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a329-71f8-8ab6-f90f542633d3",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a32a-7349-b9a8-05caaf30af04",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a32e-77ef-a7ad-ce50459bf581",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a333-70ea-86f1-cc6d42c16070",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a336-70b8-9409-89c03ed9f1a3",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a33a-776d-a418-cbed4ea80e23",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a340-736b-9525-53dfaa869455",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a341-7777-b2f2-5ac665d4bc0c",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a344-732c-a2c6-6432c4f1e2e0",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a349-72df-bb73-2268139406be",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a356-70ab-99e3-725aff3746c6",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a358-74e0-bcdc-6a233340a673",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a35c-7450-b2a2-8dda22c337c7",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a35d-744b-aead-af6239b18b27",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a35f-71b2-bb85-f4620cd7d8e9",
+    "account_id": null
+   },
+   {
+    "id": "01a0c46b-a360-766d-9aba-83ab8a4d0462",
+    "account_id": null
+   }
+  ],
+  "submissions": [
+   {
+    "id": "01a0c46b-adfa-72ad-8e32-7f0f57ba440b"
+   },
+   {
+    "id": "01a0c46b-ae0e-7480-a8df-1c823fbb64c2"
+   },
+   {
+    "id": "01a0c46b-ae1c-708c-bc61-dad6bef5b2d0"
+   },
+   {
+    "id": "01a0c46b-ae2c-71af-b27f-e01e7be8a113"
+   },
+   {
+    "id": "01a0c46b-ae3a-77c7-bb35-2ee70e2301b0"
+   },
+   {
+    "id": "01a0c46b-ae49-740f-b49d-c1cad6958342"
+   },
+   {
+    "id": "01a0c46b-ae59-770c-aede-7fdedb96d1ed"
+   },
+   {
+    "id": "01a0c46b-ae68-76ba-8953-42668ddeb2ed"
+   },
+   {
+    "id": "01a0c46b-ae7b-73bd-a4f0-0eaab6113165"
+   },
+   {
+    "id": "01a0c46b-ae8f-77bf-b3f9-daba54a1639d"
+   }
+  ],
+  "events": 35,
+  "event_sequence": [
+   {
+    "live_session_id": "01a0c46b-6646-70bc-988e-eb3fb75d3eef",
+    "last_event_seq": "35"
+   }
+  ],
+  "cross_check": {
+   "courses_owned": [
+    {
+     "id": "01a0c46b-6607-776c-8928-36192aa3d72d"
+    }
+   ],
+   "sessions_in_those_courses": [
+    {
+     "id": "01a0c46b-6646-70bc-988e-eb3fb75d3eef"
+    }
+   ],
+   "live_sessions_owner_account": []
+  },
+  "realtime_event_ids": [
+   {
+    "id": "01a0c46b-6652-759d-8478-ddb3c72fb405",
+    "event_seq": "1",
+    "event_name": "session.state_changed",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-6687-7358-86b3-197c8c8de833",
+    "event_seq": "2",
+    "event_name": "session.state_changed",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-66b7-73bb-a4f8-36d9798f5316",
+    "event_seq": "3",
+    "event_name": "question.opened",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a32d-7005-911a-72ab26dfb96f",
+    "event_seq": "4",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a333-70ea-86f1-d3427f4998f6",
+    "event_seq": "5",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a338-7150-80f5-59047b75f53d",
+    "event_seq": "6",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a33d-7098-947d-c2579852d8af",
+    "event_seq": "7",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a343-73e0-ac4b-a37577fb0d9f",
+    "event_seq": "8",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a348-75de-85a9-9cb8d6b975c2",
+    "event_seq": "9",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a34f-74cd-b3be-fe72d57a42b6",
+    "event_seq": "10",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a353-747f-a5b8-6d5fc7ac894d",
+    "event_seq": "11",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a357-7112-864d-871ad7d017e6",
+    "event_seq": "12",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a35a-750a-abc8-2bedba2d0da4",
+    "event_seq": "13",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a35f-71b2-bb85-f1ddff5bda4e",
+    "event_seq": "14",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a362-733f-9e47-fe7580d0fba3",
+    "event_seq": "15",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a365-73fc-b6c0-036c30812236",
+    "event_seq": "16",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a36b-700f-b0c8-011166506637",
+    "event_seq": "17",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a372-7693-9fb0-925e8ae375d2",
+    "event_seq": "18",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a376-71cb-a92c-3029a054d8d6",
+    "event_seq": "19",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a37a-7508-8f7d-c644a24c7fd9",
+    "event_seq": "20",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a37d-73ee-9550-3bd32392df73",
+    "event_seq": "21",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a380-7020-b6d1-5618ff7e666d",
+    "event_seq": "22",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-a383-7289-a429-5c209cf97158",
+    "event_seq": "23",
+    "event_name": "session.snapshot",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae01-70cb-9b32-953224ef570f",
+    "event_seq": "24",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae12-77ac-8ff4-f71d7b3d3fdf",
+    "event_seq": "25",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae20-77eb-9680-c3d18cd8c887",
+    "event_seq": "26",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae31-715f-a5a2-78d51dd218e3",
+    "event_seq": "27",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae3f-7600-87f8-2805adb6d07f",
+    "event_seq": "28",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae4e-7014-ad60-86d8586afa8e",
+    "event_seq": "29",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae5e-7334-a11e-a54ca4c53614",
+    "event_seq": "30",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae6d-70ef-af68-7f61d4891fdd",
+    "event_seq": "31",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae81-748d-8bb5-b5ec89a78e9b",
+    "event_seq": "32",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-ae9a-7669-a962-a18d8061b57d",
+    "event_seq": "33",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-d20d-721c-b128-1212a68bfc89",
+    "event_seq": "34",
+    "event_name": "question.closed",
+    "delivery_state": "delivered",
+    "coalesced": false
+   },
+   {
+    "id": "01a0c46b-d212-75b3-bfdb-3250bb017118",
+    "event_seq": "35",
+    "event_name": "result.updated",
+    "delivery_state": "delivered",
+    "coalesced": false
+   }
+  ],
+  "selection_ids": [
+   {
+    "id": "01a0c46b-664d-75c8-99d7-9005c55e01ef",
+    "question_definition_id": "01a0c46b-6624-7415-9566-64e670367048"
+   }
+  ],
+  "submission_ids": [
+   {
+    "id": "01a0c46b-adfa-72ad-8e32-7f0f57ba440b",
+    "participant_id": "01a0c46b-a328-7544-9ee0-836f3fe13f4b"
+   },
+   {
+    "id": "01a0c46b-ae0e-7480-a8df-1c823fbb64c2",
+    "participant_id": "01a0c46b-a328-7544-9ee0-7ce05c09712e"
+   },
+   {
+    "id": "01a0c46b-ae1c-708c-bc61-dad6bef5b2d0",
+    "participant_id": "01a0c46b-a358-74e0-bcdc-6a233340a673"
+   },
+   {
+    "id": "01a0c46b-ae2c-71af-b27f-e01e7be8a113",
+    "participant_id": "01a0c46b-a333-70ea-86f1-cc6d42c16070"
+   },
+   {
+    "id": "01a0c46b-ae3a-77c7-bb35-2ee70e2301b0",
+    "participant_id": "01a0c46b-a35f-71b2-bb85-f4620cd7d8e9"
+   },
+   {
+    "id": "01a0c46b-ae49-740f-b49d-c1cad6958342",
+    "participant_id": "01a0c46b-a35c-7450-b2a2-8dda22c337c7"
+   },
+   {
+    "id": "01a0c46b-ae59-770c-aede-7fdedb96d1ed",
+    "participant_id": "01a0c46b-a341-7777-b2f2-5ac665d4bc0c"
+   },
+   {
+    "id": "01a0c46b-ae68-76ba-8953-42668ddeb2ed",
+    "participant_id": "01a0c46b-a327-72e8-8f81-e57b77c135d2"
+   },
+   {
+    "id": "01a0c46b-ae7b-73bd-a4f0-0eaab6113165",
+    "participant_id": "01a0c46b-a349-72df-bb73-2268139406be"
+   },
+   {
+    "id": "01a0c46b-ae8f-77bf-b3f9-daba54a1639d",
+    "participant_id": "01a0c46b-a33a-776d-a418-cbed4ea80e23"
+   }
+  ],
+  "realtime_sequence_ownership": [
+   {
+    "live_session_id": "01a0c46b-6646-70bc-988e-eb3fb75d3eef",
+    "last_event_seq": "35"
+   }
+  ]
+ },
+ "baseline_now": {
+  "account_total": 8,
+  "account_local_w1_w3_exact_eq": 1,
+  "web_session_total": 12,
+  "course_total": 2,
+  "question_total": 2,
+  "live_session_total": 2,
+  "submission_total": 10,
+  "participant_total": 22,
+  "event_total": 37,
+  "sequence_total": 2
+ }
+}

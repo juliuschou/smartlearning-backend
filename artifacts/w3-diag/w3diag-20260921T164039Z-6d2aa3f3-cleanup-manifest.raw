@@ -1,0 +1,254 @@
+◇ injected env (0) from .env.test // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+{
+ "runId": "w3diag-20260921T164039Z-6d2aa3f3",
+ "fixture": {
+  "runId": "w3diag-20260921T164039Z-6d2aa3f3",
+  "questionType": "poll",
+  "username": "local-w1-w3-1790008888980-11234551",
+  "courseId": "01a0c4d8-11ad-7759-bf46-078b851d5892",
+  "questionId": "01a0c4d8-11c7-71f2-b521-eae32f9bc674",
+  "liveSessionId": "01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+  "sessionQuestionId": "01a0c4d8-1232-72e2-9990-750e9cd5f1d2",
+  "sessionCode": "4GZGPEGR",
+  "options": [
+   {
+    "id": "01a0c4d8-1232-72e2-9990-78f99307bd11",
+    "optionRef": "alpha",
+    "isCorrect": false
+   },
+   {
+    "id": "01a0c4d8-1232-72e2-9990-7f7e7ce06aa9",
+    "optionRef": "beta",
+    "isCorrect": false
+   },
+   {
+    "id": "01a0c4d8-1232-72e2-9990-823936c3593e",
+    "optionRef": "gamma",
+    "isCorrect": false
+   }
+  ],
+  "credentialPresent": true,
+  "credentialFile": "/tmp/w3diag-20260921T164039Z-6d2aa3f3-credential"
+ },
+ "ownership": {
+  "accounts": [
+   {
+    "id": "01a0c4d8-10cb-750b-ab75-aed9b1a5897d",
+    "username": "local-w1-w3-1790008888980-11234551",
+    "role": "teacher",
+    "status": "active",
+    "created_by": "01a0bd6f-f4ed-7486-83de-847c336f6d95"
+   }
+  ],
+  "web_sessions": [
+   {
+    "id": "01a0c4d8-1189-7769-acd7-23283588e400",
+    "account_id": "01a0c4d8-10cb-750b-ab75-aed9b1a5897d",
+    "revoked_at": null
+   },
+   {
+    "id": "01a0c4d8-8f7c-7598-9581-32c423595bb7",
+    "account_id": "01a0c4d8-10cb-750b-ab75-aed9b1a5897d",
+    "revoked_at": null
+   }
+  ],
+  "course": [
+   {
+    "id": "01a0c4d8-11ad-7759-bf46-078b851d5892",
+    "owner_account_id": "01a0c4d8-10cb-750b-ab75-aed9b1a5897d"
+   }
+  ],
+  "question": [
+   {
+    "id": "01a0c4d8-11c7-71f2-b521-eae32f9bc674",
+    "course_id": "01a0c4d8-11ad-7759-bf46-078b851d5892"
+   }
+  ],
+  "question_options": [
+   {
+    "id": "01a0c4d8-11c7-71f2-b521-ed5be6504202"
+   },
+   {
+    "id": "01a0c4d8-11c7-71f2-b521-f11e90aa8c2c"
+   },
+   {
+    "id": "01a0c4d8-11c7-71f2-b521-f570432e125e"
+   }
+  ],
+  "live_session": [
+   {
+    "id": "01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+    "course_id": "01a0c4d8-11ad-7759-bf46-078b851d5892",
+    "status": "active"
+   }
+  ],
+  "session_questions": [
+   {
+    "id": "01a0c4d8-1232-72e2-9990-750e9cd5f1d2",
+    "question_definition_id": "01a0c4d8-11c7-71f2-b521-eae32f9bc674"
+   }
+  ],
+  "session_question_options": [
+   {
+    "id": "01a0c4d8-1232-72e2-9990-78f99307bd11"
+   },
+   {
+    "id": "01a0c4d8-1232-72e2-9990-7f7e7ce06aa9"
+   },
+   {
+    "id": "01a0c4d8-1232-72e2-9990-823936c3593e"
+   }
+  ],
+  "selections": [
+   {
+    "id": "01a0c4d8-11f1-712e-bb0e-dc636226f3a7"
+   }
+  ],
+  "participants": [
+   {
+    "id": "01a0c4d8-8eb6-74f9-af04-3fbbeb2f6489",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8eb7-77a9-ac11-73b40031f202",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8eb7-77a9-ac11-6d1d1e98f63a",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8eb7-77a9-ac11-773a380e0403",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8eb8-749c-9b71-4ad6dbed052f",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8eb8-749c-9b71-445a8ace4d9d",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ec1-7195-b856-54e937092e0f",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ec4-71a1-8c6a-9870ccafc898",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ec5-7651-8fc0-c737b9db629c",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ec8-721d-af88-aff698ce27ac",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ecb-72e8-9cec-402921b09b94",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ecc-729f-980b-39f7f1f2ecac",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ed3-7443-8d1a-1254450287e1",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ed4-764f-b82b-1014a5270c6a",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8edb-72ec-a957-951484491d1b",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ee6-775e-b145-b3e68c28e1b9",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ee7-742b-ae42-03d7ce9ed764",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ee9-709a-a6fb-c1cee231a19f",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8ee9-709a-a6fb-c78ef29e015f",
+    "account_id": null
+   },
+   {
+    "id": "01a0c4d8-8eec-72fa-a4a8-76a8d7ff4b6a",
+    "account_id": null
+   }
+  ],
+  "submissions": [
+   {
+    "id": "01a0c4d8-996f-7148-a0dc-2b40691838d7"
+   },
+   {
+    "id": "01a0c4d8-9984-7097-b695-502de3cd37b7"
+   },
+   {
+    "id": "01a0c4d8-9996-7408-bfa8-6343ddb7532b"
+   },
+   {
+    "id": "01a0c4d8-99a5-752e-97db-945d90284f03"
+   },
+   {
+    "id": "01a0c4d8-99b7-7421-b2cb-7f24ebf01e5b"
+   },
+   {
+    "id": "01a0c4d8-99c7-71fd-ab72-943b53cc2724"
+   },
+   {
+    "id": "01a0c4d8-99d9-731f-8d80-22b7b2cc8e46"
+   },
+   {
+    "id": "01a0c4d8-99ed-74e8-9e55-26b090ef1dae"
+   },
+   {
+    "id": "01a0c4d8-9a03-76da-bd4f-3f37d1043226"
+   },
+   {
+    "id": "01a0c4d8-9a19-77a8-9250-16681f329720"
+   }
+  ],
+  "events": 35,
+  "event_sequence": [
+   {
+    "live_session_id": "01a0c4d8-11eb-74dc-91e0-654b456e28e9",
+    "last_event_seq": "35"
+   }
+  ],
+  "cross_check": {
+   "courses_owned": [
+    {
+     "id": "01a0c4d8-11ad-7759-bf46-078b851d5892"
+    }
+   ],
+   "sessions_in_those_courses": [
+    {
+     "id": "01a0c4d8-11eb-74dc-91e0-654b456e28e9"
+    }
+   ],
+   "live_sessions_owner_account": []
+  }
+ },
+ "baseline_now": {
+  "account_total": 8,
+  "account_local_w1_w3_exact_eq": 1,
+  "web_session_total": 12,
+  "course_total": 2,
+  "question_total": 2,
+  "live_session_total": 2,
+  "submission_total": 10,
+  "participant_total": 22,
+  "event_total": 35,
+  "sequence_total": 2
+ }
+}

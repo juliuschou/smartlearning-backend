@@ -1,0 +1,22 @@
+{
+  "runId": "w3prov-smoke-20260921T163328Z-c2e918c4",
+  "ownership": {
+    "accounts": [
+      {
+        "id": "01a0c4d0-bafa-701f-a661-3aeedc2874db",
+        "username": "local-w1-w3prov-smoke-20260921T163328Z-c2e918c4",
+        "role": "teacher",
+        "status": "active",
+        "created_by": "01a0bd6f-f4ed-7486-83de-847c336f6d95"
+      }
+    ],
+    "web_sessions": [],
+    "courses": [],
+    "questions": [],
+    "live_sessions": [],
+    "participants": [],
+    "submissions": [],
+    "events": []
+  },
+  "notes": "Exact username equality lookup; provisioning smoke created no course/question/live-session chain."
+}

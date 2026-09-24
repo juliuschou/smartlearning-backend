@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "courseId": "01a0bcaa-a885-73d8-866b-2f65fd3aa3fa",
+    "liveSessionId": "01a0bcaa-a8a8-73d9-b813-885b34095bc1",
+    "sessionQuestionId": "01a0bcaa-a8ca-72c9-a76c-e38b32f08af3",
+    "sessionCode": "3GJTD78D",
+    "expectedParticipants": 300
+  }
+}
