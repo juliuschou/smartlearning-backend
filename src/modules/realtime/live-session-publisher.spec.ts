@@ -114,7 +114,7 @@ function makeHarness(
 ): Harness {
   const transaction = { $queryRaw: jest.fn().mockResolvedValue([row]) };
   const database: FakeDatabase = {
-    $queryRaw: jest.fn(),
+    $queryRaw: jest.fn().mockResolvedValue([]),
     $executeRaw: jest.fn().mockResolvedValue(0),
     $transaction: jest.fn(),
     liveSessionEvent: {
@@ -264,11 +264,14 @@ describe('LiveSessionPublisher', () => {
     expect(maintenanceCalls.filter((input) => input.take === 50)).toHaveLength(
       3,
     );
-    const [queryFragments] = harness.database.$executeRaw.mock.calls[0] as [
+    // Coalescing remains `$executeRaw` (EXISTS-based), per the pre-W3 baseline;
+    // the diagnostic-only addition is the affected-row count capture.
+    const [executeFragments] = harness.database.$executeRaw.mock.calls[0] as [
       readonly string[],
       ...unknown[],
     ];
-    expect(queryFragments.join('')).toContain('LIMIT');
+    expect(executeFragments.join('')).toContain('LIMIT');
+    expect(executeFragments.join('')).toContain('EXISTS');
   });
 
   it('waits for an in-flight drain before shutdown completes', async () => {

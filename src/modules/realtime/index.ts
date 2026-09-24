@@ -5,3 +5,4 @@ export * from './live-session-outbox.service';
 export * from './live-session-publisher';
 export * from './realtime-redis.service';
 export * from './live-gateway';
+export * from './diagnostics';

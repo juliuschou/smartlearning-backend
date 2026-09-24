@@ -5,6 +5,7 @@ import {
   OnModuleInit,
   Optional,
 } from '@nestjs/common';
+import { performance } from 'node:perf_hooks';
 import { Prisma } from '../../../generated/prisma/client';
 import { newId } from '../../common/crypto';
 import { errorType } from '../../common/observability';
@@ -15,6 +16,7 @@ import {
 } from './live-session-event-bus';
 import { LiveGateway } from './live-gateway';
 import { MetricsService } from '../metrics/metrics.service';
+import { RealtimeTraceService } from './diagnostics/realtime-trace.service';
 import {
   RealtimeDeliveryState,
   RealtimeEvent,
@@ -62,6 +64,7 @@ type RawLiveSessionEvent = {
 @Injectable()
 export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(LiveSessionPublisher.name);
+  private readonly publisherInstanceId = newId();
   private readonly claimToken = newId();
   private unsubscribe?: () => void;
   private timer?: NodeJS.Timeout;
@@ -78,7 +81,11 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
     private readonly bus: LiveSessionEventBus,
     private readonly gateway: LiveGateway,
     @Optional() private readonly metrics?: MetricsService,
-  ) {}
+    /** Diagnostic-only sink; absent unless the trace flag is enabled. */
+    @Optional() private readonly trace?: RealtimeTraceService,
+  ) {
+    this.trace?.recordLifecycle('publisher', this.publisherInstanceId);
+  }
 
   onModuleInit(): void {
     if (this.active) return;
@@ -119,6 +126,7 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
       }
     } finally {
       this.outstandingLeaseCount = 0;
+      this.trace?.recordLifecycle('publisher-stop', this.publisherInstanceId);
     }
   }
 
@@ -161,8 +169,23 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
     await this.coalescePendingResults(now);
     await this.recoverDeadRows();
     await this.cleanupExpiredDeliveredRows(now);
+    const claimTransactionStartedAt = this.trace?.enabled
+      ? new Date().toISOString()
+      : undefined;
     const claimed = await this.claimDueRows(now);
+    const claimTransactionResolvedAt = this.trace?.enabled
+      ? new Date().toISOString()
+      : undefined;
     this.outstandingLeaseCount += claimed.length;
+    this.recordClaimedRows(claimed, now);
+    if (claimTransactionStartedAt && claimTransactionResolvedAt) {
+      for (const row of claimed)
+        this.trace?.updateTimingByEvent(row.id, {
+          claimedAt: (row.claimed_at ?? now).toISOString(),
+          claimTransactionStartedAt,
+          claimTransactionResolvedAt,
+        });
+    }
     if (claimed.length > 0) {
       this.logger.log(
         {
@@ -173,22 +196,104 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
       );
     }
     for (const row of claimed) {
+      if (row.attempt_count > 1) {
+        this.trace?.recordLeaseTransition({
+          eventId: row.id,
+          eventSeq: row.event_seq.toString(),
+          transition: 'reclaimed',
+          newClaimToken: row.claim_token ?? this.claimToken,
+          newPublisherInstanceId: this.publisherInstanceId,
+          attemptNumber: row.attempt_count,
+          leaseExpiresAtIso: row.lease_expires_at?.toISOString(),
+        });
+      }
       try {
         this.logger.log(
           { eventName: row.event_name, liveSessionId: row.live_session_id },
           'Durable realtime publisher dispatching event',
         );
-        await this.gateway.dispatchDurableEvent(this.toEvent(row));
-        if (await this.markDelivered(row.id, new Date())) {
+        if (this.trace?.enabled)
+          this.trace.updateTimingByEvent(row.id, {
+            dispatchStartAt: new Date().toISOString(),
+          });
+        await this.dispatchTraced(row);
+        if (this.trace?.enabled)
+          this.trace.updateTimingByEvent(row.id, {
+            dispatchReturnAt: new Date().toISOString(),
+          });
+        if (this.trace?.enabled)
+          this.trace.updateTimingByEvent(row.id, {
+            markDeliveredStartedAt: new Date().toISOString(),
+          });
+        const delivered = await this.markDelivered(row.id, new Date());
+        if (this.trace?.enabled)
+          this.trace.updateTimingByEvent(row.id, {
+            markDeliveredResolvedAt: new Date().toISOString(),
+          });
+        this.trace?.recordMarkDelivered(row.id, {
+          eventSeq: row.event_seq.toString(),
+          claimToken: this.claimToken,
+          updatedCount: delivered ? 1 : 0,
+          success: delivered,
+        });
+        this.trace?.recordTransition(
+          row.id,
+          delivered ? 'delivered' : 'stale_claim_lost',
+          new Date().toISOString(),
+        );
+        if (delivered) {
           this.outstandingLeaseCount -= 1;
         }
       } catch (error) {
-        if (await this.markFailure(row, error, new Date())) {
+        const failure = await this.markFailure(row, error, new Date());
+        this.trace?.recordTransition(
+          row.id,
+          failure.state,
+          new Date().toISOString(),
+        );
+        if (failure.persisted) {
           this.outstandingLeaseCount -= 1;
         }
       }
     }
     return claimed.length;
+  }
+
+  /**
+   * Diagnostic-only wrapper around the gateway dispatch. Records when dispatch
+   * was entered and returned and rethrows the SAME error instance, so
+   * `classifyFailure` and every retry/dead-letter decision are unchanged.
+   */
+  private async dispatchTraced(row: RawLiveSessionEvent): Promise<void> {
+    const trace = this.trace;
+    const tracing = trace?.enabled === true;
+    const event = this.toEvent(row);
+    if (tracing) {
+      trace?.recordClaim({
+        eventId: row.id,
+        eventSeq: row.event_seq.toString(),
+        eventType: row.event_name,
+        liveSessionId: row.live_session_id,
+        ...(row.session_question_id
+          ? { sessionQuestionId: row.session_question_id }
+          : {}),
+        claimedAtIso: (row.claimed_at ?? new Date()).toISOString(),
+        leaseExpiresAtIso: row.lease_expires_at?.toISOString(),
+        attemptNumber: row.attempt_count,
+        publisherInstanceId: this.publisherInstanceId,
+        publisherClaimToken: row.claim_token ?? this.claimToken,
+        aggregateVersion: row.aggregate_version,
+        visibility: row.visibility,
+      });
+      trace?.recordDispatchStart(row.id, performance.now());
+    }
+    try {
+      await this.gateway.dispatchDurableEvent(event);
+      if (tracing) trace?.recordDispatchReturned(row.id, performance.now());
+    } catch (error) {
+      if (tracing) trace?.recordDispatchThrew(row.id, error);
+      throw error;
+    }
   }
 
   private async claimDueRows(now: Date): Promise<RawLiveSessionEvent[]> {
@@ -240,6 +345,34 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  /**
+   * Diagnostic-only: record the claim for every row immediately after the
+   * claim transaction commits, before any dispatch attempt. This closes the
+   * attribution gap where a claimed row never reaches `dispatchTraced` (no
+   * publisher-phase record would otherwise exist for it).
+   */
+  private recordClaimedRows(rows: RawLiveSessionEvent[], now: Date): void {
+    const trace = this.trace;
+    if (trace?.enabled !== true) return;
+    for (const row of rows) {
+      trace.recordClaimed({
+        eventId: row.id,
+        eventSeq: row.event_seq.toString(),
+        eventType: row.event_name,
+        liveSessionId: row.live_session_id,
+        sessionQuestionId: row.session_question_id ?? undefined,
+        claimedAtIso: (row.claimed_at ?? now).toISOString(),
+        leaseExpiresAtIso: row.lease_expires_at?.toISOString(),
+        attemptNumber: row.attempt_count,
+        publisherInstanceId: this.publisherInstanceId,
+        publisherClaimToken: row.claim_token ?? this.claimToken,
+        aggregateVersion: row.aggregate_version,
+        visibility: row.visibility,
+        targetParticipantId: row.target_participant_id,
+      });
+    }
+  }
+
   private async markDelivered(id: string, now: Date): Promise<boolean> {
     const updated = await this.prisma.prisma.liveSessionEvent.updateMany({
       where: {
@@ -263,7 +396,7 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
     row: RawLiveSessionEvent,
     error: unknown,
     now: Date,
-  ): Promise<boolean> {
+  ): Promise<{ persisted: boolean; state: 'dead' | 'retry' }> {
     const failureClass = this.classifyFailure(error);
     const shouldDeadLetter =
       failureClass === 'permanent' || row.attempt_count >= MAX_ATTEMPTS;
@@ -315,7 +448,10 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
       },
       'Durable realtime event dispatch failed',
     );
-    return persisted;
+    return {
+      persisted,
+      state: shouldDeadLetter ? 'dead' : 'retry',
+    };
   }
 
   private classifyFailure(error: unknown): 'permanent' | 'transient' {
@@ -479,7 +615,14 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
   }
 
   private async coalescePendingResults(now: Date): Promise<void> {
-    await this.prisma.prisma.$executeRaw`
+    // Production coalesce SQL is byte-equivalent to the pre-instrumentation
+    // baseline (EXISTS candidate selection, same ordering/LIMIT/UPDATE). The
+    // only diagnostic addition is capturing `$executeRaw`'s affected-row count,
+    // which the baseline discarded; it changes no predicate, ordering, or
+    // update semantics. Per-row coalescing evidence stays in the DB
+    // (`coalesced = TRUE`); the harness classifies those rows
+    // `COALESCED_SUPPRESSED` from DB state, so no trace rewrite was needed.
+    const coalescedCount = await this.prisma.prisma.$executeRaw`
       WITH stale AS (
         SELECT older.id
         FROM live_session_event AS older
@@ -527,6 +670,8 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
       FROM stale
       WHERE event.id = stale.id
     `;
+    if (this.trace?.enabled === true && coalescedCount > 0)
+      this.trace.recordCoalescedAggregate(coalescedCount);
   }
 
   private async releaseLeases(): Promise<void> {

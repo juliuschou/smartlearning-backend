@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
 import { isUuid, newId, normalizeUuid } from '../../common/crypto';
 import { LiveSessionStatus } from '../live-sessions/domain';
 import { TransactionService } from '../../prisma/transaction.service';
+import { RealtimeTraceService } from './diagnostics/realtime-trace.service';
 import {
   REALTIME_SCHEMA_VERSION,
   parseSafeRealtimeOutboxInput,
@@ -26,6 +27,7 @@ export interface AppendRealtimeEventInput {
   projectionInput?: unknown;
   serverTimestamp?: Date;
   expiresAt?: Date;
+  correlationId?: string;
 }
 
 /**
@@ -36,7 +38,10 @@ export interface AppendRealtimeEventInput {
  */
 @Injectable()
 export class LiveSessionOutboxService {
-  constructor(private readonly transactions: TransactionService) {}
+  constructor(
+    private readonly transactions: TransactionService,
+    @Optional() private readonly trace?: RealtimeTraceService,
+  ) {}
 
   async append(
     tx: Prisma.TransactionClient,
@@ -134,7 +139,10 @@ export class LiveSessionOutboxService {
         ? (safeInput as Prisma.InputJsonValue)
         : undefined;
 
-    return tx.liveSessionEvent.create({
+    const outboxAppendStartAt = this.trace?.enabled
+      ? new Date().toISOString()
+      : undefined;
+    const created = await tx.liveSessionEvent.create({
       data: {
         id: newId(),
         liveSessionId,
@@ -153,6 +161,22 @@ export class LiveSessionOutboxService {
         expiresAt,
       },
     });
+    if (input.correlationId && this.trace?.enabled) {
+      this.trace.recordTiming({
+        schemaVersion: 1,
+        runId: this.trace.runId,
+        correlationId: input.correlationId,
+        liveSessionId,
+        sessionQuestionId: sessionQuestionId ?? '',
+        participantId: targetParticipantId ?? '',
+        eventId: created.id,
+        eventSeq: created.eventSeq.toString(),
+        eventType: created.eventName,
+        outboxAppendStartAt,
+        outboxRowCreatedAt: new Date().toISOString(),
+      });
+    }
+    return created;
   }
 
   private assertEventInput(

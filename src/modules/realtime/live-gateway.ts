@@ -1,4 +1,9 @@
-import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,8 +14,9 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
+import { performance } from 'node:perf_hooks';
 import cookie from 'cookie';
-import { isUuid, normalizeUuid } from '../../common/crypto';
+import { isUuid, newId, normalizeUuid } from '../../common/crypto';
 import { Prisma } from '../../../generated/prisma/client';
 import {
   AccountLifecycleBus,
@@ -33,6 +39,7 @@ import {
 } from '../live-sessions/domain';
 import { AccountRole } from '../identity/domain/roles';
 import { ParticipantService } from '../participants/application/participant.service';
+import { RealtimeTraceService, type RealtimeTraceGuard } from './diagnostics';
 import {
   assessReplay,
   parseLastEventSeq,
@@ -116,6 +123,28 @@ type DisconnectableSocket = {
   disconnect(close?: boolean): unknown;
 };
 
+/** Diagnostic-only context carried alongside one durable emit. */
+type EmitTraceContext = {
+  eventId: string;
+  eventSeq: string;
+  liveSessionId: string;
+  sessionQuestionId?: string;
+  clientKind?: 'teacher' | 'participant';
+  participantId?: string;
+  aggregateVersion: number;
+  visibility: string;
+};
+
+/**
+ * Per-socket connected state for diagnostics. A local Socket exposes
+ * `.connected`; a Redis RemoteSocket does not, so `undefined` is returned and
+ * must be reported as "unknown", never as disconnected.
+ */
+function readConnected(socket: unknown): boolean | undefined {
+  const candidate = (socket as { connected?: unknown })?.connected;
+  return typeof candidate === 'boolean' ? candidate : undefined;
+}
+
 @WebSocketGateway({ namespace: LIVE_NAMESPACE })
 export class LiveGateway
   implements
@@ -125,6 +154,7 @@ export class LiveGateway
     OnGatewayDisconnect
 {
   private readonly logger = new Logger(LiveGateway.name);
+  private readonly gatewayInstanceId = newId();
   /** Serialize every outbound operation per Socket.IO id. */
   private readonly deliveryQueues = new Map<string, Promise<void>>();
   private accountLifecycleUnsubscribe?: () => void;
@@ -146,7 +176,11 @@ export class LiveGateway
     private readonly prisma: PrismaService,
     private readonly redis: RealtimeRedisService,
     private readonly accountLifecycleBus: AccountLifecycleBus,
-  ) {}
+    /** Diagnostic-only sink; absent unless the trace flag is enabled. */
+    @Optional() private readonly trace?: RealtimeTraceService,
+  ) {
+    this.trace?.recordLifecycle('gateway', this.gatewayInstanceId);
+  }
 
   onModuleInit(): void {
     // US-F8: account-level lifecycle signals (e.g. a disabled account) are on
@@ -188,6 +222,7 @@ export class LiveGateway
 
   async handleConnection(socket: Socket): Promise<void> {
     if (!this.redis.acceptsTraffic) {
+      // trace-exempt: pre-join auth error; not a durable fan-out target.
       socket.emit('error', { code: 'REALTIME_UNAVAILABLE' });
       socket.disconnect(true);
       return;
@@ -226,6 +261,7 @@ export class LiveGateway
         },
         'Socket connection rejected',
       );
+      // trace-exempt: rejected-handshake error; not a durable fan-out target.
       socket.emit('error', { code });
       socket.disconnect(true);
     }
@@ -246,12 +282,14 @@ export class LiveGateway
     @MessageBody() body: unknown,
   ): Promise<void> {
     if (!this.redis.acceptsTraffic) {
+      // trace-exempt: pre-join auth error; not a durable fan-out target.
       socket.emit('error', { code: 'REALTIME_UNAVAILABLE' });
       socket.disconnect(true);
       return;
     }
     const client = socket.data.auth as AuthenticatedClient | undefined;
     if (!client) {
+      // trace-exempt: unauthenticated command error; not a durable fan-out.
       socket.emit('error', { code: 'UNAUTHORIZED' });
       return;
     }
@@ -265,20 +303,235 @@ export class LiveGateway
   private async enqueueDelivery(
     socket: { id: string },
     delivery: () => Promise<void> | void,
+    /** Diagnostic-only correlation context; absent unless tracing is enabled. */
+    trace?: { eventId: string; eventName: string },
   ): Promise<void> {
     const previous = this.deliveryQueues.get(socket.id) ?? Promise.resolve();
+    // Diagnostics only: how many deliveries were already queued for this socket.
+    // A stalled delivery serialises every later frame behind it, so this makes a
+    // stall visible instead of only its latency side effect.
+    const queuedBehind = this.pendingDeliveryCount(socket.id);
     const next = previous.catch(() => undefined).then(delivery);
     this.deliveryQueues.set(socket.id, next);
     void next.then(
-      () => this.clearDeliveryQueue(socket.id, next),
-      () => this.clearDeliveryQueue(socket.id, next),
+      () => {
+        if (trace) {
+          this.trace?.recordDelivery({
+            eventId: trace.eventId,
+            eventName: trace.eventName,
+            socketId: socket.id,
+            outcome: 'fulfilled',
+            queuedBehind,
+          });
+        }
+        this.clearDeliveryQueue(socket.id, next);
+      },
+      (error: unknown) => {
+        if (trace) {
+          this.trace?.recordDelivery({
+            eventId: trace.eventId,
+            eventName: trace.eventName,
+            socketId: socket.id,
+            outcome: 'rejected',
+            errorType: errorType(error),
+            queuedBehind,
+          });
+        }
+        this.clearDeliveryQueue(socket.id, next);
+      },
     );
     return next;
+  }
+
+  /**
+   * Diagnostic-only view of how many deliveries are queued behind this socket.
+   * The delivery queue holds a single tail promise, so a socket with an
+   * unresolved tail has at least one delivery in flight.
+   */
+  private pendingDeliveryCount(id: string): number {
+    return this.deliveryQueues.has(id) ? 1 : 0;
   }
 
   private clearDeliveryQueue(id: string, completed: Promise<void>): void {
     if (this.deliveryQueues.get(id) === completed) {
       this.deliveryQueues.delete(id);
+    }
+  }
+
+  // --- diagnostic trace helpers -------------------------------------------
+
+  /**
+   * Emit to one socket with an optional diagnostic trace. Behaviour is
+   * identical to `socket.emit(eventName, payload)`: the same call, the same
+   * return value, and the same thrown error instance (re-thrown unchanged).
+   */
+  private emitTraced(
+    socket: DisconnectableSocket,
+    eventName: string,
+    payload: unknown,
+    ctx: EmitTraceContext | null,
+  ): void {
+    const trace = this.trace;
+    // F3/F4 hardening: every diagnostics argument is built inside the `tracing`
+    // branch (or in `emitContext`, which returns `null` when disabled or on a
+    // conversion failure), and the whole diagnostics block is guarded so a
+    // trace failure can never reach the emit below (fail-open; service `safe()`
+    // still applies for the recording itself).
+    if (trace?.enabled === true && ctx !== null) {
+      try {
+        trace.recordEmit({
+          eventId: ctx.eventId,
+          eventSeq: ctx.eventSeq,
+          eventType: eventName,
+          liveSessionId: ctx.liveSessionId,
+          ...(ctx.sessionQuestionId !== undefined
+            ? { sessionQuestionId: ctx.sessionQuestionId }
+            : {}),
+          socketId: socket.id,
+          ...(readConnected(socket) !== undefined
+            ? { connectedState: readConnected(socket) as boolean }
+            : {}),
+          ...(ctx.clientKind !== undefined
+            ? { clientKind: ctx.clientKind }
+            : {}),
+          ...(ctx.participantId !== undefined
+            ? { participantId: ctx.participantId }
+            : {}),
+          aggregateVersion: ctx.aggregateVersion,
+          visibility: ctx.visibility,
+          emitMonoMs: performance.now(),
+        });
+      } catch {
+        // Diagnostics must never alter delivery.
+      }
+    }
+    try {
+      const returned = (socket as unknown as Socket).emit(eventName, payload);
+      if (trace?.enabled === true && ctx !== null)
+        trace.recordEmitReturned(
+          ctx.eventId,
+          eventName,
+          socket.id,
+          returned === true,
+        );
+    } catch (error) {
+      if (trace?.enabled === true && ctx !== null)
+        trace.recordEmitThrew(ctx.eventId, eventName, socket.id, error);
+      throw error;
+    }
+  }
+
+  /** Diagnostic-only: record a fan-out target's membership at emit time. */
+  private traceRoom(
+    event: DurableRealtimeEvent,
+    room: string,
+    memberSocketIds: string[],
+    recipientCount: number,
+    clientKind?: 'teacher' | 'participant',
+  ): void {
+    if (this.trace?.enabled !== true) return;
+    try {
+      this.trace.recordRoom({
+        eventId: event.id,
+        eventSeq: toEventSeqWire(event.eventSeq),
+        eventType: event.eventName,
+        liveSessionId: event.liveSessionId,
+        ...(event.sessionQuestionId
+          ? { sessionQuestionId: event.sessionQuestionId }
+          : {}),
+        room,
+        memberSocketIds,
+        recipientCount,
+        adapterRoomSize: this.adapterRoomSize(room),
+        aggregateVersion: event.aggregateVersion,
+        visibility: event.visibility,
+      });
+    } catch {
+      // Diagnostics must never alter delivery.
+    }
+    void clientKind;
+  }
+
+  /** Diagnostic-only: record that a guard skipped an emit for one recipient. */
+  private traceGuard(
+    event: DurableRealtimeEvent,
+    socket: DisconnectableSocket,
+    guard: RealtimeTraceGuard,
+    client?: AuthenticatedClient,
+  ): void {
+    if (this.trace?.enabled !== true) return;
+    try {
+      this.trace.recordGuard({
+        eventId: event.id,
+        eventSeq: toEventSeqWire(event.eventSeq),
+        eventType: event.eventName,
+        liveSessionId: event.liveSessionId,
+        ...(event.sessionQuestionId
+          ? { sessionQuestionId: event.sessionQuestionId }
+          : {}),
+        guard,
+        socketId: socket.id,
+        ...(readConnected(socket) !== undefined
+          ? { connectedState: readConnected(socket) as boolean }
+          : {}),
+        ...(client?.kind !== undefined ? { clientKind: client.kind } : {}),
+        ...(client?.kind === 'participant'
+          ? { participantId: client.participantId }
+          : {}),
+        aggregateVersion: event.aggregateVersion,
+        visibility: event.visibility,
+      });
+    } catch {
+      // Diagnostics must never alter delivery.
+    }
+  }
+
+  /**
+   * Diagnostic-only: size of a room according to the Socket.IO adapter. Returns
+   * `undefined` when the adapter or namespace is unavailable (publisher/CLI
+   * context) so callers report "unknown" rather than a false zero.
+   */
+  private adapterRoomSize(room: string): number | undefined {
+    try {
+      const adapter = (
+        this.server as unknown as {
+          sockets?: { adapter?: { rooms?: Map<string, Set<string>> } };
+        }
+      )?.sockets?.adapter;
+      return adapter?.rooms?.get(room)?.size;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Build the per-emit trace context for one recipient of a durable event.
+   * Returns `null` immediately when tracing is off so no per-emit object (and
+   * no `toEventSeqWire` conversion) is allocated on the disabled hot path.
+   */
+  private emitContext(
+    event: DurableRealtimeEvent,
+    client: AuthenticatedClient,
+  ): EmitTraceContext | null {
+    if (this.trace?.enabled !== true) return null;
+    try {
+      return {
+        eventId: event.id,
+        eventSeq: toEventSeqWire(event.eventSeq),
+        liveSessionId: event.liveSessionId,
+        ...(event.sessionQuestionId
+          ? { sessionQuestionId: event.sessionQuestionId }
+          : {}),
+        clientKind: client.kind,
+        ...(client.kind === 'participant'
+          ? { participantId: client.participantId }
+          : {}),
+        aggregateVersion: event.aggregateVersion,
+        visibility: event.visibility,
+      };
+    } catch {
+      // Diagnostics conversion failed; delivery must proceed unaffected.
+      return null;
     }
   }
 
@@ -402,6 +655,7 @@ export class LiveGateway
         socket.disconnect(true);
         return;
       }
+      // trace-exempt: non-durable snapshot; no live_session_event row to key on.
       socket.emit(
         RealtimeEvent.SESSION_SNAPSHOT,
         this.envelope(
@@ -429,6 +683,7 @@ export class LiveGateway
         client.participantId,
         client.accountId,
       );
+      // trace-exempt: non-durable snapshot; no live_session_event row to key on.
       socket.emit(
         RealtimeEvent.SESSION_SNAPSHOT,
         this.envelope(
@@ -821,6 +1076,7 @@ export class LiveGateway
       client.liveSessionId,
       client,
     );
+    // trace-exempt: recovery control signal; not a durable fan-out target.
     socket.emit(
       RealtimeEvent.SYNC_REQUIRED,
       this.envelope(
@@ -928,7 +1184,7 @@ export class LiveGateway
         await this.emitSharedEvent(event, {
           status: this.projectionString(event, 'status'),
         });
-        await this.emitTeacherCounts(event.liveSessionId);
+        await this.emitTeacherCounts(event.liveSessionId, event);
         if (this.projectionString(event, 'status') === 'cancelled') {
           await this.disconnectSessionSockets(event.liveSessionId);
         }
@@ -939,12 +1195,12 @@ export class LiveGateway
         const sessionQuestionId = this.eventQuestionId(event);
         if (!sessionQuestionId) return;
         await this.emitSharedEvent(event, { sessionQuestionId });
-        await this.emitTeacherCounts(event.liveSessionId);
+        await this.emitTeacherCounts(event.liveSessionId, event);
         return;
       }
       case RealtimeEvent.RESULT_UPDATED:
         if (!this.eventQuestionId(event)) return;
-        await this.emitTeacherCounts(event.liveSessionId);
+        await this.emitTeacherCounts(event.liveSessionId, event);
         await this.emitTeacherResults(event);
         await this.emitParticipantResults(event);
         return;
@@ -969,33 +1225,57 @@ export class LiveGateway
     } catch {
       throw new Error('Could not enumerate teacher sockets.');
     }
+    if (this.trace?.enabled === true) {
+      this.traceRoom(
+        event,
+        teacherRoom(event.liveSessionId),
+        sockets.map((remoteSocket) => remoteSocket.id),
+        sockets.length,
+      );
+    }
     await Promise.all(
       sockets.map((remoteSocket) =>
-        this.enqueueDelivery(remoteSocket, async () => {
-          const client = remoteSocket.data?.auth as
-            AuthenticatedClient | undefined;
-          if (
-            !client ||
-            client.kind !== 'teacher' ||
-            client.liveSessionId !== event.liveSessionId
-          ) {
-            return;
-          }
-          try {
-            await this.sendSnapshot(remoteSocket as unknown as Socket, client, {
-              eventSeq: toEventSeqWire(event.eventSeq),
-              aggregateVersion: event.aggregateVersion,
-              reason: this.projectionString(event, 'reason'),
-              serverTimestamp: event.serverTimestamp.toISOString(),
-            });
-          } catch (error) {
-            if (!this.isExpectedAuthorizationFailure(error)) throw error;
-            (remoteSocket as unknown as DisconnectableSocket).disconnect(true);
-          }
-        }),
+        this.enqueueDelivery(
+          remoteSocket,
+          async () => {
+            const client = remoteSocket.data?.auth as
+              AuthenticatedClient | undefined;
+            if (
+              !client ||
+              client.kind !== 'teacher' ||
+              client.liveSessionId !== event.liveSessionId
+            ) {
+              this.traceGuard(
+                event,
+                remoteSocket,
+                client ? 'identity_mismatch' : 'session_mismatch',
+                client,
+              );
+              return;
+            }
+            try {
+              await this.sendSnapshot(
+                remoteSocket as unknown as Socket,
+                client,
+                {
+                  eventSeq: toEventSeqWire(event.eventSeq),
+                  aggregateVersion: event.aggregateVersion,
+                  reason: this.projectionString(event, 'reason'),
+                  serverTimestamp: event.serverTimestamp.toISOString(),
+                },
+              );
+            } catch (error) {
+              if (!this.isExpectedAuthorizationFailure(error)) throw error;
+              (remoteSocket as unknown as DisconnectableSocket).disconnect(
+                true,
+              );
+            }
+          },
+          { eventId: event.id, eventName: event.eventName },
+        ),
       ),
     );
-    await this.emitTeacherCounts(event.liveSessionId);
+    await this.emitTeacherCounts(event.liveSessionId, event);
   }
 
   private async emitSharedEvent(
@@ -1013,6 +1293,14 @@ export class LiveGateway
     } catch {
       throw new Error('Could not enumerate shared sockets.');
     }
+    if (this.trace?.enabled === true) {
+      this.traceRoom(
+        event,
+        room,
+        sockets.map((remoteSocket) => remoteSocket.id),
+        sockets.length,
+      );
+    }
     const envelope = this.envelope(
       event.eventName as RealtimeEventName,
       visibility,
@@ -1024,27 +1312,51 @@ export class LiveGateway
     );
     await Promise.all(
       sockets.map((remoteSocket) =>
-        this.enqueueDelivery(remoteSocket, async () => {
-          const client = remoteSocket.data?.auth as
-            AuthenticatedClient | undefined;
-          if (!client || client.liveSessionId !== event.liveSessionId) return;
-          if (client.kind === 'teacher') {
-            try {
-              await this.sessions.assertAccountActive(client.accountId);
-            } catch (error) {
-              if (!this.isExpectedAuthorizationFailure(error)) throw error;
-              remoteSocket.disconnect(true);
+        this.enqueueDelivery(
+          remoteSocket,
+          async () => {
+            const client = remoteSocket.data?.auth as
+              AuthenticatedClient | undefined;
+            if (!client || client.liveSessionId !== event.liveSessionId) {
+              this.traceGuard(event, remoteSocket, 'session_mismatch', client);
               return;
             }
-          } else if (
-            event.eventName !== RealtimeEvent.QUESTION_CLOSED &&
-            data.status !== 'closed' &&
-            !(await this.reauthorizeParticipant(remoteSocket, client))
-          ) {
-            return;
-          }
-          remoteSocket.emit(event.eventName, envelope);
-        }),
+            if (client.kind === 'teacher') {
+              try {
+                await this.sessions.assertAccountActive(client.accountId);
+              } catch (error) {
+                if (!this.isExpectedAuthorizationFailure(error)) throw error;
+                this.traceGuard(
+                  event,
+                  remoteSocket,
+                  'account_inactive',
+                  client,
+                );
+                remoteSocket.disconnect(true);
+                return;
+              }
+            } else if (
+              event.eventName !== RealtimeEvent.QUESTION_CLOSED &&
+              data.status !== 'closed' &&
+              !(await this.reauthorizeParticipant(remoteSocket, client))
+            ) {
+              this.traceGuard(
+                event,
+                remoteSocket,
+                'reauthorize_failed',
+                client,
+              );
+              return;
+            }
+            this.emitTraced(
+              remoteSocket,
+              event.eventName,
+              envelope,
+              this.emitContext(event, client),
+            );
+          },
+          { eventId: event.id, eventName: event.eventName },
+        ),
       ),
     );
   }
@@ -1073,38 +1385,67 @@ export class LiveGateway
     } catch {
       throw new Error('Could not enumerate closing sockets.');
     }
+    if (this.trace?.enabled === true) {
+      this.traceRoom(
+        event,
+        sessionRoom(event.liveSessionId),
+        sockets.map((remoteSocket) => remoteSocket.id),
+        sockets.length,
+      );
+    }
     await Promise.all(
       sockets.map((remoteSocket) =>
-        this.enqueueDelivery(remoteSocket, async () => {
-          const client = remoteSocket.data?.auth as
-            AuthenticatedClient | undefined;
-          if (!client || client.liveSessionId !== event.liveSessionId) return;
-          const socket = remoteSocket as unknown as Socket;
-          if (client.kind === 'teacher') {
-            try {
-              await this.sessions.assertAccountActive(client.accountId);
-            } catch (error) {
-              if (!this.isExpectedAuthorizationFailure(error)) throw error;
-              socket.disconnect(true);
+        this.enqueueDelivery(
+          remoteSocket,
+          async () => {
+            const client = remoteSocket.data?.auth as
+              AuthenticatedClient | undefined;
+            if (!client || client.liveSessionId !== event.liveSessionId) {
+              this.traceGuard(event, remoteSocket, 'session_mismatch', client);
               return;
             }
-          } else if (!(await this.reauthorizeParticipant(socket, client))) {
-            return;
-          }
-          socket.emit(
-            RealtimeEvent.SESSION_CLOSED,
-            this.envelope(
+            const socket = remoteSocket as unknown as Socket;
+            if (client.kind === 'teacher') {
+              try {
+                await this.sessions.assertAccountActive(client.accountId);
+              } catch (error) {
+                if (!this.isExpectedAuthorizationFailure(error)) throw error;
+                this.traceGuard(
+                  event,
+                  remoteSocket,
+                  'account_inactive',
+                  client,
+                );
+                socket.disconnect(true);
+                return;
+              }
+            } else if (!(await this.reauthorizeParticipant(socket, client))) {
+              this.traceGuard(
+                event,
+                remoteSocket,
+                'reauthorize_failed',
+                client,
+              );
+              return;
+            }
+            this.emitTraced(
+              socket,
               RealtimeEvent.SESSION_CLOSED,
-              this.clientVisibility(client),
-              event.liveSessionId,
-              toEventSeqWire(event.eventSeq),
-              event.aggregateVersion,
-              { status: this.projectionString(event, 'status') ?? 'closed' },
-              event.serverTimestamp.toISOString(),
-            ),
-          );
-          setImmediate(() => socket.disconnect(true));
-        }),
+              this.envelope(
+                RealtimeEvent.SESSION_CLOSED,
+                this.clientVisibility(client),
+                event.liveSessionId,
+                toEventSeqWire(event.eventSeq),
+                event.aggregateVersion,
+                { status: this.projectionString(event, 'status') ?? 'closed' },
+                event.serverTimestamp.toISOString(),
+              ),
+              this.emitContext(event, client),
+            );
+            setImmediate(() => socket.disconnect(true));
+          },
+          { eventId: event.id, eventName: event.eventName },
+        ),
       ),
     );
   }
@@ -1127,6 +1468,7 @@ export class LiveGateway
         }
         return;
       case RealtimeEvent.SESSION_STATE_CHANGED:
+        // trace-exempt: replay path; the durable leg is traced at fan-out.
         socket.emit(
           RealtimeEvent.SESSION_STATE_CHANGED,
           this.envelope(
@@ -1144,6 +1486,7 @@ export class LiveGateway
       case RealtimeEvent.QUESTION_CLOSED: {
         const sessionQuestionId = this.eventQuestionId(event);
         if (!sessionQuestionId) return;
+        // trace-exempt: replay path; the durable leg is traced at fan-out.
         socket.emit(
           event.eventName,
           this.envelope(
@@ -1162,6 +1505,7 @@ export class LiveGateway
         await this.emitResultToSocket(socket, client, event);
         return;
       case RealtimeEvent.SESSION_CLOSED:
+        // trace-exempt: replay path; the durable leg is traced at fan-out.
         socket.emit(
           RealtimeEvent.SESSION_CLOSED,
           this.envelope(
@@ -1188,7 +1532,10 @@ export class LiveGateway
     event: DurableRealtimeEvent,
   ): Promise<void> {
     const sessionQuestionId = this.eventQuestionId(event);
-    if (!sessionQuestionId) return;
+    if (!sessionQuestionId) {
+      this.traceGuard(event, socket, 'no_session_question', client);
+      return;
+    }
     if (
       client.kind === 'participant' &&
       event.visibility === RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT
@@ -1199,6 +1546,7 @@ export class LiveGateway
         normalizeUuid(event.targetParticipantId) !==
           normalizeUuid(client.participantId)
       ) {
+        this.traceGuard(event, socket, 'recipient_filtered', client);
         return;
       }
     }
@@ -1213,7 +1561,8 @@ export class LiveGateway
           role: client.role,
         },
       );
-      socket.emit(
+      this.emitTraced(
+        socket,
         RealtimeEvent.RESULT_UPDATED,
         this.envelope(
           RealtimeEvent.RESULT_UPDATED,
@@ -1224,10 +1573,14 @@ export class LiveGateway
           { sessionQuestionId, results },
           event.serverTimestamp.toISOString(),
         ),
+        this.emitContext(event, client),
       );
       return;
     }
-    if (!(await this.reauthorizeParticipant(socket, client))) return;
+    if (!(await this.reauthorizeParticipant(socket, client))) {
+      this.traceGuard(event, socket, 'reauthorize_failed', client);
+      return;
+    }
     try {
       const results = await this.liveSessions.getResults(
         event.liveSessionId,
@@ -1238,7 +1591,8 @@ export class LiveGateway
           accountId: client.accountId,
         },
       );
-      socket.emit(
+      this.emitTraced(
+        socket,
         RealtimeEvent.RESULT_UPDATED,
         this.envelope(
           RealtimeEvent.RESULT_UPDATED,
@@ -1249,6 +1603,7 @@ export class LiveGateway
           { sessionQuestionId, results },
           event.serverTimestamp.toISOString(),
         ),
+        this.emitContext(event, client),
       );
     } catch (error) {
       if (
@@ -1257,6 +1612,7 @@ export class LiveGateway
       ) {
         throw error;
       }
+      this.traceGuard(event, socket, 'reveal_gate', client);
       this.logger.debug(
         {
           liveSessionId: event.liveSessionId,
@@ -1269,7 +1625,10 @@ export class LiveGateway
   }
 
   /** Teacher-only compatibility count notification. */
-  private async emitTeacherCounts(liveSessionId: string): Promise<void> {
+  private async emitTeacherCounts(
+    liveSessionId: string,
+    event?: DurableRealtimeEvent,
+  ): Promise<void> {
     let counts: { joinedCount: number; votedCount: number };
     try {
       const detail = await this.liveSessions.getTeacherDetail(liveSessionId, {
@@ -1302,6 +1661,14 @@ export class LiveGateway
     } catch {
       throw new Error('Could not enumerate count sockets.');
     }
+    if (event && this.trace?.enabled === true) {
+      this.traceRoom(
+        event,
+        teacherRoom(liveSessionId),
+        sockets.map((remoteSocket) => remoteSocket.id),
+        sockets.length,
+      );
+    }
     const payload = {
       schemaVersion: 1,
       serverTimestamp: new Date().toISOString(),
@@ -1311,25 +1678,53 @@ export class LiveGateway
     };
     await Promise.all(
       sockets.map((remoteSocket) =>
-        this.enqueueDelivery(remoteSocket, async () => {
-          const client = remoteSocket.data?.auth as
-            AuthenticatedClient | undefined;
-          if (
-            !client ||
-            client.kind !== 'teacher' ||
-            client.liveSessionId !== liveSessionId
-          ) {
-            return;
-          }
-          try {
-            await this.sessions.assertAccountActive(client.accountId);
-          } catch (error) {
-            if (!this.isExpectedAuthorizationFailure(error)) throw error;
-            remoteSocket.disconnect(true);
-            return;
-          }
-          remoteSocket.emit('counts.updated', payload);
-        }),
+        this.enqueueDelivery(
+          remoteSocket,
+          async () => {
+            const client = remoteSocket.data?.auth as
+              AuthenticatedClient | undefined;
+            if (
+              !client ||
+              client.kind !== 'teacher' ||
+              client.liveSessionId !== liveSessionId
+            ) {
+              if (event)
+                this.traceGuard(
+                  event,
+                  remoteSocket,
+                  client ? 'identity_mismatch' : 'session_mismatch',
+                  client,
+                );
+              return;
+            }
+            try {
+              await this.sessions.assertAccountActive(client.accountId);
+            } catch (error) {
+              if (!this.isExpectedAuthorizationFailure(error)) throw error;
+              if (event)
+                this.traceGuard(
+                  event,
+                  remoteSocket,
+                  'account_inactive',
+                  client,
+                );
+              remoteSocket.disconnect(true);
+              return;
+            }
+            if (event) {
+              this.emitTraced(
+                remoteSocket,
+                'counts.updated',
+                payload,
+                this.emitContext(event, client),
+              );
+            } else {
+              // trace-exempt: no durable event passed; compatibility-only path.
+              remoteSocket.emit('counts.updated', payload);
+            }
+          },
+          event ? { eventId: event.id, eventName: event.eventName } : undefined,
+        ),
       ),
     );
   }
@@ -1360,6 +1755,14 @@ export class LiveGateway
     } catch {
       throw new Error('Could not enumerate teacher result sockets.');
     }
+    if (this.trace?.enabled === true) {
+      this.traceRoom(
+        event,
+        teacherRoom(event.liveSessionId),
+        sockets.map((remoteSocket) => remoteSocket.id),
+        sockets.length,
+      );
+    }
     const envelope = this.envelope(
       RealtimeEvent.RESULT_UPDATED,
       RealtimeVisibility.TEACHER,
@@ -1371,25 +1774,41 @@ export class LiveGateway
     );
     await Promise.all(
       sockets.map((remoteSocket) =>
-        this.enqueueDelivery(remoteSocket, async () => {
-          const client = remoteSocket.data?.auth as
-            AuthenticatedClient | undefined;
-          if (
-            !client ||
-            client.kind !== 'teacher' ||
-            client.liveSessionId !== event.liveSessionId
-          ) {
-            return;
-          }
-          try {
-            await this.sessions.assertAccountActive(client.accountId);
-          } catch (error) {
-            if (!this.isExpectedAuthorizationFailure(error)) throw error;
-            remoteSocket.disconnect(true);
-            return;
-          }
-          remoteSocket.emit(RealtimeEvent.RESULT_UPDATED, envelope);
-        }),
+        this.enqueueDelivery(
+          remoteSocket,
+          async () => {
+            const client = remoteSocket.data?.auth as
+              AuthenticatedClient | undefined;
+            if (
+              !client ||
+              client.kind !== 'teacher' ||
+              client.liveSessionId !== event.liveSessionId
+            ) {
+              this.traceGuard(
+                event,
+                remoteSocket,
+                client ? 'identity_mismatch' : 'session_mismatch',
+                client,
+              );
+              return;
+            }
+            try {
+              await this.sessions.assertAccountActive(client.accountId);
+            } catch (error) {
+              if (!this.isExpectedAuthorizationFailure(error)) throw error;
+              this.traceGuard(event, remoteSocket, 'account_inactive', client);
+              remoteSocket.disconnect(true);
+              return;
+            }
+            this.emitTraced(
+              remoteSocket,
+              RealtimeEvent.RESULT_UPDATED,
+              envelope,
+              this.emitContext(event, client),
+            );
+          },
+          { eventId: event.id, eventName: event.eventName },
+        ),
       ),
     );
   }
@@ -1448,24 +1867,45 @@ export class LiveGateway
               );
             })
         : remoteSockets;
+    // `roomMemberCount` vs `recipientCount` diverge here exactly when the
+    // participant_after_submit filter narrows the fan-out — the key evidence for
+    // a silently-dropped targeted recipient.
+    if (this.trace?.enabled === true) {
+      this.traceRoom(
+        event,
+        sessionRoom(event.liveSessionId),
+        remoteSockets.map((remoteSocket) => remoteSocket.id),
+        recipients.length,
+      );
+    }
     await Promise.all(
       recipients.map((remoteSocket) =>
-        this.enqueueDelivery(remoteSocket, async () => {
-          const client = remoteSocket.data?.auth as
-            AuthenticatedClient | undefined;
-          if (
-            !client ||
-            client.kind !== 'participant' ||
-            client.liveSessionId !== event.liveSessionId
-          ) {
-            return;
-          }
-          await this.emitResultToSocket(
-            remoteSocket as unknown as Socket,
-            client,
-            event,
-          );
-        }),
+        this.enqueueDelivery(
+          remoteSocket,
+          async () => {
+            const client = remoteSocket.data?.auth as
+              AuthenticatedClient | undefined;
+            if (
+              !client ||
+              client.kind !== 'participant' ||
+              client.liveSessionId !== event.liveSessionId
+            ) {
+              this.traceGuard(
+                event,
+                remoteSocket,
+                client ? 'identity_mismatch' : 'session_mismatch',
+                client,
+              );
+              return;
+            }
+            await this.emitResultToSocket(
+              remoteSocket as unknown as Socket,
+              client,
+              event,
+            );
+          },
+          { eventId: event.id, eventName: event.eventName },
+        ),
       ),
     );
   }

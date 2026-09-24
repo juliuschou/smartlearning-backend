@@ -55,6 +55,28 @@ function targetedResult(
   };
 }
 
+const contextEvent: {
+  id: string;
+  eventName: RealtimeEventName;
+  visibility: RealtimeVisibilityValue;
+  targetParticipantId: string;
+  liveSessionId: string;
+  sessionQuestionId: string;
+  eventSeq: bigint;
+  aggregateVersion: number;
+  serverTimestamp: Date;
+} = {
+  id: '0190c6b8-0000-7000-8000-00000000000a',
+  eventName: RealtimeEvent.RESULT_UPDATED,
+  visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
+  targetParticipantId: PARTICIPANT_ID,
+  liveSessionId: LIVE_SESSION_ID,
+  sessionQuestionId: '0190c6b8-0000-7000-8000-00000000000b',
+  eventSeq: 7n,
+  aggregateVersion: 2,
+  serverTimestamp: new Date('2026-09-24T00:00:00.000Z'),
+};
+
 describe('LiveGateway durable visibility', () => {
   it('delivers targeted result rows only to the matching participant', () => {
     const isVisibleToClient = visibilityProbe();
@@ -157,6 +179,227 @@ describe('LiveGateway durable visibility', () => {
     // terminal packet first; yield one tick before asserting it.
     await new Promise<void>((resolve) => setImmediate(resolve));
     expect(socket.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('blocks publisher readiness when required Redis is unavailable', () => {
+    const gateway = Object.create(LiveGateway.prototype) as unknown as {
+      server: object;
+      redis: { acceptsTraffic: boolean };
+      isTransportReady(): boolean;
+    };
+    gateway.server = {};
+    gateway.redis = { acceptsTraffic: false };
+
+    expect(gateway.isTransportReady()).toBe(false);
+  });
+
+  describe('diagnostics fail-open (F4)', () => {
+    function failOpenHarness(): {
+      socket: { emit: jest.Mock; disconnect: jest.Mock };
+      gateway: {
+        emitDurableEventToSocket(
+          socket: unknown,
+          client: unknown,
+          event: unknown,
+        ): Promise<void>;
+        trace: { enabled: boolean; recordGuard: jest.Mock };
+        traceGuard(
+          event: unknown,
+          socket: unknown,
+          guard: string,
+          client: unknown,
+        ): void;
+        emitTraced(
+          socket: unknown,
+          eventName: string,
+          payload: unknown,
+          ctx: unknown,
+        ): void;
+        emitContext(event: unknown, client: unknown): unknown;
+        eventQuestionId(event: unknown): string | undefined;
+      };
+    } {
+      const socket = { emit: jest.fn(), disconnect: jest.fn() };
+      const gateway = Object.create(LiveGateway.prototype) as unknown as {
+        emitDurableEventToSocket(
+          socket: unknown,
+          client: unknown,
+          event: unknown,
+        ): Promise<void>;
+        trace: { enabled: boolean; recordGuard: jest.Mock };
+        traceGuard(
+          event: unknown,
+          socket: unknown,
+          guard: string,
+          client: unknown,
+        ): void;
+        emitTraced(
+          socket: unknown,
+          eventName: string,
+          payload: unknown,
+          ctx: unknown,
+        ): void;
+        emitContext(event: unknown, client: unknown): unknown;
+        eventQuestionId(event: unknown): string | undefined;
+      };
+      gateway.trace = { enabled: true, recordGuard: jest.fn() };
+      // Bind the real methods so the fail-open behavior under test is the
+      // production implementation, not a mock.
+      gateway.traceGuard = (
+        LiveGateway.prototype as unknown as {
+          traceGuard: (...args: unknown[]) => void;
+        }
+      ).traceGuard.bind(gateway);
+      gateway.emitTraced = (
+        LiveGateway.prototype as unknown as {
+          emitTraced: (...args: unknown[]) => void;
+        }
+      ).emitTraced.bind(gateway);
+      gateway.emitContext = (
+        LiveGateway.prototype as unknown as {
+          emitContext: (...args: unknown[]) => unknown;
+        }
+      ).emitContext.bind(gateway);
+      gateway.eventQuestionId = (
+        LiveGateway.prototype as unknown as {
+          eventQuestionId: (...args: unknown[]) => string | undefined;
+        }
+      ).eventQuestionId.bind(gateway);
+      return { socket, gateway };
+    }
+
+    const participantClient = {
+      kind: 'participant' as const,
+      participantId: PARTICIPANT_ID,
+      liveSessionId: LIVE_SESSION_ID,
+    };
+    const event = {
+      id: '0190c6b8-0000-7000-8000-00000000000a',
+      eventName: RealtimeEvent.RESULT_UPDATED,
+      visibility: RealtimeVisibility.PARTICIPANT_AFTER_SUBMIT,
+      targetParticipantId: PARTICIPANT_ID,
+      liveSessionId: LIVE_SESSION_ID,
+      sessionQuestionId: '0190c6b8-0000-7000-8000-00000000000b',
+      eventSeq: 7n,
+      aggregateVersion: 2,
+      serverTimestamp: new Date('2026-09-24T00:00:00.000Z'),
+    };
+
+    it('still emits exactly once when the trace context conversion throws', async () => {
+      const { socket, gateway } = failOpenHarness();
+      // Diagnostics sink throws on recordEmit — the production `emitContext`
+      // returns `null` on its own conversion failure and `emitTraced` guards
+      // every trace call, so the emit must proceed unaffected.
+      const gatewayWithResults = gateway as unknown as {
+        trace: {
+          enabled: boolean;
+          recordEmit: () => never;
+          recordEmitReturned: jest.Mock;
+          recordEmitThrew: jest.Mock;
+        };
+        liveSessions: { getResults: jest.Mock };
+        reauthorizeParticipant: jest.Mock;
+        logger: { debug: jest.Mock };
+      };
+      gatewayWithResults.trace = {
+        enabled: true,
+        recordEmit: () => {
+          throw new TypeError(
+            'Event sequence must be a canonical non-negative decimal.',
+          );
+        },
+        recordEmitReturned: jest.fn(),
+        recordEmitThrew: jest.fn(),
+      };
+      gatewayWithResults.liveSessions = {
+        getResults: jest.fn().mockResolvedValue([]),
+      };
+      gatewayWithResults.reauthorizeParticipant = jest
+        .fn()
+        .mockResolvedValue(true);
+      gatewayWithResults.logger = { debug: jest.fn() };
+
+      await expect(
+        gateway.emitDurableEventToSocket(socket, participantClient, event),
+      ).resolves.toBeUndefined();
+
+      // Fail-open: the emit happened exactly once despite the diagnostics
+      // conversion failure, and no exception escaped.
+      expect(socket.emit).toHaveBeenCalledTimes(1);
+      expect(socket.emit).toHaveBeenCalledWith(
+        RealtimeEvent.RESULT_UPDATED,
+        expect.anything(),
+      );
+      expect(socket.disconnect).not.toHaveBeenCalled();
+    });
+
+    it('does not emit and records the guard when the trace guard sink throws', async () => {
+      const { socket, gateway } = failOpenHarness();
+      // No session question → guard branch. The trace sink itself throws; the
+      // guard recording must not propagate the throw to the caller.
+      gateway.trace.recordGuard.mockImplementation(() => {
+        throw new Error('diagnostics sink failure');
+      });
+      const noQuestionEvent = { ...contextEvent, sessionQuestionId: undefined };
+
+      await expect(
+        gateway.emitDurableEventToSocket(
+          socket,
+          participantClient,
+          noQuestionEvent,
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(socket.emit).not.toHaveBeenCalled();
+      expect(gateway.trace.recordGuard).toHaveBeenCalledWith(
+        expect.objectContaining({ guard: 'no_session_question' }),
+      );
+    });
+  });
+
+  describe('trace-disabled hot path (F3)', () => {
+    it('builds no diagnostics context when tracing is off', () => {
+      // toEventSeqWire throws on a malformed sequence; if the disabled
+      // emitContext evaluated its diagnostics arguments, this event would
+      // throw. Returning null proves no per-emit diagnostics object (and no
+      // sequence conversion) was built.
+      const gateway = Object.create(LiveGateway.prototype) as unknown as {
+        trace: undefined;
+        emitContext(event: unknown, client: unknown): unknown;
+      };
+      gateway.trace = undefined;
+      const malformedEvent = {
+        ...contextEvent,
+        eventSeq: 'not-a-sequence' as unknown as bigint,
+      };
+      expect(
+        gateway.emitContext(malformedEvent, {
+          kind: 'participant',
+          participantId: PARTICIPANT_ID,
+          liveSessionId: LIVE_SESSION_ID,
+        }),
+      ).toBeNull();
+    });
+
+    it('returns a context when tracing is on', () => {
+      const gateway = Object.create(LiveGateway.prototype) as unknown as {
+        trace: { enabled: boolean };
+        emitContext(event: unknown, client: unknown): unknown;
+      };
+      gateway.trace = { enabled: true };
+      const ctx = gateway.emitContext(contextEvent, {
+        kind: 'participant',
+        participantId: PARTICIPANT_ID,
+        liveSessionId: LIVE_SESSION_ID,
+      });
+      expect(ctx).toEqual(
+        expect.objectContaining({
+          eventId: contextEvent.id,
+          eventSeq: '7',
+          clientKind: 'participant',
+        }),
+      );
+    });
   });
 
   it('blocks publisher readiness when required Redis is unavailable', () => {

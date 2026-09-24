@@ -30,9 +30,35 @@ export class TransactionService {
       maxWait?: number;
       timeout?: number;
       isolationLevel?: Prisma.TransactionIsolationLevel;
+      diagnostics?: {
+        startedAt?: () => void;
+        callbackCompletedAt?: () => void;
+        resolvedAt?: () => void;
+        rolledBackAt?: () => void;
+      };
     },
   ): Promise<T> {
-    return this.prismaService.prisma.$transaction(fn, options);
+    const diagnostics = options?.diagnostics;
+    const { diagnostics: _ignoredDiagnostics, ...prismaOptions } =
+      options ?? {};
+    let transactionCallbackEntered = false;
+    try {
+      const result = await this.prismaService.prisma.$transaction(
+        async (tx) => {
+          transactionCallbackEntered = true;
+          diagnostics?.startedAt?.();
+          const value = await fn(tx);
+          diagnostics?.callbackCompletedAt?.();
+          return value;
+        },
+        prismaOptions,
+      );
+      diagnostics?.resolvedAt?.();
+      return result;
+    } catch (error) {
+      if (transactionCallbackEntered) diagnostics?.rolledBackAt?.();
+      throw error;
+    }
   }
 
   /**
