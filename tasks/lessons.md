@@ -354,6 +354,13 @@
 - **Prevention rule:** Export or explicitly pass every Compose interpolation variable before starting background lifecycle samplers; prefer a wrapper that supplies variables on every Compose invocation instead of relying on ambient shell state.
 - **Tripwire:** Render the exact Compose config before startup and require heartbeat samples to contain resolved container IDs, running state, and health before reporting `UP PASS`.
 
+## 2026-09-21 — Realtime trace run isolation uses empty 200 responses
+
+- **Failure mode:** The first W3-DIAG-20 preflight treated a mismatched `runId` returning HTTP 200 with zero records as an isolation failure, so the diagnostic stopped before fixture creation.
+- **Detection signal:** The trace endpoint returned `enabled=true` for the active run and an empty record set for the mismatched run; repository trace-client semantics define mismatches as unavailable/empty evidence, not a non-200 response.
+- **Prevention rule:** Validate trace isolation by asserting that a mismatched run cannot expose active-run records, not by requiring a rejection status; preserve the endpoint's established 200-empty behavior.
+- **Tripwire:** Preflight must compare active versus mismatched snapshots and require mismatched records to be empty while never interpreting that response as workload evidence.
+
 ## 2026-09-18 — Rancher Desktop port publication needs a non-internal ingress network
 
 - **Failure mode:** Gate3 attached qa-a/qa-b only to an `internal: true` bridge; the services were healthy in-container, but Rancher Desktop did not materialize usable loopback-published ports.
@@ -454,3 +461,16 @@
 - **Failure mode:** (prior lesson) truncating suites ran without checking the protected W1 candidate. This session re-verified: protected teacher `local-w1-1789840353701-82cd63fa` and LiveSession `01a0bacc-83f9-7417-a52e-481d2fbd3e8c` are absent from `smartlearning_test`; pre-existing `cp3-*` rows were left untouched (no truncate used at any point in W2).
 - **Detection signal:** exact-ID existence query recorded before any cleanup (protected-check.mjs).
 - **Prevention rule:** every DB-backed W2 run begins with the exact protected-ID existence artifact; cleanup is exact-ID FK-traceable deletes only.
+
+## 2026-09-20 — W3: DB `delivered` does not imply client receipt; log absence is not proof
+
+- **Failure mode:** In W3-SMOKE-20, every durable `live_session_event` row reached `delivery_state='delivered'` (`attempt_count=1`, `coalesced=false`) while client sockets on a demonstrably connected, snapshot-receiving transport observed only a subset (vote-to-reveal 5/10 and 3/10; run 2 final broadcast 0/21). The backend dispatch log was lossy (15 `dispatching event` lines for 35 rows), so log absence could not establish that the server failed to emit.
+- **Detection signal:** `delivered_at` set on 100% of rows + per-socket `session.snapshot` received + zero disconnects + missing `result.updated` receipts. DB-side "delivered" and client-side receipt disagree.
+- **Prevention rule:** Treat `delivery_state='delivered'` as *server dispatch completed*, never as *client received*. For any realtime correctness gate, require client-receipt evidence correlated by `event_seq`; classify a miss as `HARNESS EVIDENCE GAP` (not `CLIENT NOT RECEIVED`) whenever the server-emit leg cannot be proven — and never conclude "server did not emit" from log absence alone.
+- **Tripwire:** before asserting non-emission, confirm the log line count for the event equals the durable row count; if it does not, the log is lossy and absence is not evidence.
+
+## 2026-09-20 — Harness bug: mixing `performance.now()` with wall-clock timestamps
+
+- **Failure mode:** The W3 publish-proxy latency subtracted `performance.now()`-relative receipt times from `Date.parse(server_timestamp)`, producing values near −1.79e12 ms.
+- **Prevention rule:** Compute any delta from two clocks of the same kind — either both monotonic (`performance.now()`) or both wall-clock (`Date.parse`). Assert latency samples are non-negative before reporting.
+- **Tripwire:** a latency summary containing a large-magnitude negative number is a harness bug, not a measurement.

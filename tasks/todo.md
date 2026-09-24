@@ -5139,6 +5139,7 @@ The canonical Phase B evidence synchronization for RC `b9bcd2be9c9d31d7eb4d197c3
 ### Final verdict
 
 - **Redis Boundary Proof: PASS.** W1 remains NOT authorized / NOT executed.
+
 ## 2026-09-20 — W1 PERFORMANCE BASELINE — C+B (frozen)
 
 - **Formal status:** Gate A = PASS; Redis Boundary Proof = PASS; Option A = INSUFFICIENT; Option C = EFFECTIVE BUT INSUFFICIENT; Option B = EFFECTIVE BUT INSUFFICIENT; Formal W1 = FAIL; W2–W8 = not executed.
@@ -5162,6 +5163,7 @@ The canonical Phase B evidence synchronization for RC `b9bcd2be9c9d31d7eb4d197c3
 ## Acceptance criteria（functional，無既有 W2 latency threshold → 不得自行發明）
 
 Per question type (poll / open_text / quiz)，各自 fresh fixture/run：
+
 - [ ] LiveSession status = active；exactly one SessionQuestion = open
 - [ ] 300 participants 存在且各提交一次
 - [ ] max(requestStart) − min(requestStart) ≤ 10,000 ms（ initiation window proof ）
@@ -5171,29 +5173,35 @@ Per question type (poll / open_text / quiz)，各自 fresh fixture/run：
 - [ ] commit-to-broadcast p50/p95/p99/max 量測（COMMIT TIMING EVIDENCE GAP 標記，以 client responseEnd 作為最近可說明之 commit 點）
 
 ## Staged execution（§15）
+
 - [ ] Poll smoke 20 → PASS → Poll 300
 - [ ] Open Text smoke 20 → PASS → Open Text 300
 - [ ] Quiz smoke 20 → PASS → Quiz 300
 - [ ] 任一 smoke FAIL → 停止該題型，不升級；任一 300 correctness FAIL → 停止全部，保存 evidence
 
 ## Preflight（§2 / §18）
+
 - [ ] commit SHA / working tree / Node / PG version / DB identity = smartlearning_test / migration status / backend endpoint / observer
 - [ ] Protected orphan check：teacher `local-w1-1789840353701-82cd63fa` + LiveSession `01a0bacc-83f9-7417-a52e-481d2fbd3e8c` 存在性記錄於 artifact；存在 → 不做 truncate，僅 exact cleanup
 - [ ] CPU / RAM 記錄
 
 ## Harness（§3）
+
 - [ ] 新增 dedicated W2 driver（重用 load-harness http/observer/metrics；每筆 submission 個別記錄 runId/participantId/questionId/requestId/requestStart/responseEnd/status/duration/commit proxy/broadcast observed/error class）
 - [ ] fixture 支援 poll（3 options）/ open_text / quiz（correctOptionRefs）
 
 ## Artifacts（§16）
+
 - [x] `artifacts/w2-<type>-<runId>-{20,300}.json` + `-pg-observer-*.json`；不覆寫舊檔
 - [ ] Commit policy: run/smoke/fixture JSON 已入版控；5 個 3.7–14 MB 之 `-300-pg-observer.json` raw dumps 未提交（維持既有 ≤20 KB/檔 慣例），保留於工作目錄
 
 ## Cleanup（§19）
+
 - [ ] 每 run exact cleanup：僅本次 teacher/course/question/options/session/sessionQuestion(s)/session options/participants/submissions/events/counter/test-only auth rows；依 FK 相依順序；禁止 TRUNCATE/broad DELETE；protected orphan 不可動；artifacts 保留
 - [ ] Post-cleanup exact count 驗證記錄
 
 ## 禁止（§20）
+
 - W1 architecture / tuning / W3–W8 / infra changes / destructive reset — 若發現瓶頸僅記錄 evidence
 
 ## Results
@@ -5218,3 +5226,373 @@ Per question type (poll / open_text / quiz)，各自 fresh fixture/run：
 - **Cleanup:** all run-owned chains exact-deleted (teachers, courses, questions/options, sessions, session questions/options, selections, participants, submissions, events, sequence rows, test-only web sessions). Final totals match pre-W2 baseline exactly (1 live session [cp3, pre-existing], 3 accounts [cp3-*], 0 submissions, 2 participants, 1 course, 1 question); protected orphan chain absent before and after. All artifacts preserved.
 - **Verification bundle:** typecheck PASS; lint:check PASS (0 problems); format:check PASS; build PASS; unit 61 suites / 406 tests PASS; `git diff --check` clean. DB-backed suites not run in this phase (no code changes; workloads executed directly against authorized `smartlearning_test`).
 - **Stopped after W2.** No W2 optimization, no W3–W8.
+
+# W3 — 結果廣播 (授權 2026-09-20)
+
+## Scope / authorization
+
+- [x] W3 only (verification). No production code, schema, config, or tuning changes. No W1/W2 baseline modification. No Open Text. No W4–W8.
+- [x] Fresh disposable fixtures in `smartlearning_test` (authorized, named IDs); teacher password kept OUT of artifacts (env/ephemeral 0600 file, deleted at cleanup).
+- [x] Exact-ID cleanup only; no TRUNCATE / broad DELETE / reset. Protected orphan `01a0bacc-83f9-7417-a52e-481d2fbd3e8c` DENIED and untouched.
+
+## Formal thresholds (CORRECTION — found during W3 planning)
+
+- The W2 record's "no existing W2 latency threshold" claim is **wrong**: `../docs/智學互動平台/00_專案規劃/MVP 效能目標.md` defines **Commit-to-broadcast p95 ≤ 2s, p99 ≤ 5s (W2、W3)**; metric boundary = submission 成功 commit → client receipt. W2's executor never searched the sibling `docs/` tree. W3 therefore reports both Correctness and Performance.
+
+## Harness (`scripts/load-harness/w3/`)
+
+- `w3-socket.ts` — receipt-recording Socket.IO client (records event NAME + monotonic & wall-clock timestamps + connect/disconnect timeline; `waitFor` correlation; teacher variant via `extraHeaders: Cookie`).
+- `create-fixture.ts` (poll|quiz), `run-w3.ts` (P0–P12 phased driver), `pipeline-classify.ts` (pure missing-delivery classifier), `cleanup-fixture.cjs`, `post-cleanup-verify.cjs`.
+- Additive-only edits to shared `http-client.ts` (`getCookieHeader`, `closeSessionQuestion`, `participantGetResults`) — W1/W2 unaffected.
+
+## Results
+
+### 2026-09-20 — W3 SMOKE-20 — EXECUTED → CORRECTNESS FAIL (staged gate → STOP)
+
+- **Environment:** commit `e422794`; Node v26.5.1; PostgreSQL 16.15; DB `smartlearning_test` (migrations at HEAD incl. `20260920160000_split_live_session_event_sequence`); backend `node dist/src/main.js`, NODE_ENV=test, 127.0.0.1:3001, `REALTIME_REDIS_MODE=off` (local adapter); 16 vCPU / 16 GB.
+- **Connection hard gate: PASS both runs** — teacher + exactly 20 participant sockets connected, 1:1, 0 duplicate socket ids, 0 connect errors, stable across 3 probe cycles; no disconnects during either run.
+- **Access control (Phase A): PASS** — abstaining participant's own results query refused `409 RESULTS_NOT_REVEALED`; 0 restricted receipts and 0 leaks to unanswered participants; teacher saw the aggregate.
+- **Authoritative consistency: PASS** — DB submissions ↔ teacher aggregate exact; participant post-close aggregate exact (both runs).
+- **Run 1 (`26d7a060…`, poll):** vote-to-reveal **5/10** targeted receipts observed, 5 permanent missing; final broadcast **21/21**; forbidden 0; duplicates 0; vote p50 8300 / p95 10210 / p99 10210 / max 10210 ms (all ≫ threshold).
+- **Run 2 (`cd4f6a1b…`, poll; reproducibility):** vote-to-reveal **3/10**, 7 permanent missing; final broadcast **0/21** (all clients missed seq 35); forbidden 0; vote p50 4456 / p95 5413 / p99 5413 / max 5413 ms.
+- **W2 client-receipt gap REPRODUCED (and worse) — §15 questions answered:**
+  1. Still reproducible: YES (both runs).
+  2. Missing clients fixed group? NO — the set varies run to run (run 1: all odd event_seq; run 2: 7 of 10).
+  3. Correlates with socket disconnect/reconnect? **NO** — every missing client's socket was `everConnected=true`, never disconnected, and had received its `session.snapshot`.
+  4. Did the server actually emit? **NOT PROVABLE IN SCOPE** — the backend dispatch log is lossy (run 2: 15 `dispatching event` lines vs 35 durable rows), so log absence cannot establish non-emission. Recorded as `HARNESS EVIDENCE GAP` for server-side emit confirmation.
+  5. Room membership correct? Connection manifest and per-socket snapshot receipt imply yes; no `roomHas/roomSize` diagnostic exists in the current gateway.
+  6. Event backlog / late delivery? YES — publisher dispatches at ≈1–2 rows/sec; DB `delivered_at` spread ~1s per event. All rows reached `delivery_state='delivered'`, `attempt_count=1`, `coalesced=false`.
+  7. Measurement/harness artifact? Partially possible — see `HARNESS EVIDENCE GAP` above; but 21 sockets demonstrably connected with a live listener argue against a pure harness miss.
+- **Decisive mismatch:** in both runs **every** durable `result.updated` row reached `delivery_state='delivered'` (run 2: all 35 rows incl. the close row seq 35), while client sockets on a proven-live transport observed only a subset (run 2: close 0/21). DB "delivered" therefore does **not** imply client receipt.
+- **Classification of missing receipts:** `CLIENT NOT RECEIVED` (socket connected, snapshot received, row dispatched server-side) — with the server-emit leg flagged `HARNESS EVIDENCE GAP`. Not `EVENT NOT CREATED/CLAIMED/PUBLISHED`, not `WRONG TARGET`, not `SOCKET LOST`.
+- **PostgreSQL observer:** 2880 samples @250ms; **max 29 blocking edges**, max 9 waiting locks; read-only, no writes. (Observer `reconciliation` null = its W1-shaped expectation model, not a failure signal.)
+- **Verdict (per staged gate):**
+  - **W3 Realtime Correctness = FAIL** (permanent required-delivery missing > 0: vote-to-reveal 5/10 and 7/10; run 2 final broadcast 0/21).
+  - **W3 Broadcast Performance = FAIL** (vote p95 10210 ms and 5413 ms ≫ 2000 ms; close never delivered in run 2).
+- **Escalation: STOPPED.** Per the authorized gate (permanent final-result missing > 0 → stop), W3-100 / W3-300 and the Quiz stages were **NOT executed**. No 300-scale run was manufactured.
+- **Cleanup:** every run-owned chain exact-deleted by exact IDs (accounts, courses, questions/options, sessions, session questions/options, selections, participants, submissions, events, sequence rows, test-only web sessions) plus one abandoned provisioning account. Final totals match pre-W3 baseline exactly (**1 live session [cp3], 3 accounts [cp3-\*], 0 submissions, 2 participants, 1 course, 1 question**); no `local-w1-*` accounts remain; protected orphan absent before and after; ephemeral credential files deleted. Artifacts preserved.
+- **Artifacts:** `artifacts/w3-smoke-20-26d7a060-….json`, `artifacts/w3-smoke-20-cd4f6a1b-….json`, `artifacts/w3-smoke-20-83f36d1e-…-blocked.json` (aborted attempt), `artifacts/w3-smoke-20-*-pg-observer.json` (7–9 MB raw dumps; retained in working dir, not committed, per W2 convention).
+- **Stopped after W3.** No realtime optimization, no publisher/Redis/room tuning, no W4–W8.
+
+# W3 Realtime Delivery Diagnostic (授權 2026-09-20)
+
+## Scope / authorization
+
+- [x] Diagnostic + instrumentation ONLY. No realtime behavior change (fan-out, retry, cadence, room semantics, Redis mode, DB schema, W1/W2).
+- [x] Flag-gated, default OFF; enabled only by explicit diagnostic env at backend start.
+- [x] Trace retrieval = `GET /api/v1/diagnostics/realtime-trace?runId=<id>` (user-selected); ring buffer, no DB persistence, no schema change; strict runId filter; read-only; no secrets/answers.
+- [x] Minimal workload ONLY: W3-DIAG-20 (1 teacher + 20 participants, poll, answered/unanswered, vote-to-reveal, close, final result). NO 100/300.
+- [x] Exact-ID cleanup only; no TRUNCATE / broad DELETE. Artifacts/traces preserved.
+- [x] No optimization, no W4–W8.
+
+## Acceptance criteria
+
+- [ ] Per eventSeq: DB row exists? claimed? dispatch requested? gateway emit executed? event name? target room/socket? room members at emit? expected recipients? client receipts? missing layer?
+- [ ] `delivery_state=delivered` semantics stated exactly (SERVER-DISPATCHED vs CLIENT-DELIVERED) from code + runtime.
+- [ ] Every missing client/event classified (no bare "fan-out bug").
+- [ ] Latency decomposition p50/p95/p99/max: durable→claim, claim→emit, emit→client, total.
+- [ ] Formal W3 verdict unchanged: Correctness = FAIL, Performance = FAIL (not rewritten by this run).
+
+## Checkpoints
+
+- [x] A: understand + reproduce (code trace done; smoke evidence read)
+- [ ] B: instrumentation (diagnostics module + gateway/publisher wiring) + unit tests
+- [ ] C: off-mode behavior-unchanged verification (endpoint 404, existing specs green)
+- [ ] D: W3-DIAG-20 run + trace fetch + classification + cleanup
+
+## Verify
+
+- [ ] typecheck / lint:check / format:check / build
+- [ ] realtime unit specs unchanged-green (@Optional wiring proof)
+- [ ] off-mode: endpoint 404 DIAGNOSTICS_DISABLED, /metrics unchanged
+- [ ] `git diff --check`
+
+## Risk & Rollback
+
+- Risk: LOW–MEDIUM (touches production realtime source, but instrumentation-only, default-OFF, `@Optional` deps, no schema/I/O/await added).
+- Affected: `src/modules/realtime/{live-gateway,live-session-publisher,realtime.module}.ts` + new `diagnostics/`; `scripts/load-harness/w3/`.
+- Rollback: revert the instrumentation commit; flag absent ⇒ no route/records/logs.
+
+## Dependencies & Environment
+
+- Node 24+ (v26.5.1), PostgreSQL 16 (`smartlearning_test`), backend `127.0.0.1:3001` NODE_ENV=test, `REALTIME_REDIS_MODE=off`.
+- Diag env: `REALTIME_TRACE_ENABLED=1`, `REALTIME_TRACE_RUN_ID=<runId>`, `REALTIME_TRACE_BUFFER_SIZE=20000`; `REALTIME_TRACE_LOG` off during measurement.
+
+## Results — instrumentation delivered; W3-DIAG-20 workload BLOCKED at fixture provisioning
+
+### Instrumentation (delivered, verified)
+
+- **New flag-gated diagnostics module** `src/modules/realtime/diagnostics/`: `realtime-trace.types.ts`, `realtime-trace.service.ts` (bounded ring buffer, runId-scoped, non-throwing), `realtime-trace.controller.ts` (`GET /api/v1/diagnostics/realtime-trace`), plus `realtime-trace.service.spec.ts` (18 tests) and `realtime-trace-coverage.spec.ts` (emit-site guard).
+- **Gateway instrumentation**: `@Optional()` `RealtimeTraceService`; `emitTraced` on the 6 durable recipient emits; `traceRoom` on all 6 fan-out enumerate sites (records `roomMemberCount` AND `recipientCount`); `traceGuard` before every silent guard return; rejection observer inside the existing `enqueueDelivery` callbacks (catches the previously-swallowed per-socket failures); `adapterRoomSize`/`readConnected` degrade to `undefined` (reported unknown, never false-zero). All non-durable/auth/replay emits marked `trace-exempt:`.
+- **Publisher instrumentation**: `@Optional()` dep; `dispatchTraced` rethrows the SAME error instance (classification unchanged); transition observers placed after `markDelivered`/`markFailure` without touching `outstandingLeaseCount`.
+- **Harness**: `scripts/load-harness/w3/trace-client.ts` (envelope unwrap, strict runId assert, 404 never read as "no emit"); `pipeline-classify.ts` extended with `SERVER ROOM EMPTY` / `SERVER GUARD SKIP` / `SERVER DELIVERY REJECTED` / `SERVER EMITTED, CLIENT MISSED` / `SERVER EMIT NOT RECORDED` / `SERVER DID NOT EMIT` (server evidence evaluated BEFORE client-side fallbacks); `pipeline-classify.spec.ts` (tsx); `run-w3.ts` two fetch points + `serverTrace` report block.
+- **Flag semantics (default OFF)**: `REALTIME_TRACE_ENABLED=1`, `REALTIME_TRACE_RUN_ID`, `REALTIME_TRACE_BUFFER_SIZE` (default 5000), `REALTIME_TRACE_LOG` (default off). Plain-env idiom, read once; no `EnvConfig`/`.env` change needed for the disabled default.
+
+### `delivery_state='delivered'` — exact semantics (report item 3)
+
+`markDelivered` (`live-session-publisher.ts`) is called only when `await gateway.dispatchDurableEvent(event)` **resolves without throwing**. Therefore `delivered` = **SERVER-DISPATCHED** (gateway emit functions invoked and returned), NOT _CLIENT-DELIVERED_. It does not prove Socket.IO flushed a frame and does not prove any client received. Note the amplification: `enqueueDelivery` swallows per-socket rejections, so a row can be marked `delivered` even though an individual recipient's frame was dropped.
+
+### Verification story
+
+- `npx tsc --noEmit` PASS; `npm run lint:check` PASS; `prettier --check` PASS; `npm run build` PASS (dist/src/main.js emitted).
+- `npx jest --runInBand`: **63 suites / 428 tests PASS, 0 failed** — existing realtime specs unmodified and green (proves the `@Optional()` wiring is non-breaking).
+- `npx tsx scripts/load-harness/w3/pipeline-classify.spec.ts` PASS; `npx tsx scripts/load-harness/metrics.spec.ts` PASS; `git diff --check` clean.
+- **Off-mode runtime check (behavior-unchanged proof)**: backend started WITHOUT the flag → `/health/ready` 200; `GET /api/v1/diagnostics/realtime-trace` → **404** standard envelope (`NOT_FOUND`); `/metrics` unchanged.
+- **On-mode runtime check**: with `REALTIME_TRACE_ENABLED=1 REALTIME_TRACE_RUN_ID=<run>` → valid runId returns `{stats:{enabled:true,runId,...},records:[]}`; **missing runId → 400**; **another run's runId returns 0 records** (strict scoping).
+- Disposable backend process stopped; port 3001 released; temp files removed. No fixture created; DB unchanged.
+
+### BLOCKER — W3-DIAG-20 cannot provision its fixture (same as 2026-09-20 earlier attempt, todo.md:4883)
+
+- `create-fixture.ts` requires `LOCAL_W1_PROVISION_CREATED_BY`; `AccountService.createLocalW1Teacher` transactionally requires a **real, active `admin` account id** as creator (`account.service.ts:125-142`) — an arbitrary UUID is rejected `ForbiddenError`.
+- The creator recorded by the earlier attempt (`01a09b70-fcb5-7651-b6c3-bc5b4dde307a`) is **absent** (exact-ID check = 0).
+- An active admin does exist (`active_admin_count = 1`), but reading its **id** is blocked by the environment's PII guard (two queries denied), and `bootstrap:admin` refuses because an admin already exists.
+- Preflight otherwise complete: DB `smartlearning_test` @127.0.0.1:5432 (migrations up to date, 20 applied), protected orphan `01a0bacc-…` absent, baseline totals exact (1 ls / 3 acct / 0 sub / 2 part / 1 course / 1 question), port 3001 free, 16 vCPU / 15 GiB.
+- **Not run**: W3-DIAG-20 workload, trace fetch for a live run, per-event classification. No 100/300 runs. No optimization.
+
+### 2026-09-20 — W3-DIAG-20 exact-cleanup gate: BLOCKED (cleanup already executed outside this session)
+
+**Instruction honored:** no `LIKE 'local-w1-w3%'` / prefix / wildcard cleanup was executed. A read-only manifest discovery + exact-ID sweep was run instead.
+
+**Read-only discovery (this run's artifact only), exact identifiers — `artifacts/w3-diag/fixture.json`, runId `w3diag-20260920T145737Z`:**
+
+- username `local-w1-w3-1789916898681-55f9cec4`; courseId `01a0bf5c-6863-76f8-9af4-7d0640c9fb8b`; questionId `01a0bf5c-6875-770e-8667-b5a77a9e5cb7`; liveSessionId `01a0bf5c-6891-748e-8338-36c919205363`; sessionQuestionId `01a0bf5c-6907-72f9-bb38-63612fb1d148`; sessionCode `GKZT2397`; three sessionQuestion option ids (`…673fe7e6c71e`/`…6b7322a78c16`/`…6de652e3f452`).
+- **Not in fixture:** account id, web_session ids, participant ids, submission ids, event ids, sequence id. Participant ids ARE recoverable from `w3-diag-20.json → connectionManifest.manifest[]` (20 exact ids).
+- `01a0bf52-a0da-721c-af41-b74a65a81acc` in the artifact is the trace **instanceId** (in-memory, per-process), **not a DB row** — not a cleanup target.
+
+**Exact-ID sweep result — every table is already 0 for this run:**
+
+- `live_session`, `course`, `question_definition`, `session_question`, `session_question_option`, `live_session_question_selection`, `participant`, `submission`, `live_session_event`, `live_session_event_sequence`, `question_option` → **0**
+- `account WHERE username=<exact this-run username>` → **0**
+- orphans across tables the standard cleanup script omits: `archived_result` (by session + course) **0**, `deletion_event` (session + course) **0**, `course_enrollment` **0**
+- run-owned credential file `/tmp/w3diag-cred-3953849` → **absent**
+
+**Conclusion:** this run's exact chain and its account were already removed (by the harness's own post-run cleanup — `run-w3.ts` opens `pg` and `create-fixture.ts` names a cleanup that deletes the ephemeral credential). There is **nothing run-owned left to delete**, so no cleanup statement was executed. The prior smoke-run record already treats a completed workload-then-cleanup sequence as its normal lifecycle.
+
+**Pre-existing residue (NOT touched — not this run's, no exact identifiers here):** `account_total=7` (1 admin / 1 student / 5 teacher). The documented pre-W3 baseline was 3 accounts (cp3-*), so ~2 teacher accounts matching the `local-w1-w3` family form + their web sessions (8 active + 2 revoked, `web_session_total=10`) predate this session. `course_total=1`, `live_session_total=1` (cp3, closed), `participant_total=2`, `event_total=9`, `sequence_total=1` are the untouched cp3 baseline.
+
+**Status:** exact targets verified absent; **W3 EXACT CLEANUP not required** for this run. No wildcard/prefix/TRUNCATE/broad delete was used. Whether historical residue should be cleaned is a separate authorization (needs its own exact identifiers) — not performed.
+
+**Artifact of record:** `scripts/load-harness/w3/discover-w3diag-20.cjs` (read-only manifest discovery; version-controlled per infra-as-code rule).
+
+**Blocked from completing autonomously:** resuming the authorized W3-DIAG-20 flow (per-event classification) — see session report. Root cause is a pre-existing harness gap, not this run.
+
+### 2026-09-21 — W3 coalescing diagnostic instrumentation delivered; fresh run BLOCKED at exact provisioning preflight
+
+- Added flag-gated `publisher.coalesced` evidence around the atomic `coalescePendingResults()` update. The diagnostic records exact older/superseding event IDs, string event sequences, aggregate versions, comparison predicates, and `transitionTo='coalesced'`; production state/schema/behavior was not intentionally changed.
+- Updated W3 trace/report types and classifier to distinguish `DISPATCHED_DELIVERED` from `COALESCED_SUPPRESSED`; coalesced rows are not classified as client loss.
+- Added focused trace-service coverage. `npx tsc --noEmit` PASS; focused realtime tests PASS: 2 suites / 30 tests.
+- Fresh W3-DIAG-20 was **not executed** because the existing disposable fixture provisioning contract requires `LOCAL_W1_PROVISION_CREATED_BY`, and no current exact active-admin creator ID is available. Prior preflight evidence records the PII guard blocking admin-id retrieval and the historical creator ID absent. No fixture, workload, cleanup, or DB write was attempted.
+- Contract evidence: repository docs permit coalescing latest non-authoritative `result.updated`; open vote-to-reveal is targeted to the submitting participant; close sends final result to all eligible participants. `participant_after_submit` is explicitly not eligible for coalescing. High-level W3 wording is ambiguous about every intermediate aggregate update, but backend/API/runtime contract is targeted-own-submit plus final-close fan-out.
+- STOP condition: do not substitute an unproven creator, do not create a fixture, and do not use broad cleanup. Fresh run remains blocked as `W3 EXACT CLEANUP BLOCKED — RUN-OWNED IDENTIFIERS INCOMPLETE` until an authorized exact creator ID is available.
+
+### 2026-09-21 — W3 fixture provisioning CSRF diagnosis and fail-closed harness fix
+
+- [x] Confirm repository CSRF contract and working authenticated mutation pattern
+- [x] Fix explicit browser Origin handling in the load client/W3 preflight
+- [x] Make W3 fixture provisioning fail closed with required-ID validation and redacted step errors
+- [x] Add focused client/fixture regression tests
+- [x] Run formatting, focused tests, typecheck, lint, format check, build, and diff check
+- [x] Run one provisioning-only smoke with a fresh disposable fixture; no W3 workload
+- [x] Capture exact ownership and perform exact cleanup only after smoke evidence
+- [x] Record results and blocker status; do not rerun W3-DIAG-20
+
+#### Results
+
+- Root cause: `LoadHttpClient.teacherRequest()` used the API transport origin as a fallback Origin. With `LOAD_BASE_URL=http://127.0.0.1:3001`, this violated the exact configured CSRF browser origin `http://localhost:3000` and caused `AUTH_CSRF_INVALID`.
+- Fix: `LOAD_CORS_ORIGIN` is now required and validated as an absolute HTTP(S) origin; the fallback was removed. W3 validates the origin and credential output before provisioning, validates teacher authorization projection and required fixture IDs/options, and reports step-aware redacted failures with an explicit non-zero exit.
+- Focused tests: `scripts/load-harness/http-client.spec.ts` — 4/4 passed.
+- Static verification: `npx tsc --noEmit`, `npm run lint:check`, `npm run format:check`, `npm run build`, and `git diff --check` passed.
+- Provisioning smoke: one fresh poll fixture completed teacher provisioning → login → CSRF-authenticated course/question/live-session setup and was not followed by W3 workload. Exact cleanup removed only the smoke-owned chain; post-cleanup exact IDs and username were zero, protected sequence remained zero, and account/web-session totals remained at the expected baseline after removing one each.
+- Historical W3 verdict remains unchanged: Realtime Correctness = FAIL; Broadcast Performance = FAIL. W3-DIAG-20 was not rerun.
+- Status: `W3-DIAG FIXTURE PROVISIONING READY`.
+
+#### Risk & Rollback
+
+- Risk: low-medium; load-harness request construction and test-only provisioning orchestration only.
+- Rollback: revert harness/test changes; do not alter production CSRF guards or semantics.
+
+#### Dependencies & Environment
+
+- Node 24+, `smartlearning_test`, `LOAD_BASE_URL=http://127.0.0.1:3001`, `LOAD_CORS_ORIGIN=http://localhost:3000`.
+- No W3 workload, scale run, realtime tuning, schema change, or production provisioning change is authorized.
+
+## 2026-09-21 — W3-DIAG-20 Gate A correction
+
+### Checklist
+
+- [x] Confirm the W3 trace contract: active run is HTTP 200/enabled/matching active `stats.runId`; mismatched valid run is HTTP 200 with `records=[]`.
+- [x] Add focused regression coverage for active and mismatched trace snapshots without changing production trace semantics.
+- [x] Run focused diagnostics tests, typecheck, lint, and diff checks.
+- [ ] Run exactly one W3-DIAG-20 after environment preflight.
+- [ ] Preserve artifacts and produce the literal exact cleanup manifest; Gate A must perform no cleanup.
+
+### Results
+
+- Narrow code change: `src/modules/realtime/diagnostics/realtime-trace.service.spec.ts` now asserts active-run status/metadata/records and mismatched-run HTTP-contract-equivalent isolation semantics (empty records while active stats remain authoritative).
+- No Gate3 source was changed: the established Gate3 preflight does not own the W3 trace mismatch assertion.
+- Verification: targeted realtime diagnostics Jest tests passed (2 suites / 23 tests); `npx tsc --noEmit`, `npm run lint:check`, and `git diff --check` passed.
+- W3-DIAG-20 was **BLOCKED before fixture creation**: backend readiness at `127.0.0.1:3001` was unavailable, and the current process environment did not provide `DATABASE_URL` or the externally verified `LOCAL_W1_PROVISION_CREATED_BY`. No workload, fixture mutation, cleanup, or artifact destruction was performed.
+- Required next step remains separately authorized execution with a running trace-enabled backend and fresh fixture/credential/output paths. If it runs, stop after `W3-DIAG-20 GATE A COMPLETE — EXACT CLEANUP AUTHORIZATION REQUIRED` and return the exact manifest; do not delete anything in Gate A.
+
+### Authorized execution result — 2026-09-21
+
+- Static and runtime preflight passed: `smartlearning_test`, 20 migrations up to date, protected sequence 0, port 3001 free, readiness 200, active trace matched, mismatched trace HTTP 200 with zero records.
+- Exactly one fresh poll W3-DIAG-20 ran with 20 participants. Result: correctness FAIL (`voteYes=3/10`, close/final `0/21`) and performance FAIL. No additional scale/type workload ran.
+- Diagnostic artifacts: `artifacts/w3-diag/w3diag-20260921T144147Z-47b2da56.json`, `artifacts/w3-diag/w3diag-20260921T144147Z-47b2da56-fixture.json`, and exact manifest `artifacts/w3-diag/w3diag-20260921T144147Z-47b2da56-cleanup-manifest.json`.
+- Credential handling: created with mode 0600, plaintext absent from artifacts/backend log, removed after artifact preservation. No DB cleanup was executed.
+- Protected sequence remained 0; backend stopped and port 3001 released.
+- Gate A status: `W3-DIAG-20 GATE A COMPLETE — EXACT CLEANUP AUTHORIZATION REQUIRED`.
+
+### Gate B exact cleanup — 2026-09-21
+
+- Manifest source: `artifacts/w3-diag/w3diag-20260921T144147Z-47b2da56-cleanup-manifest.json` only.
+- Pre-cleanup exact ownership checks passed: account 1, web sessions 2, course 1, question 1, question options 3, live session 1, session question 1, session-question options 3, selection 1, participants 20, submissions 10, realtime events 35, event sequence 1; protected sequence 0.
+- Exact cleanup committed with literal IDs/FK ownership only. Deleted counts matched the manifest exactly. No wildcard, prefix, LIKE, TRUNCATE, broad DELETE, or historical residue cleanup was used.
+- Post-cleanup exact rows are all zero; protected sequence remains 0. Total account count changed 8 → 7 and web-session count 12 → 10, exactly accounting for this run's 1 account and 2 sessions; unrelated counts remain 7 and 10.
+- Diagnostic artifacts and manifest preserved; credential file was already absent. Gate B complete.
+
+### Risk & Rollback
+
+- Risk: low; test-only assertion change, no production endpoint or Gate3 behavior change.
+- Rollback: revert the focused test change; no database or runtime rollback required.
+
+### 2026-09-21 execution attempt
+
+- Static preflight: database `smartlearning_test`, migrations up to date with 20 migrations, protected sequence 0, port 3001 free, fresh artifact paths.
+- Runtime preflight: backend readiness 200; active trace returned HTTP 200 with `enabled=true` and the active runId; mismatched trace returned HTTP 200 with zero records.
+- Fixture provisioning was blocked before execution by the command safety classifier because the authorized provisioning script writes a run-owned credential file. No fixture, workload, cleanup, or broad database operation was performed. The disposable backend was stopped.
+
+### 2026-09-21 W3 runtime-attribution instrumentation attempt
+
+#### Scope and acceptance criteria
+
+- [x] Preserve the pre-existing dirty tree and keep diagnostics default-off/production-hard-disabled.
+- [x] Add process-wide realtime diagnostic identity: backend instance ID, PID, process start timestamp, hostname, trace-service instance ID, publisher instance ID, and gateway instance ID.
+- [x] Add lifecycle construction records so provider singleton topology can be reported separately from PID identity.
+- [x] Add exact publisher claim-token/lease metadata and mark-delivered updated-count/success evidence to the existing in-memory trace.
+- [x] Add explicit old-claim-owner evidence-gap marking when a reclaim has no recoverable prior owner.
+- [x] Do not add a durable JSONL sink; the endpoint plus read-only process evidence was sufficient for this attempt.
+- [x] Do not change Prisma schema, claim/lease/retry semantics, Redis, Socket.IO behavior, or delivery control flow.
+
+#### Verification
+
+- [x] Focused realtime tests: 4 suites / 47 tests passed.
+- [x] `npm run load:w3:unit` passed.
+- [x] `npm run typecheck` passed.
+- [x] `npm run lint:check` passed.
+- [x] `npm run format:check` passed.
+- [x] `git diff --check` passed.
+- [x] Runtime preflight passed: `smartlearning_test`, 20 migrations current, protected live-session count 0, port 3001 initially free, readiness 200, active trace enabled with matching run ID, mismatched run returned zero records.
+- [ ] Exactly one W3-DIAG-20 workload: **BLOCKED before fixture creation**. The authorized fixture driver returned `W3 teacher provisioning failed` while creating the disposable teacher. No fixture/report/credential was created, no workload traffic ran, and no cleanup script was invoked.
+
+#### Runtime identity evidence
+
+- Run ID: `w3diag-20260921T153811Z-b72f5bd7`.
+- Backend process before fixture attempt: PID 1628945, `node dist/src/main.js`; owned diagnostic backend was stopped after the pre-workload block.
+- Trace service reported backend instance `01a0c49f-1e1e-7139-a6ca-e0cfccaf61b2`, process ID 1628945, and lifecycle records for exactly one trace service, one gateway, and one publisher provider in that process.
+- No second SmartLearning backend was observed in the read-only port/process preflight.
+- Trace remained process-local; this attempt did not produce event attribution or prove/disprove a lease handoff.
+
+#### Artifacts and cleanup boundary
+
+- Preserved run identity/startup log/PID evidence under `artifacts/w3-diag/w3diag-20260921T153811Z-b72f5bd7-*`.
+- The fixture artifact is zero-length because provisioning failed before writing the fixture payload; no cleanup manifest exists for this attempt.
+- Gate A cleanup was not reached: no deletion or cleanup was performed, and there is no Gate B authorization request for this failed pre-fixture attempt.
+
+#### Risk & rollback
+
+- Risk: low; diagnostic-only TypeScript metadata and tests, no schema or delivery behavior change.
+- Rollback: revert only the new attribution source/test changes; preserve prior uncommitted realtime/harness artifacts.
+
+### 2026-09-22 W3 teacher provisioning failure diagnosis
+
+- Aborted run: `w3diag-20260921T153811Z-b72f5bd7`.
+- Existing evidence was insufficient to identify the lower-level exception: `create-fixture.ts` used `stdio: 'ignore'` for the provisioning child, so no provisioning stderr/stdout, HTTP status, or application error code was retained. Backend log contains only startup/readiness and trace-preflight requests; no provisioning request reaches the HTTP backend because the helper is a local application-context process.
+- Provisioning code path confirmed: `create-fixture.ts` → child `node dist/src/bootstrap/provision-local-w1-teacher.js provision` → `AccountService.createLocalW1Teacher()` → advisory lock + exact creator lookup + password policy/hash + atomic account insert. The account transaction rolls back on any exception; no web session is created by this local command.
+- Environment source review: child env is explicitly built with `{ ...process.env, NODE_ENV: 'test', LOCAL_W1_TEACHER_USERNAME, LOCAL_W1_PROVISIONING_ENABLED, LOCAL_PROVISION_TARGET, LOAD_DISPOSABLE_TARGET, LOCAL_W1_TEACHER_PASSWORD, LOCAL_W1_PROVISION_CREATED_BY }`. No source-level creator propagation defect was found.
+- Safe environment validation: `DATABASE_URL` present and targets `smartlearning_test`; supplied creator present; credential parent writable; supplied creator exact-ID lookup returned `role=admin`, `status=active`. UUID format check was corrected during diagnosis to accept UUID v7 (the prior version-specific check was a diagnostic false negative, not an application failure).
+- Harness-only fix: `scripts/load-harness/w3/create-fixture.ts` now captures only the provisioning child stderr first line, redacts UUID/secret-like values, and includes the sanitized detail in the failure. It does not persist credentials or alter provisioning/domain behavior.
+- Harness verification: `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `git diff --check`, and focused `scripts/load-harness/http-client.spec.ts` (1 suite / 4 tests) passed.
+- Provisioning smoke `w3prov-smoke-20260921T163328Z-c2e918c4`: teacher account created successfully; no login was attempted. Exact partial manifest: `artifacts/w3-diag/w3prov-smoke-20260921T163328Z-c2e918c4-partial-cleanup-manifest.json`.
+- Provisioning + login smoke `w3prov-smoke-20260921T163359Z-3c77f78a`: teacher provisioning succeeded and login returned HTTP 201 with the expected teacher projection. Exact partial manifest: `artifacts/w3-diag/w3prov-smoke-20260921T163359Z-3c77f78a-partial-cleanup-manifest.json`.
+- Partial-row checks: first smoke has exactly 1 teacher account and 0 web sessions; second has exactly 1 teacher account and 1 web session. No course/question/live-session/participant/submission/event chain was created. No deletion was performed.
+- Root cause classification: **the exact original provisioning exception is UNPROVEN because the aborted run discarded child stderr**. A harness observability defect is proven and fixed. The provisioning path is now `W3-DIAG FIXTURE PROVISIONING READY` based on successful isolated provisioning and login smoke.
+- Cleanup boundary: two exact partial manifests exist; cleanup is not authorized and was not invoked. Do not delete until explicit cleanup authorization.
+
+### 2026-09-22 W3 provisioning smoke exact-ID cleanup
+
+- Pre-cleanup database verification: `smartlearning_test`; both manifest `runId` values matched exactly.
+- Smoke 1 exact ownership verified: 1 teacher account, exact username/account match, 0 web sessions, and no domain rows.
+- Smoke 2 exact ownership verified: 1 teacher account, exact username/account match, 1 exact web session whose `account_id` matched the manifest account, and no domain rows.
+- Protected sequence invariant: 0 before cleanup and 0 after cleanup.
+- Exact deletions: Smoke 1 account = 1; Smoke 2 web session = 1; Smoke 2 account = 1.
+- Post-cleanup: both exact account IDs = 0, both exact usernames = 0, Smoke 1 run-owned sessions = 0, Smoke 2 exact session = 0.
+- Unrelated counts: accounts 7 → 7; web sessions 10 → 10.
+- No `LIKE`, prefix, wildcard, role-wide lookup, historical-residue discovery, broad delete, `TRUNCATE`, reset, or runtime startup was used. Only manifest-provided exact IDs and exact username/account ownership predicates were used.
+- Both partial manifests and all provisioning diagnosis artifacts remain preserved.
+- Result: **W3 PROVISIONING SMOKE EXACT CLEANUP COMPLETE**.
+
+### 2026-09-22 exactly-one runtime-attribution W3-DIAG-20
+
+- Preflight passed: `smartlearning_test`, 20 migrations current, protected sequence 0, ephemeral creator present, port 3001 free, fresh run artifacts, readiness HTTP 200, active trace matched run ID, mismatched trace returned zero records.
+- One initial driver invocation stopped before any fixture/workload activity because `LOAD_CORS_ORIGIN` was omitted; no traffic was sent and no output artifact was created. After correcting that preflight variable, exactly one authorized poll W3-DIAG-20 workload ran with 1 teacher and 20 participants. No W3-100/300, Quiz, W4–W8, optimization, tuning, schema, Redis, or Socket.IO changes were performed.
+- Run ID: `w3diag-20260921T164039Z-6d2aa3f3`.
+- Fresh fixture and exact manifest: `artifacts/w3-diag/w3diag-20260921T164039Z-6d2aa3f3-fixture.json` and `artifacts/w3-diag/w3diag-20260921T164039Z-6d2aa3f3-cleanup-manifest.json`.
+- Preserved report and trace: `artifacts/w3-diag/w3diag-20260921T164039Z-6d2aa3f3.json` and `artifacts/w3-diag/w3diag-20260921T164039Z-6d2aa3f3-trace.json`. Credential was outside the repository and removed after evidence preservation. Owned backend was stopped; no DB cleanup was executed.
+- Socket gate: teacher and 20/20 participants connected, duplicate socket IDs 0, connection errors 0.
+- W3 result: correctness FAIL (`voteYes=3/10`, 7 vote result events classified `SERVER DID NOT EMIT`); performance FAIL. Close/final fan-out was complete (`21/21`, no missing close receipts); forbidden delivery count 0; coalesced result count 0 for vote result events.
+- Runtime topology: one backend process PID 1879623, one trace service, one gateway, one publisher. Trace process identity was stable: backend instance `01a0c4d7-4f48-7771-a0c8-98b4becc6adb`; trace service `01a0c4d7-4f8f-7549-8787-55b782ceb59d`; gateway `01a0c4d7-4f9c-7688-b500-d3b1a3f4a883`; publisher `01a0c4d7-4f9d-7039-85ee-bc25efd59b29`; process start `2026-09-21T16:40:39.577Z`; hostname `DESKTOP-0KADDT9`.
+- Trace completeness: phase B/C `droppedCount=0`, coverage complete; 100 records retained at final fetch; no reclaim/lease handoff records.
+- Attribution: all publisher claim/dispatch/ack records map to the same PID, backend instance, publisher instance, and claim token. The close event (`eventSeq=35`) and final result delivery were dispatched and marked delivered by that same attribution.
+- Critical finding: vote missing events `eventSeq` 24, 25, 27, 28, 30, 31, 33 were `coalesced=false`, had no dispatch-enter trace, but had `markDeliveredSuccess=true` with updated row count 1 under the same publisher/PID/claim token. This proves: **SINGLE-PUBLISHER STATE-MACHINE ANOMALY**. It does not prove a second process, multiple publisher instance, or lease handoff. `PROCESS-LOCAL TRACE VISIBILITY GAP` is not the explanation for this run because topology was singleton and trace coverage was complete.
+- Gate A status: **W3-DIAG-20 GATE A COMPLETE — EXACT CLEANUP AUTHORIZATION REQUIRED**. Do not invoke cleanup without separate authorization.
+
+### 2026-09-22 W3-DIAG-20 Gate B exact cleanup
+
+- Target run: `w3diag-20260921T164039Z-6d2aa3f3`; only `artifacts/w3-diag/w3diag-20260921T164039Z-6d2aa3f3-cleanup-manifest.json` was used.
+- Pre-cleanup verification passed: database `smartlearning_test`; manifest and fixture run IDs matched; exact account, course, question, live-session, session-question, selection, participant, submission, event, and event-sequence ownership matched the manifest; protected sequence count was 0.
+- Expected and deleted counts: account 1/1; web sessions 2/2; course 1/1; question 1/1; question options 3/3; live session 1/1; session question 1/1; session-question options 3/3; selection 1/1; participants 20/20; submissions 10/10; realtime events 35/35; event sequence 1/1.
+- Post-cleanup exact zero verification passed for all listed resource types and exact teacher username.
+- Protected sequence: 0 before → 0 after.
+- Unrelated accounts: 7 after exact-run exclusion before → 7 after.
+- Unrelated web sessions: 10 after exact-run exclusion before → 10 after.
+- Artifacts preserved: report, fixture, trace, cleanup manifest, backend log, run/PID/process evidence. Credential remained removed and was not recreated.
+- No `LIKE`, wildcard, prefix, username-family cleanup, broad delete, `TRUNCATE`, reset, historical residue discovery, or unrelated runtime operation was used. Deletes were transactionally FK-safe and constrained by manifest literal IDs plus proven parent ownership.
+- Result: **W3-DIAG-20 GATE B EXACT CLEANUP COMPLETE**.
+
+### 2026-09-22 W3 diagnostic attribution repair (授權 2026-09-22)
+
+#### Audit correction (evidence-driven, contradicts prior premise)
+
+- Re-audit of `artifacts/w3-diag/w3diag-20260921T164039Z-6d2aa3f3-trace.json`: the seven missing vote seqs (24,25,27,28,30,31,33) have **NO publisher-phase trace records at all** (not even claim records); `voteEventMatrix` in the run summary shows `coalesced=false` for ALL ten vote rows; zero `transitionTo='coalesced'` records exist anywhere in the trace.
+- Therefore the prior "coalescing explains the 7 missing rows" attribution is **contradicted by evidence**: coalescing never fired for these rows, and `markDeliveredSuccess=true` for them is not supported by any retained artifact (no trace record → no markDelivered evidence).
+- The correct evidence-based statement: rows are `delivery_state='delivered'`, `coalesced=false`, with no publisher claim/dispatch record under complete coverage (`droppedCount=0`) — i.e., delivered **outside this trace's attribution scope**. Source control flow makes this impossible for the audited single process (`dispatchTraced` logs before dispatch; no log, no trace, no claim for those rows), so a concurrent publisher process (zombie backend) is the leading hypothesis; the prior "SINGLE-PUBLISHER STATE-MACHINE ANOMALY" and the "coalescing" explanation are both unsupported.
+- Noted: port 3001 was bound sequentially by PID 1628945 (23:39), 1852811 (00:34), 1879623 (00:40:40) on 2026-09-21/22 with no captured shutdown for the earlier processes; preflight checked port 3001 only, so a second publisher on another port would not have been observed.
+
+#### Minimal diagnostic repair (no business behavior change)
+
+- `scripts/load-harness/w3/pipeline-classify.ts`: added `hasPublisherRecord` to `ServerEmitEvidence`; when a delivered row has no publisher record and dispatch was not called, classify `DELIVERED WITHOUT DISPATCH TRACE` (attribution gap) instead of asserting `SERVER DID NOT EMIT`; kept `SERVER DID NOT EMIT` for claimed-but-not-dispatched (publisher record exists).
+- `scripts/load-harness/w3/run-w3.ts`: `serverEvidenceFor` now passes `hasPublisherRecord`; `voteEventMatrix.finalClassification` now uses the mutually exclusive lifecycle set: `COALESCED_BEFORE_CLAIM` / `CLAIMED_NOT_DISPATCHED` / `DISPATCHED_NOT_DELIVERED` / `DELIVERED` / `UNRESOLVED_DELIVERED_NO_PUBLISHER_RECORD`; matrix rows now carry `deliveryState` and `lastFailureClass`; phaseB summary adds per-class counts; `deliveryStateSemantics` text updated.
+- Regression tests added to `pipeline-classify.spec.ts`: coalesced row never classified as dispatch anomaly; pending row never classified as dispatch anomaly; delivered row with no publisher record → `DELIVERED WITHOUT DISPATCH TRACE`; claimed+dispatched rows keep emit-evidence classification.
+
+#### Verification
+
+- [x] `npm run load:w3:unit` — passed (incl. 6 new assertions).
+- [x] `npm test -- --runInBand --testPathPattern realtime-trace` — 23/23 passed.
+- [x] `npm run typecheck`, `npm run lint:check`, `npm run format:check`, `git diff --check` — passed.
+- [ ] Fresh W3: **BLOCKED** — test DB `smartlearning_test` unreachable (TCP 5432 timeout; Docker daemon unavailable in this environment). Not executed; no environment was mutated.
+
+#### Classification verdicts
+
+- Diagnostic attribution repaired: PASS (harness-level; fresh W3 pending environment).
+- Coalescing correctly represented: PASS for coalesced rows (A class), with the correction that the 7 missing rows of run 6d2aa3f3 were NOT coalesced.
+- Publisher dispatch anomaly remains: **UNRESOLVED** — the single-iteration anomaly is disproven by control flow, but the delivery of 7 rows outside trace attribution is unexplained pending a fresh W3 with concurrent-publisher detection (port 3001-only preflight was insufficient).
+- W3 functional result: unchanged FAIL from the recorded run; fresh W3 BLOCKED.
+
+### 2026-09-23 W3 Gate A cleanup and timing audit authorization
+
+- Authorized target: run `w3-fresh-20260922T152537Z-e422794`, official live session `01a0c9c1-976b-74ea-9015-f768ec6c4a88`; no publisher diagnosis or new W3 run authorized.
+- Cleanup was BLOCKED before mutation: Docker API became unavailable (`unix:///var/run/docker.sock: no such file or directory`) before the exact DB manifest could be queried. No DELETE, truncate, migration, restart, or fixture creation was attempted.
+- Fixture artifact proves course `01a0c9c1-974c-74c1-a31b-bb2b26145faf`, question `01a0c9c1-975a-74b9-b001-5a7ee5faff68`, session question `01a0c9c1-9794-737a-9f8b-e50e0a13436d`; participant IDs are present in the W3 report, but durable FK rows, account/web session, selection, events, submissions, and validation-token counts require live DB access.
+- Read-only source audit completed. Submission transaction is `TransactionService.run()` and post-commit wake is at `submission.service.ts:104-104` and `317-327`; durable event creation is inside that transaction at `:283-297`. Publisher claim uses its own Prisma transaction at `live-session-publisher.ts:269-315`, with `NOT EXISTS` predecessor ordering, `FOR UPDATE SKIP LOCKED`, `LIMIT BATCH_SIZE`; dispatch/ack are sequential at `:184-216`. W3's 23.3s vote timing includes concurrent submission scheduling, the 1s durable-row drain poll and 2s tail settle (`run-w3.ts:570-590`), and result receipt measurement; it is not a pure publisher latency metric.
+- Timing audit status: available boundaries are client request start/response end, durable row `server_timestamp`/`claimed_at`/`delivered_at`, publisher trace claim/dispatch-return/mark-delivered, and client receipt; missing are request-received, transaction begin/end, exact commit, event visibility, and direct event-to-submission commit correlation. Minimal instrumentation should add correlation/timestamps at the HTTP boundary, transaction wrapper, outbox append/commit path, and publisher claim/ack, without changing behavior.
