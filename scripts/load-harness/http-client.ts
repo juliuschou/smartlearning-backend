@@ -13,13 +13,44 @@ export interface ApiResponse<T> {
   elapsedMs?: number;
 }
 
+export function requireLoadCorsOrigin(
+  value = process.env.LOAD_CORS_ORIGIN,
+): string {
+  if (!value)
+    throw new Error(
+      'LOAD_CORS_ORIGIN is required for authenticated teacher requests.',
+    );
+  let origin: URL;
+  try {
+    origin = new URL(value);
+  } catch {
+    throw new Error('LOAD_CORS_ORIGIN must be an absolute HTTP(S) origin.');
+  }
+  if (
+    !['http:', 'https:'].includes(origin.protocol) ||
+    origin.username ||
+    origin.password ||
+    origin.pathname !== '/' ||
+    origin.search ||
+    origin.hash
+  ) {
+    throw new Error('LOAD_CORS_ORIGIN must be an absolute HTTP(S) origin.');
+  }
+  return origin.origin;
+}
+
 export class LoadHttpClient {
+  private readonly corsOrigin: string;
+
   constructor(
     private readonly baseUrl: string,
     private readonly timeoutMs: number,
     private readonly diagnostics?: W1DiagnosticsCollector,
     private readonly runId?: string,
-  ) {}
+    corsOrigin?: string,
+  ) {
+    this.corsOrigin = requireLoadCorsOrigin(corsOrigin);
+  }
 
   private readonly cookies = new Map<string, string>();
   private csrfToken?: string;
@@ -337,6 +368,40 @@ export class LoadHttpClient {
     );
   }
 
+  /** Close the current SessionQuestion via the real teacher application flow (W3). */
+  async closeSessionQuestion(
+    operation: OperationMetrics,
+    liveSessionId: string,
+    sessionQuestionId: string,
+  ) {
+    return this.teacherRequest<{ id: string; status: string }>(
+      operation,
+      'POST',
+      `/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/close`,
+    );
+  }
+
+  /** Participant-token view of a question's results (W3 access-control probe). */
+  async participantGetResults(
+    operation: OperationMetrics,
+    liveSessionId: string,
+    sessionQuestionId: string,
+    participantToken: string,
+  ) {
+    return this.request<{
+      options?: Array<{
+        optionId: string;
+        count?: number;
+        isCorrect?: boolean;
+      }>;
+    }>(
+      operation,
+      'GET',
+      `/live-sessions/${liveSessionId}/questions/${sessionQuestionId}/results`,
+      { headers: { 'X-Participant-Token': participantToken } },
+    );
+  }
+
   private async teacherRequest<T>(
     operation: OperationMetrics,
     method: string,
@@ -347,14 +412,14 @@ export class LoadHttpClient {
       ...options,
       captureCookies: true,
       headers: {
-        Origin: process.env.LOAD_CORS_ORIGIN ?? new URL(this.baseUrl).origin,
+        Origin: this.corsOrigin,
         'X-CSRF-Token': this.csrfToken ?? '',
         Cookie: this.cookieHeader(),
       },
     });
     if (result.status < 200 || result.status >= 300)
       throw new Error(
-        `Teacher fixture request failed (${result.errorCode ?? result.status}).`,
+        `Teacher fixture request failed: status=${result.status} code=${result.errorCode ?? 'UNKNOWN'}.`,
       );
     return result;
   }
@@ -377,6 +442,15 @@ export class LoadHttpClient {
     return [...this.cookies.entries()]
       .map(([name, value]) => `${name}=${value}`)
       .join('; ');
+  }
+
+  /**
+   * Read-only accessor for the captured cookie jar (W3 teacher socket handshake:
+   * Socket.IO bypasses Express `cookie-parser`, so the `__Host-session` cookie
+   * must be sent manually in the handshake headers). Additive; W1/W2 unaffected.
+   */
+  getCookieHeader(): string {
+    return this.cookieHeader();
   }
 
   private recordHttpError(

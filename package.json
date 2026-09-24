@@ -39,6 +39,7 @@
     "load:w1": "tsx scripts/run-w1.ts",
     "load:test:list": "tsx scripts/load-harness/index.ts --list",
     "load:test:unit": "tsx scripts/load-harness/metrics.spec.ts",
+    "load:w3:unit": "tsx scripts/load-harness/w3/pipeline-classify.spec.ts",
     "gate3:static": "bash tools/gate3/static-check.sh",
     "gate3:test": "bash tools/gate3/tests/run.sh",
     "gate3:preflight": "bash tools/gate3/gate3.sh preflight",
@@ -48,7 +49,8 @@
     "gate3:doctor": "bash tools/gate3/gate3.sh doctor",
     "gate3:down": "bash tools/gate3/gate3.sh down",
     "gate3": "bash tools/gate3/gate3.sh",
-    "env:doctor": "bash tools/dev/env-doctor.sh"
+    "env:doctor": "bash tools/dev/env-doctor.sh",
+    "load:w3:diag": "W3_TRACE=1 tsx scripts/load-harness/w3/run-w3.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
