@@ -35,9 +35,32 @@ npm test -- --runInBand <file> -t "test name" # targeted unit test
 npm test -- --runInBand                   # all unit tests
 NODE_ENV=test npm run test:e2e -- --runInBand <file>
 NODE_ENV=test npm run test:integration -- --runInBand <file>
+
+# CP/phase verification suites (each has its own jest config in test/jest-*.json)
+npm run test:cp5:e2e
+npm run test:cp6:manual
+npm run test:cp7:manual
+npm run test:cp8                           # full CP8 runner (scripts/run-cp8.cjs)
+npm run test:cp8:static
+npm run test:retention:artifacts
+npm run test:login-rate-limit:redis        # Redis-backed rate-limit store
+
+# Ops / tooling
+npm run gate3:up|status|doctor|down        # tools/gate3/gate3.sh environment
+npm run env:doctor
+npm run retention                          # node dist/src/bootstrap/retention.js
+
+# Load harness (W1–W8; see docs/load-harness.md — has a strict safety contract)
+npm run load:test:list
+npm run load:test -- --scenarios W1 --participants 5
+npm run load:w1
+npm run load:w3:unit
+npm run load:w3:diag                       # W3 diagnostics run (REALTIME_TRACE_*)
 ```
 
 Integration and e2e tests use PostgreSQL database `smartlearning_test` only. `test/setup/db.ts` refuses other database names and truncates test data between tests. Apply migrations to that database separately and only when authorized. Prefer targeted tests first, then module-level and full regression checks. Run Prettier before the lint gate.
+
+**Load harness safety contract** (`docs/load-harness.md`): default fixture mode is `existing` — no fixture creation or cleanup unless `LOAD_FIXTURE_MODE=create LOAD_ALLOW_FIXTURE_WRITES=1 LOAD_DISPOSABLE_TARGET=1`; credentials/tokens only via environment variables, never printed or written to reports; a report is evidence only for the exact target and fixture it records. Load drivers enforce run-once guards: fresh fixture/runId per run, artifact-overwrite refusal, exact-ID cleanup only, and a protected-ID existence check before any truncating suite.
 
 ## Runtime and API shape
 
@@ -56,7 +79,9 @@ Feature modules use the bounded-context flow `api/` (controllers and DTOs) → `
 - `src/modules/courses/` and `src/modules/enrollments/`: course ownership/lifecycle and student enrollment roster.
 - `src/modules/questions/`: authoring/read/mutation, poll-multiple/open-text/quiz contracts, and batch validate/confirm.
 - `src/modules/live-sessions/`, `participants/`, and `submissions/`: session lifecycle, anonymous or account-bound participants, immutable idempotent answers, snapshots, and result projections.
-- `src/modules/realtime/`: Socket.IO `/live` gateway and in-process post-commit event bus.
+- `src/modules/realtime/`: Socket.IO `/live` gateway, durable outbox/publisher, in-process post-commit event bus, Redis adapter service, and realtime diagnostics.
+- `src/modules/governance/`: S-5 archive/retention — retention reconciliation/scheduler, deletion manifests + S3 provider, tombstones.
+- `src/modules/metrics/`: prom-client registry, metrics middleware/controller.
 
 PostgreSQL is authoritative. IDs are application-generated UUID v7; state fields are `TEXT + CHECK`; timestamps are UTC `TIMESTAMPTZ`; migrations should be additive. `TransactionService` advisory locks must use `$executeRaw` because Prisma 7 cannot deserialize PostgreSQL `void` through `$queryRaw`.
 
@@ -65,7 +90,11 @@ PostgreSQL is authoritative. IDs are application-generated UUID v7; state fields
 - P1 question authoring and P2 teacher-session capabilities are implemented: question CRUD/reorder and all current authoring types; batch validate/confirm plus CLI credentials; session close/cancel; teacher detail; result aggregation; and realtime counts/lifecycle notifications.
 - Phase A submission flow supports poll single/multiple, quiz, and open text with activation gates, immutable/idempotent writes, result reveal privacy, and participant-safe realtime projections.
 - Phase B student accounts/enrollment is implemented through B1–B4: `student` role, enrollment roster, account-bound participants, and student-safe realtime access. B5 privacy/documentation closeout and full regression evidence may still be tracked in `tasks/todo.md`.
-- Still deferred or partial: durable realtime outbox/replay and Redis adapter; archive/retention/tombstones; auto-close scheduler and complete submit/close race matrix; CLI key rotation/expiry and CLI course commands; account list/detail/update; and other follow-ups listed in `SKILL.md`.
+- Still deferred or partial: CLI key rotation/expiry and CLI course commands; account list/detail/update; and other follow-ups listed in `SKILL.md`.
+
+## Compose stacks and ops
+
+`docker-compose.yml` is the dev stack (`db`, one-shot `migrate`, `backend` on 3000). Additional **verification-only** stacks exist — `docker-compose.cp5.yml`, `docker-compose.cp8.yml` (CP8: PG16 + Redis + loopback-only HTTPS Nginx; explicitly not the OPS-1 production topology), and `docker-compose.fe51.yml` — for checkpoint/compat verification. `ops/observability/` holds Prometheus alerts and retention/observability runbooks; `tools/gate3/` is the gate3 environment.
 
 ## Invariants to preserve
 
@@ -74,8 +103,9 @@ PostgreSQL is authoritative. IDs are application-generated UUID v7; state fields
 - `canCreateCourse=false` does not revoke an independent CLI credential; disabling an account does revoke its CLI credentials and unused validation tokens.
 - Submission rows are immutable. Idempotency fingerprints use sorted reference sets plus normalized text; open-text persistence uses `Prisma.DbNull`, not `JsonNull`.
 - Question edits are blocked when a waiting/active session has selected the question (`QUESTION_LOCKED_BY_SESSION`). Reordering/deletion uses two-phase temporary positions to avoid transient unique-key violations; static routes such as `order` must precede `:id` routes.
-- Realtime publication is post-commit, fire-and-forget, and listener-isolated. A publish failure must not fail a committed mutation. Socket handshake cookies require manual parsing because Socket.IO bypasses Express `cookie-parser`.
+- Realtime publication is post-commit, fire-and-forget, and listener-isolated. A publish failure must not fail a committed mutation. Socket handshake cookies require manual parsing because Socket.IO bypasses Express `cookie-parser`. Realtime writes are now **durable**: `LiveSessionEvent` rows are appended inside the caller's transaction and claimed by `LiveSessionOutboxService`/`LiveSessionPublisher` (drains ≈1 event/sec, sequentially); the in-process bus only wakes a bounded outbox scan. `delivery_state='delivered'` means *server dispatch completed*, never *client received* — client receipts must be correlated by `event_seq`.
 - Teacher projections never enter the session room. Participant projections must not reveal teacher-only counts or quiz correctness before `revealCorrectness`; open-text results remain anonymous.
+- Realtime diagnostics trace: set `REALTIME_TRACE_RUN_ID` explicitly before backend start (it otherwise defaults to the instanceId and driver correlation returns 0 records); size `REALTIME_TRACE_BUFFER_SIZE` before spawn (W3-300 requires ≥20000), not after.
 
 ## Verification bundle
 
