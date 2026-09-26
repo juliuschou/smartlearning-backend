@@ -1,0 +1,5 @@
+teacher_role=teacher teacher_status=active
+session_ok=1
+sq_owner_ok=1
+options=3
+participants=0

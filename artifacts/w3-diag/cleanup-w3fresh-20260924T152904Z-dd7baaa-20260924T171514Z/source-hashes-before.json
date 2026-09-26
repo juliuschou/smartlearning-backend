@@ -1,0 +1,62 @@
+[
+  {
+    "name": "backend.log",
+    "size": 20002,
+    "mtime_ns": 1790263970321665878,
+    "sha256": "9f92bda76bf34d2eaf002d59c942d83dcb048a50e5f577276e36f42bedadd3fc"
+  },
+  {
+    "name": "backend.log.keep",
+    "size": 20002,
+    "mtime_ns": 1790265777425205011,
+    "sha256": "9f92bda76bf34d2eaf002d59c942d83dcb048a50e5f577276e36f42bedadd3fc"
+  },
+  {
+    "name": "backend.pid",
+    "size": 6,
+    "mtime_ns": 1790264031789654468,
+    "sha256": "7d57283afe92f6e517972ecc7672e8a938e0a81cc0e4801037945a3744d9f612"
+  },
+  {
+    "name": "credpath",
+    "size": 52,
+    "mtime_ns": 1790264208037613617,
+    "sha256": "8e9af35079b4e8288a56794001fbab98ebaf1720b49b451ae4ae69bf05fff818"
+  },
+  {
+    "name": "fixture.json",
+    "size": 937,
+    "mtime_ns": 1790264623074785952,
+    "sha256": "fc9c72e6a21a6018ed91f98e5298840691a8d058361d6e4c49ee0c71f6416923"
+  },
+  {
+    "name": "fixture.stderr",
+    "size": 0,
+    "mtime_ns": 1790264606353539196,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "fixture.stdout",
+    "size": 938,
+    "mtime_ns": 1790264607621542266,
+    "sha256": "6ecf15e98e35e80537ff638abb9cc362fe013009323d1409ca6fc2371bf46476"
+  },
+  {
+    "name": "run.stderr",
+    "size": 58,
+    "mtime_ns": 1790265577293317708,
+    "sha256": "29c0ae9ae52412512e5bb0c6c4c7e313a791f46eb9a0dddb539ef02241a180cb"
+  },
+  {
+    "name": "run.stdout",
+    "size": 0,
+    "mtime_ns": 1790264939029463348,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "trace-final.json",
+    "size": 9203593,
+    "mtime_ns": 1790265777357257301,
+    "sha256": "a72d3847df0f16748455f132544921c1d2ade4a89493c1be2cb1147736fa9bf5"
+  }
+]

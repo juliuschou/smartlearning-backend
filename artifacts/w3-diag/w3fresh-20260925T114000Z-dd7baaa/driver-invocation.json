@@ -1,0 +1,12 @@
+{
+ "allowed": 1,
+ "started": 1,
+ "participants": 300,
+ "runId": "w3fresh-20260925T114000Z-dd7baaa",
+ "invocation1": {
+  "exit": 2,
+  "stage": "pre-spawn-argument-validation",
+  "trafficSent": false,
+  "userAuthorizationForRetry": "granted 2026-09-25"
+ }
+}

@@ -1,0 +1,120 @@
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +14ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +4ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +4ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLoggerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMetricsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mApplicationLifecycleModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRateLimitModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEnrollmentsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGovernanceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSubmissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRealtimeModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCoursesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mQuestionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mIdentityModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLiveSessionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48072  - [39m09/24/2026, 11:32:49 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mParticipantsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[2026-09-24 23:32:49.710 +0800] [33mWARN[39m (48072): [36mUnsupported route path: "health/(.*)". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert to "health/{*path}"...[39m [90m{"context":"LegacyRouteConverter"}[39m
+[2026-09-24 23:32:49.756 +0800] [32mINFO[39m (48072): [36mLiveGateway subscribed to the "snapshot.fetch" message[39m [90m{"context":"WebSocketsController"}[39m
+[2026-09-24 23:32:49.760 +0800] [33mWARN[39m (48072): [36mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert to "/api/{*path}"...[39m [90m{"context":"LegacyRouteConverter"}[39m
+[2026-09-24 23:32:49.760 +0800] [33mWARN[39m (48072): [36mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert to "/api/{*path}"...[39m [90m{"context":"LegacyRouteConverter"}[39m
+[2026-09-24 23:32:49.761 +0800] [33mWARN[39m (48072): [36mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert to "/api/{*path}"...[39m [90m{"context":"LegacyRouteConverter"}[39m
+[2026-09-24 23:32:49.761 +0800] [33mWARN[39m (48072): [36mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert to "/api/{*path}"...[39m [90m{"context":"LegacyRouteConverter"}[39m
+[2026-09-24 23:32:49.761 +0800] [33mWARN[39m (48072): [36mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert to "/api/{*path}"...[39m [90m{"context":"LegacyRouteConverter"}[39m
+[2026-09-24 23:32:49.762 +0800] [32mINFO[39m (48072): [36mHealthController {/api/health} (version: v1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.763 +0800] [32mINFO[39m (48072): [36mMapped {/health/live, GET} (version: Neutral) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.763 +0800] [32mINFO[39m (48072): [36mMapped {/health/ready, GET} (version: Neutral) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.763 +0800] [32mINFO[39m (48072): [36mAuthController {/api/auth} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.763 +0800] [32mINFO[39m (48072): [36mMapped {/api/auth/login, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.763 +0800] [32mINFO[39m (48072): [36mMapped {/api/auth/step-up, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.764 +0800] [32mINFO[39m (48072): [36mMapped {/api/auth/change-password, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.764 +0800] [32mINFO[39m (48072): [36mMapped {/api/auth/logout, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.764 +0800] [32mINFO[39m (48072): [36mMapped {/api/auth/session, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.764 +0800] [32mINFO[39m (48072): [36mAdminController {/api/admin} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.764 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.764 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/permissions, PATCH} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id, PATCH} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/reset-password, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/disable, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/restore, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/require-password-change, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/cli-credentials, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/cli-credentials, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.765 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/cli-credentials/:credentialId/rotate, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/accounts/:id/cli-credentials/:credentialId/revoke, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mCoursesController {/api/courses} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:id, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:id/archive, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mQuestionsController {/api/courses} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/questions, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/questions, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/questions/:id, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/questions/order, PATCH} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.766 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/questions/:id, PATCH} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/questions/:id, DELETE} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mQuestionBatchesController {/api/courses} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/question-batches/validate, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/question-batches/confirm, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mLiveSessionsController {/api/live-sessions} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/start, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/questions/:sessionQuestionId/open, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.767 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/questions/:sessionQuestionId/close, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/close, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/cancel, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mGovernanceController {/api/results} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/results, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/results/:liveSessionId, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/results/:liveSessionId/deletion-requests, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mAdminGovernanceController {/api/admin/results} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/results/deletion-requests, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/admin/results/:liveSessionId/deletion, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mParticipantsController {/api/live-sessions} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.768 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:sessionCode/join, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.770 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/snapshot, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.770 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/questions/:sessionQuestionId/results, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.770 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/student-status, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.770 +0800] [32mINFO[39m (48072): [36mEnrollmentsController {/api} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/students/search, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/enrollments, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/enrollments/:studentAccountId, DELETE} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMapped {/api/courses/:courseId/enrollments, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMapped {/api/me/courses, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mSubmissionsController {/api/live-sessions} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMapped {/api/live-sessions/:liveSessionId/submissions, POST} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mRealtimeTraceController {/api/diagnostics} (version: 1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMapped {/api/diagnostics/realtime-trace, GET} (version: 1) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMetricsController {/api} (version: v1):[39m [90m{"context":"RoutesResolver"}[39m
+[2026-09-24 23:32:49.771 +0800] [32mINFO[39m (48072): [36mMapped {/metrics, GET} (version: Neutral) route[39m [90m{"context":"RouterExplorer"}[39m
+[2026-09-24 23:32:49.853 +0800] [32mINFO[39m (48072): [36mNest application successfully started[39m [90m{"context":"NestApplication"}[39m
+[2026-09-24 23:32:49.872 +0800] [31mERROR[39m (48072): [36mError: listen EADDRINUSE: address already in use :::3001[39m [90m{"context":"NestApplication"}[39m
+node:net:2167
+    const ex = new UVExceptionWithHostPort(err, 'listen', address, port);
+               ^
+
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:2167:16)
+    at listenInCluster (node:net:2224:12)
+    at Server.listen (node:net:2344:7)
+    at ExpressAdapter.listen (/home/user/projects/smartLearning/smartLearning-backend/node_modules/@nestjs/platform-express/adapters/express-adapter.js:115:32)
+    at /home/user/projects/smartLearning/smartLearning-backend/node_modules/@nestjs/core/nest-application.js:190:30
+    at new Promise (<anonymous>)
+    at NestApplication.listen (/home/user/projects/smartLearning/smartLearning-backend/node_modules/@nestjs/core/nest-application.js:180:16)
+    at async bootstrap (/home/user/projects/smartLearning/smartLearning-backend/dist/src/main.js:16:5) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+
+Node.js v26.5.1

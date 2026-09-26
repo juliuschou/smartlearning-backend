@@ -1,0 +1,7 @@
+State  Recv-Q Send-Q  Local Address:Port Peer Address:PortProcess                                     
+LISTEN 0      4096    127.0.0.53%lo:53        0.0.0.0:*                                               
+LISTEN 0      4096       127.0.0.54:53        0.0.0.0:*                                               
+LISTEN 0      1000   10.255.255.254:53        0.0.0.0:*                                               
+LISTEN 0      511                 *:3001            *:*    users:(("node-MainThread",pid=91145,fd=31))
+LISTEN 0      4096                *:8317            *:*    users:(("cli-proxy-api",pid=420,fd=7))     
+  91145     348 Fri Sep 25 19:41:10 2026       40:53 SNl  node dist/src/main.js

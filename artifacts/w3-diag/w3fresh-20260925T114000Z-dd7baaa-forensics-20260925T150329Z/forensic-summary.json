@@ -1,0 +1,44 @@
+{
+  "runId": "w3fresh-20260925T114000Z-dd7baaa",
+  "verdict": "SEQ455 FORENSIC: PARTIALLY RESOLVED",
+  "originalEvidenceImmutable": true,
+  "seq455": {
+    "eventId": "01a0d874-0a1e-77cb-ac32-8e1bbf3b5c33",
+    "eventSeq": 455,
+    "eventType": "result.updated",
+    "attempts": 5,
+    "finalState": "dead",
+    "errorClass": "PrismaClientKnownRequestError",
+    "errorCode": "NOT CAPTURED",
+    "errorMeta": "NOT CAPTURED",
+    "operation": "UNRESOLVED",
+    "classification": "UNKNOWN",
+    "samePublisherInstance": true,
+    "leaseReclaim": "consequence_or_retry_continuation; not proven root cause",
+    "oldClaimOwnerEvidenceGap": true
+  },
+  "runtimeSemantics": {
+    "partialFanoutBeforeFailure": true,
+    "wholeEventRetry": true,
+    "nonIdempotentRetryWindow": true,
+    "duplicateCloseClients": 286,
+    "missingClientObservations": 14,
+    "missingRecipientAttribution": "UNRESOLVED"
+  },
+  "traceCorrelation": {
+    "driverRunId": "w3fresh-20260925T114000Z-dd7baaa",
+    "traceRunId": "01a0d85e-92cb-7254-8cd7-7030c203ceac",
+    "realtimeTraceRunIdPresent": false,
+    "traceRecords": 2393,
+    "traceDropped": 0,
+    "harnessFalseNegative": true
+  },
+  "voteClassification": {
+    "reportedUnresolved": 150,
+    "actualWithPublisherTrace": 150,
+    "actualMissingPublisherTraceDemonstrated": 0,
+    "targetedReceiptsExpected": 150,
+    "targetedReceiptsObserved": 150
+  },
+  "nextGate": "STATIC_FIX_REVIEW_REQUIRED -> UNIT/INTEGRATION_REPRO_REQUIRED -> DB_LEVEL_REPRO_REQUIRED"
+}

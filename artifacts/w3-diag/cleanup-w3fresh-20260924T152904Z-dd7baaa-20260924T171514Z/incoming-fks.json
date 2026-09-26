@@ -1,0 +1,224 @@
+[
+  {
+    "conname": "account_created_by_fkey",
+    "child_table": "account",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (created_by) REFERENCES account(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "cli_credential_account_id_fkey",
+    "child_table": "cli_credential",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "course_owner_account_id_fkey",
+    "child_table": "course",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (owner_account_id) REFERENCES account(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "course_enrollment_student_account_id_fkey",
+    "child_table": "course_enrollment",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (student_account_id) REFERENCES account(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "deletion_event_executor_id_fkey",
+    "child_table": "deletion_event",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (executor_id) REFERENCES account(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "deletion_event_requester_id_fkey",
+    "child_table": "deletion_event",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (requester_id) REFERENCES account(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "participant_account_id_fkey",
+    "child_table": "participant",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "question_validation_token_account_id_fkey",
+    "child_table": "question_validation_token",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "web_session_account_id_fkey",
+    "child_table": "web_session",
+    "parent_table": "account",
+    "definition": "FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "deletion_event_archived_result_id_fkey",
+    "child_table": "deletion_event",
+    "parent_table": "archived_result",
+    "definition": "FOREIGN KEY (archived_result_id) REFERENCES archived_result(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "deletion_manifest_outbox_archived_result_id_fkey",
+    "child_table": "deletion_manifest_outbox",
+    "parent_table": "archived_result",
+    "definition": "FOREIGN KEY (archived_result_id) REFERENCES archived_result(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+  },
+  {
+    "conname": "cli_credential_rotated_from_id_fkey",
+    "child_table": "cli_credential",
+    "parent_table": "cli_credential",
+    "definition": "FOREIGN KEY (rotated_from_id) REFERENCES cli_credential(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "question_validation_token_cli_credential_id_fkey",
+    "child_table": "question_validation_token",
+    "parent_table": "cli_credential",
+    "definition": "FOREIGN KEY (cli_credential_id) REFERENCES cli_credential(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "archived_result_course_id_fkey",
+    "child_table": "archived_result",
+    "parent_table": "course",
+    "definition": "FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "course_enrollment_course_id_fkey",
+    "child_table": "course_enrollment",
+    "parent_table": "course",
+    "definition": "FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "deletion_event_course_id_fkey",
+    "child_table": "deletion_event",
+    "parent_table": "course",
+    "definition": "FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "live_session_course_id_fkey",
+    "child_table": "live_session",
+    "parent_table": "course",
+    "definition": "FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "question_definition_course_id_fkey",
+    "child_table": "question_definition",
+    "parent_table": "course",
+    "definition": "FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "fk_deletion_event_resolved_by",
+    "child_table": "deletion_event",
+    "parent_table": "deletion_event",
+    "definition": "FOREIGN KEY (resolved_by_event_id) REFERENCES deletion_event(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "deletion_manifest_outbox_deletion_event_id_fkey",
+    "child_table": "deletion_manifest_outbox",
+    "parent_table": "deletion_event",
+    "definition": "FOREIGN KEY (deletion_event_id) REFERENCES deletion_event(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+  },
+  {
+    "conname": "archived_result_live_session_id_fkey",
+    "child_table": "archived_result",
+    "parent_table": "live_session",
+    "definition": "FOREIGN KEY (live_session_id) REFERENCES live_session(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "deletion_event_live_session_id_fkey",
+    "child_table": "deletion_event",
+    "parent_table": "live_session",
+    "definition": "FOREIGN KEY (live_session_id) REFERENCES live_session(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "live_session_event_live_session_id_fkey",
+    "child_table": "live_session_event",
+    "parent_table": "live_session",
+    "definition": "FOREIGN KEY (live_session_id) REFERENCES live_session(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "live_session_event_sequence_live_session_id_fkey",
+    "child_table": "live_session_event_sequence",
+    "parent_table": "live_session",
+    "definition": "FOREIGN KEY (live_session_id) REFERENCES live_session(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "live_session_question_selection_live_session_course_fkey",
+    "child_table": "live_session_question_selection",
+    "parent_table": "live_session",
+    "definition": "FOREIGN KEY (live_session_id, course_id) REFERENCES live_session(id, course_id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "participant_live_session_id_fkey",
+    "child_table": "participant",
+    "parent_table": "live_session",
+    "definition": "FOREIGN KEY (live_session_id) REFERENCES live_session(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "session_question_live_session_id_fkey",
+    "child_table": "session_question",
+    "parent_table": "live_session",
+    "definition": "FOREIGN KEY (live_session_id) REFERENCES live_session(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "submission_live_session_id_fkey",
+    "child_table": "submission",
+    "parent_table": "live_session",
+    "definition": "FOREIGN KEY (live_session_id) REFERENCES live_session(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "submission_participant_id_fkey",
+    "child_table": "submission",
+    "parent_table": "participant",
+    "definition": "FOREIGN KEY (participant_id) REFERENCES participant(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "submission_participant_live_session_fkey",
+    "child_table": "submission",
+    "parent_table": "participant",
+    "definition": "FOREIGN KEY (participant_id, live_session_id) REFERENCES participant(id, live_session_id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "live_session_question_selection_question_definition_course_fkey",
+    "child_table": "live_session_question_selection",
+    "parent_table": "question_definition",
+    "definition": "FOREIGN KEY (question_definition_id, course_id) REFERENCES question_definition(id, course_id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "question_option_question_definition_id_fkey",
+    "child_table": "question_option",
+    "parent_table": "question_definition",
+    "definition": "FOREIGN KEY (question_definition_id) REFERENCES question_definition(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "session_question_question_definition_id_fkey",
+    "child_table": "session_question",
+    "parent_table": "question_definition",
+    "definition": "FOREIGN KEY (question_definition_id) REFERENCES question_definition(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "live_session_event_session_question_id_fkey",
+    "child_table": "live_session_event",
+    "parent_table": "session_question",
+    "definition": "FOREIGN KEY (session_question_id) REFERENCES session_question(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "session_question_option_session_question_id_fkey",
+    "child_table": "session_question_option",
+    "parent_table": "session_question",
+    "definition": "FOREIGN KEY (session_question_id) REFERENCES session_question(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "submission_session_question_id_fkey",
+    "child_table": "submission",
+    "parent_table": "session_question",
+    "definition": "FOREIGN KEY (session_question_id) REFERENCES session_question(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "submission_session_question_live_session_fkey",
+    "child_table": "submission",
+    "parent_table": "session_question",
+    "definition": "FOREIGN KEY (session_question_id, live_session_id) REFERENCES session_question(id, live_session_id) ON DELETE RESTRICT"
+  }
+]

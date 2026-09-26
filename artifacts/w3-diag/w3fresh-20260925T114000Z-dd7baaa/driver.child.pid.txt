@@ -1,0 +1,6 @@
+pid 96195: Fri Sep 25 19:57:17 2026 S    sh -c W3_TRACE=1 tsx scripts/load-harness/w3/run-w3.ts
+
+pid 96196: Fri Sep 25 19:57:17 2026 Sl   node /home/user/projects/smartLearning/smartLearning-backend/node_modules/.bin/tsx scripts
+pid 96207: Fri Sep 25 19:57:17 2026 Sl   /home/user/.local/share/mise/installs/node/26.5.1/bin/node --require /home/user/projects/s
+pid 96293: Fri Sep 25 19:57:30 2026 Ss   /usr/bin/zsh -c source /home/user/.claude/shell-snapshots/snapshot-zsh-1790326557084-axn1h
+pid 96356: Fri Sep 25 19:57:38 2026 S    /usr/bin/zsh -c source /home/user/.claude/shell-snapshots/snapshot-zsh-1790326557084-axn1h

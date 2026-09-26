@@ -1,0 +1,15 @@
+{
+  "runId": "w3fresh-20260925T084758Z-dd7baaa",
+  "participants": 300,
+  "questionType": "poll",
+  "driverInvocationsAllowed": 1,
+  "driverInvocationsStarted": 0,
+  "createdAt": "2026-09-25T08:48:17.573491+00:00",
+  "commitSha": "dd7baaac7f30c103417f2d4e15b98ae9b85e99e4",
+  "constraints": {
+    "freshCleanup": false,
+    "secondDriverInvocation": false,
+    "productionCodeChanges": false,
+    "migrations": false
+  }
+}

@@ -1,0 +1,5 @@
+
+> smartlearning-backend@0.0.1 load:w3:diag
+> W3_TRACE=1 tsx scripts/load-harness/w3/run-w3.ts
+
+W3 n=300 correctness=FAIL performance=FAIL voteYes=150/150 forbidden=0 closed=292/301 missClass=none

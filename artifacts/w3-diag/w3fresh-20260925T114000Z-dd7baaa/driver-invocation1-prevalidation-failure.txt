@@ -1,0 +1,1 @@
+invocation1: exit=2, error='W3_FIXTURE_PATH and W3_OUTPUT_PATH are required.', duration=1790337176-1790337165 sec

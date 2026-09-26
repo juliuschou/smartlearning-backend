@@ -1,0 +1,127 @@
+{
+  "identity": {
+    "database_name": "smartlearning_test",
+    "schema_name": "public"
+  },
+  "admins": [
+    {
+      "id": "01a0bd6f-f4ed-7486-83de-847c336f6d95",
+      "username": "cp3-admin",
+      "role": "admin",
+      "status": "active",
+      "created_at": "2026-09-20T06:10:26.162Z"
+    }
+  ],
+  "cp3": [
+    {
+      "id": "01a0bd6f-f4ed-7486-83de-847c336f6d95",
+      "username": "cp3-admin",
+      "role": "admin",
+      "status": "active",
+      "can_create_course": true,
+      "must_change_password": false,
+      "password_changed_at": "2026-09-20T06:10:26.161Z",
+      "disabled_at": null,
+      "created_at": "2026-09-20T06:10:26.162Z",
+      "updated_at": "2026-09-20T06:10:26.162Z",
+      "created_by": null
+    }
+  ],
+  "historical": [
+    {
+      "id": "01a0bf57-4dbc-70b9-b052-58dc6f6f33c6",
+      "username": "local-w1-w3-1789916564322-d7f03eae",
+      "role": "teacher",
+      "status": "active",
+      "can_create_course": true,
+      "must_change_password": false,
+      "password_changed_at": "2026-09-20T15:02:44.924Z",
+      "disabled_at": null,
+      "created_at": "2026-09-20T15:02:44.928Z",
+      "updated_at": "2026-09-20T15:02:44.928Z",
+      "created_by": "01a0bd6f-f4ed-7486-83de-847c336f6d95"
+    },
+    {
+      "id": "01a0bf58-95d9-71a3-ba3b-1bd0d559a6f5",
+      "username": "local-w1-w3diag-1789916648-probe",
+      "role": "teacher",
+      "status": "active",
+      "can_create_course": true,
+      "must_change_password": false,
+      "password_changed_at": "2026-09-20T15:04:08.921Z",
+      "disabled_at": null,
+      "created_at": "2026-09-20T15:04:08.926Z",
+      "updated_at": "2026-09-20T15:04:08.926Z",
+      "created_by": "01a0bd6f-f4ed-7486-83de-847c336f6d95"
+    },
+    {
+      "id": "01a0bf5a-e55f-7238-9598-b0c73b407fb4",
+      "username": "local-w1-w3diag-1789916799-probe",
+      "role": "teacher",
+      "status": "active",
+      "can_create_course": true,
+      "must_change_password": false,
+      "password_changed_at": "2026-09-20T15:06:40.351Z",
+      "disabled_at": null,
+      "created_at": "2026-09-20T15:06:40.356Z",
+      "updated_at": "2026-09-20T15:06:40.356Z",
+      "created_by": "01a0bd6f-f4ed-7486-83de-847c336f6d95"
+    },
+    {
+      "id": "01a0bf5b-ed14-72d6-8b27-266bc048106b",
+      "username": "local-w1-w3-1789916867296-4ac45e28",
+      "role": "teacher",
+      "status": "active",
+      "can_create_course": true,
+      "must_change_password": false,
+      "password_changed_at": "2026-09-20T15:07:47.860Z",
+      "disabled_at": null,
+      "created_at": "2026-09-20T15:07:47.865Z",
+      "updated_at": "2026-09-20T15:07:47.865Z",
+      "created_by": "01a0bd6f-f4ed-7486-83de-847c336f6d95"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "01a0bd6f-f56c-77eb-8c80-bfb07035b7f7",
+      "account_id": "01a0bd6f-f4ed-7486-83de-847c336f6d95",
+      "created_at": "2026-09-20T06:10:26.285Z",
+      "last_seen_at": "2026-09-20T06:10:26.293Z",
+      "expires_at": "2026-09-20T14:10:26.284Z",
+      "revoked_at": null,
+      "step_up_at": null
+    },
+    {
+      "id": "01a0bd6f-fa16-77fb-b903-6afd0f0e4281",
+      "account_id": "01a0bd6f-f4ed-7486-83de-847c336f6d95",
+      "created_at": "2026-09-20T06:10:27.478Z",
+      "last_seen_at": "2026-09-20T06:10:27.490Z",
+      "expires_at": "2026-09-20T14:10:27.478Z",
+      "revoked_at": null,
+      "step_up_at": null
+    },
+    {
+      "id": "01a0bf57-4e6e-76e1-9926-14879b5ee65c",
+      "account_id": "01a0bf57-4dbc-70b9-b052-58dc6f6f33c6",
+      "created_at": "2026-09-20T15:02:45.106Z",
+      "last_seen_at": "2026-09-20T15:02:45.126Z",
+      "expires_at": "2026-09-20T23:02:45.103Z",
+      "revoked_at": null,
+      "step_up_at": null
+    },
+    {
+      "id": "01a0bf5b-edb6-7054-bfb1-207599f8d2c9",
+      "account_id": "01a0bf5b-ed14-72d6-8b27-266bc048106b",
+      "created_at": "2026-09-20T15:07:48.022Z",
+      "last_seen_at": "2026-09-20T15:07:48.037Z",
+      "expires_at": "2026-09-20T23:07:48.022Z",
+      "revoked_at": null,
+      "step_up_at": null
+    }
+  ],
+  "hashes": {
+    "cp3": "dd58a86f7cda38f00e409d1b859ebb98a2a1ed338044f125b63c28b34e2aa22a",
+    "historical": "2f10af176ff4808f375155d0267e5256bbe84594f21a4c787987a342473fef70",
+    "sessions": "d512c98c2432c94f3b2f701e6eca1e396969c57eb444cba37e9b798fd88d5f84"
+  }
+}

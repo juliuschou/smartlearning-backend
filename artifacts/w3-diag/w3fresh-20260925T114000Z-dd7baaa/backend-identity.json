@@ -1,0 +1,13 @@
+{
+  "runId": "w3fresh-20260925T114000Z-dd7baaa",
+  "pid": 91145,
+  "port": 3001,
+  "processStartIso": "2026-09-25T11:41:10.820Z",
+  "backendInstanceId": "01a0d85e-923a-746a-a657-98243f3ee87c",
+  "traceServiceInstanceId": "01a0d85e-92cb-7254-8cd7-7030c203ceac",
+  "bufferSize": 20000,
+  "dropped": 0,
+  "commitSHA": "dd7baaac7f30c103417f2d4e15b98ae9b85e99e4",
+  "listenerPid": 91145,
+  "classification": "EXPECTED_BACKEND_ONLY"
+}

@@ -1,0 +1,1 @@
+cp3admin=cp3-admin/admin/active

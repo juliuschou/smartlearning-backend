@@ -1,0 +1,48 @@
+State  Recv-Q Send-Q  Local Address:Port Peer Address:PortProcess                                     
+LISTEN 0      4096    127.0.0.53%lo:53        0.0.0.0:*                                               
+LISTEN 0      4096       127.0.0.54:53        0.0.0.0:*                                               
+LISTEN 0      1000   10.255.255.254:53        0.0.0.0:*                                               
+LISTEN 0      511                 *:3001            *:*    users:(("node-MainThread",pid=84917,fd=32))
+LISTEN 0      4096                *:8317            *:*    users:(("cli-proxy-api",pid=420,fd=7))     
+
+--- processes ---
+    PID    PPID                  STARTED     ELAPSED STAT COMMAND
+      1       0 Thu Sep 24 20:41:57 2026    20:09:02 Ss   /sbin/init
+      2       1 Thu Sep 24 20:41:57 2026    20:09:02 Sl+  /init
+      7       2 Thu Sep 24 20:41:57 2026    20:09:01 Sl+  plan9 --control-socket 7 --log-level 4 --server-fd 8 --pipe-fd 10 --log-truncate
+     44       1 Thu Sep 24 20:42:07 2026    20:08:51 S<s  /usr/lib/systemd/systemd-journald
+     79       1 Thu Sep 24 20:42:07 2026    20:08:51 Ss   /usr/lib/systemd/systemd-resolved
+     86       1 Thu Sep 24 20:42:07 2026    20:08:51 Ss   /usr/lib/systemd/systemd-udevd
+    120       1 Thu Sep 24 20:42:08 2026    20:08:51 Ss   /bin/sh /usr/lib/systemd/scripts/chronyd-starter.sh -n -F 1
+    121       1 Thu Sep 24 20:42:08 2026    20:08:51 Ss   /usr/sbin/cron -f -P
+    123       1 Thu Sep 24 20:42:08 2026    20:08:51 Ss   @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+    127       1 Thu Sep 24 20:42:08 2026    20:08:51 Ss   /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+    132       1 Thu Sep 24 20:42:08 2026    20:08:51 Ss   /usr/lib/systemd/systemd-logind
+    134       1 Thu Sep 24 20:42:08 2026    20:08:51 Ssl  /usr/libexec/upowerd
+    151       1 Thu Sep 24 20:42:08 2026    20:08:51 Ssl  /usr/sbin/rsyslogd -n -iNONE
+    159       1 Thu Sep 24 20:42:08 2026    20:08:51 Ss+  /usr/sbin/agetty --noreset --noclear --issue-file=/etc/issue:/etc/issue.d:/run/issue.d:/usr/lib/issue.d - linux
+    183     120 Thu Sep 24 20:42:08 2026    20:08:51 S    /usr/sbin/chronyd -n -F 1 -x
+    205       1 Thu Sep 24 20:42:08 2026    20:08:51 Ssl  /usr/lib/polkit-1/polkitd --no-debug --log-level=notice
+    253     183 Thu Sep 24 20:42:08 2026    20:08:50 S    /usr/sbin/chronyd -n -F 1 -x
+    263       1 Thu Sep 24 20:42:08 2026    20:08:50 Ssl  /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+    347       2 Thu Sep 24 20:42:08 2026    20:08:50 Ss   /init
+    348     347 Thu Sep 24 20:42:09 2026    20:08:50 S    /init
+    349     348 Thu Sep 24 20:42:09 2026    20:08:50 Ss   -zsh
+    350       2 Thu Sep 24 20:42:09 2026    20:08:50 Ss   login -- user
+    393       1 Thu Sep 24 20:42:09 2026    20:08:49 Ss   /usr/lib/systemd/systemd --user
+    395     393 Thu Sep 24 20:42:09 2026    20:08:49 S    (sd-pam)
+    420     393 Thu Sep 24 20:42:09 2026    20:08:49 Ssl  /home/user/cliproxyapi/cli-proxy-api
+    422     350 Thu Sep 24 20:42:09 2026    20:08:49 Ss+  -zsh
+    443       1 Thu Sep 24 20:42:09 2026    20:08:49 SNsl /usr/libexec/rtkit-daemon
+   3168       2 Thu Sep 24 20:52:28 2026    19:58:30 Ss   login -- root
+   3210       1 Thu Sep 24 20:52:28 2026    19:58:30 Ss   /usr/lib/systemd/systemd --user
+   3212    3210 Thu Sep 24 20:52:28 2026    19:58:30 S    (sd-pam)
+   3240    3168 Thu Sep 24 20:52:29 2026    19:58:30 Ss+  -bash
+   3574       2 Thu Sep 24 20:52:39 2026    19:58:19 Ss   /init
+   3575    3574 Thu Sep 24 20:52:39 2026    19:58:19 S    /init
+   3576    3575 Thu Sep 24 20:52:40 2026    19:58:19 Ssl+ /mnt/c/Users/USER/AppData/Local/Programs/Rancher Desktop/resources/resources/linux/internal/wsl-helper docker-proxy serve
+  64973     349 Fri Sep 25 00:57:23 2026    15:53:35 Sl+  claude --model gpt-5.6-sol
+  84914   64973 Fri Sep 25 16:50:07 2026       00:51 Ss   /usr/bin/zsh -c source /home/user/.claude/shell-snapshots/snapshot-zsh-1790269073057-g2hc73.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB NO_BARE_GLOB_QUAL 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'RUN_DIR=/home/user/projects/smartLearning/smartLearning-backend/artifacts/w3-diag/w3fresh-20260925T084758Z-dd7baaa; RUN_ID=w3fresh-20260925T084758Z-dd7baaa; cd /home/user/projects/smartLearning/smartLearning-backend; printf '"'"'%s\n'"'"' "$$" > "$RUN_DIR/backend.wrapper.pid"; date -u +%Y-%m-%dT%H:%M:%SZ > "$RUN_DIR/backend.started-at"; NODE_ENV=test PORT=3001 REALTIME_REDIS_MODE=off REALTIME_TRACE_ENABLED=1 REALTIME_TRACE_RUN_ID="$RUN_ID" node dist/src/main.js > "$RUN_DIR/backend.stdout" 2> "$RUN_DIR/backend.stderr" & child=$!; printf '"'"'%s\n'"'"' "$child" > "$RUN_DIR/backend.pid"; wait "$child"; code=$?; printf '"'"'%s\n'"'"' "$code" > "$RUN_DIR/backend.exitcode"; date -u +%Y-%m-%dT%H:%M:%SZ > "$RUN_DIR/backend.finished-at"; exit "$code"' < /dev/null && pwd -P >| /tmp/claude-9cec-cwd
+  84917   84914 Fri Sep 25 16:50:07 2026       00:51 SNl  node dist/src/main.js
+  85193   64973 Fri Sep 25 16:50:59 2026       00:00 Ss   /usr/bin/zsh -c source /home/user/.claude/shell-snapshots/snapshot-zsh-1790269073057-g2hc73.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB NO_BARE_GLOB_QUAL 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'RUN_DIR=artifacts/w3-diag/w3fresh-20260925T084758Z-dd7baaa; { ss -ltnp; printf '"'"'\n--- processes ---\n'"'"'; ps -eo pid,ppid,lstart,etime,stat,args; } > "$RUN_DIR/process-inventory-pre-fixture.txt"; ps -eo pid,ppid,lstart,etime,stat,args | grep -E '"'"'[n]ode|[n]pm|[n]est|[t]sx|[t]s-node|[r]un-w3|[c]reate-fixture|dist/src/main\.js'"'"' || true' < /dev/null && pwd -P >| /tmp/claude-93cf-cwd
+  85196   85193 Fri Sep 25 16:50:59 2026       00:00 R    ps -eo pid,ppid,lstart,etime,stat,args

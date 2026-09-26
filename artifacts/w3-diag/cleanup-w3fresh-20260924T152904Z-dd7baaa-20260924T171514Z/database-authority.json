@@ -1,0 +1,126 @@
+{
+  "identity": {
+    "database_name": "smartlearning_test",
+    "schema_name": "public",
+    "database_user": "smartlearning",
+    "server_address": "172.17.0.2/32",
+    "server_port": 5432,
+    "in_recovery": false
+  },
+  "migrations": [
+    {
+      "migration_name": "20260815163722_init_system_setting",
+      "finished_at": "2026-08-31T16:51:49.627Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260815174233_add_identity_and_course",
+      "finished_at": "2026-08-31T16:51:49.653Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260816100000_add_step_up_at",
+      "finished_at": "2026-08-31T16:51:49.658Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260816120000_add_poll_live_session_submission",
+      "finished_at": "2026-08-31T16:51:49.729Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260816130000_harden_poll_constraints",
+      "finished_at": "2026-08-31T16:51:49.742Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260816140000_add_poll_option_refs",
+      "finished_at": "2026-08-31T16:51:49.752Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260816150000_scope_live_session_question_selection",
+      "finished_at": "2026-08-31T16:51:49.761Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260816160000_add_cli_credential_and_batch",
+      "finished_at": "2026-08-31T16:51:49.789Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260817100000_relax_submission_answer_cardinality",
+      "finished_at": "2026-08-31T16:51:49.795Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260818100000_add_student_role",
+      "finished_at": "2026-08-31T16:51:49.800Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260818110000_add_course_enrollment",
+      "finished_at": "2026-08-31T16:51:49.815Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260818120000_bind_participant_account",
+      "finished_at": "2026-08-31T16:51:49.825Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260828090000_add_archive_governance",
+      "finished_at": "2026-08-31T16:51:49.846Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260828110000_add_durable_realtime",
+      "finished_at": "2026-08-31T16:51:49.870Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260830100000_add_cli_credential_rotation_lineage",
+      "finished_at": "2026-08-31T16:51:49.878Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260908090000_freeze_archive_governance_contract",
+      "finished_at": "2026-09-08T15:41:03.137Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260909090000_add_deletion_manifest_outbox",
+      "finished_at": "2026-09-08T22:37:50.586Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260909100000_add_manifest_outbox_lease",
+      "finished_at": "2026-09-09T10:59:06.749Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260911100000_add_archive_purge_worker_state",
+      "finished_at": null,
+      "rolled_back_at": "2026-09-11T14:50:23.667Z"
+    },
+    {
+      "migration_name": "20260911100000_add_archive_purge_worker_state",
+      "finished_at": "2026-09-11T14:53:16.090Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260920160000_split_live_session_event_sequence",
+      "finished_at": "2026-09-20T06:06:51.821Z",
+      "rolled_back_at": null
+    }
+  ],
+  "bootstrap": [
+    {
+      "key": "bootstrap_completed",
+      "value": {
+        "completed": true
+      },
+      "updatedAt": "2026-09-20T06:10:26.163Z"
+    }
+  ]
+}

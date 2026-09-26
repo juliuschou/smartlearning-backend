@@ -1,0 +1,17 @@
+{
+  "authority": {
+    "database_name": "smartlearning_test",
+    "schema_name": "public"
+  },
+  "after": {
+    "account": 0,
+    "course": 0,
+    "question": 0,
+    "live_session": 0,
+    "participants": 0,
+    "submissions": 0,
+    "events": 0,
+    "event_sequence": 0
+  },
+  "protectedHash": "9554ecc836cc2ec9c0dedd921fb373bfa9539b54c9af45b62443e1217e309747"
+}

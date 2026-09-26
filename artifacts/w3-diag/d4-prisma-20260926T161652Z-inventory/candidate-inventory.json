@@ -1,0 +1,312 @@
+{
+  "phase": "W3 Phase D4",
+  "runId": "d4-prisma-20260926T161652Z-inventory",
+  "database": "smartlearning_test",
+  "inventoryFrozenBeforeContention": true,
+  "traceInterval": {
+    "start": "LiveSessionPublisher.dispatchTraced recordDispatchStart",
+    "end": "LiveSessionPublisher.dispatchTraced recordDispatchReturned",
+    "included": "await LiveGateway.dispatchDurableEvent(event)",
+    "excluded": [
+      "publisher maintenance and claimDueRows",
+      "close transaction and outbox append",
+      "markDelivered after dispatch return",
+      "markFailure after dispatch throw"
+    ]
+  },
+  "candidates": [
+    {
+      "id": "teacher-counts-live-session-lock",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getTeacherDetail",
+      "prismaCall": "tx.$queryRaw via lockLiveSessionForUpdate",
+      "modelTable": "live_session",
+      "readWrite": "read/row-lock",
+      "transactionContext": "ReadCommitted transaction; synthetic realtime recompute actor",
+      "perRecipient": false,
+      "status": "POSSIBLE",
+      "evidence": "dispatchDurableEvent RESULT_UPDATED always calls emitTeacherCounts before teacher/participant result fan-out; getTeacherDetail locks the session."
+    },
+    {
+      "id": "teacher-counts-projection",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getTeacherDetail",
+      "prismaCall": "tx.liveSession.findUnique with projection include",
+      "modelTable": "live_session and included projection relations",
+      "readWrite": "read",
+      "transactionContext": "same ReadCommitted transaction",
+      "perRecipient": false,
+      "status": "POSSIBLE",
+      "evidence": "getTeacherDetail loads the session projection during dispatch."
+    },
+    {
+      "id": "teacher-counts-participant-count",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getTeacherDetail",
+      "prismaCall": "tx.participant.count",
+      "modelTable": "participant",
+      "readWrite": "read",
+      "transactionContext": "same ReadCommitted transaction",
+      "perRecipient": false,
+      "status": "POSSIBLE",
+      "evidence": "Count is part of teacher detail projection."
+    },
+    {
+      "id": "teacher-counts-submission-count",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getTeacherDetail",
+      "prismaCall": "tx.submission.count",
+      "modelTable": "submission",
+      "readWrite": "read",
+      "transactionContext": "same ReadCommitted transaction",
+      "perRecipient": false,
+      "status": "UNCERTAIN",
+      "evidence": "Only runs when a loaded question is open; the just-closed question normally makes this path inapplicable, but another open question could make it reachable."
+    },
+    {
+      "id": "teacher-counts-account-active",
+      "fileFunction": "src/common/auth/session.service.ts:assertAccountActive",
+      "prismaCall": "prisma.account.findUnique",
+      "modelTable": "account",
+      "readWrite": "read",
+      "transactionContext": "independent read per queued teacher recipient",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "emitTeacherCounts authorizes each qualifying teacher socket before emit."
+    },
+    {
+      "id": "teacher-results-lock",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getResults",
+      "prismaCall": "tx.$queryRaw via lockLiveSessionForUpdate",
+      "modelTable": "live_session",
+      "readWrite": "read/row-lock",
+      "transactionContext": "ReadCommitted transaction; synthetic teacher projection actor",
+      "perRecipient": false,
+      "status": "POSSIBLE",
+      "evidence": "emitTeacherResults materializes a shared teacher projection before socket fan-out."
+    },
+    {
+      "id": "teacher-results-question-projection",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getResults",
+      "prismaCall": "tx.sessionQuestion.findUnique with liveSession/course/options/submissions include",
+      "modelTable": "session_question, live_session, course, session_question_option, submission",
+      "readWrite": "read",
+      "transactionContext": "same ReadCommitted transaction",
+      "perRecipient": false,
+      "status": "POSSIBLE",
+      "evidence": "Shared teacher result aggregation reads the authoritative snapshot and submissions."
+    },
+    {
+      "id": "teacher-results-account-active",
+      "fileFunction": "src/common/auth/session.service.ts:assertAccountActive",
+      "prismaCall": "prisma.account.findUnique",
+      "modelTable": "account",
+      "readWrite": "read",
+      "transactionContext": "independent read per queued teacher recipient",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "emitTeacherResults authorizes each qualifying teacher socket before emit."
+    },
+    {
+      "id": "participant-reauthorize-live-session",
+      "fileFunction": "src/modules/participants/application/participant.service.ts:resolveAccountParticipant",
+      "prismaCall": "prisma.liveSession.findUnique",
+      "modelTable": "live_session",
+      "readWrite": "read",
+      "transactionContext": "preflight read before account-participant transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Account-bound participant reauthorization resolves the course before enrollment and transaction checks."
+    },
+    {
+      "id": "participant-reauthorize-enrollment-preflight",
+      "fileFunction": "src/modules/enrollments/application/enrollment.service.ts:assertActiveEnrollment",
+      "prismaCall": "prisma.courseEnrollment.findUnique",
+      "modelTable": "course_enrollment",
+      "readWrite": "read",
+      "transactionContext": "preflight read before account-participant transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Account-bound participant reauthorization checks active enrollment before locking rows."
+    },
+    {
+      "id": "participant-reauthorize-locks",
+      "fileFunction": "src/modules/participants/application/participant.service.ts:findOrCreateAccountParticipant",
+      "prismaCall": "lockJoinableLiveSessionForShare plus lockCourseForUpdate and lockAccountForUpdate",
+      "modelTable": "live_session, course, account",
+      "readWrite": "read/row-lock",
+      "transactionContext": "account-participant transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "The resolver acquires live-session/course/account locks before rechecking authorization."
+    },
+    {
+      "id": "participant-reauthorize-account",
+      "fileFunction": "src/modules/participants/application/participant.service.ts:findOrCreateAccountParticipant",
+      "prismaCall": "tx.account.findUnique",
+      "modelTable": "account",
+      "readWrite": "read",
+      "transactionContext": "account-participant transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Transactional account role/status/displayName read."
+    },
+    {
+      "id": "participant-reauthorize-enrollment",
+      "fileFunction": "src/modules/participants/application/participant.service.ts:findOrCreateAccountParticipant",
+      "prismaCall": "tx.courseEnrollment.findUnique",
+      "modelTable": "course_enrollment",
+      "readWrite": "read",
+      "transactionContext": "account-participant transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Transactional enrollment status recheck."
+    },
+    {
+      "id": "participant-reauthorize-participant",
+      "fileFunction": "src/modules/participants/application/participant.service.ts:findOrCreateAccountParticipant",
+      "prismaCall": "tx.participant.findUnique",
+      "modelTable": "participant",
+      "readWrite": "read",
+      "transactionContext": "account-participant transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Resolver checks the exact live-session/account participant identity."
+    },
+    {
+      "id": "participant-reauthorize-create-branch",
+      "fileFunction": "src/modules/participants/application/participant.service.ts:findOrCreateAccountParticipant",
+      "prismaCall": "tx.participant.create; outbox sequence allocation; tx.liveSessionEvent.create",
+      "modelTable": "participant, live_session_event_sequence, live_session_event",
+      "readWrite": "write",
+      "transactionContext": "conditional account-participant transaction",
+      "perRecipient": true,
+      "status": "UNCERTAIN",
+      "evidence": "Reachable only if a connected account-bound socket's participant row is unexpectedly absent; normal handshake invariants should make this branch absent, and closed sessions fail before creation."
+    },
+    {
+      "id": "participant-results-anonymous-lock",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getResults",
+      "prismaCall": "tx.$queryRaw via lockLiveSessionForUpdate",
+      "modelTable": "live_session",
+      "readWrite": "read/row-lock",
+      "transactionContext": "ReadCommitted participant result transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Anonymous participant result projection locks the session before reading."
+    },
+    {
+      "id": "participant-results-question-projection",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getResults",
+      "prismaCall": "tx.sessionQuestion.findUnique with liveSession/course/options/submissions include",
+      "modelTable": "session_question, live_session, course, session_question_option, submission",
+      "readWrite": "read",
+      "transactionContext": "ReadCommitted participant result transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Participant result projection reads the snapshot and submissions."
+    },
+    {
+      "id": "participant-results-participant",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getResults",
+      "prismaCall": "tx.participant.findUnique",
+      "modelTable": "participant",
+      "readWrite": "read",
+      "transactionContext": "same participant result transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Defense-in-depth session/participant binding check."
+    },
+    {
+      "id": "participant-results-account-locks",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:lockAccountBoundRealtimeRows",
+      "prismaCall": "tx.liveSession.findUnique plus raw course/account FOR UPDATE locks",
+      "modelTable": "live_session, course, account",
+      "readWrite": "read/row-lock",
+      "transactionContext": "ReadCommitted account-bound participant result transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Account-bound participant results serialize with lifecycle/revocation locks."
+    },
+    {
+      "id": "participant-results-account",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getResults",
+      "prismaCall": "tx.account.findUnique",
+      "modelTable": "account",
+      "readWrite": "read",
+      "transactionContext": "same account-bound participant result transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Participant account role/status validation."
+    },
+    {
+      "id": "participant-results-enrollment",
+      "fileFunction": "src/modules/live-sessions/application/live-session.service.ts:getResults",
+      "prismaCall": "tx.courseEnrollment.findUnique",
+      "modelTable": "course_enrollment",
+      "readWrite": "read",
+      "transactionContext": "same account-bound participant result transaction",
+      "perRecipient": true,
+      "status": "POSSIBLE",
+      "evidence": "Participant enrollment status validation."
+    },
+    {
+      "id": "anonymous-reauthorization",
+      "fileFunction": "src/modules/realtime/live-gateway.ts:reauthorizeParticipant",
+      "prismaCall": "none",
+      "modelTable": "none",
+      "readWrite": "none",
+      "transactionContext": "none",
+      "perRecipient": true,
+      "status": "IMPOSSIBLE",
+      "evidence": "Anonymous participants return true before any resolver call."
+    },
+    {
+      "id": "socket-enumeration-and-emit",
+      "fileFunction": "src/modules/realtime/live-gateway.ts:emitSessionClosed/emitParticipantResults",
+      "prismaCall": "none; Socket.IO fetchSockets/emit",
+      "modelTable": "none",
+      "readWrite": "none",
+      "transactionContext": "transport/adapter only",
+      "perRecipient": true,
+      "status": "IMPOSSIBLE",
+      "evidence": "Not a Prisma/raw PostgreSQL operation in this repository path."
+    },
+    {
+      "id": "publisher-claim",
+      "fileFunction": "src/modules/realtime/live-session-publisher.ts:claimDueRows",
+      "prismaCall": "$transaction with $queryRaw claim CTE",
+      "modelTable": "live_session_event",
+      "readWrite": "write",
+      "transactionContext": "publisher claim transaction before dispatch trace",
+      "perRecipient": false,
+      "status": "IMPOSSIBLE",
+      "evidence": "Claim completes before recordDispatchStart."
+    },
+    {
+      "id": "publisher-ack",
+      "fileFunction": "src/modules/realtime/live-session-publisher.ts:markDelivered",
+      "prismaCall": "liveSessionEvent.updateMany",
+      "modelTable": "live_session_event",
+      "readWrite": "write",
+      "transactionContext": "publisher acknowledgement after dispatch return",
+      "perRecipient": false,
+      "status": "IMPOSSIBLE",
+      "evidence": "markDelivered runs after dispatchTraced returns."
+    },
+    {
+      "id": "publisher-failure-transition",
+      "fileFunction": "src/modules/realtime/live-session-publisher.ts:markFailure",
+      "prismaCall": "liveSessionEvent.updateMany",
+      "modelTable": "live_session_event",
+      "readWrite": "write",
+      "transactionContext": "publisher failure handling after dispatch throw",
+      "perRecipient": false,
+      "status": "IMPOSSIBLE",
+      "evidence": "Failure transition occurs after dispatchTraced throws, outside the successful return interval."
+    }
+  ],
+  "historicalSeq455": {
+    "errorClass": "PrismaClientKnownRequestError",
+    "prismaCode": "UNKNOWN",
+    "databaseCode": "UNKNOWN",
+    "operation": "UNKNOWN",
+    "constraint": "No candidate is claimed as historical root cause by this inventory alone"
+  }
+}

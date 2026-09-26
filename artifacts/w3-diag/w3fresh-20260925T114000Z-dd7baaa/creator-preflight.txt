@@ -1,0 +1,5 @@
+                  id                  | username  | role  | status 
+--------------------------------------+-----------+-------+--------
+ 01a0bd6f-f4ed-7486-83de-847c336f6d95 | cp3-admin | admin | active
+(1 row)
+

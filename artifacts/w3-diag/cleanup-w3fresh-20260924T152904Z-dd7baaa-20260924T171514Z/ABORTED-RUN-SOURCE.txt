@@ -1,0 +1,4 @@
+run=w3fresh-20260924T152904Z-dd7baaa
+source=/home/user/projects/smartLearning/smartLearning-backend/artifacts/w3-diag/w3fresh-20260924T152904Z-dd7baaa
+collectedAt=2026-09-24T17:15:38.735186+00:00
+immutable=true

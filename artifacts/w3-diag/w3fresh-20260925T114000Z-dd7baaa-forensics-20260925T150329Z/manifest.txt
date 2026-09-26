@@ -1,0 +1,2 @@
+original=artifacts/w3-diag/w3fresh-20260925T114000Z-dd7baaa
+forensics=artifacts/w3-diag/w3fresh-20260925T114000Z-dd7baaa-forensics-20260925T150329Z

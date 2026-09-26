@@ -1,0 +1,31 @@
+{
+  "fixture": {
+    "runId": "w3fresh-20260924T152904Z-dd7baaa",
+    "questionType": "poll",
+    "username": "local-w1-w3-1790264606622-edcad078",
+    "courseId": "01a0d416-02bb-741b-8f3c-3f2d0340ddd3",
+    "questionId": "01a0d416-02d0-76a7-bc65-9d08015809b9",
+    "liveSessionId": "01a0d416-02ee-7689-a491-55b7fa2e5e67",
+    "sessionQuestionId": "01a0d416-032d-776a-b9a5-52349dac91db",
+    "sessionCode": "YYSR3CX4",
+    "options": [
+      {
+        "id": "01a0d416-032d-776a-b9a5-542b3924ed25",
+        "optionRef": "alpha",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0d416-032d-776a-b9a5-5b3daac3aae4",
+        "optionRef": "beta",
+        "isCorrect": false
+      },
+      {
+        "id": "01a0d416-032d-776a-b9a5-5d34d67095d5",
+        "optionRef": "gamma",
+        "isCorrect": false
+      }
+    ],
+    "credentialPresent": true,
+    "credentialFile": "/tmp/w3cred-w3fresh-20260924T152904Z-dd7baaa-ifrimT"
+  }
+}

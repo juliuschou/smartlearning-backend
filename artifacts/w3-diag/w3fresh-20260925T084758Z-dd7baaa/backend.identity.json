@@ -1,0 +1,69 @@
+{
+  "pid": 84917,
+  "cwd": "/home/user/projects/smartLearning/smartLearning-backend",
+  "exe": "/home/user/.local/share/mise/installs/node/26.5.1/bin/node",
+  "cmdline": "node dist/src/main.js",
+  "listener": "State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess                                     \nLISTEN 0      511                *:3001            *:*    users:((\"node-MainThread\",pid=84917,fd=32))\n",
+  "traceStats": {
+    "schemaVersion": 1,
+    "enabled": true,
+    "instanceId": "01a0d7c1-f9c6-7723-bb52-40d0136154d9",
+    "backendInstanceId": "01a0d7c1-f92c-7446-a4e3-bdcf4366cafd",
+    "processId": 84917,
+    "processStartIso": "2026-09-25T08:50:08.009Z",
+    "hostname": "DESKTOP-0KADDT9",
+    "lifecycle": [
+      {
+        "component": "traceService",
+        "instanceId": "01a0d7c1-f9c6-7723-bb52-40d0136154d9",
+        "constructedAtIso": "2026-09-25T08:50:08.966Z"
+      },
+      {
+        "component": "gateway",
+        "instanceId": "01a0d7c1-f9d2-77bd-bc47-bf1d363974d1",
+        "constructedAtIso": "2026-09-25T08:50:08.978Z"
+      },
+      {
+        "component": "publisher",
+        "instanceId": "01a0d7c1-f9d2-77bd-bc47-c2787528874e",
+        "constructedAtIso": "2026-09-25T08:50:08.978Z"
+      }
+    ],
+    "runId": "w3fresh-20260925T084758Z-dd7baaa",
+    "bufferSize": 5000,
+    "recordedCount": 0,
+    "droppedCount": 0,
+    "dispatchedEventCount": 0
+  },
+  "mismatchStats": {
+    "schemaVersion": 1,
+    "enabled": true,
+    "instanceId": "01a0d7c1-f9c6-7723-bb52-40d0136154d9",
+    "backendInstanceId": "01a0d7c1-f92c-7446-a4e3-bdcf4366cafd",
+    "processId": 84917,
+    "processStartIso": "2026-09-25T08:50:08.009Z",
+    "hostname": "DESKTOP-0KADDT9",
+    "lifecycle": [
+      {
+        "component": "traceService",
+        "instanceId": "01a0d7c1-f9c6-7723-bb52-40d0136154d9",
+        "constructedAtIso": "2026-09-25T08:50:08.966Z"
+      },
+      {
+        "component": "gateway",
+        "instanceId": "01a0d7c1-f9d2-77bd-bc47-bf1d363974d1",
+        "constructedAtIso": "2026-09-25T08:50:08.978Z"
+      },
+      {
+        "component": "publisher",
+        "instanceId": "01a0d7c1-f9d2-77bd-bc47-c2787528874e",
+        "constructedAtIso": "2026-09-25T08:50:08.978Z"
+      }
+    ],
+    "runId": "w3fresh-20260925T084758Z-dd7baaa",
+    "bufferSize": 5000,
+    "recordedCount": 0,
+    "droppedCount": 0,
+    "dispatchedEventCount": 0
+  }
+}
