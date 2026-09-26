@@ -13,6 +13,7 @@ import { writeFile } from 'node:fs/promises';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { LoadHttpClient, requireLoadCorsOrigin } from '../http-client';
 import { createOperation } from '../metrics';
+import { requireW3RunId } from './run-contract';
 
 type QuestionType = 'poll' | 'quiz';
 
@@ -47,7 +48,10 @@ async function main(): Promise<void> {
   const corsOrigin = requireLoadCorsOrigin();
   const credentialOut = process.env.W3_CREDENTIAL_OUT;
   if (!credentialOut) throw new Error('W3_CREDENTIAL_OUT is required.');
-  const runId = process.env.W3_RUN_ID ?? randomUUID();
+  const runId =
+    process.env.W3_TRACE_REQUIRED === '1'
+      ? requireW3RunId(process.env.W3_RUN_ID)
+      : (process.env.W3_RUN_ID ?? randomUUID());
   const questionType = (process.env.W3_QUESTION_TYPE ?? 'poll') as QuestionType;
   if (!['poll', 'quiz'].includes(questionType))
     throw new Error(`Unsupported W3_QUESTION_TYPE: ${questionType}`);

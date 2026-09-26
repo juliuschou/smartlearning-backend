@@ -474,3 +474,31 @@
 - **Failure mode:** The W3 publish-proxy latency subtracted `performance.now()`-relative receipt times from `Date.parse(server_timestamp)`, producing values near −1.79e12 ms.
 - **Prevention rule:** Compute any delta from two clocks of the same kind — either both monotonic (`performance.now()`) or both wall-clock (`Date.parse`). Assert latency samples are non-negative before reporting.
 - **Tripwire:** a latency summary containing a large-magnitude negative number is a harness bug, not a measurement.
+
+## 2026-09-25 — Tool timeout is not W3 driver failure evidence
+
+- **Failure mode:** A shell/tool or background-execution timeout can be mistaken for driver termination, leading an operator to stop a still-running W3 process or attribute stale stderr from another invocation to the current run.
+- **Detection signal:** The driver PID remains live, no numeric exit-code artifact exists, or stderr lacks matching run ID / PID / timestamp / invocation evidence.
+- **Prevention rule:** Before stopping or classifying a W3 driver, check PID liveness, the exit-code artifact, current phase/run state, formal-report state, and run-correlated stderr. Never use `TaskStop` solely because a shell/tool/poll timed out or output is temporarily silent.
+- **Tripwire:** Every fresh W3 invocation must use run-exclusive stdout/stderr plus a controlled wrapper that records wrapper PID, child PID, start/finish timestamps, signal state, and numeric exit code.
+
+## 2026-09-25 — Backend attribution requires listener and trace identity proof
+
+- **Failure mode:** A PID artifact and a backend log can describe different process attempts; a later `EADDRINUSE` observation does not by itself prove which backend served earlier workload traffic or that a second publisher existed.
+- **Detection signal:** Recorded PID, log PID, port-owner PID, trace `processId`, run ID, backend instance, or publisher instance do not form one consistent identity chain.
+- **Prevention rule:** Preserve discrepancies neutrally, then require `child PID = listener PID = trace processId` plus matching cwd, command, process start, run ID, backend instance, and publisher instance before fixture creation.
+- **Tripwire:** Any identity mismatch, duplicate candidate backend/publisher, or uncorrelated stderr is a hard stop; do not launch a replacement backend in the same authorized attempt.
+
+## 2026-09-25 — Size the W3 trace buffer before backend start
+
+- **Failure mode:** A fresh 300-participant diagnostics backend was started with the default trace buffer of 5,000 records even though the immediately preceding comparable run retained 5,451 records. Continuing would risk dropped attribution evidence, while the once-only backend rule prohibited restarting with a larger buffer.
+- **Detection signal:** Trace preflight reports `bufferSize=5000`; prior run evidence exceeds that capacity before considering variation or additional lifecycle records.
+- **Prevention rule:** Derive and record the required trace capacity from the largest comparable retained trace plus safety margin, then set `REALTIME_TRACE_BUFFER_SIZE` before the first backend spawn. Treat buffer capacity as part of the backend execution contract, not a post-start check.
+- **Tripwire:** Before spawning a fresh W3-300 backend, require the execution contract and command metadata to state `REALTIME_TRACE_BUFFER_SIZE>=20000`; after readiness, require trace preflight to report the same capacity before fixture provisioning.
+
+### 2026-09-25 — W3 fresh rerun: two environment-contract gaps masked attribution
+
+- **Failure mode:** (1) The diagnostics backend was started without `REALTIME_TRACE_RUN_ID`, so the trace service's internal runId defaulted to its instanceId; the driver queried by runId and received 0 records, causing the formal report to classify all 150 delivered votes as `UNRESOLVED_DELIVERED_NO_PUBLISHER_RECORD` even though the full trace proved publisher+emit coverage. (2) Both the fixture provisioning and the driver invocation were launched without repo-required env vars (`LOAD_CORS_ORIGIN`, `W3_FIXTURE_PATH`/`W3_OUTPUT_PATH`) and failed pre-flight with exit 2 — one authorized invocation consumed before any traffic.
+- **Detection signal:** Report `serverTrace.phaseB.unavailableReason=RUN_ID_MISMATCH`; fixture/driver exit 2 with "… is required" before any DB writes or socket connects.
+- **Prevention rule:** Backend start contract for W3 diagnostics must include `REALTIME_TRACE_RUN_ID=<runId>` alongside buffer size; before spawning fixture or driver, verify all repo-required env vars from `scripts/load-harness/{config,fixture,http-client}.ts` and `run-w3.ts` against a written launch checklist.
+- **Tripwire:** `grep -n "process.env.W3_\|process.env.LOAD_" scripts/load-harness/w3/run-w3.ts scripts/load-harness/w3/create-fixture.ts` — every required var in that list must appear in the launch metadata before `started=1` is recorded.

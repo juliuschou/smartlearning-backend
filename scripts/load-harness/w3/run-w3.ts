@@ -38,6 +38,7 @@ import {
   type EventTraceRollup,
   type TraceSnapshot,
 } from './trace-client';
+import { validateTracePreflight } from './trace-preflight';
 
 type QuestionType = 'poll' | 'quiz';
 
@@ -182,18 +183,27 @@ async function main(): Promise<void> {
   const toRel = (t: number) => t - runStart;
   const http = new LoadHttpClient(baseUrl, timeoutMs, undefined, fx.runId);
   const op = createOperation('w3', 'http');
-  const pg = new Client({ connectionString: databaseUrl });
-  await pg.connect();
 
-  // Diagnostic trace (optional): when the backend was started with
-  // REALTIME_TRACE_ENABLED=1 and this run's id, fetch server-side emit evidence
-  // so a missing receipt can be attributed to the exact layer that dropped it.
-  // Absent/disabled tracing is surfaced as `enabled=false` and never treated as
-  // "the server did not emit" (see trace-client.ts).
+  // Formal diagnostics must prove the backend is recording this exact run before
+  // any database connection, fixture mutation, or socket workload begins.
+  const traceRequired = process.env.W3_TRACE === '1';
   const traceEnabled = process.env.W3_TRACE !== '0';
   const traceClient = traceEnabled
     ? new TraceClient(baseUrl, fx.runId, runStart, timeoutMs)
     : undefined;
+  if (traceRequired && traceClient) {
+    const preflight = validateTracePreflight(
+      await traceClient.fetch(),
+      fx.runId,
+    );
+    if (!preflight.ok)
+      throw new Error(
+        `W3 trace preflight blocked: ${preflight.reason} (${preflight.detail})`,
+      );
+  }
+
+  const pg = new Client({ connectionString: databaseUrl });
+  await pg.connect();
   let phaseBTrace: TraceSnapshot | undefined;
   let phaseCTrace: TraceSnapshot | undefined;
   const traceRollups = (
@@ -214,7 +224,10 @@ async function main(): Promise<void> {
     const rollup = traceRollups(snapshot).get(eventSeq);
     return {
       traceEnabled: true,
-      coverageComplete: (snapshot.stats?.droppedCount ?? 0) === 0,
+      coverageComplete:
+        snapshot.stats !== undefined &&
+        snapshot.runId === fx.runId &&
+        snapshot.stats.droppedCount === 0,
       // No publisher-phase record for this eventSeq at all → the row was
       // claimed/delivered outside this trace's attribution scope.
       hasPublisherRecord: rollup !== undefined,
@@ -1233,6 +1246,9 @@ function summarizeTrace(snapshot: TraceSnapshot | undefined) {
     fetchedAtMs: snapshot.fetchedAtMs,
     records: snapshot.records.length,
     stats: snapshot.stats ?? null,
-    coverageComplete: (snapshot.stats?.droppedCount ?? 0) === 0,
+    coverageComplete:
+      snapshot.stats !== undefined &&
+      snapshot.runId === snapshot.stats.runId &&
+      snapshot.stats.droppedCount === 0,
   };
 }

@@ -5596,3 +5596,94 @@ Per question type (poll / open_text / quiz)，各自 fresh fixture/run：
 - Fixture artifact proves course `01a0c9c1-974c-74c1-a31b-bb2b26145faf`, question `01a0c9c1-975a-74b9-b001-5a7ee5faff68`, session question `01a0c9c1-9794-737a-9f8b-e50e0a13436d`; participant IDs are present in the W3 report, but durable FK rows, account/web session, selection, events, submissions, and validation-token counts require live DB access.
 - Read-only source audit completed. Submission transaction is `TransactionService.run()` and post-commit wake is at `submission.service.ts:104-104` and `317-327`; durable event creation is inside that transaction at `:283-297`. Publisher claim uses its own Prisma transaction at `live-session-publisher.ts:269-315`, with `NOT EXISTS` predecessor ordering, `FOR UPDATE SKIP LOCKED`, `LIMIT BATCH_SIZE`; dispatch/ack are sequential at `:184-216`. W3's 23.3s vote timing includes concurrent submission scheduling, the 1s durable-row drain poll and 2s tail settle (`run-w3.ts:570-590`), and result receipt measurement; it is not a pure publisher latency metric.
 - Timing audit status: available boundaries are client request start/response end, durable row `server_timestamp`/`claimed_at`/`delivered_at`, publisher trace claim/dispatch-return/mark-delivered, and client receipt; missing are request-received, transaction begin/end, exact commit, event visibility, and direct event-to-submission commit correlation. Minimal instrumentation should add correlation/timestamps at the HTTP boundary, transaction wrapper, outbox append/commit path, and publisher claim/ack, without changing behavior.
+
+### 2026-09-25 W3 exact cleanup + exactly-one fresh rerun
+
+#### Authorization and acceptance criteria
+
+- Authorized old run: `w3fresh-20260924T152904Z-dd7baaa`; exact cleanup is limited to rows proven by exact IDs, FK ownership, execution-equivalent rolled-back DELETE, and per-table delete-set hashes in `smartlearning_test`.
+- Protected exclusions: `cp3-admin`, four historical `local-w1-w3*` accounts created around 2026-09-20 23:02–23:07, and their two historical web sessions. After discovery, all comparisons must use exact IDs; no wildcard/prefix deletion is permitted.
+- Authorized fresh work: one fixture provisioning attempt and exactly one 300-participant W3 driver invocation. No second driver invocation, fresh-run cleanup, historical cleanup, DB recreate, `DROP`, `TRUNCATE`, volume reset, Docker prune, production/diagnostics/load-driver/schema/migration changes, commit, or push.
+- Historical evidence language remains neutral: backend PID attribution discrepancy / attempted duplicate backend start; HTTP 409 cause unresolved; 600 participant identities / 602 sockets / 300 timing records is an unresolved observation. The interrupted run remains `FRESH W3: BLOCKED` because no authoritative report or exit-code artifact exists.
+
+#### Working notes
+
+- Immutable source: `artifacts/w3-diag/w3fresh-20260924T152904Z-dd7baaa/`.
+- Cleanup evidence: `artifacts/w3-diag/cleanup-w3fresh-20260924T152904Z-dd7baaa-20260924T171514Z/`.
+- Initial process inventory: PIDs 47689 and 48072 are gone; port 3001 is free; no candidate backend/publisher process was found.
+- Initial DB authority: `smartlearning_test`, schema `public`, PostgreSQL at `172.17.0.2:5432`, not in recovery; 21 `_prisma_migrations` history rows consist of 20 successful current applications plus one rolled-back attempt/reapplication pair; `bootstrap_completed={completed:true}`.
+- Immutable artifact hashes were captured in `source-hashes-before.json`; no source artifact was changed.
+
+#### Risk & rollback
+
+- **Risk: high** — destructive test-DB cleanup plus one irreversible load-driver invocation.
+- Before cleanup commit, any DB/protected/delete-set/process drift requires `ROLLBACK` and stop. After commit, unexpected mismatch requires evidence preservation and stop; do not synthesize replacement rows.
+- Fresh fixture rows are retained. The owned backend is stopped only after final report/trace/DB evidence is captured.
+
+#### Results
+
+- [x] Freeze exact creator and protected account/session baseline. Eligible creator: `cp3-admin` / `01a0bd6f-f4ed-7486-83de-847c336f6d95`, `admin`, `active`. Protected baseline contains `cp3-admin`, four exact historical local-W1/W3 teacher IDs, two historical teacher web sessions, and two `cp3-admin` web sessions.
+- [x] Build exact manifest and per-table delete-set hashes. Manifest hash: `85a329be3fdb6d1562c2c65c24c06fc591619b39cae19bb864c38f9b6c0b8be2`; all auxiliary/blocker sets were empty.
+- [x] Run execution-equivalent rolled-back DELETE and verify rollback restoration. Every returned ID/count/hash matched the manifest; protected hash remained `9554ecc836cc2ec9c0dedd921fb373bfa9539b54c9af45b62443e1217e309747`; rollback restored the identical manifest hash.
+- [x] Recheck drift, commit identical exact cleanup, and verify protected rows unchanged. Deleted: account 1, web sessions 3, course 1, question 1, question options 3, live session 1, selection 1, session question 1, session options 3, participants 600, submissions 300, events 905, event sequence 1. Post-cleanup exact counts are zero. Protected canonical projection hash is unchanged. Original aborted-run artifact hashes are unchanged.
+- [x] Build artifact verified: `npm run build` produced `dist/src/main.js`; `build.exitcode` is `0`. A subagent summary incorrectly reported exit 1, but the authoritative captured exit-code artifact and runtime output both prove build success.
+- [x] Start one owned diagnostics backend: child/listener/trace PID `84917`; backend instance `01a0d7c1-f92c-7446-a4e3-bdcf4366cafd`; trace service `01a0d7c1-f9c6-7723-bb52-40d0136154d9`; gateway `01a0d7c1-f9d2-77bd-bc47-bf1d363974d1`; publisher `01a0d7c1-f9d2-77bd-bc47-c2787528874e`; process start `2026-09-25T08:50:08.009Z`. Listener and trace identities matched, readiness passed, mismatched run returned zero records, and the test DB had one expected client.
+- [ ] Provision fresh fixture — **NOT STARTED**.
+- [ ] Execute fresh W3 driver — **NOT STARTED; driver invocation count remains 0**.
+
+#### Fresh-run stop condition
+
+- The trace preflight revealed `bufferSize=5000`. The immediately preceding 300-participant interrupted run retained 5,451 records, so a comparable run would risk trace drops and could not meet the authorized full-attribution evidence requirement.
+- This was discovered before fixture provisioning and before the driver invocation marker changed. Per the no-replacement-backend rule, the owned backend was stopped gracefully and was not restarted. Exit `143` records the intentional SIGTERM; PID 84917 is gone and port 3001 is free.
+- Result: **FRESH W3: BLOCKED — TRACE BUFFER PREFLIGHT INSUFFICIENT**. No authoritative driver report exists because no driver was invoked. Functional, trace reconciliation, attribution, and performance conclusions for a new run are `INSUFFICIENT EVIDENCE`.
+- Fresh artifact path: `artifacts/w3-diag/w3fresh-20260925T084758Z-dd7baaa/`. No fixture, credential, fresh DB rows, or report was created.
+
+#### Explicit exclusions
+
+- Second fresh W3 invocation: NO; first invocation also NO.
+- DB recreate / DROP / TRUNCATE / historical cleanup / `cp3-admin` mutation / Docker prune: NO.
+- Production behavior / diagnostics / load-driver / schema / migration modification: NO.
+- Commit / push: NO.
+
+### 2026-09-25 W3 fresh 300-participant rerun (buffer 20000) — Results
+
+- Run: `w3fresh-20260925T114000Z-dd7baaa` (artifacts/`w3-diag/w3fresh-20260925T114000Z-dd7baaa/`). Prior blocked-preflight artifact `w3fresh-20260925T084758Z-dd7baaa` untouched.
+- Authorization: 1 backend restart (used: 1, PID 91145, bufferSize 20000, dropped 0), 1 fixture provisioning (used: 1, exit 0), 1 W3 driver (invocation 1 exit 2 pre-spawn arg validation, zero traffic; user authorized one retry — retry exit 0).
+- **Formal verdict: correctness=FAIL, performance=FAIL** (driver exit 0, report hash 0c6918700eef6396872f62f56904e77947c04c0c65b9c80ce8c84a703b5c3bc9).
+- Functional: 300/300 connected/joined; 150 submissions, DB exact (50/50/50); no forbidden delivery; no vote leakage before close.
+- Trace reconciliation (2393 records, 0 dropped, single backend 91145, single publisher `01a0d85e-92dd-71f1-8e1a-7a357ea1fc65`): all 150 vote events have full claim→dispatch→emit trace; DB delivered 454/455, coalesced 0, attempt dist {1:454, 5:1}.
+- **New finding (fresh, reproducible anomaly): close fan-out event seq 455 dead-lettered after 5 transient `PrismaClientKnownRequestError` dispatch failures** → 9/301 close recipients missing (p286–p299 tail); 224 clients got exactly 5 duplicate copies (retry broadcast per attempt before the dead transition), 14 got 3–4, 11 got 2. Trace shows `leaseTransition=reclaimed`, `oldClaimOwnerEvidenceGap=true`, dispatch throw = PrismaClientKnownRequestError, then `transitionTo=dead`. Backend log: "Durable realtime event dispatch failed … state:retry" attempts 1–5 then "Could not notify realtime recovery … reason:dead".
+- Driver-side attribution gap: the trace service's internal runId defaults to its instanceId (`REALTIME_TRACE_RUN_ID` was not set at backend start), so the driver's trace fetches (runId=w3fresh-…) returned 0 records → phaseB classified all 150 as `UNRESOLVED_DELIVERED_NO_PUBLISHER_RECORD`. This is a harness/endpoint contract mismatch, not a delivery failure — the full trace under the internal runId shows publisher+emit coverage for every delivered event. Recommendation: set `REALTIME_TRACE_RUN_ID=<runId>` at backend start next time.
+- Performance: voteToReveal p95 424.0s / p99 429.9s (vs 2s/5s thresholds — proxy-based, close-drain window); finalBroadcast p50 1.81s, p95 5.68s, p99 8.77s.
+- Latency conclusion per report: PERFORMANCE FAIL SIGNAL (primary: close-drain waiting on dead-lettered event, 900s cap; secondary: submit-phase serialization).
+- Backend stopped (PID 91145, TERM, port 3001 free). Credential deleted 12:27:47Z. Fresh DB rows retained. Historical `6d2aa3f3` attribution remains independent; this run does not prove or disprove it. No commit, no push.
+
+### 2026-09-25 W3 fresh 300-participant rerun (buffer 20000) — Results
+
+- Run `w3fresh-20260925T114000Z-dd7baaa`; artifacts `artifacts/w3-diag/w3fresh-20260925T114000Z-dd7baaa/` (49 files incl. report+trace hashes). Prior `w3fresh-20260925T084758Z-dd7baaa` (BLOCKED) untouched.
+- Authorization: backend restart 1/1 (PID 91145, bufferSize 20000, dropped 0, EXPECTED_BACKEND_ONLY); fixture provisioning 1/1 (exit 0, first attempt exit 2 = LOAD_CORS_ORIGIN preflight, no rows written); driver 1/1 (invocation 1 exit 2 pre-spawn arg validation, zero traffic; user-authorized retry exit 0).
+- **Formal verdict: correctness=FAIL, performance=FAIL** (report sha256 0c691870...3bc9).
+- Functional: 300/300 connected+joined; 150 submissions, DB exact 50/50/50; phaseA leakage=false, forbiddenDelivery=0, votePermanentMissing=0, all 150 votes client-received.
+- **Reproduced anomaly (fresh attribution resolved): close fan-out seq 455 dead-lettered.** Trace publisher record: attemptNumber 5, leaseTransition=reclaimed (newPublisherInstanceId = same 01a0d85e-92dd-71f1-8e1a-7a357ea1fc65), dispatchThrew PrismaClientKnownRequestError on all 5 attempts, transitionTo=dead, oldClaimOwnerEvidenceGap=true. Backend log shows 5 "dispatch failed / state retry|dead / failureClass transient" then "Could not notify realtime recovery reason dead". Result: 9/301 close recipients missing (p286–p299), 286 clients got 2–5 duplicate close copies (224×5) because the gateway re-emitted on each retry. Root cause of the Prisma error not identifiable from redacted logs — needs a diagnostics follow-up (capture error.code/meta).
+- Trace reconciliation (§20): 2393 records, 0 dropped, dispatchedEventCount 455; DB 454 delivered + 1 dead; DELIVERED WITH DISPATCH TRACE 454/454; CLAIMED WITHOUT DISPATCH 0; DISPATCHED WITHOUT DELIVERED 0; COALESCED_SUPPRESSED 0; NOT CLAIMED 0; attempt dist {1:454, 5:1}; lease reclaims 1 (same publisher). Single backendInstanceId (923a-…), single publisherInstanceId (92dd-…), single processId 91145.
+- Driver attribution gap (new): trace service internal runId defaults to instanceId unless REALTIME_TRACE_RUN_ID is set at backend start; driver queried runId=w3fresh-20260925T114000Z-dd7baaa → 0 records → phaseB marked all 150 UNRESOLVED_DELIVERED_NO_PUBLISHER_RECORD. Full trace under internal runId shows publisher+emit coverage for all 150 votes. Recommendation: set REALTIME_TRACE_RUN_ID next diagnostics backend start.
+- Performance: voteToReveal p95 424.0s/p99 429.9s (proxy, close-drain window); finalBroadcast p50 1.81s/p95 5.68s/p99 8.77s (threshold p95 2s/p99 5s → FAIL). closeDrainMs 900446 (hit 900s cap due to dead-lettered row).
+- Historical `6d2aa3f3`: independent; this fresh run's anomaly is a different, now-reproduced signature (claim→dispatch-throw→dead, no second publisher evidence — publisherInstanceIds singleton).
+- Backend stopped gracefully 12:29Z; port 3001 free; no driver procs. Credential deleted 12:27:47Z (mode 600). Fresh DB rows retained. No commit, no push.
+
+### 2026-09-25 W3 Phase D2 — Fix A+B implementation
+
+- [x] Fix A: added shared W3 run-ID contract (`W3_RUN_ID` + `REALTIME_TRACE_RUN_ID`) and a repository-owned `scripts/run-w3.ts` orchestrator; formal diagnostics preflight blocks before fixture/driver on disabled trace, mismatch, undersized buffer, or dropped records.
+- [x] Fix A: strict trace mismatch behavior remains unchanged; unavailable trace no longer reports `coverageComplete=true`; fixture requires an explicit `W3_RUN_ID` when diagnostics are mandatory.
+- [x] Fix B: added bounded Prisma diagnostic projection (`errorType`, `prismaCode`, optional `databaseCode`) without persisting message, stack, full meta, SQL, credentials, tokens, or PII; publisher retry/dead-letter control flow is unchanged.
+- [x] Verification: targeted diagnostics Jest 2 suites / 35 tests PASS; `npm run load:w3:unit` PASS; `npm run typecheck` PASS; remaining lint/format/diff checks pending final report.
+- Fix C remains design-review-only; no backend, fixture, W3, DB mutation, cleanup, commit, or push performed.
+
+### 2026-09-26 W3 Phase D3 — Unit / integration reproduction gate
+
+- [x] Gate 1: publisher-boundary synthetic `PrismaClientKnownRequestError` reproduced through `processBatch → dispatchTraced → recordDispatchThrew → markFailure`; trace captured `errorType=PrismaClientKnownRequestError`, `prismaCode=P2010`, `databaseCode=40P01`, with unsafe message/meta excluded.
+- [x] Gate 2: deterministic two-recipient gateway test reproduced partial socket side effect before whole dispatch rejection using a deferred barrier and controlled Prisma error.
+- [x] Gate 3: replaying the same durable event after the first failure produced duplicate delivery to the recipient that emitted before failure; event payload identity remained unchanged. `WHOLE-EVENT RETRY DUPLICATE: REPRODUCED`.
+- [x] Gate 4: import-safe orchestrator contract test proved shared run ID propagation and blocked fixture/driver on disabled, mismatched, undersized, and dropped trace preflight states.
+- [x] Stability: gateway reproduction PASS 3/3 with no flakiness; full unit suite PASS (64 suites / 452 tests); `npm run load:w3:unit`, typecheck, lint, format, and `git diff --check` PASS.
+- Historical seq455 exact Prisma operation/code remains `NOT CAPTURED`; synthetic reproduction does not claim the historical root cause. No backend, fixture, W3, DB mutation, cleanup, commit, or push performed.
