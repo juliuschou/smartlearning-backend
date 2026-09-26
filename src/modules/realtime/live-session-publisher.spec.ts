@@ -1,8 +1,9 @@
-import type { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client';
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { LiveGateway } from './live-gateway';
 import { LiveSessionEventBus } from './live-session-event-bus';
 import { LiveSessionPublisher } from './live-session-publisher';
+import { RealtimeTraceService } from './diagnostics/realtime-trace.service';
 import {
   RealtimeDeliveryState,
   RealtimeEvent,
@@ -77,6 +78,7 @@ type Harness = {
   metrics: {
     recordRealtimePublishFailure: jest.Mock;
   };
+  trace?: RealtimeTraceService;
 };
 
 function makeRow(overrides: Partial<RawRow> = {}): RawRow {
@@ -111,6 +113,7 @@ function makeRow(overrides: Partial<RawRow> = {}): RawRow {
 function makeHarness(
   row = makeRow(),
   metrics = { recordRealtimePublishFailure: jest.fn() },
+  trace?: RealtimeTraceService,
 ): Harness {
   const transaction = { $queryRaw: jest.fn().mockResolvedValue([row]) };
   const database: FakeDatabase = {
@@ -137,8 +140,9 @@ function makeHarness(
     new LiveSessionEventBus(),
     gateway as unknown as LiveGateway,
     metrics as never,
+    trace,
   );
-  return { publisher, database, transaction, gateway, metrics };
+  return { publisher, database, transaction, gateway, metrics, trace };
 }
 
 describe('LiveSessionPublisher', () => {
@@ -183,6 +187,54 @@ describe('LiveSessionPublisher', () => {
       );
     } finally {
       jest.useRealTimers();
+    }
+  });
+
+  it('captures Prisma diagnostics at the gateway dispatch boundary', async () => {
+    const originalEnv = { ...process.env };
+    process.env.REALTIME_TRACE_ENABLED = '1';
+    process.env.REALTIME_TRACE_RUN_ID = 'publisher-repro';
+    const trace = new RealtimeTraceService();
+    const harness = makeHarness(
+      makeRow({ attempt_count: 1 }),
+      undefined,
+      trace,
+    );
+    const error = new Prisma.PrismaClientKnownRequestError('raw message', {
+      code: 'P2010',
+      clientVersion: '7.9.1',
+      meta: { code: '40P01', message: 'raw SQL detail' },
+    });
+    harness.gateway.dispatchDurableEvent.mockRejectedValueOnce(error);
+
+    try {
+      await expect(
+        harness.publisher.processBatch(new Date('2026-08-28T00:01:00.000Z')),
+      ).resolves.toBe(1);
+
+      expect(harness.gateway.dispatchDurableEvent).toHaveBeenCalledTimes(1);
+      expect(harness.database.liveSessionEvent.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            deliveryState: RealtimeDeliveryState.RETRY,
+            lastFailureClass: 'transient',
+          }),
+        }),
+      );
+      const [record] = trace.snapshot('publisher-repro', {
+        eventId: EVENT_ID,
+      }).records;
+      expect(record?.gatewayDispatchCalled).toBe(true);
+      expect(record?.gatewayDispatchReturnedMonoMs).toBeUndefined();
+      expect(record?.dispatchThrew).toEqual({
+        errorType: 'PrismaClientKnownRequestError',
+        prismaCode: 'P2010',
+        databaseCode: '40P01',
+      });
+      expect(record?.transitionTo).toBe('retry');
+      expect(JSON.stringify(record)).not.toContain('raw SQL detail');
+    } finally {
+      process.env = originalEnv;
     }
   });
 

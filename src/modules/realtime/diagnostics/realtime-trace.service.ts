@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { newId } from '../../../common/crypto';
-import { errorType } from '../../../common/observability';
+import {
+  errorType,
+  projectDiagnosticError,
+} from '../../../common/observability';
 import { realtimeRuntimeIdentity } from './realtime-runtime-identity';
 import {
   REALTIME_TRACE_SCHEMA_VERSION,
@@ -209,7 +212,7 @@ export class RealtimeTraceService {
     if (!this.enabled) return;
     this.safe(() => {
       const record = this.recordByKey.get(publisherKey(eventId));
-      if (record) record.dispatchThrew = { errorType: errorType(error) };
+      if (record) record.dispatchThrew = projectDiagnosticError(error);
     });
   }
 
@@ -417,6 +420,7 @@ export class RealtimeTraceService {
       if (record) {
         record.emitReturned = false;
         record.deliveryErrorType = errorType(error);
+        record.deliveryError = projectDiagnosticError(error);
       }
     });
   }

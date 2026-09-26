@@ -39,7 +39,11 @@ export interface TraceRecord {
   dispatchStartMonoMs?: number;
   gatewayDispatchCalled?: boolean;
   gatewayDispatchReturnedMonoMs?: number;
-  dispatchThrew?: { errorType: string };
+  dispatchThrew?: {
+    errorType: string;
+    prismaCode?: string;
+    databaseCode?: string;
+  };
   transitionTo?: string;
   transitionWallIso?: string;
   coalescedByEventId?: string;

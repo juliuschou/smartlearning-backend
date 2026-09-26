@@ -1,3 +1,4 @@
+import { Prisma } from '../../../generated/prisma/client';
 import { LiveGateway } from './live-gateway';
 import { SESSION_COOKIE_NAME } from '../../common/security';
 import {
@@ -517,6 +518,95 @@ describe('LiveGateway durable visibility', () => {
     hold.resolve();
     await Promise.all([firstDelivery, eventDelivery]);
     expect(remoteSocket.emit).toHaveBeenCalledTimes(1);
+  });
+
+  it('replays a whole close event after partial Prisma fan-out failure', async () => {
+    const firstEmit = deferred();
+    const firstSocket = {
+      id: 'socket-close-a',
+      data: {
+        auth: {
+          kind: 'participant' as const,
+          participantId: PARTICIPANT_ID,
+          liveSessionId: LIVE_SESSION_ID,
+        },
+      },
+      emit: jest.fn(() => {
+        firstEmit.resolve();
+        return true;
+      }),
+      disconnect: jest.fn(),
+    };
+    const secondSocket = {
+      id: 'socket-close-b',
+      data: {
+        auth: {
+          kind: 'participant' as const,
+          participantId: OTHER_PARTICIPANT_ID,
+          liveSessionId: LIVE_SESSION_ID,
+        },
+      },
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+    const releaseSecond = deferred();
+    let retrying = false;
+    const prismaError = new Prisma.PrismaClientKnownRequestError(
+      'controlled failure',
+      { code: 'P2010', clientVersion: '7.9.1', meta: { code: '40P01' } },
+    );
+    const gateway = Object.create(LiveGateway.prototype) as unknown as {
+      deliveryQueues: Map<string, Promise<void>>;
+      server: { in(room: string): { fetchSockets(): Promise<unknown[]> } };
+      reauthorizeParticipant: jest.Mock;
+      dispatchDurableEvent(event: unknown): Promise<void>;
+    };
+    gateway.deliveryQueues = new Map();
+    gateway.server = {
+      in: jest.fn().mockReturnValue({
+        fetchSockets: jest.fn().mockResolvedValue([firstSocket, secondSocket]),
+      }),
+    };
+    gateway.reauthorizeParticipant = jest.fn(async (socket: { id: string }) => {
+      if (socket.id === firstSocket.id || retrying) return true;
+      await releaseSecond.promise;
+      throw prismaError;
+    });
+
+    const event = {
+      id: '0190c6b8-0000-7000-8000-000000000004',
+      eventName: RealtimeEvent.SESSION_CLOSED,
+      liveSessionId: LIVE_SESSION_ID,
+      eventSeq: 42n,
+      aggregateVersion: 3,
+      serverTimestamp: new Date('2026-08-28T00:00:00.000Z'),
+      projectionInput: { status: 'closed' },
+      visibility: RealtimeVisibility.SESSION,
+      targetParticipantId: null,
+    };
+
+    const firstDispatch = gateway.dispatchDurableEvent(event);
+    await firstEmit.promise;
+    expect(firstSocket.emit).toHaveBeenCalledTimes(1);
+    expect(secondSocket.emit).not.toHaveBeenCalled();
+
+    releaseSecond.resolve();
+    await expect(firstDispatch).rejects.toBe(prismaError);
+
+    retrying = true;
+    await gateway.dispatchDurableEvent(event);
+
+    expect(firstSocket.emit).toHaveBeenCalledTimes(2);
+    expect(secondSocket.emit).toHaveBeenCalledTimes(1);
+    const firstPayload = (firstSocket.emit.mock.calls[0] as unknown[])[1] as {
+      eventSeq: string;
+      liveSessionId: string;
+    };
+    const retryPayload = (firstSocket.emit.mock.calls[1] as unknown[])[1] as {
+      eventSeq: string;
+      liveSessionId: string;
+    };
+    expect(retryPayload).toMatchObject(firstPayload);
   });
 
   it('fails closed when participant socket enumeration fails', async () => {

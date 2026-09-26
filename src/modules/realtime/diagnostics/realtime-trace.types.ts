@@ -11,6 +11,8 @@
  * codes, cookies, passwords, account ids and display names cannot enter it.
  */
 
+import type { DiagnosticErrorProjection } from '../../../common/observability';
+
 export const REALTIME_TRACE_SCHEMA_VERSION = 1 as const;
 
 /** Which pipeline leg produced a record. */
@@ -80,7 +82,7 @@ export interface RealtimeTraceRecord {
   /** True once `dispatchDurableEvent` was entered for this row. */
   gatewayDispatchCalled?: boolean;
   gatewayDispatchReturnedMonoMs?: number;
-  dispatchThrew?: { errorType: string };
+  dispatchThrew?: DiagnosticErrorProjection;
   transitionTo?: RealtimeTraceTransition;
   transitionWallIso?: string;
   coalescedByEventId?: string;
@@ -134,6 +136,7 @@ export interface RealtimeTraceRecord {
   emitReturned?: boolean;
   deliveryOutcome?: 'fulfilled' | 'rejected';
   deliveryErrorType?: string;
+  deliveryError?: DiagnosticErrorProjection;
   /** Deliveries already queued ahead of this one on the same socket. */
   queuedBehind?: number;
 }

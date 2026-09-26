@@ -8,7 +8,7 @@ import {
 import { performance } from 'node:perf_hooks';
 import { Prisma } from '../../../generated/prisma/client';
 import { newId } from '../../common/crypto';
-import { errorType } from '../../common/observability';
+import { errorType, projectDiagnosticError } from '../../common/observability';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   LiveSessionEventBus,
@@ -444,7 +444,7 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
         attempt: row.attempt_count,
         state: deliveryState,
         failureClass,
-        error: error instanceof Error ? error.name : 'unknown',
+        ...projectDiagnosticError(error),
       },
       'Durable realtime event dispatch failed',
     );

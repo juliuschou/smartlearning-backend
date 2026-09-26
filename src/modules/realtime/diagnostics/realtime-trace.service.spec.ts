@@ -1,3 +1,4 @@
+import { Prisma } from '../../../../generated/prisma/client';
 import { RealtimeTraceService } from './realtime-trace.service';
 
 /**
@@ -345,6 +346,26 @@ describe('RealtimeTraceService', () => {
       service.recordDispatchThrew('e1', new TypeError('bad'));
       const [record] = service.snapshot('run-a', { eventId: 'e1' }).records;
       expect(record?.dispatchThrew).toEqual({ errorType: 'TypeError' });
+    });
+
+    it('projects safe Prisma fields on a dispatch throw', () => {
+      const service = enable();
+      seedClaim(service, 'e1', '1');
+      service.recordDispatchThrew(
+        'e1',
+        new Prisma.PrismaClientKnownRequestError('raw message', {
+          code: 'P2010',
+          clientVersion: '7.9.1',
+          meta: { code: '40P01', message: 'raw SQL detail' },
+        }),
+      );
+      const [record] = service.snapshot('run-a', { eventId: 'e1' }).records;
+      expect(record?.dispatchThrew).toEqual({
+        errorType: 'PrismaClientKnownRequestError',
+        prismaCode: 'P2010',
+        databaseCode: '40P01',
+      });
+      expect(JSON.stringify(record)).not.toContain('raw SQL detail');
     });
 
     it('creates a claim-only record at claim time before any dispatch', () => {
