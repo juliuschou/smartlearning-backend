@@ -130,4 +130,24 @@ Record skipped or blocked DB-backed checks and their reason in `tasks/todo.md`; 
 
 # Project Instructions
 
-請遵循 `.claude/rules/` 中的所有專案規則。
+在執行任何操作前，請先讀取目前專案的 `.claude/rules/`，列出本次任務適用的規則，並以這些規則作為後續執行邊界。
+
+任何涉及 **Container、Docker / Rancher Desktop、Database、Redis、測試基礎設施、fixture、integration / E2E / load test** 的建立、修改、啟動、停止、清理或其他可能改變狀態的操作，都必須先完成 preflight。
+
+Preflight 至少確認：
+
+- 目前 repository / branch / revision
+- 執行環境與 `NODE_ENV`
+- Docker / Rancher Desktop runtime 與 Docker context
+- Database / schema 身分
+- Redis / dependency 身分（若適用）
+- Container / process / port ownership
+- 目標資源是否屬於本次 test/run
+- 必須保護、不得修改的既有資源
+- cleanup ownership 與授權範圍
+
+若任何資源的 **身分、用途、環境分類、ownership 或授權範圍不明確**：
+
+`STOP — RESOURCE IDENTITY UNCERTAIN`
+
+不得猜測、不得以名稱（例如 `test`、`qa`、`dev`）推定安全性，也不得先修改後再確認。
