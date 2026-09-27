@@ -68,6 +68,68 @@ const REPLAY_LIMIT = 500;
 const ACCOUNT_REVOCATION_RETRY_INITIAL_MS = 1_000;
 const ACCOUNT_REVOCATION_RETRY_MAX_MS = 30_000;
 
+/**
+ * One durable fan-out leg. `shared` is wired by Fix C Checkpoint B; the other
+ * stages are reserved for the remaining legs.
+ */
+type DurableFanOutStage =
+  | 'shared'
+  | 'teacher_counts'
+  | 'teacher_results'
+  | 'participant_results'
+  | 'session_closed'
+  | 'teacher_snapshot';
+
+/**
+ * Recipient-granular fan-out delivery memory (Fix C): keyed by
+ * `(event.id, stage, socket.id)`. A recorded key means only that this exact
+ * durable event leg completed its per-recipient projection + emit closure
+ * successfully in this LiveGateway process. It is NOT a client ACK, NOT
+ * network-delivery confirmation, NOT proof the socket remains connected, NOT
+ * durable-row DELIVERED state, and NOT an exactly-once transport guarantee.
+ *
+ * Intentionally process-local: it matches process-local socket identity and
+ * the current single-instance realtime assumptions; no multi-instance
+ * exactly-once behavior is claimed. Retention (TTL + bounded capacity) is
+ * duplicate-suppression only: eviction may at worst permit a later duplicate,
+ * it must never permanently skip a recipient. There is deliberately no purge
+ * hook into the publisher: dispatch may resolve while `markDelivered` still
+ * loses its claim, and a lease-expiry redispatch must retain suppression.
+ */
+const FAN_OUT_MEMORY_TTL_MS = 10 * 60 * 1000;
+const FAN_OUT_MEMORY_MAX_EVENTS = 1000;
+
+type FanOutEventMemory = {
+  readonly stages: Map<DurableFanOutStage, Set<string>>;
+  lastServedAtMs: number;
+};
+
+/**
+ * Bounded diagnostic error for one failed durable fan-out recipient leg.
+ * Deliberately NOT a TypeError/RangeError: the unchanged publisher failure
+ * classifier treats it as transient, so the durable row keeps its bounded
+ * whole-row retry path. Carries only routing identifiers — never payload,
+ * projection, or credential data.
+ */
+class DurableFanOutError extends Error {
+  readonly eventId: string;
+  readonly stage: DurableFanOutStage;
+  readonly socketId: string;
+
+  constructor(
+    eventId: string,
+    stage: DurableFanOutStage,
+    socketId: string,
+    cause?: unknown,
+  ) {
+    super(`Durable fan-out recipient failed (stage=${stage}).`, { cause });
+    this.name = 'DurableFanOutError';
+    this.eventId = eventId;
+    this.stage = stage;
+    this.socketId = socketId;
+  }
+}
+
 type DurableRealtimeEvent = Prisma.LiveSessionEventGetPayload<object>;
 
 type SnapshotDeliveryOptions = {
@@ -157,6 +219,8 @@ export class LiveGateway
   private readonly gatewayInstanceId = newId();
   /** Serialize every outbound operation per Socket.IO id. */
   private readonly deliveryQueues = new Map<string, Promise<void>>();
+  /** Process-local per-recipient fan-out delivery memory (see block comment above). */
+  private readonly fanOutMemory = new Map<string, FanOutEventMemory>();
   private accountLifecycleUnsubscribe?: () => void;
 
   @WebSocketServer()
@@ -533,6 +597,75 @@ export class LiveGateway
       // Diagnostics conversion failed; delivery must proceed unaffected.
       return null;
     }
+  }
+
+  // --- durable fan-out delivery memory -------------------------------------
+
+  /**
+   * Lazily pruned on access: expired event entries are dropped and the
+   * per-event memory is refreshed so an actively-retried event stays served.
+   * No timers; capacity is enforced on insert.
+   *
+   * Eviction policy is bounded OLDEST-INSERTION-ORDER eviction (FIFO), not
+   * LRU: a memory hit refreshes `lastServedAtMs` (extending the TTL) but does
+   * not re-insert into the Map, so eviction order is insertion order. Strict
+   * LRU adds no correctness value here — eviction can only ever permit a
+   * later duplicate re-delivery, never a missing one — so FIFO is retained
+   * deliberately.
+   */
+  private fanOutEventMemory(eventId: string, nowMs: number): FanOutEventMemory {
+    const existing = this.fanOutMemory.get(eventId);
+    if (existing) {
+      if (nowMs - existing.lastServedAtMs >= FAN_OUT_MEMORY_TTL_MS) {
+        this.fanOutMemory.delete(eventId);
+      } else {
+        existing.lastServedAtMs = nowMs;
+        return existing;
+      }
+    }
+    const created: FanOutEventMemory = {
+      stages: new Map(),
+      lastServedAtMs: nowMs,
+    };
+    this.fanOutMemory.set(eventId, created);
+    while (this.fanOutMemory.size > FAN_OUT_MEMORY_MAX_EVENTS) {
+      const oldest = this.fanOutMemory.keys().next();
+      if (oldest.done) break;
+      this.fanOutMemory.delete(oldest.value);
+    }
+    return created;
+  }
+
+  /** True when this recipient was already served for this event leg. */
+  private fanOutAlreadyServed(
+    eventId: string,
+    stage: DurableFanOutStage,
+    socketId: string,
+  ): boolean {
+    const entry = this.fanOutMemory.get(eventId);
+    if (!entry) return false;
+    // TTL is enforced on read too: a stale entry must not keep suppressing a
+    // recipient forever just because no later mark touched this event.
+    if (Date.now() - entry.lastServedAtMs >= FAN_OUT_MEMORY_TTL_MS) {
+      this.fanOutMemory.delete(eventId);
+      return false;
+    }
+    return entry.stages.get(stage)?.has(socketId) === true;
+  }
+
+  /** Record one recipient as served after its projection + emit succeeded. */
+  private fanOutMarkServed(
+    eventId: string,
+    stage: DurableFanOutStage,
+    socketId: string,
+  ): void {
+    const memory = this.fanOutEventMemory(eventId, Date.now());
+    let served = memory.stages.get(stage);
+    if (!served) {
+      served = new Set();
+      memory.stages.set(stage, served);
+    }
+    served.add(socketId);
   }
 
   // --- auth ---------------------------------------------------------------
@@ -1253,6 +1386,18 @@ export class LiveGateway
               );
               return;
             }
+            // Fix C: skip the snapshot projection + emit for an already-served
+            // recipient on a redispatch; guards above still ran on this attempt.
+            if (
+              this.fanOutAlreadyServed(
+                event.id,
+                'teacher_snapshot',
+                remoteSocket.id,
+              )
+            ) {
+              this.traceGuard(event, remoteSocket, 'fan_out_served', client);
+              return;
+            }
             try {
               await this.sendSnapshot(
                 remoteSocket as unknown as Socket,
@@ -1264,8 +1409,20 @@ export class LiveGateway
                   serverTimestamp: event.serverTimestamp.toISOString(),
                 },
               );
+              this.fanOutMarkServed(
+                event.id,
+                'teacher_snapshot',
+                remoteSocket.id,
+              );
             } catch (error) {
-              if (!this.isExpectedAuthorizationFailure(error)) throw error;
+              if (!this.isExpectedAuthorizationFailure(error)) {
+                throw new DurableFanOutError(
+                  event.id,
+                  'teacher_snapshot',
+                  remoteSocket.id,
+                  error,
+                );
+              }
               (remoteSocket as unknown as DisconnectableSocket).disconnect(
                 true,
               );
@@ -1348,12 +1505,27 @@ export class LiveGateway
               );
               return;
             }
-            this.emitTraced(
-              remoteSocket,
-              event.eventName,
-              envelope,
-              this.emitContext(event, client),
-            );
+            // Fix C: skip projection + emit for an already-served recipient on
+            // a redispatch; guards above still ran on this attempt.
+            if (this.fanOutAlreadyServed(event.id, 'shared', remoteSocket.id)) {
+              return;
+            }
+            try {
+              this.emitTraced(
+                remoteSocket,
+                event.eventName,
+                envelope,
+                this.emitContext(event, client),
+              );
+              this.fanOutMarkServed(event.id, 'shared', remoteSocket.id);
+            } catch (error) {
+              throw new DurableFanOutError(
+                event.id,
+                'shared',
+                remoteSocket.id,
+                error,
+              );
+            }
           },
           { eventId: event.id, eventName: event.eventName },
         ),
@@ -1428,21 +1600,44 @@ export class LiveGateway
               );
               return;
             }
-            this.emitTraced(
-              socket,
-              RealtimeEvent.SESSION_CLOSED,
-              this.envelope(
+            // Fix C: skip projection + emit for an already-served recipient on
+            // a redispatch; guards above still ran on this attempt.
+            if (
+              this.fanOutAlreadyServed(event.id, 'session_closed', socket.id)
+            ) {
+              return;
+            }
+            try {
+              this.emitTraced(
+                socket,
                 RealtimeEvent.SESSION_CLOSED,
-                this.clientVisibility(client),
-                event.liveSessionId,
-                toEventSeqWire(event.eventSeq),
-                event.aggregateVersion,
-                { status: this.projectionString(event, 'status') ?? 'closed' },
-                event.serverTimestamp.toISOString(),
-              ),
-              this.emitContext(event, client),
-            );
-            setImmediate(() => socket.disconnect(true));
+                this.envelope(
+                  RealtimeEvent.SESSION_CLOSED,
+                  this.clientVisibility(client),
+                  event.liveSessionId,
+                  toEventSeqWire(event.eventSeq),
+                  event.aggregateVersion,
+                  {
+                    status: this.projectionString(event, 'status') ?? 'closed',
+                  },
+                  event.serverTimestamp.toISOString(),
+                ),
+                this.emitContext(event, client),
+              );
+              this.fanOutMarkServed(event.id, 'session_closed', socket.id);
+            } catch (error) {
+              throw new DurableFanOutError(
+                event.id,
+                'session_closed',
+                socket.id,
+                error,
+              );
+            }
+            try {
+              setImmediate(() => socket.disconnect(true));
+            } catch {
+              // Disconnect is best-effort; delivery already succeeded.
+            }
           },
           { eventId: event.id, eventName: event.eventName },
         ),
@@ -1526,10 +1721,18 @@ export class LiveGateway
     }
   }
 
+  /**
+   * Per-recipient result projection + emit, shared by the durable fan-out
+   * (`emitParticipantResults`, which passes a fan-out stage) and the
+   * replay/snapshot path (`emitDurableEventToSocket`, which does not). The
+   * fan-out delivery memory is consulted/updated ONLY when a stage is
+   * supplied, so replay never suppresses and never records delivery.
+   */
   private async emitResultToSocket(
     socket: Socket,
     client: AuthenticatedClient,
     event: DurableRealtimeEvent,
+    fanOutStage?: Extract<DurableFanOutStage, 'participant_results'>,
   ): Promise<void> {
     const sessionQuestionId = this.eventQuestionId(event);
     if (!sessionQuestionId) {
@@ -1581,6 +1784,17 @@ export class LiveGateway
       this.traceGuard(event, socket, 'reauthorize_failed', client);
       return;
     }
+    // Fix C: skip the per-recipient projection + emit for an already-served
+    // recipient on a redispatch; the reveal and recipient guards below still
+    // run on every attempt, and an already-served recipient has previously
+    // passed them.
+    if (
+      fanOutStage !== undefined &&
+      this.fanOutAlreadyServed(event.id, fanOutStage, socket.id)
+    ) {
+      this.traceGuard(event, socket, 'fan_out_served', client);
+      return;
+    }
     try {
       const results = await this.liveSessions.getResults(
         event.liveSessionId,
@@ -1605,11 +1819,16 @@ export class LiveGateway
         ),
         this.emitContext(event, client),
       );
+      if (fanOutStage !== undefined)
+        this.fanOutMarkServed(event.id, fanOutStage, socket.id);
     } catch (error) {
       if (
         !(error instanceof DomainError) ||
         error.code !== 'RESULTS_NOT_REVEALED'
       ) {
+        if (fanOutStage !== undefined) {
+          throw new DurableFanOutError(event.id, fanOutStage, socket.id, error);
+        }
         throw error;
       }
       this.traceGuard(event, socket, 'reveal_gate', client);
@@ -1712,12 +1931,39 @@ export class LiveGateway
               return;
             }
             if (event) {
-              this.emitTraced(
-                remoteSocket,
-                'counts.updated',
-                payload,
-                this.emitContext(event, client),
-              );
+              // Fix C: durable path only — the legacy compatibility path
+              // (event === undefined) has no durable identity and must never
+              // touch the fan-out delivery memory.
+              if (
+                this.fanOutAlreadyServed(
+                  event.id,
+                  'teacher_counts',
+                  remoteSocket.id,
+                )
+              ) {
+                this.traceGuard(event, remoteSocket, 'fan_out_served', client);
+                return;
+              }
+              try {
+                this.emitTraced(
+                  remoteSocket,
+                  'counts.updated',
+                  payload,
+                  this.emitContext(event, client),
+                );
+                this.fanOutMarkServed(
+                  event.id,
+                  'teacher_counts',
+                  remoteSocket.id,
+                );
+              } catch (error) {
+                throw new DurableFanOutError(
+                  event.id,
+                  'teacher_counts',
+                  remoteSocket.id,
+                  error,
+                );
+              }
             } else {
               // trace-exempt: no durable event passed; compatibility-only path.
               remoteSocket.emit('counts.updated', payload);
@@ -1800,12 +2046,39 @@ export class LiveGateway
               remoteSocket.disconnect(true);
               return;
             }
-            this.emitTraced(
-              remoteSocket,
-              RealtimeEvent.RESULT_UPDATED,
-              envelope,
-              this.emitContext(event, client),
-            );
+            // Fix C: skip emit for an already-served recipient on a redispatch;
+            // guards above still ran on this attempt. Projection for this leg
+            // happens once before the fan-out (not per recipient), so no
+            // recipient-specific projection is skipped here.
+            if (
+              this.fanOutAlreadyServed(
+                event.id,
+                'teacher_results',
+                remoteSocket.id,
+              )
+            ) {
+              return;
+            }
+            try {
+              this.emitTraced(
+                remoteSocket,
+                RealtimeEvent.RESULT_UPDATED,
+                envelope,
+                this.emitContext(event, client),
+              );
+              this.fanOutMarkServed(
+                event.id,
+                'teacher_results',
+                remoteSocket.id,
+              );
+            } catch (error) {
+              throw new DurableFanOutError(
+                event.id,
+                'teacher_results',
+                remoteSocket.id,
+                error,
+              );
+            }
           },
           { eventId: event.id, eventName: event.eventName },
         ),
@@ -1902,6 +2175,7 @@ export class LiveGateway
               remoteSocket as unknown as Socket,
               client,
               event,
+              'participant_results',
             );
           },
           { eventId: event.id, eventName: event.eventName },

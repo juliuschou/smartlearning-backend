@@ -437,4 +437,88 @@ describe('LiveSessionPublisher', () => {
       jest.useRealTimers();
     }
   });
+
+  // --- Fix C Checkpoint C: failure-class contract regression ----------------
+
+  /**
+   * Local stand-in for the gateway's `DurableFanOutError` (Fix C): an ordinary
+   * Error subclass that is deliberately NOT a TypeError/RangeError. The
+   * limitation: this does not test the production class itself (it is
+   * intentionally not exported); it regresses the classifier contract the
+   * gateway-generated error relies on — plain Error subclasses are transient.
+   */
+  class FanOutRecipientError extends Error {
+    constructor(
+      readonly eventId: string,
+      readonly stage: string,
+      readonly socketId: string,
+      cause?: unknown,
+    ) {
+      super(`Durable fan-out recipient failed (stage=${stage}).`, { cause });
+      this.name = 'DurableFanOutError';
+    }
+  }
+
+  it('classifies a fan-out recipient error as transient and retries below MAX_ATTEMPTS', async () => {
+    const now = new Date('2026-08-28T00:05:00.000Z');
+    const harness = makeHarness(makeRow({ attempt_count: 2 }));
+    harness.gateway.dispatchDurableEvent.mockRejectedValue(
+      new FanOutRecipientError(
+        EVENT_ID,
+        'participant_results',
+        'socket-1',
+        new Error('emit transport failure'),
+      ),
+    );
+
+    jest.useFakeTimers().setSystemTime(now);
+    try {
+      await expect(harness.publisher.processBatch(now)).resolves.toBe(1);
+
+      expect(harness.database.liveSessionEvent.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: EVENT_ID }),
+          data: expect.objectContaining({
+            deliveryState: RealtimeDeliveryState.RETRY,
+            lastFailureClass: 'transient',
+          }),
+        }),
+      );
+      expect(
+        harness.gateway.notifySyncRequiredForSession,
+      ).not.toHaveBeenCalled();
+      expect(harness.metrics.recordRealtimePublishFailure).toHaveBeenCalledWith(
+        'retry',
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('keeps an unknown-event TypeError permanent with DEAD semantics', async () => {
+    const harness = makeHarness(makeRow({ attempt_count: 1 }));
+    harness.gateway.dispatchDurableEvent.mockRejectedValue(
+      new TypeError('Unknown durable realtime event.'),
+    );
+
+    await expect(
+      harness.publisher.processBatch(new Date('2026-08-28T00:06:00.000Z')),
+    ).resolves.toBe(1);
+
+    expect(harness.database.liveSessionEvent.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          deliveryState: RealtimeDeliveryState.DEAD,
+          lastFailureClass: 'permanent',
+        }),
+      }),
+    );
+    expect(harness.gateway.notifySyncRequiredForSession).toHaveBeenCalledWith(
+      LIVE_SESSION_ID,
+      RealtimeSyncReason.DEAD,
+    );
+    expect(harness.metrics.recordRealtimePublishFailure).toHaveBeenCalledWith(
+      'dead',
+    );
+  });
 });

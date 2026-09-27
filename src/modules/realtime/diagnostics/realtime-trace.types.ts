@@ -32,6 +32,7 @@ export type RealtimeTraceGuard =
   | 'no_target_participant'
   | 'no_session_question'
   | 'recipient_filtered'
+  | 'fan_out_served'
   | 'unknown_event';
 
 export type RealtimeTraceTransition =
