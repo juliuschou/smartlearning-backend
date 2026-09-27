@@ -1,6 +1,16 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { lstat, open, unlink, writeFile } from 'node:fs/promises';
+import {
+  lstat,
+  open,
+  readFile,
+  readdir,
+  realpath,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
+import { promisify } from 'node:util';
+import { Client } from 'pg';
 import {
   createW3RunId,
   w3RunEnvironment,
@@ -10,10 +20,21 @@ import {
   TraceClient,
   type TraceSnapshot,
 } from './load-harness/w3/trace-client';
-import { validateTracePreflight } from './load-harness/w3/trace-preflight';
+import {
+  validateAttributionPreflight,
+  validateTracePreflight,
+  type ExternalCompetitorObservation,
+  type W3AttributionEvidence,
+} from './load-harness/w3/trace-preflight';
+import {
+  inspectProcfsAttribution,
+  type ProcfsAttribution,
+} from './load-harness/w3/procfs-attribution';
 
 /** Bounded capture for a fixture child's streams (descriptor is small). */
 const CHILD_CAPTURE_LIMIT = 64 * 1024;
+const execFileAsync = promisify(execFile);
+const ATTRIBUTION_SCHEMA_VERSION = 1;
 const SECRET_LIKE_DESCRIPTOR_FIELDS = new Set([
   'password',
   'secret',
@@ -47,6 +68,7 @@ export type W3ExitEvidence = {
   startedAt: string;
   finishedAt: string;
   backendPid?: number;
+  attributionFailureCode?: string;
   blockedReason?: string;
 };
 
@@ -62,6 +84,223 @@ function assertSafeTarget(env: NodeJS.ProcessEnv): void {
   if (!env.DATABASE_URL?.includes('smartlearning_test'))
     throw new Error('DATABASE_URL must target smartlearning_test.');
   if (!env.LOAD_CORS_ORIGIN) throw new Error('LOAD_CORS_ORIGIN is required.');
+}
+
+function withApplicationName(
+  databaseUrl: string,
+  applicationName: string,
+): string {
+  const url = new URL(databaseUrl);
+  url.searchParams.set('application_name', applicationName);
+  return url.toString();
+}
+
+function localPort(baseUrl: string, configuredPort: string): number {
+  const url = new URL(baseUrl);
+  if (!['127.0.0.1', 'localhost', '::1'].includes(url.hostname))
+    throw new Error('W3 attribution requires a loopback LOAD_BASE_URL.');
+  const port = Number(url.port || (url.protocol === 'https:' ? 443 : 80));
+  if (!Number.isInteger(port) || port !== Number(configuredPort))
+    throw new Error('LOAD_BASE_URL port does not match PORT.');
+  return port;
+}
+
+function boundedIdentity(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().slice(0, 200);
+}
+
+/**
+ * Ancestry of process.pid via /proc/<pid>/stat PPID chain. These processes
+ * (tsx runner, npm, shell) legitimately contain harness path strings in their
+ * argv and must not be classified as competitors.
+ */
+async function ownAncestry(): Promise<Set<number>> {
+  const ancestry = new Set<number>([process.pid]);
+  let current = process.pid;
+  for (let depth = 0; depth < 32; depth += 1) {
+    let statContent: string;
+    try {
+      statContent = await readFile(`/proc/${current}/stat`, 'utf8');
+    } catch {
+      break;
+    }
+    const end = statContent.lastIndexOf(')');
+    if (end < 0) break;
+    const fields = statContent
+      .slice(end + 1)
+      .trim()
+      .split(/\s+/);
+    const ppid = Number(fields[1]);
+    if (!Number.isInteger(ppid) || ppid <= 0 || ancestry.has(ppid)) break;
+    ancestry.add(ppid);
+    current = ppid;
+  }
+  return ancestry;
+}
+
+async function inspectHostCompetitors(childPid: number): Promise<string[]> {
+  const competitors: string[] = [];
+  const excluded = await ownAncestry();
+  let entries: string[];
+  try {
+    entries = await readdir('/proc');
+  } catch {
+    throw new Error('Host process inventory is unavailable.');
+  }
+  for (const entry of entries.filter((value) => /^\d+$/.test(value))) {
+    const pid = Number(entry);
+    if (pid === childPid || excluded.has(pid)) continue;
+    let command: string;
+    try {
+      command = await readFile(`/proc/${pid}/cmdline`, 'utf8');
+    } catch (error) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        (error as { code?: unknown }).code === 'ENOENT'
+      )
+        continue;
+      throw new Error(`Host process inventory failed for PID ${pid}.`);
+    }
+    const argv = command.split('\0').filter(Boolean);
+    const rendered = argv.join(' ');
+    // Anchor matching on argv path tokens, not anywhere-in-line, to reduce
+    // false positives from incidental substring matches.
+    const isBackend =
+      argv.some((token) => /(?:^|\/)dist\/src\/main(?:\.js)?$/.test(token)) ||
+      argv.some(
+        (token) =>
+          /(?:^|\/)run-w3\.ts$/.test(token) ||
+          token.endsWith('scripts/run-w3.ts'),
+      );
+    if (isBackend) competitors.push(`${pid}:${boundedIdentity(rendered)}`);
+  }
+  return competitors.slice(0, 8);
+}
+
+async function inspectDockerCompetitors(): Promise<string[]> {
+  let ids: string[];
+  try {
+    const { stdout } = await execFileAsync('docker', [
+      'ps',
+      '--no-trunc',
+      '--format',
+      '{{.ID}}',
+    ]);
+    ids = stdout.split(/\r?\n/).filter(Boolean);
+  } catch {
+    throw new Error('Docker competitor inventory is unavailable.');
+  }
+  if (ids.length === 0) return [];
+  const testDbContainer =
+    process.env.W3_TEST_DB_CONTAINER ?? 'smart-learning-pg-test';
+  const { stdout: testNetworksRaw } = await execFileAsync('docker', [
+    'inspect',
+    testDbContainer,
+    '--format',
+    '{{json .NetworkSettings.Networks}}',
+  ]);
+  const testNetworks = new Set(
+    Object.keys(JSON.parse(testNetworksRaw.trim()) as Record<string, unknown>),
+  );
+  const competitors: string[] = [];
+  for (const id of ids) {
+    const { stdout } = await execFileAsync('docker', [
+      'inspect',
+      id,
+      '--format',
+      '{{json .Name}}|{{json .Config.Cmd}}|{{json .NetworkSettings.Networks}}',
+    ]);
+    const first = stdout.indexOf('|');
+    const second = stdout.indexOf('|', first + 1);
+    if (first < 0 || second < 0)
+      throw new Error('Docker competitor inventory returned malformed data.');
+    const name = JSON.parse(stdout.slice(0, first)) as string;
+    const command = JSON.parse(stdout.slice(first + 1, second)) as
+      string[] | null;
+    const networks = Object.keys(
+      JSON.parse(stdout.slice(second + 1).trim()) as Record<string, unknown>,
+    );
+    if (
+      (command ?? []).join(' ').includes('dist/src/main') &&
+      networks.some((network) => testNetworks.has(network))
+    )
+      competitors.push(boundedIdentity(name));
+  }
+  return competitors.slice(0, 8);
+}
+
+async function observeExternalCompetitors(
+  childPid: number,
+  databaseUrl: string,
+  runId: string,
+): Promise<ExternalCompetitorObservation> {
+  const applicationName = `w3-orchestrator-${runId}`.slice(0, 63);
+  const client = new Client({
+    connectionString: withApplicationName(databaseUrl, applicationName),
+  });
+  await client.connect();
+  try {
+    const [sessions, claims, locks, processes, containers] = await Promise.all([
+      client.query<{
+        pid: number;
+        application_name: string;
+        client_addr: string | null;
+      }>(
+        `SELECT pid, application_name, client_addr::text
+           FROM pg_stat_activity
+          WHERE datname = current_database()
+            AND pid <> pg_backend_pid()
+            AND application_name <> $1
+          ORDER BY pid`,
+        [`w3-backend-${runId}`.slice(0, 63)],
+      ),
+      client.query<{ id: string; claim_token: string | null }>(
+        `SELECT id, claim_token
+           FROM live_session_event
+          WHERE delivery_state = 'processing'
+          ORDER BY id
+          LIMIT 9`,
+      ),
+      client.query<{ pid: number; classid: string; objid: string }>(
+        `SELECT pid, classid::text, objid::text
+           FROM pg_locks
+          WHERE locktype = 'advisory' AND granted
+          ORDER BY pid, classid, objid
+          LIMIT 9`,
+      ),
+      inspectHostCompetitors(childPid),
+      inspectDockerCompetitors(),
+    ]);
+    return {
+      observedAtIso: new Date().toISOString(),
+      externalPublisherExclusivity: 'observational',
+      competingProcesses: processes,
+      competingContainers: containers,
+      competingDatabaseSessions: sessions.rows
+        .slice(0, 8)
+        .map((row) =>
+          boundedIdentity(
+            `${row.pid}:${row.application_name || '<empty>'}:${row.client_addr ?? '<local>'}`,
+          ),
+        ),
+      activeOutboxClaims: claims.rows
+        .slice(0, 8)
+        .map((row) =>
+          boundedIdentity(
+            `${row.id}:${row.claim_token ? 'claimed' : 'missing-token'}`,
+          ),
+        ),
+      conflictingAdvisoryLocks: locks.rows
+        .slice(0, 8)
+        .map((row) =>
+          boundedIdentity(`${row.pid}:${row.classid}:${row.objid}`),
+        ),
+    };
+  } finally {
+    await client.end();
+  }
 }
 
 async function waitForHealth(baseUrl: string): Promise<void> {
@@ -380,11 +619,25 @@ export class W3EvidenceWriteError extends Error {
 
 export type W3OrchestratorDependencies = {
   writeEvidence?: (path: string, content: string) => Promise<void>;
+  writeAttribution?: (path: string, content: string) => Promise<void>;
+  beforeAttributionPersist?: (path: string) => Promise<void>;
   beforeDescriptorPersist?: (path: string) => Promise<void>;
   lstat?: typeof lstat;
   startBackend: (env: NodeJS.ProcessEnv) => Promise<ChildProcess>;
   waitForHealth: (baseUrl: string) => Promise<void>;
   fetchTrace: (baseUrl: string, runId: string) => Promise<TraceSnapshot>;
+  fetchMismatchTrace: (
+    baseUrl: string,
+    mismatchedRunId: string,
+  ) => Promise<TraceSnapshot>;
+  inspectProcfs: (pid: number, port: number) => Promise<ProcfsAttribution>;
+  observeExternalCompetitors: (
+    pid: number,
+    databaseUrl: string,
+    runId: string,
+  ) => Promise<ExternalCompetitorObservation>;
+  expectedCwd: string;
+  expectedExecutable: string;
   runFixture: (env: NodeJS.ProcessEnv) => Promise<W3FixtureChildResult>;
   runDriver: (env: NodeJS.ProcessEnv) => Promise<number>;
   stopBackend: (backend: ChildProcess) => Promise<void>;
@@ -400,7 +653,9 @@ export async function orchestrateW3(
   const fixturePath = required('W3_FIXTURE_PATH', sourceEnv);
   const outputPath = required('W3_OUTPUT_PATH', sourceEnv);
   const credentialOut = required('W3_CREDENTIAL_OUT', sourceEnv);
+  const databaseUrl = required('DATABASE_URL', sourceEnv);
   required('LOCAL_W1_PROVISION_CREATED_BY', sourceEnv);
+  const attributionPath = `${outputPath}.attribution.json`;
   const inspectPath = dependencies.lstat ?? lstat;
   // The exit artifact is checked before evidence plumbing exists: an existing
   // evidence file is itself the conflict record and must remain untouched.
@@ -416,9 +671,13 @@ export async function orchestrateW3(
   // Authoritative acceptance scale unless explicitly overridden.
   const participants =
     sourceEnv.W3_PARTICIPANTS ?? String(W3_ACCEPTANCE_PARTICIPANTS);
-  const env = {
+  const env: NodeJS.ProcessEnv = {
     ...w3RunEnvironment(runId, sourceEnv),
     NODE_ENV: 'test',
+    DATABASE_URL: withApplicationName(
+      databaseUrl,
+      `w3-backend-${runId}`.slice(0, 63),
+    ),
     PORT: sourceEnv.PORT ?? '3001',
     LOAD_BASE_URL: baseUrl,
     W3_FIXTURE_PATH: fixturePath,
@@ -456,6 +715,16 @@ export async function orchestrateW3(
       throw new W3EvidenceWriteError(writeError);
     }
   };
+  const writeAttribution = async (
+    attribution: W3AttributionEvidence,
+  ): Promise<void> => {
+    const content = `${JSON.stringify(attribution, null, 2)}\n`;
+    if (dependencies.writeAttribution) {
+      await dependencies.writeAttribution(attributionPath, content);
+      return;
+    }
+    await atomicWriteFile(attributionPath, content, 0o600);
+  };
   const writeEvidencePreserving = async (
     blockedReason: string,
     primary: unknown,
@@ -483,6 +752,11 @@ export async function orchestrateW3(
     await assertPathAbsent(fixturePath, 'fixture descriptor', inspectPath);
     await assertPathAbsent(credentialOut, 'credential', inspectPath);
     await assertPathAbsent(outputPath, 'driver report', inspectPath);
+    await assertPathAbsent(
+      attributionPath,
+      'attribution evidence',
+      inspectPath,
+    );
   };
   try {
     await guards();
@@ -492,21 +766,94 @@ export async function orchestrateW3(
 
   let backend: ChildProcess | undefined;
   try {
+    const spawnStartedAtMs = Date.now();
+    let spawnReadyAtMs = spawnStartedAtMs;
     try {
       backend = await dependencies.startBackend(env);
+      spawnReadyAtMs = Date.now();
       if (backend.pid !== undefined) evidence.backendPid = backend.pid;
     } catch (error) {
       await writeEvidencePreserving('BACKEND_START_FAILED', error);
     }
     await dependencies.waitForHealth(baseUrl);
-    const preflight = validateTracePreflight(
-      await dependencies.fetchTrace(baseUrl, runId),
-      runId,
-    );
-    if (!preflight.ok)
-      throw new Error(
-        `W3 trace preflight blocked: ${preflight.reason} (${preflight.detail})`,
+    const trace = await dependencies.fetchTrace(baseUrl, runId);
+    const preflight = validateTracePreflight(trace, runId);
+    if (!preflight.ok) {
+      evidence.attributionFailureCode = preflight.reason;
+      await writeEvidencePreserving(
+        'ATTRIBUTION_PREFLIGHT_FAILED',
+        new Error(
+          `W3 trace preflight blocked: ${preflight.reason} (${preflight.detail})`,
+        ),
       );
+    }
+    const childPid = backend!.pid!;
+    if (!childPid) {
+      evidence.attributionFailureCode = 'BACKEND_PID_MISSING';
+      await writeEvidencePreserving(
+        'ATTRIBUTION_PREFLIGHT_FAILED',
+        new Error('W3 backend child PID is unavailable.'),
+      );
+    }
+    const port = localPort(baseUrl, env.PORT!);
+    let attribution: W3AttributionEvidence;
+    try {
+      const procfs = await dependencies.inspectProcfs(childPid, port);
+      const mismatchRunId = `w3-mismatch-${randomUUID()}`;
+      const [mismatchTrace, externalObservation] = await Promise.all([
+        dependencies.fetchMismatchTrace(baseUrl, mismatchRunId),
+        dependencies.observeExternalCompetitors(childPid, databaseUrl, runId),
+      ]);
+      attribution = validateAttributionPreflight({
+        childPid,
+        expectedRunId: runId,
+        expectedTraceRunId: env.REALTIME_TRACE_RUN_ID!,
+        expectedCwd: dependencies.expectedCwd,
+        expectedExecutable: dependencies.expectedExecutable,
+        expectedScript: 'dist/src/main.js',
+        spawnStartedAtMs,
+        spawnReadyAtMs,
+        procfs,
+        trace,
+        mismatchTrace,
+        externalObservation,
+      });
+    } catch (error) {
+      // Stable machine-readable code in the typed field; redacted diagnostic
+      // stays on stderr only.
+      process.stderr.write(
+        `W3 attribution inspection failed: ${redactDiagnostic(
+          error instanceof Error ? error.message : '',
+        )}\n`,
+      );
+      evidence.attributionFailureCode = 'ATTRIBUTION_INSPECTION_FAILED';
+      await writeEvidencePreserving('ATTRIBUTION_PREFLIGHT_FAILED', error);
+    }
+    try {
+      await dependencies.beforeAttributionPersist?.(attributionPath);
+      await writeAttribution(attribution!);
+    } catch (error) {
+      const conflict =
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        (error as { code?: unknown }).code === 'EEXIST';
+      await writeEvidencePreserving(
+        conflict
+          ? 'ATTRIBUTION_EVIDENCE_CONFLICT'
+          : 'ATTRIBUTION_EVIDENCE_WRITE_FAILED',
+        error,
+      );
+    }
+    if (attribution!.status !== 'passed') {
+      evidence.attributionFailureCode = attribution!.failureCode;
+      await writeEvidencePreserving(
+        'ATTRIBUTION_PREFLIGHT_FAILED',
+        new Error(
+          `W3 attribution preflight blocked: ${attribution!.failureCode ?? 'unknown'}.`,
+        ),
+      );
+    }
 
     // ---- fixture child: exactly one, captured stdout, no retry ------------
     evidence.fixture.spawned = true;
@@ -582,9 +929,16 @@ export async function orchestrateW3(
 
 async function main(): Promise<void> {
   const sourceEnv = process.env;
+  const repositoryCwd = await realpath(process.cwd());
+  const expectedExecutable = await realpath(process.execPath);
+  const { stdout: clockTicksRaw } = await execFileAsync('getconf', ['CLK_TCK']);
+  const clockTicksPerSecond = Number(clockTicksRaw.trim());
   await orchestrateW3(sourceEnv, {
+    expectedCwd: repositoryCwd,
+    expectedExecutable,
     startBackend: async (env) => {
-      const backend = spawn('node', ['dist/src/main.js'], {
+      const backend = spawn(process.execPath, ['dist/src/main.js'], {
+        cwd: repositoryCwd,
         env,
         stdio: 'inherit',
       });
@@ -597,6 +951,11 @@ async function main(): Promise<void> {
     waitForHealth,
     fetchTrace: (baseUrl, runId) =>
       new TraceClient(baseUrl, runId, 0, 5_000).fetch(),
+    fetchMismatchTrace: (baseUrl, mismatchRunId) =>
+      new TraceClient(baseUrl, mismatchRunId, 0, 5_000).fetchIsolation(),
+    inspectProcfs: (pid, port) =>
+      inspectProcfsAttribution(pid, port, clockTicksPerSecond),
+    observeExternalCompetitors,
     runFixture: (env) =>
       runFixtureChild(
         'node',

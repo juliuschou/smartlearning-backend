@@ -20,10 +20,26 @@
  */
 import { performance } from 'node:perf_hooks';
 
+export interface TraceLifecycleRecord {
+  component:
+    | 'traceService'
+    | 'publisher'
+    | 'publisher-stop'
+    | 'gateway'
+    | 'coalescedAggregate';
+  instanceId: string;
+  constructedAtIso: string;
+  coalescedCount?: number;
+}
+
 export interface TraceRecord {
   schemaVersion: number;
   runId: string;
   instanceId: string;
+  backendInstanceId: string;
+  processId: number;
+  processStartIso: string;
+  hostname: string;
   phase: 'publisher' | 'room' | 'guard' | 'emit' | 'delivery';
   eventId: string;
   eventSeq: string;
@@ -85,6 +101,11 @@ export interface TraceStats {
   schemaVersion: number;
   enabled: boolean;
   instanceId: string;
+  backendInstanceId: string;
+  processId: number;
+  processStartIso: string;
+  hostname: string;
+  lifecycle: TraceLifecycleRecord[];
   runId: string;
   bufferSize: number;
   recordedCount: number;
@@ -127,6 +148,21 @@ export class TraceClient {
   ) {}
 
   async fetch(): Promise<TraceSnapshot> {
+    return this.fetchSnapshot(false);
+  }
+
+  /**
+   * Isolation-only fetch: preserves a successful response queried with another
+   * run ID so preflight can prove it exposes no records or timings. The active
+   * service identity remains in stats and must not be joined to workload data.
+   */
+  async fetchIsolation(): Promise<TraceSnapshot> {
+    return this.fetchSnapshot(true);
+  }
+
+  private async fetchSnapshot(
+    allowRunIdMismatch: boolean,
+  ): Promise<TraceSnapshot> {
     const url = `${this.baseUrl}/api/v1/diagnostics/realtime-trace?runId=${encodeURIComponent(this.runId)}`;
     const fetchedAtMs = (): number => performance.now() - this.runStartMs;
     try {
@@ -173,8 +209,8 @@ export class TraceClient {
           fetchedAtMs: fetchedAtMs(),
         };
       }
-      if (data.stats.runId !== this.runId) {
-        // Never join another run's records into this run's evidence.
+      if (data.stats.runId !== this.runId && !allowRunIdMismatch) {
+        // Never join another run's records into normal workload evidence.
         return {
           enabled: false,
           unavailableReason: `RUN_ID_MISMATCH (${data.stats.runId} != ${this.runId})`,

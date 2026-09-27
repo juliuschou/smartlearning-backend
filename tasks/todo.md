@@ -5823,6 +5823,29 @@ Per question type (poll / open_text / quiz)，各自 fresh fixture/run：
 - Remaining risks: (1) suppression is process-local — a multi-instance deployment still duplicates on redispatch (documented, unchanged scope); (2) TTL/capacity eviction may permit duplicate re-delivery (documented, never missing); (3) full unit suite + DB-backed regression suites deferred to Checkpoint D; (4) `prisma:migrate:status` evidence pending gate3 environment recreation (pre-existing D4.1 follow-up, unrelated to Fix C).
 - **Checkpoint D has NOT started and requires separate approval.**
 
+### 2026-09-27 W3 pre-fixture attribution harness
+
+- [x] Add Linux/WSL procfs child/listener/process attribution without reading process environments.
+- [x] Align harness trace types with existing diagnostics identity/lifecycle fields.
+- [x] Prove one trace service, gateway, and active publisher inside the spawned backend.
+- [x] Add point-in-time host/Docker/PostgreSQL/outbox/advisory-lock competitor observations.
+- [x] Persist fresh exclusive `<W3_OUTPUT_PATH>.attribution.json` before fixture provisioning.
+- [x] Fail closed with fixture/driver counts zero and stop the backend once on every gate failure.
+- [x] Preserve existing final exit-evidence ownership and all run-once/credential/descriptor guarantees.
+- [x] Add focused procfs, preflight, artifact, ordering, and failure-path unit coverage.
+- [x] Run static/unit verification only; do not start a backend, provision a fixture, mutate DB/Redis/Docker, or run formal W3.
+- [x] Complete independent correctness and security reviews.
+
+**Results (unit self-check):** `npx tsx procfs-attribution.spec.ts`, `npx tsx trace-preflight.spec.ts`, `npx tsx run-orchestrator.spec.ts` — all PASS (incl. review fixes: permission-skip + `inaccessibleFdCount` marker with fatal child-fd-denied path, ancestry-excluded/argv-anchored host competitor matching, stable `ATTRIBUTION_INSPECTION_FAILED` typed code, explicit `ATTRIBUTION_EVIDENCE_CONFLICT` blockedReason assertion). Prettier applied to all seven changed TS files. Full static bundle (typecheck/lint/format:check/build/load:w3:unit/full unit suite) deferred to the dedicated verification subagent.
+
+**Review outcome (2026-09-27):** correctness review CONFIRMED 2 gate-blocking defects (EACCES/ELOOP aborted the listener scan; host-competitor regex matched the orchestrator's own tsx/npm ancestors) + 1 classification gap; security review found no confirmed vulnerability. All confirmed findings fixed in-scope (FIX 1–5); full verification bundle re-run: prettier --check / load:w3:unit / typecheck / lint:check / format:check / build / npm test --runInBand (64 suites / 468 tests) / git diff --check — all PASS. Residual accepted findings (documented, not blocking): F3 — `withApplicationName` URL re-serialization can normalize an unencoded-space password differently from pg's own parser (availability, fail-closed, .env.test unaffected); F8 — bounded client_addr of other DB sessions persists into attribution.json (informational disclosure, 8×200 chars); `procfs-attribution.spec.ts` not yet added to `load:w3:unit` chain in package.json (out of authorized file scope; noted for follow-up). Post-driver raw trace freeze intentionally omitted (would need new orchestrator window; reported as remaining limitation).
+
+**Acceptance criteria:** attribution proves child PID = listener PID = trace processId, expected command/cwd/start/run identity, in-process provider singleton, mismatched-run isolation, and `externalPublisherExclusivity = observational`; any ambiguity blocks before fixture creation.
+
+**Risk & rollback:** medium-risk harness-only change. Revert the attribution helper/client/preflight/orchestrator/tests/task entry; no production schema, dependency, database, or infrastructure rollback.
+
+**Working notes:** external publisher evidence is point-in-time observation only, not reservation-backed/global/continuous exclusivity. No production coordination mechanism is in scope.
+
 ### 2026-09-26 W3 Phase D4.1 — Baseline stabilization
 
 - [x] Rules gate: `.claude/rules/container-runtime.md` is the only applicable project rule; no container/DB mutation performed (read-only credential identity check only).

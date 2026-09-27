@@ -18,6 +18,8 @@ import {
 } from '../../../scripts/run-w3';
 import { W3_ACCEPTANCE_PARTICIPANTS } from './run-contract';
 import type { TraceSnapshot } from './trace-client';
+import type { ProcfsAttribution } from './procfs-attribution';
+import type { ExternalCompetitorObservation } from './trace-preflight';
 
 function sourceEnv(dir: string, overrides: NodeJS.ProcessEnv = {}) {
   return {
@@ -53,6 +55,49 @@ const validDescriptor = () => ({
   credentialPresent: true,
 });
 
+const processStartIso = new Date().toISOString();
+
+function validProcfs(): ProcfsAttribution {
+  return {
+    port: 3999,
+    listenerPids: [4242],
+    inaccessibleFdCount: 0,
+    process: {
+      pid: 4242,
+      command: ['/usr/bin/node', 'dist/src/main.js'],
+      cwd: '/repo',
+      executable: '/usr/bin/node',
+      startIso: processStartIso,
+    },
+  };
+}
+
+function clearExternalObservation(): ExternalCompetitorObservation {
+  return {
+    observedAtIso: new Date().toISOString(),
+    externalPublisherExclusivity: 'observational',
+    competingProcesses: [],
+    competingContainers: [],
+    competingDatabaseSessions: [],
+    activeOutboxClaims: [],
+    conflictingAdvisoryLocks: [],
+  };
+}
+
+function gateDependencies() {
+  return {
+    expectedCwd: '/repo',
+    expectedExecutable: '/usr/bin/node',
+    fetchMismatchTrace: async () => ({
+      ...validTrace(),
+      records: [],
+      timings: [],
+    }),
+    inspectProcfs: async () => validProcfs(),
+    observeExternalCompetitors: async () => clearExternalObservation(),
+  };
+}
+
 type Deps = {
   calls: string[];
   fixtureCalls: number;
@@ -74,6 +119,11 @@ async function runScenario(
     evidenceWriteError?: Error;
     beforeDescriptorPersist?: (path: string) => Promise<void>;
     lstat?: typeof lstat;
+    procfs?: ProcfsAttribution;
+    trace?: TraceSnapshot;
+    externalObservation?: ExternalCompetitorObservation;
+    attributionWriteError?: Error;
+    beforeAttributionPersist?: (path: string) => Promise<void>;
     captureError?: (error: unknown) => void;
   } = {},
 ): Promise<Deps> {
@@ -88,11 +138,18 @@ async function runScenario(
   const backend = { pid: 4242 } as ChildProcess;
   try {
     await orchestrateW3(env, {
+      ...gateDependencies(),
       writeEvidence: options.evidenceWriteError
         ? async () => {
             throw options.evidenceWriteError;
           }
         : undefined,
+      writeAttribution: options.attributionWriteError
+        ? async () => {
+            throw options.attributionWriteError;
+          }
+        : undefined,
+      beforeAttributionPersist: options.beforeAttributionPersist,
       beforeDescriptorPersist: options.beforeDescriptorPersist,
       lstat: options.lstat,
       startBackend: async () => {
@@ -106,7 +163,19 @@ async function runScenario(
       },
       fetchTrace: async () => {
         deps.calls.push('fetchTrace');
-        return validTrace();
+        return options.trace ?? validTrace();
+      },
+      fetchMismatchTrace: async () => {
+        deps.calls.push('fetchMismatchTrace');
+        return { ...validTrace(), records: [], timings: [] };
+      },
+      inspectProcfs: async () => {
+        deps.calls.push('inspectProcfs');
+        return options.procfs ?? validProcfs();
+      },
+      observeExternalCompetitors: async () => {
+        deps.calls.push('observeExternalCompetitors');
+        return options.externalObservation ?? clearExternalObservation();
       },
       runFixture: async (childEnv) => {
         deps.calls.push('runFixture');
@@ -153,6 +222,27 @@ function validTrace(): TraceSnapshot {
       schemaVersion: 1,
       enabled: true,
       instanceId: 'instance-1',
+      backendInstanceId: 'backend-1',
+      processId: 4242,
+      processStartIso,
+      hostname: 'wsl-host',
+      lifecycle: [
+        {
+          component: 'traceService',
+          instanceId: 'instance-1',
+          constructedAtIso: processStartIso,
+        },
+        {
+          component: 'gateway',
+          instanceId: 'gateway-1',
+          constructedAtIso: processStartIso,
+        },
+        {
+          component: 'publisher',
+          instanceId: 'publisher-1',
+          constructedAtIso: processStartIso,
+        },
+      ],
       runId: 'run-123',
       bufferSize: 20_000,
       recordedCount: 0,
@@ -181,10 +271,13 @@ async function main(): Promise<void> {
       });
       assert.equal(deps.fixtureCalls, 1);
       assert.equal(deps.driverCalls, 1);
-      assert.deepEqual(deps.calls.slice(0, 5), [
+      assert.deepEqual(deps.calls.slice(0, 8), [
         'startBackend',
         'waitForHealth',
         'fetchTrace',
+        'inspectProcfs',
+        'fetchMismatchTrace',
+        'observeExternalCompetitors',
         'runFixture',
         'runDriver',
       ]);
@@ -193,6 +286,25 @@ async function main(): Promise<void> {
       );
       assert.equal(persisted.fixture.liveSessionId, 'session-1');
       assert.equal(persisted.fixture.credentialFile, env.W3_CREDENTIAL_OUT);
+      // Attribution artifact: exclusive, schema-versioned, observational.
+      const attribution = JSON.parse(
+        await readFile(`${env.W3_OUTPUT_PATH}.attribution.json`, 'utf8'),
+      );
+      assert.equal(attribution.schemaVersion, 1);
+      assert.equal(attribution.status, 'passed');
+      assert.equal(attribution.externalPublisherExclusivity, 'observational');
+      assert.equal(attribution.process.childPid, 4242);
+      assert.deepEqual(attribution.process.listenerPids, [4242]);
+      assert.equal(attribution.process.traceProcessId, 4242);
+      assert.equal(attribution.runtime.mismatchRecordCount, 0);
+      assert.equal(attribution.runtime.mismatchTimingCount, 0);
+      const attributionMode =
+        (await stat(`${env.W3_OUTPUT_PATH}.attribution.json`)).mode & 0o777;
+      assert.equal(attributionMode, 0o600);
+      // No secrets or environment values in attribution evidence.
+      const attributionText = JSON.stringify(attribution);
+      assert.equal(attributionText.includes('postgresql://'), false);
+      assert.equal(attributionText.includes('fake-secret-value'), false);
       const driverEnv = deps.driverEnvs[0]!;
       assert.equal(driverEnv.W3_FIXTURE_PATH, env.W3_FIXTURE_PATH);
       assert.equal(driverEnv.W3_CREDENTIAL_FILE, env.W3_CREDENTIAL_OUT);
@@ -307,6 +419,7 @@ async function main(): Promise<void> {
       const backend = {} as ChildProcess;
       await assert.rejects(
         orchestrateW3(env, {
+          ...gateDependencies(),
           startBackend: async () => {
             spawned = true;
             return backend;
@@ -435,6 +548,7 @@ async function main(): Promise<void> {
       const counts = { start: 0, fixture: 0, driver: 0, stop: 0 };
       await assert.rejects(
         orchestrateW3(env, {
+          ...gateDependencies(),
           startBackend: async () => {
             counts.start += 1;
             return {} as ChildProcess;
@@ -477,6 +591,7 @@ async function main(): Promise<void> {
       let startCalls = 0;
       const deps = await assert.rejects(
         orchestrateW3(env, {
+          ...gateDependencies(),
           startBackend: async () => {
             startCalls += 1;
             throw new Error('must not start');
@@ -633,6 +748,7 @@ async function main(): Promise<void> {
       const counts = { start: 0, fixture: 0, driver: 0, stop: 0 };
       await assert.rejects(
         orchestrateW3(env, {
+          ...gateDependencies(),
           startBackend: async () => {
             counts.start += 1;
             return { pid: 4242 } as ChildProcess;
@@ -754,8 +870,9 @@ async function main(): Promise<void> {
         backendStopCalls: 0,
         driverEnvs: [],
       };
-      const backend = {} as ChildProcess;
+      const backend = { pid: 4242 } as ChildProcess;
       await orchestrateW3(env, {
+        ...gateDependencies(),
         startBackend: async () => backend,
         waitForHealth: async () => undefined,
         fetchTrace: async () => validTrace(),
@@ -1017,6 +1134,226 @@ async function main(): Promise<void> {
       assert.equal(deps.fixtureCalls, 0);
       assert.equal(deps.driverCalls, 0);
       assert.equal(deps.backendStopCalls, 0);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- G1 attribution failure: procfs listener mismatch --------------------
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-g1-'));
+    try {
+      let failure: unknown;
+      const deps = await runScenario(sourceEnv(dir), {
+        procfs: {
+          ...validProcfs(),
+          listenerPids: [9999],
+        },
+        fixtureStdout: JSON.stringify({
+          fixture: {
+            ...validDescriptor(),
+            credentialFile: '%CREDENTIAL_PATH%',
+          },
+        }),
+        captureError: (error) => {
+          failure = error;
+        },
+      });
+      assert.match(String(failure), /attribution preflight blocked/);
+      assert.equal(deps.fixtureCalls, 0);
+      assert.equal(deps.driverCalls, 0);
+      assert.equal(deps.backendStopCalls, 1);
+      const evidence = JSON.parse(
+        await readFile(`${sourceEnv(dir).W3_OUTPUT_PATH}.exit.json`, 'utf8'),
+      );
+      assert.equal(evidence.blockedReason, 'ATTRIBUTION_PREFLIGHT_FAILED');
+      assert.equal(
+        evidence.attributionFailureCode,
+        'CHILD_LISTENER_PID_MISMATCH',
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- G2 attribution failure: external competitor observed ----------------
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-g2-'));
+    try {
+      let failure: unknown;
+      const deps = await runScenario(sourceEnv(dir), {
+        externalObservation: {
+          ...clearExternalObservation(),
+          competingDatabaseSessions: ['5551:app:10.0.0.9'],
+        },
+        captureError: (error) => {
+          failure = error;
+        },
+      });
+      assert.match(String(failure), /attribution preflight blocked/);
+      assert.equal(deps.fixtureCalls, 0);
+      assert.equal(deps.driverCalls, 0);
+      assert.equal(deps.backendStopCalls, 1);
+      const evidence = JSON.parse(
+        await readFile(`${sourceEnv(dir).W3_OUTPUT_PATH}.exit.json`, 'utf8'),
+      );
+      assert.equal(
+        evidence.attributionFailureCode,
+        'EXTERNAL_COMPETITOR_OBSERVED',
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- G4 competing trace record identity fails closed ----------------------
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-g4-'));
+    try {
+      let failure: unknown;
+      const base = validTrace();
+      const deps = await runScenario(sourceEnv(dir), {
+        trace: {
+          ...base,
+          records: [
+            {
+              ...(base.records[0] ?? {}),
+              schemaVersion: 1,
+              runId: 'run-123',
+              instanceId: 'instance-1',
+              backendInstanceId: 'backend-1',
+              processId: 4242,
+              processStartIso,
+              hostname: 'wsl-host',
+              phase: 'publisher',
+              eventId: 'event-1',
+              eventSeq: '1',
+              eventType: 'RESULT_UPDATED',
+              liveSessionId: 'session-1',
+              targetType: 'room',
+              targetId: 'session:1',
+              payloadCorrelation: {
+                eventSeq: '1',
+                aggregateVersion: 1,
+                visibility: 'participant',
+              },
+              publisherInstanceId: 'publisher-2',
+            } as TraceSnapshot['records'][number],
+          ],
+        },
+        captureError: (error) => {
+          failure = error;
+        },
+      });
+      assert.match(String(failure), /attribution preflight blocked/);
+      assert.equal(deps.fixtureCalls, 0);
+      assert.equal(deps.driverCalls, 0);
+      assert.equal(deps.backendStopCalls, 1);
+      const evidence = JSON.parse(
+        await readFile(`${sourceEnv(dir).W3_OUTPUT_PATH}.exit.json`, 'utf8'),
+      );
+      assert.equal(
+        evidence.attributionFailureCode,
+        'COMPETING_RUNTIME_IDENTITY',
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- G5 attribution write failure keeps fixture/driver at zero ------------
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-g5-'));
+    try {
+      let failure: unknown;
+      const deps = await runScenario(sourceEnv(dir), {
+        attributionWriteError: new Error('attribution disk full'),
+        captureError: (error) => {
+          failure = error;
+        },
+      });
+      assert.match(
+        String(failure),
+        /attribution disk full|evidence write failed/,
+      );
+      assert.equal(deps.fixtureCalls, 0);
+      assert.equal(deps.driverCalls, 0);
+      assert.equal(deps.backendStopCalls, 1);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- G6 race-created attribution artifact is never overwritten ------------
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-g6-'));
+    try {
+      const env = sourceEnv(dir);
+      const sentinel = '{"sentinel":"created-after-preflight"}\n';
+      let failure: unknown;
+      const deps = await runScenario(env, {
+        beforeAttributionPersist: async (path) => {
+          await writeFile(path, sentinel);
+        },
+        captureError: (error) => {
+          failure = error;
+        },
+      });
+      assert.match(String(failure), /EEXIST|already exists|write failed/);
+      assert.equal(deps.fixtureCalls, 0);
+      assert.equal(deps.driverCalls, 0);
+      assert.equal(deps.backendStopCalls, 1);
+      assert.equal(
+        await readFile(`${env.W3_OUTPUT_PATH}.attribution.json`, 'utf8'),
+        sentinel,
+      );
+      const evidence = JSON.parse(
+        await readFile(`${env.W3_OUTPUT_PATH}.exit.json`, 'utf8'),
+      );
+      assert.equal(evidence.blockedReason, 'ATTRIBUTION_EVIDENCE_CONFLICT');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- G7 pre-existing attribution artifact blocks before backend spawn -----
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-g7-'));
+    try {
+      const env = sourceEnv(dir);
+      await writeFile(`${env.W3_OUTPUT_PATH}.attribution.json`, '{"old":true}');
+      await assert.rejects(
+        runScenario(env, {}),
+        /attribution evidence artifact already exists/,
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- G8 ordering: attribution precedes fixture, follows health ------------
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-g8-'));
+    try {
+      const deps = await runScenario(sourceEnv(dir), {
+        fixtureStdout: JSON.stringify({
+          fixture: {
+            ...validDescriptor(),
+            credentialFile: '%CREDENTIAL_PATH%',
+          },
+        }),
+      });
+      assert.deepEqual(deps.calls, [
+        'startBackend',
+        'waitForHealth',
+        'fetchTrace',
+        'inspectProcfs',
+        'fetchMismatchTrace',
+        'observeExternalCompetitors',
+        'runFixture',
+        'runDriver',
+        'stopBackend',
+      ]);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
