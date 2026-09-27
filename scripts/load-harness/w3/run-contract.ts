@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
+/**
+ * Authoritative W3 acceptance scale (docs/智學互動平台/00_專案規劃/MVP 效能目標.md:
+ * one LiveSession, 300 learners + 1 teacher). Only the orchestrator injects
+ * this default; the direct driver keeps its own smoke fallback of 20 so
+ * controlled small runs stay explicit.
+ */
+export const W3_ACCEPTANCE_PARTICIPANTS = 300;
+
 export function createW3RunId(explicit?: string): string {
   const runId = explicit?.trim() || randomUUID();
   if (!/^[A-Za-z0-9._:-]{1,128}$/.test(runId))
