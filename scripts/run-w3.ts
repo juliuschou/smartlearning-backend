@@ -979,17 +979,6 @@ export async function orchestrateW3(
     }
 
     // ---- fixture child: exactly one, captured stdout, no retry ------------
-    // Read-only protected-baseline snapshot immediately before the run-owned
-    // chain is created (§12). A failure here never blocks the run.
-    try {
-      evidence.protectedBaselineBefore = await readBaseline(databaseUrl);
-    } catch (error) {
-      process.stderr.write(
-        `W3 protected-baseline pre-capture skipped: ${
-          error instanceof Error ? error.name : 'error'
-        }\n`,
-      );
-    }
     evidence.fixture.spawned = true;
     const fixtureChild = await dependencies.runFixture(fixtureEnv);
     evidence.fixture.status = fixtureChild.status;

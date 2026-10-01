@@ -17,6 +17,7 @@ import {
   orchestrateW3,
   w3ApplicationNames,
   w3OwnedApplicationNames,
+  type ProtectedBaseline,
   type W3FixtureChildResult,
 } from '../../../scripts/run-w3';
 import { W3_ACCEPTANCE_PARTICIPANTS } from './run-contract';
@@ -149,6 +150,8 @@ async function runScenario(
     externalObservation?: ExternalCompetitorObservation;
     attributionWriteError?: Error;
     beforeAttributionPersist?: (path: string) => Promise<void>;
+    baselineSnapshots?: ProtectedBaseline[];
+    baselineFirstError?: Error;
     captureError?: (error: unknown) => void;
   } = {},
 ): Promise<Deps> {
@@ -169,9 +172,16 @@ async function runScenario(
     await orchestrateW3(env, {
       ...gateDependencies(),
       readProtectedBaseline: async (databaseUrl) => {
+        const readIndex = deps.baselineReads;
         deps.baselineReads += 1;
         deps.baselineReadDatabaseUrls.push(databaseUrl);
-        return fakeProtectedBaseline();
+        if (readIndex === 0 && options.baselineFirstError)
+          throw options.baselineFirstError;
+        return (
+          options.baselineSnapshots?.[readIndex] ??
+          options.baselineSnapshots?.at(-1) ??
+          fakeProtectedBaseline()
+        );
       },
       writeEvidence: options.evidenceWriteError
         ? async () => {
@@ -1506,7 +1516,30 @@ async function main(): Promise<void> {
         DATABASE_URL:
           'postgresql://user:pw@dbhost:5432/smartlearning_test?sslmode=disable',
       });
+      const firstBaseline = {
+        closedSessions: 2,
+        participants: 302,
+        submissions: 150,
+        deliveredEvents: 2,
+      } satisfies ProtectedBaseline;
+      const afterBackendBaseline = {
+        closedSessions: 3,
+        participants: 303,
+        submissions: 151,
+        deliveredEvents: 3,
+      } satisfies ProtectedBaseline;
+      const afterRunBaseline = {
+        closedSessions: 4,
+        participants: 304,
+        submissions: 152,
+        deliveredEvents: 4,
+      } satisfies ProtectedBaseline;
       const deps = await runScenario(env, {
+        baselineSnapshots: [
+          firstBaseline,
+          afterBackendBaseline,
+          afterRunBaseline,
+        ],
         fixtureStdout: JSON.stringify({
           fixture: {
             ...validDescriptor(),
@@ -1514,33 +1547,63 @@ async function main(): Promise<void> {
           },
         }),
       });
-      // Exactly three reads: pre-backend, post-backend-start, pre-fixture (the
-      // post-run read is the fourth only on a completed run).
-      assert.ok(deps.baselineReads >= 3);
+      // Exactly three reads: pre-backend, post-backend-start, post-run.
+      assert.equal(deps.baselineReads, 3);
       // The fake received the real DATABASE_URL (unmodified) — not a clone.
       assert.deepEqual(
         new Set(deps.baselineReadDatabaseUrls),
         new Set([env.DATABASE_URL]),
       );
-      // The fake's deterministic values reach the exit evidence verbatim.
       const evidence = JSON.parse(
         await readFile(`${env.W3_OUTPUT_PATH}.exit.json`, 'utf8'),
       );
-      assert.deepEqual(evidence.protectedBaselineBefore, {
-        closedSessions: 0,
-        participants: 0,
-        submissions: 0,
-        deliveredEvents: 0,
-      });
+      // The original pre-backend snapshot is immutable and distinct from later
+      // diagnostic snapshots.
+      assert.deepEqual(evidence.protectedBaselineBefore, firstBaseline);
       assert.deepEqual(
         evidence.protectedBaselineAfterBackendStart,
-        evidence.protectedBaselineBefore,
+        afterBackendBaseline,
       );
+      assert.deepEqual(evidence.protectedBaselineAfterRun, afterRunBaseline);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
 
-    // B) Production default wiring still points at the real implementation.
+    // B) A failed initial capture is not backfilled by a later successful read.
+    const failedFirstDir = await mkdtemp(join(tmpdir(), 'w3-orch-h2b-'));
+    try {
+      const env = sourceEnv(failedFirstDir);
+      const laterBaseline = {
+        closedSessions: 9,
+        participants: 309,
+        submissions: 159,
+        deliveredEvents: 9,
+      } satisfies ProtectedBaseline;
+      const deps = await runScenario(env, {
+        baselineFirstError: new Error('initial baseline unavailable'),
+        baselineSnapshots: [laterBaseline],
+        fixtureStdout: JSON.stringify({
+          fixture: {
+            ...validDescriptor(),
+            credentialFile: '%CREDENTIAL_PATH%',
+          },
+        }),
+      });
+      assert.equal(deps.baselineReads, 2);
+      const evidence = JSON.parse(
+        await readFile(`${env.W3_OUTPUT_PATH}.exit.json`, 'utf8'),
+      );
+      assert.equal('protectedBaselineBefore' in evidence, false);
+      assert.deepEqual(
+        evidence.protectedBaselineAfterBackendStart,
+        laterBaseline,
+      );
+      assert.equal('protectedBaselineAfterRun' in evidence, false);
+    } finally {
+      await rm(failedFirstDir, { recursive: true, force: true });
+    }
+
+    // C) Production default wiring still points at the real implementation.
     // main() omits `readProtectedBaseline`, so the orchestrator falls back to
     // the exported real reader. Proven from source: the dependency is optional
     // and the fallback names the real function.
