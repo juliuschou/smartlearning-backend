@@ -70,6 +70,17 @@ export type W3ExitEvidence = {
   backendPid?: number;
   attributionFailureCode?: string;
   blockedReason?: string;
+  protectedBaselineBefore?: ProtectedBaseline;
+  protectedBaselineAfterBackendStart?: ProtectedBaseline;
+  protectedBaselineAfterRun?: ProtectedBaseline;
+};
+
+/** Read-only protected-baseline counts (§12). Exact counts, no mutation. */
+export type ProtectedBaseline = {
+  closedSessions: number;
+  participants: number;
+  submissions: number;
+  deliveredEvents: number;
 };
 
 function required(name: string, env: NodeJS.ProcessEnv): string {
@@ -93,6 +104,43 @@ function withApplicationName(
   const url = new URL(databaseUrl);
   url.searchParams.set('application_name', applicationName);
   return url.toString();
+}
+
+/** PostgreSQL truncates application_name to 63 bytes; every child name obeys it. */
+const APPLICATION_NAME_LIMIT = 63;
+
+/**
+ * Distinct, run-scoped PostgreSQL application_names for attribution. Each W3
+ * child shares the run environment but gets its own application_name so backend,
+ * fixture, and driver sessions are separable in `pg_stat_activity` — and are not
+ * mistaken for external competitors. Attribution metadata only; no workload
+ * semantics change. `observer` is the reserved identity for the not-yet-wired
+ * DbWaitObserver (contract only).
+ */
+export function w3ApplicationNames(runId: string): {
+  backend: string;
+  fixture: string;
+  driver: string;
+  observer: string;
+} {
+  const scoped = (prefix: string): string =>
+    `${prefix}-${runId}`.slice(0, APPLICATION_NAME_LIMIT);
+  return {
+    backend: scoped('w3-backend'),
+    fixture: scoped('w3-fixture'),
+    driver: scoped('w3-driver'),
+    observer: scoped('w3-db-wait'),
+  };
+}
+
+/**
+ * Application_names owned by this run, used to exclude W3 sessions from the
+ * external-competitor scan. Exact run-scoped identities only — a
+ * `w3-backend-<otherRun>` session is NOT owned and remains a competitor.
+ */
+export function w3OwnedApplicationNames(runId: string): string[] {
+  const names = w3ApplicationNames(runId);
+  return [names.backend, names.fixture, names.driver, names.observer];
 }
 
 function localPort(baseUrl: string, configuredPort: string): number {
@@ -231,6 +279,34 @@ async function inspectDockerCompetitors(): Promise<string[]> {
   return competitors.slice(0, 8);
 }
 
+/**
+ * Read-only protected-baseline counts (§12). Exact counts only; the values are
+ * recorded before the run and again after the run so a baseline-side-effect can
+ * be distinguished from cleanup. This never mutates the database.
+ */
+export async function readProtectedBaseline(
+  databaseUrl: string,
+): Promise<ProtectedBaseline> {
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
+  try {
+    const one = async (sql: string): Promise<number> =>
+      Number((await client.query<{ n: string }>(sql)).rows[0].n);
+    return {
+      closedSessions: await one(
+        `SELECT count(*)::int AS n FROM live_session WHERE status = 'closed'`,
+      ),
+      participants: await one(`SELECT count(*)::int AS n FROM participant`),
+      submissions: await one(`SELECT count(*)::int AS n FROM submission`),
+      deliveredEvents: await one(
+        `SELECT count(*)::int AS n FROM live_session_event WHERE delivery_state = 'delivered'`,
+      ),
+    };
+  } finally {
+    await client.end();
+  }
+}
+
 async function observeExternalCompetitors(
   childPid: number,
   databaseUrl: string,
@@ -243,6 +319,9 @@ async function observeExternalCompetitors(
   await client.connect();
   try {
     const [sessions, claims, locks, processes, containers] = await Promise.all([
+      // W3-owned sessions (this run's backend/fixture/driver/observer) are not
+      // competitors. Ownership is exact to this runId — never prefix-based, so a
+      // `w3-backend-<otherRun>` session stays a competitor.
       client.query<{
         pid: number;
         application_name: string;
@@ -252,9 +331,12 @@ async function observeExternalCompetitors(
            FROM pg_stat_activity
           WHERE datname = current_database()
             AND pid <> pg_backend_pid()
-            AND application_name <> $1
+            AND application_name <> ALL($1::text[])
           ORDER BY pid`,
-        [`w3-backend-${runId}`.slice(0, 63)],
+        // The orchestrator's own observer session is self-excluded by
+        // `pid <> pg_backend_pid()`; the reserved observer identity is included
+        // so wiring DbWaitObserver later stays a competitor-free no-op.
+        [w3OwnedApplicationNames(runId)],
       ),
       client.query<{ id: string; claim_token: string | null }>(
         `SELECT id, claim_token
@@ -636,6 +718,7 @@ export type W3OrchestratorDependencies = {
     databaseUrl: string,
     runId: string,
   ) => Promise<ExternalCompetitorObservation>;
+  readProtectedBaseline?: (databaseUrl: string) => Promise<ProtectedBaseline>;
   expectedCwd: string;
   expectedExecutable: string;
   runFixture: (env: NodeJS.ProcessEnv) => Promise<W3FixtureChildResult>;
@@ -657,6 +740,10 @@ export async function orchestrateW3(
   required('LOCAL_W1_PROVISION_CREATED_BY', sourceEnv);
   const attributionPath = `${outputPath}.attribution.json`;
   const inspectPath = dependencies.lstat ?? lstat;
+  // Baseline capture is injectable so focused unit specs stay DB-free; production
+  // (`main`) omits it and reads the real protected counts.
+  const readBaseline =
+    dependencies.readProtectedBaseline ?? readProtectedBaseline;
   // The exit artifact is checked before evidence plumbing exists: an existing
   // evidence file is itself the conflict record and must remain untouched.
   await assertPathAbsent(
@@ -674,10 +761,6 @@ export async function orchestrateW3(
   const env: NodeJS.ProcessEnv = {
     ...w3RunEnvironment(runId, sourceEnv),
     NODE_ENV: 'test',
-    DATABASE_URL: withApplicationName(
-      databaseUrl,
-      `w3-backend-${runId}`.slice(0, 63),
-    ),
     PORT: sourceEnv.PORT ?? '3001',
     LOAD_BASE_URL: baseUrl,
     W3_FIXTURE_PATH: fixturePath,
@@ -686,6 +769,23 @@ export async function orchestrateW3(
     W3_PARTICIPANTS: participants,
     REALTIME_TRACE_ENABLED: '1',
     REALTIME_TRACE_BUFFER_SIZE: '20000',
+  };
+
+  const applicationNames = w3ApplicationNames(runId);
+  // Each child gets its own DATABASE_URL clone; application_name is the only
+  // field that varies. `env` retains everything else (run contract, paths,
+  // participants, trace flags) and is read directly for backend-neutral values.
+  const backendEnv: NodeJS.ProcessEnv = {
+    ...env,
+    DATABASE_URL: withApplicationName(databaseUrl, applicationNames.backend),
+  };
+  const fixtureEnv: NodeJS.ProcessEnv = {
+    ...env,
+    DATABASE_URL: withApplicationName(databaseUrl, applicationNames.fixture),
+  };
+  const driverEnv: NodeJS.ProcessEnv = {
+    ...env,
+    DATABASE_URL: withApplicationName(databaseUrl, applicationNames.driver),
   };
 
   const evidence: W3ExitEvidence = {
@@ -766,16 +866,39 @@ export async function orchestrateW3(
 
   let backend: ChildProcess | undefined;
   try {
+    // Read-only protected-baseline snapshot before the backend is started or any
+    // run-owned row exists (§12). A failure here never blocks the run.
+    try {
+      evidence.protectedBaselineBefore = await readBaseline(databaseUrl);
+    } catch (error) {
+      process.stderr.write(
+        `W3 protected-baseline pre-capture skipped: ${
+          error instanceof Error ? error.name : 'error'
+        }\n`,
+      );
+    }
     const spawnStartedAtMs = Date.now();
     let spawnReadyAtMs = spawnStartedAtMs;
     try {
-      backend = await dependencies.startBackend(env);
+      backend = await dependencies.startBackend(backendEnv);
       spawnReadyAtMs = Date.now();
       if (backend.pid !== undefined) evidence.backendPid = backend.pid;
     } catch (error) {
       await writeEvidencePreserving('BACKEND_START_FAILED', error);
     }
     await dependencies.waitForHealth(baseUrl);
+    // Read-only mid-point baseline after backend startup but before any fixture
+    // exists, so a backend-startup side effect is separable from a workload one.
+    try {
+      evidence.protectedBaselineAfterBackendStart =
+        await readBaseline(databaseUrl);
+    } catch (error) {
+      process.stderr.write(
+        `W3 protected-baseline start-capture skipped: ${
+          error instanceof Error ? error.name : 'error'
+        }\n`,
+      );
+    }
     const trace = await dependencies.fetchTrace(baseUrl, runId);
     const preflight = validateTracePreflight(trace, runId);
     if (!preflight.ok) {
@@ -856,8 +979,19 @@ export async function orchestrateW3(
     }
 
     // ---- fixture child: exactly one, captured stdout, no retry ------------
+    // Read-only protected-baseline snapshot immediately before the run-owned
+    // chain is created (§12). A failure here never blocks the run.
+    try {
+      evidence.protectedBaselineBefore = await readBaseline(databaseUrl);
+    } catch (error) {
+      process.stderr.write(
+        `W3 protected-baseline pre-capture skipped: ${
+          error instanceof Error ? error.name : 'error'
+        }\n`,
+      );
+    }
     evidence.fixture.spawned = true;
-    const fixtureChild = await dependencies.runFixture(env);
+    const fixtureChild = await dependencies.runFixture(fixtureEnv);
     evidence.fixture.status = fixtureChild.status;
     if (fixtureChild.status !== 0) {
       const detail = redactDiagnostic(fixtureChild.stderr);
@@ -907,13 +1041,26 @@ export async function orchestrateW3(
 
     // ---- driver child: exactly one, all gates already passed --------------
     evidence.driver.spawned = true;
-    const driverStatus = await dependencies.runDriver(env);
+    const driverStatus = await dependencies.runDriver(driverEnv);
     evidence.driver.status = driverStatus;
     if (driverStatus !== 0) {
       await writeEvidencePreserving(
         'DRIVER_CHILD_FAILED',
         new Error(`W3 driver failed with status ${driverStatus}.`),
       );
+    }
+    // Post-run read-only baseline snapshot, captured before the exit evidence is
+    // written so it is included in the artifact (§12).
+    if (evidence.protectedBaselineBefore !== undefined) {
+      try {
+        evidence.protectedBaselineAfterRun = await readBaseline(databaseUrl);
+      } catch (error) {
+        process.stderr.write(
+          `W3 protected-baseline post-capture skipped: ${
+            error instanceof Error ? error.name : 'error'
+          }\n`,
+        );
+      }
     }
     await writeEvidence();
   } catch (error) {

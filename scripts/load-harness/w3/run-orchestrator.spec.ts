@@ -9,11 +9,14 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { ChildProcess } from 'node:child_process';
 import {
   orchestrateW3,
+  w3ApplicationNames,
+  w3OwnedApplicationNames,
   type W3FixtureChildResult,
 } from '../../../scripts/run-w3';
 import { W3_ACCEPTANCE_PARTICIPANTS } from './run-contract';
@@ -84,6 +87,22 @@ function clearExternalObservation(): ExternalCompetitorObservation {
   };
 }
 
+/**
+ * Deterministic, DB-free protected-baseline stand-in. A focused unit spec must
+ * not open a real PostgreSQL connection: the real `readProtectedBaseline`
+ * attempts a socket connect and the accumulated connect time (× every baseline
+ * read × every scenario) pushes the attribution process-start delta past
+ * `W3_PROCESS_START_TOLERANCE_MS`, failing unrelated preflight assertions.
+ */
+function fakeProtectedBaseline() {
+  return {
+    closedSessions: 0,
+    participants: 0,
+    submissions: 0,
+    deliveredEvents: 0,
+  };
+}
+
 function gateDependencies() {
   return {
     expectedCwd: '/repo',
@@ -91,10 +110,12 @@ function gateDependencies() {
     fetchMismatchTrace: async () => ({
       ...validTrace(),
       records: [],
+      claimCycles: [],
       timings: [],
     }),
     inspectProcfs: async () => validProcfs(),
     observeExternalCompetitors: async () => clearExternalObservation(),
+    readProtectedBaseline: async () => fakeProtectedBaseline(),
   };
 }
 
@@ -104,7 +125,11 @@ type Deps = {
   driverCalls: number;
   backendStartCalls: number;
   backendStopCalls: number;
+  backendEnvs: NodeJS.ProcessEnv[];
+  fixtureEnvs: NodeJS.ProcessEnv[];
   driverEnvs: NodeJS.ProcessEnv[];
+  baselineReads: number;
+  baselineReadDatabaseUrls: string[];
 };
 
 async function runScenario(
@@ -133,12 +158,21 @@ async function runScenario(
     driverCalls: 0,
     backendStartCalls: 0,
     backendStopCalls: 0,
+    backendEnvs: [],
+    fixtureEnvs: [],
     driverEnvs: [],
+    baselineReads: 0,
+    baselineReadDatabaseUrls: [],
   };
   const backend = { pid: 4242 } as ChildProcess;
   try {
     await orchestrateW3(env, {
       ...gateDependencies(),
+      readProtectedBaseline: async (databaseUrl) => {
+        deps.baselineReads += 1;
+        deps.baselineReadDatabaseUrls.push(databaseUrl);
+        return fakeProtectedBaseline();
+      },
       writeEvidence: options.evidenceWriteError
         ? async () => {
             throw options.evidenceWriteError;
@@ -152,9 +186,10 @@ async function runScenario(
       beforeAttributionPersist: options.beforeAttributionPersist,
       beforeDescriptorPersist: options.beforeDescriptorPersist,
       lstat: options.lstat,
-      startBackend: async () => {
+      startBackend: async (childEnv) => {
         deps.calls.push('startBackend');
         deps.backendStartCalls += 1;
+        deps.backendEnvs.push(childEnv);
         if (options.backendStartError) throw options.backendStartError;
         return backend;
       },
@@ -167,7 +202,7 @@ async function runScenario(
       },
       fetchMismatchTrace: async () => {
         deps.calls.push('fetchMismatchTrace');
-        return { ...validTrace(), records: [], timings: [] };
+        return { ...validTrace(), records: [], claimCycles: [], timings: [] };
       },
       inspectProcfs: async () => {
         deps.calls.push('inspectProcfs');
@@ -180,6 +215,7 @@ async function runScenario(
       runFixture: async (childEnv) => {
         deps.calls.push('runFixture');
         deps.fixtureCalls += 1;
+        deps.fixtureEnvs.push(childEnv);
         // The real create-fixture writes the credential file itself.
         if (options.fixtureCreatesCredential ?? true) {
           await writeFile(childEnv.W3_CREDENTIAL_OUT!, 'fake-secret-value', {
@@ -248,8 +284,11 @@ function validTrace(): TraceSnapshot {
       recordedCount: 0,
       droppedCount: 0,
       dispatchedEventCount: 0,
+      claimCycleCount: 0,
+      claimCycleDroppedCount: 0,
     },
     records: [],
+    claimCycles: [],
     timings: [],
     fetchedAtMs: 0,
   };
@@ -868,11 +907,16 @@ async function main(): Promise<void> {
         driverCalls: 0,
         backendStartCalls: 0,
         backendStopCalls: 0,
+        backendEnvs: [],
+        fixtureEnvs: [],
         driverEnvs: [],
+        baselineReads: 0,
+        baselineReadDatabaseUrls: [],
       };
       const backend = { pid: 4242 } as ChildProcess;
       await orchestrateW3(env, {
         ...gateDependencies(),
+        readProtectedBaseline: async () => fakeProtectedBaseline(),
         startBackend: async () => backend,
         waitForHealth: async () => undefined,
         fetchTrace: async () => validTrace(),
@@ -1357,6 +1401,166 @@ async function main(): Promise<void> {
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  }
+
+  // ---- H1 application_name separation (attribution metadata only) ----------
+  // Uses the default runId (`run-123`) so the fake trace snapshot stays
+  // consistent; only the application_name differs between children.
+  const runId = 'run-123';
+  const expectedNames = {
+    backend: `w3-backend-${runId}`,
+    fixture: `w3-fixture-${runId}`,
+    driver: `w3-driver-${runId}`,
+    observer: `w3-db-wait-${runId}`,
+  };
+  {
+    // A) Distinct child environments: exactly three, distinct app names, with
+    // every other DATABASE_URL property and shared value preserved.
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-h1-'));
+    try {
+      const env = sourceEnv(dir, {
+        DATABASE_URL:
+          'postgresql://user:pw@dbhost:5432/smartlearning_test?schema=public&sslmode=disable',
+      });
+      const deps = await runScenario(env, {
+        fixtureStdout: JSON.stringify({
+          fixture: {
+            ...validDescriptor(),
+            credentialFile: '%CREDENTIAL_PATH%',
+          },
+        }),
+      });
+      const appName = (childEnv: NodeJS.ProcessEnv): string => {
+        const url = new URL(childEnv.DATABASE_URL!);
+        return url.searchParams.get('application_name')!;
+      };
+      assert.equal(deps.backendEnvs.length, 1);
+      assert.equal(deps.fixtureEnvs.length, 1);
+      assert.equal(deps.driverEnvs.length, 1);
+      const names = [
+        appName(deps.backendEnvs[0]!),
+        appName(deps.fixtureEnvs[0]!),
+        appName(deps.driverEnvs[0]!),
+      ];
+      assert.deepEqual(names, [
+        expectedNames.backend,
+        expectedNames.fixture,
+        expectedNames.driver,
+      ]);
+      assert.equal(new Set(names).size, 3);
+      // Every non-application_name URL property is unchanged across children and
+      // against the source DATABASE_URL.
+      const baseUrl = new URL(env.DATABASE_URL!);
+      for (const childEnv of [
+        deps.backendEnvs[0]!,
+        deps.fixtureEnvs[0]!,
+        deps.driverEnvs[0]!,
+      ]) {
+        const url = new URL(childEnv.DATABASE_URL!);
+        assert.equal(url.username, baseUrl.username);
+        assert.equal(url.password, baseUrl.password);
+        assert.equal(url.hostname, baseUrl.hostname);
+        assert.equal(url.port, baseUrl.port);
+        assert.equal(url.pathname, baseUrl.pathname);
+        assert.equal(url.searchParams.get('schema'), 'public');
+        assert.equal(url.searchParams.get('sslmode'), 'disable');
+      }
+      // Shared contract values still reach the driver.
+      assert.equal(deps.driverEnvs[0]!.W3_RUN_ID, runId);
+      assert.equal(deps.driverEnvs[0]!.W3_FIXTURE_PATH, env.W3_FIXTURE_PATH);
+      assert.equal(deps.driverEnvs[0]!.REALTIME_TRACE_RUN_ID, runId);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+
+    // B) 63-character limit with a long runId — identical rule for every child.
+    const longRunId = 'r'.repeat(90);
+    const longNames = w3ApplicationNames(longRunId);
+    assert.equal(longNames.backend.length, 63);
+    assert.equal(longNames.fixture.length, 63);
+    assert.equal(longNames.driver.length, 63);
+    assert.equal(longNames.observer.length, 63);
+
+    // C/D) Competitor classification uses exact run-scoped ownership.
+    const owned = w3OwnedApplicationNames(runId);
+    const isCompetitor = (name: string): boolean => !owned.includes(name);
+    assert.equal(isCompetitor(expectedNames.backend), false);
+    assert.equal(isCompetitor(expectedNames.fixture), false);
+    assert.equal(isCompetitor(expectedNames.driver), false);
+    assert.equal(isCompetitor(expectedNames.observer), false);
+    assert.equal(isCompetitor('psql'), true);
+
+    // E) A different run's W3 session is NOT owned by this run.
+    assert.equal(isCompetitor('w3-backend-run-456'), true);
+    assert.equal(isCompetitor('w3-fixture-run-456'), true);
+    assert.equal(isCompetitor('w3-driver-run-456'), true);
+  }
+
+  // ---- H2 protected baseline is DB-free and injectable ---------------------
+  {
+    // A) The focused spec never opens a real database: every baseline read is
+    // answered by the injected fake, and the injected fake is the only reader.
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-h2a-'));
+    try {
+      const env = sourceEnv(dir, {
+        DATABASE_URL:
+          'postgresql://user:pw@dbhost:5432/smartlearning_test?sslmode=disable',
+      });
+      const deps = await runScenario(env, {
+        fixtureStdout: JSON.stringify({
+          fixture: {
+            ...validDescriptor(),
+            credentialFile: '%CREDENTIAL_PATH%',
+          },
+        }),
+      });
+      // Exactly three reads: pre-backend, post-backend-start, pre-fixture (the
+      // post-run read is the fourth only on a completed run).
+      assert.ok(deps.baselineReads >= 3);
+      // The fake received the real DATABASE_URL (unmodified) — not a clone.
+      assert.deepEqual(
+        new Set(deps.baselineReadDatabaseUrls),
+        new Set([env.DATABASE_URL]),
+      );
+      // The fake's deterministic values reach the exit evidence verbatim.
+      const evidence = JSON.parse(
+        await readFile(`${env.W3_OUTPUT_PATH}.exit.json`, 'utf8'),
+      );
+      assert.deepEqual(evidence.protectedBaselineBefore, {
+        closedSessions: 0,
+        participants: 0,
+        submissions: 0,
+        deliveredEvents: 0,
+      });
+      assert.deepEqual(
+        evidence.protectedBaselineAfterBackendStart,
+        evidence.protectedBaselineBefore,
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+
+    // B) Production default wiring still points at the real implementation.
+    // main() omits `readProtectedBaseline`, so the orchestrator falls back to
+    // the exported real reader. Proven from source: the dependency is optional
+    // and the fallback names the real function.
+    const sourcePath = join(__dirname, '..', '..', 'run-w3.ts');
+    const source = readFileSync(sourcePath, 'utf8');
+    assert.match(
+      source,
+      /readProtectedBaseline\?:\s*\(/,
+      'dependency must stay optional so production is unaffected',
+    );
+    assert.match(
+      source,
+      /const readBaseline\s*=\s*\n?\s*dependencies\.readProtectedBaseline\s*\?\?\s*readProtectedBaseline/,
+      'default must fall back to the real readProtectedBaseline',
+    );
+    assert.match(
+      source,
+      /export async function readProtectedBaseline\(/,
+      'the real implementation stays exported',
+    );
   }
 
   console.log('W3 orchestrator tests passed.');
