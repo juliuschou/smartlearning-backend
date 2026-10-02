@@ -5,6 +5,23 @@
 const { Client } = require('pg');
 const { config } = require('dotenv');
 config({ path: '.env.test', override: false });
+
+const PROTECTED_DELIVERED_EVENT_PREDICATE =
+  "delivery_state = 'delivered' AND (expires_at IS NULL OR expires_at > NOW())";
+
+async function protectedBaseline(c) {
+  const one = async (sql) => Number((await c.query(sql)).rows[0].n);
+  return {
+    closedSessions: await one(
+      `SELECT count(*)::int n FROM live_session WHERE status='closed'`,
+    ),
+    participants: await one(`SELECT count(*)::int n FROM participant`),
+    submissions: await one(`SELECT count(*)::int n FROM submission`),
+    deliveredEvents: await one(
+      `SELECT count(*)::int n FROM live_session_event WHERE ${PROTECTED_DELIVERED_EVENT_PREDICATE}`,
+    ),
+  };
+}
 (async () => {
   const f = JSON.parse(require('fs').readFileSync(process.argv[2], 'utf8'))
     .fixture;
@@ -35,6 +52,7 @@ config({ path: '.env.test', override: false });
       `SELECT count(*)::int n FROM live_session_event_sequence WHERE live_session_id='01a0bacc-83f9-7417-a52e-481d2fbd3e8c'`,
     ),
   };
+  await protectedBaseline(c);
   await c.end();
   console.log(JSON.stringify(out, null, 1));
 })().catch((e) => {

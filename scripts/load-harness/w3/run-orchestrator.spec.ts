@@ -16,6 +16,8 @@ import type { ChildProcess } from 'node:child_process';
 import {
   orchestrateW3,
   validateAcceptanceCohortEvidence,
+  isProtectedDeliveredEvent,
+  PROTECTED_DELIVERED_EVENT_PREDICATE,
   w3ApplicationNames,
   w3OwnedApplicationNames,
   type ProtectedBaseline,
@@ -1712,7 +1714,39 @@ async function main(): Promise<void> {
 
   // ---- H2 protected baseline is DB-free and injectable ---------------------
   {
-    // A) The focused spec never opens a real database: every baseline read is
+    // A) Retention-eligible delivered rows are expected purge, not protected
+    // baseline evidence; unexpired rows and valid NULL-expiry rows are safe.
+    const now = new Date('2026-10-02T00:00:00.000Z');
+    assert.equal(
+      isProtectedDeliveredEvent(
+        'delivered',
+        new Date('2026-10-01T23:59:59.999Z'),
+        now,
+      ),
+      false,
+    );
+    assert.equal(
+      isProtectedDeliveredEvent(
+        'delivered',
+        new Date('2026-10-02T00:00:00.001Z'),
+        now,
+      ),
+      true,
+    );
+    assert.equal(isProtectedDeliveredEvent('delivered', null, now), true);
+    assert.equal(isProtectedDeliveredEvent('pending', null, now), false);
+
+    // Both SQL readers use the same protected-event definition.
+    const postCleanupSource = readFileSync(
+      join(__dirname, 'post-cleanup-verify.cjs'),
+      'utf8',
+    );
+    assert.equal(
+      postCleanupSource.includes(PROTECTED_DELIVERED_EVENT_PREDICATE),
+      true,
+    );
+
+    // B) The focused spec never opens a real database: every baseline read is
     // answered by the injected fake, and the injected fake is the only reader.
     const dir = await mkdtemp(join(tmpdir(), 'w3-orch-h2a-'));
     try {

@@ -35,6 +35,20 @@ import {
 const CHILD_CAPTURE_LIMIT = 64 * 1024;
 const execFileAsync = promisify(execFile);
 const ATTRIBUTION_SCHEMA_VERSION = 1;
+/** Delivered durable events remain protected only while their retention window is open. */
+export const PROTECTED_DELIVERED_EVENT_PREDICATE =
+  "delivery_state = 'delivered' AND (expires_at IS NULL OR expires_at > NOW())";
+
+export function isProtectedDeliveredEvent(
+  deliveryState: string,
+  expiresAt: Date | null,
+  now: Date,
+): boolean {
+  return (
+    deliveryState === 'delivered' && (expiresAt === null || expiresAt > now)
+  );
+}
+
 const SECRET_LIKE_DESCRIPTOR_FIELDS = new Set([
   'password',
   'secret',
@@ -299,7 +313,7 @@ export async function readProtectedBaseline(
       participants: await one(`SELECT count(*)::int AS n FROM participant`),
       submissions: await one(`SELECT count(*)::int AS n FROM submission`),
       deliveredEvents: await one(
-        `SELECT count(*)::int AS n FROM live_session_event WHERE delivery_state = 'delivered'`,
+        `SELECT count(*)::int AS n FROM live_session_event WHERE ${PROTECTED_DELIVERED_EVENT_PREDICATE}`,
       ),
     };
   } finally {
