@@ -326,6 +326,10 @@ export class LiveSessionPublisher implements OnModuleInit, OnModuleDestroy {
                   ${RealtimeDeliveryState.PROCESSING}
                 )
               )
+              AND (
+                event.event_name = ${RealtimeEvent.SESSION_SNAPSHOT}
+                OR previous.event_name <> ${RealtimeEvent.SESSION_SNAPSHOT}
+              )
           )
           ORDER BY event.live_session_id, event.event_seq
           FOR UPDATE SKIP LOCKED

@@ -145,6 +145,17 @@ function makeHarness(
   return { publisher, database, transaction, gateway, metrics, trace };
 }
 
+async function captureClaimQuery(): Promise<{
+  query: string;
+  values: unknown[];
+}> {
+  const harness = makeHarness();
+  await harness.publisher.processBatch(new Date('2026-08-28T00:03:00.000Z'));
+  const [queryFragments, ...values] = harness.transaction.$queryRaw.mock
+    .calls[0] as [readonly string[], ...unknown[]];
+  return { query: queryFragments.join(''), values };
+}
+
 describe('LiveSessionPublisher', () => {
   it('does not claim rows before Socket.IO transport is ready', async () => {
     const harness = makeHarness();
@@ -302,6 +313,53 @@ describe('LiveSessionPublisher', () => {
     expect(query).toContain('lease_expires_at');
     expect(query).toContain('previous.event_seq < event.event_seq');
     expect(query).not.toContain('previous.delivery_state = ');
+  });
+
+  it('lets a later non-snapshot bypass pending, retry, or processing snapshots only', async () => {
+    const { query, values } = await captureClaimQuery();
+
+    expect(query).toMatch(
+      /previous\.delivery_state IN \([\s\S]*?\)[\s\S]*?AND \(\s*event\.event_name =\s*OR previous\.event_name <>\s*\)/u,
+    );
+    expect(
+      values.filter((value) => value === RealtimeEvent.SESSION_SNAPSHOT),
+    ).toHaveLength(2);
+    expect(query).toContain('previous.live_session_id = event.live_session_id');
+    expect(query).toContain('previous.event_seq < event.event_seq');
+  });
+
+  it('keeps earlier non-snapshot events as the fence for later non-snapshot events', async () => {
+    const { query } = await captureClaimQuery();
+
+    expect(query).toContain('OR previous.event_name <>');
+    expect(query).toContain('previous.delivery_state IN (');
+    expect(query).not.toMatch(
+      /previous\.event_name\s*=\s*[\s\S]*session\.snapshot/u,
+    );
+  });
+
+  it('keeps snapshot candidates behind every earlier undelivered event', async () => {
+    const { query } = await captureClaimQuery();
+
+    expect(query).toMatch(
+      /AND \(\s*event\.event_name =\s*OR previous\.event_name <>\s*\)/u,
+    );
+    expect(query.indexOf('event.event_name =')).toBeGreaterThan(
+      query.indexOf('previous.delivery_state IN ('),
+    );
+  });
+
+  it('changes claim eligibility without mutating snapshot durability or stored order', async () => {
+    const { query } = await captureClaimQuery();
+
+    expect(query).toContain('ORDER BY event.live_session_id, event.event_seq');
+    expect(query).toContain('RETURNING event.*');
+    expect(query).not.toContain('DELETE FROM live_session_event');
+    expect(query).not.toContain('coalesced =');
+    expect(query).not.toContain('event_seq =');
+    expect(query).not.toContain(
+      `delivery_state = '${RealtimeDeliveryState.DELIVERED}'`,
+    );
   });
 
   it('bounds expiry, dead-letter recovery, and coalescing maintenance', async () => {
