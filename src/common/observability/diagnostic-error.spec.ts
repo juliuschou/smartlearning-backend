@@ -30,6 +30,29 @@ describe('projectDiagnosticError', () => {
     });
   });
 
+  it('bounds a caller-controlled Error.name value', () => {
+    const error = new Error('secret message');
+    error.name = 'password=secret-token';
+
+    expect(projectDiagnosticError(error)).toEqual({
+      errorType: 'Error',
+    });
+  });
+
+  it('fails closed when Error.name access is malformed', () => {
+    const error = new Error('secret message');
+    Object.defineProperty(error, 'name', {
+      configurable: true,
+      get: () => {
+        throw new Error('secret getter detail');
+      },
+    });
+
+    expect(projectDiagnosticError(error)).toEqual({
+      errorType: 'Error',
+    });
+  });
+
   it('omits malformed or overlong codes without throwing', () => {
     const error = new Prisma.PrismaClientKnownRequestError('message', {
       code: 'P2010',

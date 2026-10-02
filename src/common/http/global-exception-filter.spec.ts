@@ -289,12 +289,56 @@ describe('GlobalExceptionFilter', () => {
       },
     });
     expect(JSON.stringify(body)).not.toContain('database password');
-    expect(loggerError).toHaveBeenCalledWith(
-      expect.stringContaining('requestId=req-internal'),
-    );
+    expect(loggerError).toHaveBeenCalledWith({
+      message: 'Unhandled exception',
+      requestId: 'req-internal',
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      publicErrorCode: ErrorCode.INTERNAL_ERROR,
+      errorType: 'Error',
+    });
     expect(JSON.stringify(loggerError.mock.calls)).not.toContain(
       'database password=secret',
     );
+  });
+
+  it('logs safe Prisma diagnostics for unmapped known errors without payloads', () => {
+    const { host, response } = hostFor('req-prisma-internal');
+    const sentinel = 'secret-token-and-sql';
+    const exception = new Prisma.PrismaClientKnownRequestError(
+      `query=${sentinel}`,
+      {
+        code: 'P2024',
+        clientVersion: '7.9.1',
+        meta: {
+          code: '53300',
+          query: `SELECT ${sentinel}`,
+          token: sentinel,
+          target: [sentinel],
+        },
+      },
+    );
+
+    filter.catch(exception, host);
+
+    expect(response.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+    expect(response.json.mock.calls[0][0].error).toEqual({
+      code: ErrorCode.INTERNAL_ERROR,
+      message: 'Internal error',
+      blocking: false,
+      retryAfterSeconds: null,
+    });
+    expect(loggerError).toHaveBeenCalledWith({
+      message: 'Unhandled exception',
+      requestId: 'req-prisma-internal',
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      publicErrorCode: ErrorCode.INTERNAL_ERROR,
+      errorType: 'PrismaClientKnownRequestError',
+      prismaCode: 'P2024',
+      databaseCode: '53300',
+    });
+    expect(JSON.stringify(loggerError.mock.calls)).not.toContain(sentinel);
   });
 
   it('keeps the narrow DomainError API request-neutral', () => {

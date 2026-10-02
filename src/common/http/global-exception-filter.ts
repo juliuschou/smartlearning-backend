@@ -17,6 +17,7 @@ import {
   compareDeterministically,
   isValidationException,
 } from './validation-exception';
+import { projectDiagnosticError } from '../observability';
 
 /**
  * Maps every thrown error to the stable API envelope.
@@ -35,11 +36,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const { error, status } = this.map(exception);
 
     if (status >= 500) {
-      const exceptionType =
-        exception instanceof Error ? exception.name : typeof exception;
-      this.logger.error(
-        `Unhandled error code=${error.code} status=${status} requestId=${requestId} type=${exceptionType}`,
-      );
+      this.logger.error({
+        message: 'Unhandled exception',
+        requestId,
+        status,
+        publicErrorCode: error.code,
+        ...projectDiagnosticError(exception),
+      });
     }
 
     res.status(status).json(createErrorEnvelope(error, requestId));
