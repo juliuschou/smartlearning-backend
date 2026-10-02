@@ -502,3 +502,10 @@
 - **Detection signal:** Report `serverTrace.phaseB.unavailableReason=RUN_ID_MISMATCH`; fixture/driver exit 2 with "… is required" before any DB writes or socket connects.
 - **Prevention rule:** Backend start contract for W3 diagnostics must include `REALTIME_TRACE_RUN_ID=<runId>` alongside buffer size; before spawning fixture or driver, verify all repo-required env vars from `scripts/load-harness/{config,fixture,http-client}.ts` and `run-w3.ts` against a written launch checklist.
 - **Tripwire:** `grep -n "process.env.W3_\|process.env.LOAD_" scripts/load-harness/w3/run-w3.ts scripts/load-harness/w3/create-fixture.ts` — every required var in that list must appear in the launch metadata before `started=1` is recorded.
+
+### 2026-10-01 — Protected baseline must not treat expired rows as immutable
+
+- **Failure mode:** Protected-baseline evidence in a shared test database counted expired/delivered `live_session_event` rows as immutable, so legitimate production-side expiry/purge (retention) read as a baseline violation.
+- **Detection signal:** Baseline comparison fails on protected-event counts even though the protected run's evidence window is over and the rows have exceeded their retention window.
+- **Prevention rule:** Protected-baseline evidence in a shared test database must distinguish rows that production is legitimately allowed to expire/purge. Expired delivered-event rows must not be treated as immutable protected baseline.
+- **Tripwire:** Baseline assertions over `live_session_event` must exclude delivered rows past the retention window (or compare only against the run-owned scope) instead of asserting immutability over the whole table.

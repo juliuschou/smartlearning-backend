@@ -5865,3 +5865,18 @@ Per question type (poll / open_text / quiz)，各自 fresh fixture/run：
 - Required session-local settings: `SET LOCAL lock_timeout='<bounded>'` on the driver session; ReadCommitted (project default). No ALTER SYSTEM, no global config, no restart.
 - Requires `pg_terminate_backend`: **YES** — pure blocking would hang the publisher drain indefinitely; the reproduction must convert the blocked state into a PrismaClientKnownRequestError (timeout/deadlock) so the full retry→dead-letter chain can be observed. Target PID is created by the D4 holder client itself (pg_stat_activity filtered by `application_name=d4-<runId>-holder` AND `datname='smartlearning_test'`); ownership proven by application_name + exact run ID; database verified by `current_database()`; retained/dev sessions excluded because the filter matches only the D4-owned application_name prefix on `smartlearning_test`.
 - Session-local alternatives to termination are sufficient for producing the error event itself (lock_timeout); `pg_terminate_backend` is retained only as the bounded-cleanup path for the holder session. Execution is NOT authorized in D4.1.
+
+### 2026-10-01 W3 formal-run forensic checkpoint + Work Item 1 (all-submit cohort acceptance mode)
+
+**Formal run:** `w3-accept-20261001T144240Z-42a8728e`. Artifacts: `artifacts/w3-accept-20261001T144240Z-42a8728e/`.
+
+Checkpoint (correctness FAIL · performance FAIL · no rerun authorized yet):
+
+- [x] Record driver contract defect: the driver answered only `Math.ceil(300/2)=150` participants, contradicting the W3 BDD acceptance contract (300 participants, each submits one valid answer, burst ≤ 10 s). Historical harness behavior, not the acceptance shape.
+- [x] Record publisher bottleneck evidence: single-row FIFO snapshot backlog drain (~1 row/claim cycle) — cf. Fix A run `w3-fix-a-20260928T144554Z-195442d7`.
+- [x] Record submission row-lock contention evidence: 5/150 submits returned HTTP 500 at ≈2083 ms (Prisma tx `maxWait` while `live_session FOR UPDATE` held).
+- [x] Record protected-baseline expiry issue: expired delivered-event rows were treated as immutable protected baseline (lesson recorded in `tasks/lessons.md`).
+- [x] Five-work-item remediation order agreed: (1) make the acceptance driver exercise 300/300 submissions; (2) Prisma-code preservation/contention fix; (3) publisher scaling; (4) protected-baseline semantics; (5) post-fix formal rerun.
+- [ ] Another formal acceptance run: **NOT YET AUTHORIZED**. Work Item 1 only in this checkpoint.
+
+Work Item 1 (this task): `W3_COHORT_SPLIT=all` acceptance mode — every participant submits; `alternate`/`first-half` historical half-submit behavior unchanged; abstainer-only probes guarded for zero-abstainer cohorts; dedicated submission-window metric + ≤10 s gate independent of broadcast drain; expected Submission counts derived from cohort; driver-side per-submit safe failure evidence.

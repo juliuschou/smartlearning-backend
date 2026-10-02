@@ -39,6 +39,7 @@ import {
   type TraceSnapshot,
 } from './trace-client';
 import { validateTracePreflight } from './trace-preflight';
+import { parseW3CohortSplit, planCohort } from './cohort';
 import {
   cadence,
   canonicalSummary,
@@ -181,11 +182,15 @@ async function main(): Promise<void> {
     throw new Error('W3 fixture is incomplete.');
 
   const participants = toNumber(process.env.W3_PARTICIPANTS, 20);
-  // Deterministic cohort: alternate index submits / abstains.
-  const answeredCount = Math.ceil(participants / 2);
-  const splitMode = process.env.W3_COHORT_SPLIT ?? 'alternate';
-  const isAnswered = (index: number) =>
-    splitMode === 'first-half' ? index < answeredCount : index % 2 === 0;
+  // Deterministic submission cohort. `all` is the acceptance-contract shape
+  // (W3 BDD: 300 participants, each submits one valid answer, burst <= 10 s);
+  // `alternate`/`first-half` preserve the historical half-submit behavior for
+  // abstainer-dependent evidence. Unsupported values reject (no fallback).
+  const cohortPlan = planCohort(
+    participants,
+    parseW3CohortSplit(process.env.W3_COHORT_SPLIT),
+  );
+  const { answeredCount, isAnswered } = cohortPlan;
 
   const runStart = performance.now();
   const toRel = (t: number) => t - runStart;
@@ -505,7 +510,14 @@ async function main(): Promise<void> {
 
   // Explicit authoritative access-control probe (not inferred from receipts):
   // an abstaining participant's own results query must be refused while open.
-  const abstainer = clients.find((c) => !c.answered);
+  // Applicable only when the cohort plan expects an abstainer — in all-submit
+  // acceptance mode there is none, so the probe is NOT_APPLICABLE and must not
+  // contribute to the leak verdict (vote-to-reveal refusal semantics remain
+  // tested in alternate/first-half runs and other suites where an abstainer
+  // exists). No abstainer is fabricated here for the sake of the probe.
+  const abstainer = cohortPlan.expectsAbstainer
+    ? clients.find((c) => !c.answered)
+    : undefined;
   const abstainerProbe = abstainer
     ? await http.participantGetResults(
         op,
@@ -514,6 +526,7 @@ async function main(): Promise<void> {
         abstainer.participantToken,
       )
     : undefined;
+  const abstainerProbeApplicable = abstainer !== undefined;
   // The error envelope carries `data: null` (not undefined) on refusal.
   const abstainerRefused =
     abstainerProbe !== undefined &&
@@ -527,11 +540,16 @@ async function main(): Promise<void> {
     leakingParticipants: restrictedLeak.map((c) => `p${c.index}`),
     teacherSawAggregate: Array.isArray(openTeacherResults.data?.options),
     abstainerProbe: {
+      applicable: abstainerProbeApplicable,
       status: abstainerProbe?.status ?? null,
       errorCode: abstainerProbe?.errorCode ?? null,
       refused: abstainerRefused,
     },
-    leakage: restrictedLeak.length > 0 || !abstainerRefused,
+    // No abstainer in the cohort (W3_COHORT_SPLIT=all): the abstainer-refusal
+    // probe is not applicable, so it cannot contribute a leak signal.
+    leakage:
+      restrictedLeak.length > 0 ||
+      (abstainerProbeApplicable && !abstainerRefused),
   };
 
   if (phaseA.leakage) {
@@ -563,7 +581,23 @@ async function main(): Promise<void> {
     number,
     { requestStartMs: number; responseEndMs: number; submissionId?: string }
   >();
+  // Submission-window gate (W3 BDD contract: 300 valid submission ATTEMPTS
+  // complete within 10 s). This measures only the wall-clock span of the
+  // submission HTTP burst — from dispatch of the first submit to the last submit
+  // response — and is independent of the broadcast drain, close latency, and the
+  // overall workload deadline. An HTTP response completing is not a durable
+  // broadcast completion; drain is measured separately below.
+  const submitWindowGateMs = toNumber(process.env.W3_SUBMIT_WINDOW_MS, 10_000);
   const answeredClients = clients.filter((c) => c.answered);
+  const submitWindowStartedAtMs = toRel(performance.now());
+  const submitFailures: Array<{
+    client: string;
+    participantIndex: number;
+    httpStatus: number;
+    errorCode: string | null;
+    elapsedMs: number;
+  }> = [];
+  let successfulSubmissionCount = 0;
   await Promise.all(
     answeredClients.map(async (client) => {
       const optionId = optionPool[client.index % optionPool.length] ?? '';
@@ -585,8 +619,37 @@ async function main(): Promise<void> {
         responseEndMs: toRel(responseEnd),
         submissionId: result.data?.id,
       });
+      // Driver-side failure evidence: safe boundary fields only (index, status,
+      // stable error code, elapsed). No tokens, payloads, SQL, or raw errors.
+      if (result.status < 200 || result.status >= 300 || !result.data?.id) {
+        submitFailures.push({
+          client: `p${client.index}`,
+          participantIndex: client.index,
+          httpStatus: result.status,
+          errorCode: result.errorCode ?? null,
+          elapsedMs: result.elapsedMs ?? responseEnd - requestStart,
+        });
+      } else {
+        successfulSubmissionCount += 1;
+      }
     }),
   );
+  const submitWindowCompletedAtMs = toRel(performance.now());
+  const submitWindowMs = submitWindowCompletedAtMs - submitWindowStartedAtMs;
+  const submitWindow = {
+    startedAtMs: submitWindowStartedAtMs,
+    completedAtMs: submitWindowCompletedAtMs,
+    submitWindowMs,
+    attemptedSubmissionCount: answeredClients.length,
+    successfulSubmissionCount,
+    failedSubmissionCount: submitFailures.length,
+    failureEvidence: submitFailures,
+    gateThresholdMs: submitWindowGateMs,
+    gate: submitWindowMs <= submitWindowGateMs ? 'PASS' : 'FAIL',
+  };
+  // Single source of truth: the verdict derives from the report gate above, so
+  // phaseB.submitWindow.gate and verdict.performance can never disagree.
+  const submitWindowGatePassed = submitWindow.gate === 'PASS';
 
   // Bounded drain: wait until every open-state result.updated row is delivered.
   const drainDeadlineMs = toNumber(process.env.W3_BROADCAST_SETTLE_MS, 900_000);
@@ -811,7 +874,7 @@ async function main(): Promise<void> {
   });
   const phaseB = {
     answeredCount,
-    abstainedCount: participants - answeredCount,
+    abstainedCount: cohortPlan.abstainerCount,
     expectedYes,
     actualYes,
     expectedNo,
@@ -843,6 +906,7 @@ async function main(): Promise<void> {
     clientReceivedCount: voteEventMatrix.filter((row) => row.clientReceived)
       .length,
     voteEventMatrix,
+    submitWindow,
     drainWaitMs,
     recipientMatrix,
     missingClassification,
@@ -942,6 +1006,92 @@ async function main(): Promise<void> {
             r.eventName === 'result.updated' &&
             (closeSeq === undefined || r.eventSeq === closeSeq),
         )?.receivedAtMs ?? null,
+    },
+  ];
+  const closedExpected = closedRecipients.filter((r) => r.expected).length;
+  const closedActual = closedRecipients.filter(
+    (r) => r.expected && r.received,
+  ).length;
+  const closedMissing = closedRecipients.filter(
+    (r) => r.expected && !r.received,
+  );
+
+  const closedMissingClassification = closedMissing.map((m) => {
+    const client = clients.find((c) => `p${c.index}` === m.client);
+    const socket = m.kind === 'teacher' ? teacherSocket : client?.socket;
+    const serverEmit = serverEvidenceFor(phaseCTrace, closeSeq ?? '');
+    return classifyMissing({
+      label: m.client,
+      expectedEventSeq: closeSeq ?? '',
+      expectedEvent: closeRows[closeRows.length - 1],
+      socket: {
+        label: m.client,
+        participantId: client?.participantId,
+        isTeacher: m.kind === 'teacher',
+        connectedAtMs: socket?.connectedAtMs ?? -1,
+        disconnectedAtMs: socket?.lifecycle.find((l) => l.kind === 'disconnect')
+          ?.atMs,
+        everConnected: socket?.everConnected ?? false,
+        receipts: socket?.receipts ?? [],
+      },
+      ...(socket?.socketId ? { socketId: socket.socketId } : {}),
+      ...(serverEmit ? { serverEmit } : {}),
+    });
+  });
+
+  const closeLatency = [
+    ...clients.map((client) => {
+      const receipt = client.socket.receipts.find(
+        (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
+      );
+      return {
+        id: `p${client.index}`,
+        value: receipt ? receipt.receivedAtMs - toRel(closeResponseEnd) : NaN,
+      };
+    }),
+    {
+      id: 'teacher',
+      value: (() => {
+        const receipt = teacherSocket.receipts.find(
+          (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
+        );
+        return receipt ? receipt.receivedAtMs - toRel(closeResponseEnd) : NaN;
+      })(),
+    },
+  ];
+
+  // Final-broadcast duplicates: same close eventSeq delivered more than once
+  // to a single socket (per-recipient; one seq is shared by all recipients).
+  const closeDuplicateDeliveries = clients
+    .map((client) => {
+      const count = client.socket.receipts.filter(
+        (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
+      ).length;
+      return { client: `p${client.index}`, eventSeq: closeSeq ?? null, count };
+    })
+    .filter((entry) => entry.count > 1);
+
+  // Final-broadcast publish-proxy latency (server_timestamp -> receipt), using
+  // wall-clock on both ends (see votePublishLatency note).
+  const closeRow = closeRows[closeRows.length - 1];
+  const closePublishLatency = [
+    ...clients.map((client) => {
+      const receipt = client.socket.receipts.find(
+        (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
+      );
+      return {
+        id: `p${client.index}`,
+        value: wallDeltaMs(receipt?.receivedAtIso, closeRow?.server_timestamp),
+      };
+    }),
+    {
+      id: 'teacher',
+      value: (() => {
+        const receipt = teacherSocket.receipts.find(
+          (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
+        );
+        return wallDeltaMs(receipt?.receivedAtIso, closeRow?.server_timestamp);
+      })(),
     },
   ];
 
@@ -1045,93 +1195,6 @@ async function main(): Promise<void> {
     claimCycleDroppedCount: mergedTrace?.stats?.claimCycleDroppedCount,
   });
 
-  const closedExpected = closedRecipients.filter((r) => r.expected).length;
-  const closedActual = closedRecipients.filter(
-    (r) => r.expected && r.received,
-  ).length;
-  const closedMissing = closedRecipients.filter(
-    (r) => r.expected && !r.received,
-  );
-
-  const closedMissingClassification = closedMissing.map((m) => {
-    const client = clients.find((c) => `p${c.index}` === m.client);
-    const socket = m.kind === 'teacher' ? teacherSocket : client?.socket;
-    const serverEmit = serverEvidenceFor(phaseCTrace, closeSeq ?? '');
-    return classifyMissing({
-      label: m.client,
-      expectedEventSeq: closeSeq ?? '',
-      expectedEvent: closeRows[closeRows.length - 1],
-      socket: {
-        label: m.client,
-        participantId: client?.participantId,
-        isTeacher: m.kind === 'teacher',
-        connectedAtMs: socket?.connectedAtMs ?? -1,
-        disconnectedAtMs: socket?.lifecycle.find((l) => l.kind === 'disconnect')
-          ?.atMs,
-        everConnected: socket?.everConnected ?? false,
-        receipts: socket?.receipts ?? [],
-      },
-      ...(socket?.socketId ? { socketId: socket.socketId } : {}),
-      ...(serverEmit ? { serverEmit } : {}),
-    });
-  });
-
-  const closeLatency = [
-    ...clients.map((client) => {
-      const receipt = client.socket.receipts.find(
-        (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
-      );
-      return {
-        id: `p${client.index}`,
-        value: receipt ? receipt.receivedAtMs - toRel(closeResponseEnd) : NaN,
-      };
-    }),
-    {
-      id: 'teacher',
-      value: (() => {
-        const receipt = teacherSocket.receipts.find(
-          (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
-        );
-        return receipt ? receipt.receivedAtMs - toRel(closeResponseEnd) : NaN;
-      })(),
-    },
-  ];
-
-  // Final-broadcast duplicates: same close eventSeq delivered more than once
-  // to a single socket (per-recipient; one seq is shared by all recipients).
-  const closeDuplicateDeliveries = clients
-    .map((client) => {
-      const count = client.socket.receipts.filter(
-        (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
-      ).length;
-      return { client: `p${client.index}`, eventSeq: closeSeq ?? null, count };
-    })
-    .filter((entry) => entry.count > 1);
-
-  // Final-broadcast publish-proxy latency (server_timestamp -> receipt), using
-  // wall-clock on both ends (see votePublishLatency note).
-  const closeRow = closeRows[closeRows.length - 1];
-  const closePublishLatency = [
-    ...clients.map((client) => {
-      const receipt = client.socket.receipts.find(
-        (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
-      );
-      return {
-        id: `p${client.index}`,
-        value: wallDeltaMs(receipt?.receivedAtIso, closeRow?.server_timestamp),
-      };
-    }),
-    {
-      id: 'teacher',
-      value: (() => {
-        const receipt = teacherSocket.receipts.find(
-          (r) => r.eventName === 'result.updated' && r.eventSeq === closeSeq,
-        );
-        return wallDeltaMs(receipt?.receivedAtIso, closeRow?.server_timestamp);
-      })(),
-    },
-  ];
-
   // ---- P11 authoritative consistency ------------------------------------
   const dbSubmissions = await pg.query<{
     participant_id: string;
@@ -1215,7 +1278,8 @@ async function main(): Promise<void> {
     voteStats.p95 <= 2000 &&
     voteStats.p99 <= 5000 &&
     closeStats.p95 <= 2000 &&
-    closeStats.p99 <= 5000;
+    closeStats.p99 <= 5000 &&
+    submitWindowGatePassed;
 
   const report = {
     schemaVersion: 1,
@@ -1223,6 +1287,12 @@ async function main(): Promise<void> {
     runId: fx.runId,
     questionType: fx.questionType,
     participants,
+    cohort: {
+      split: cohortPlan.split,
+      answeredCount: cohortPlan.answeredCount,
+      abstainerCount: cohortPlan.abstainerCount,
+      abstainerProbeApplicable,
+    },
     fixture: {
       courseId: fx.courseId,
       questionId: fx.questionId,

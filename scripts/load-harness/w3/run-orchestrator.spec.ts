@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import type { ChildProcess } from 'node:child_process';
 import {
   orchestrateW3,
+  validateAcceptanceCohortEvidence,
   w3ApplicationNames,
   w3OwnedApplicationNames,
   type ProtectedBaseline,
@@ -141,6 +142,7 @@ async function runScenario(
     fixtureCreatesCredential?: boolean;
     credentialMode?: number;
     driverStatus?: number;
+    driverReport?: unknown;
     backendStartError?: Error;
     evidenceWriteError?: Error;
     beforeDescriptorPersist?: (path: string) => Promise<void>;
@@ -246,7 +248,31 @@ async function runScenario(
         deps.calls.push('runDriver');
         deps.driverCalls += 1;
         deps.driverEnvs.push(childEnv);
-        return options.driverStatus ?? 0;
+        const status = options.driverStatus ?? 0;
+        // The real driver always writes its report before exiting 0; a zero
+        // status with no report must fail the acceptance gate closed. The fake
+        // mirrors that contract (bad report shapes come via driverReport).
+        if (status === 0) {
+          // Derive from the child env exactly as the real driver does.
+          const n = Number(childEnv.W3_PARTICIPANTS);
+          await writeFile(
+            childEnv.W3_OUTPUT_PATH!,
+            `${JSON.stringify(
+              options.driverReport ?? {
+                participants: n,
+                cohort: {
+                  split: 'all',
+                  answeredCount: n,
+                  abstainerCount: 0,
+                  abstainerProbeApplicable: false,
+                },
+                phaseB: { submitWindow: { attemptedSubmissionCount: n } },
+              },
+            )}\n`,
+            'utf8',
+          );
+        }
+        return status;
       },
       stopBackend: async () => {
         deps.calls.push('stopBackend');
@@ -358,6 +384,9 @@ async function main(): Promise<void> {
       assert.equal(driverEnv.W3_FIXTURE_PATH, env.W3_FIXTURE_PATH);
       assert.equal(driverEnv.W3_CREDENTIAL_FILE, env.W3_CREDENTIAL_OUT);
       assert.equal(driverEnv.W3_PARTICIPANTS, '300');
+      // Work Item 1: the formal acceptance cohort is pinned by the orchestrator
+      // — the driver must see W3_COHORT_SPLIT=all without any caller export.
+      assert.equal(driverEnv.W3_COHORT_SPLIT, 'all');
       // B12 atomic-write hygiene: no temp file remains.
       const files = await readdir(dir);
       assert.equal(
@@ -381,12 +410,18 @@ async function main(): Promise<void> {
     }
   }
 
-  // ---- B2 explicit participant override ------------------------------------
+  // ---- B2 ambient participant override must not weaken formal acceptance --
+  // Acceptance contract correction: a stale shell export such as
+  // `W3_PARTICIPANTS=20` must not shrink the formal orchestrated run. The
+  // formal child env is always pinned to the acceptance scale (300, all).
   {
     const dir = await mkdtemp(join(tmpdir(), 'w3-orch-b2-'));
     try {
       const deps = await runScenario(
-        sourceEnv(dir, { W3_PARTICIPANTS: '20' }),
+        sourceEnv(dir, {
+          W3_PARTICIPANTS: '20',
+          W3_COHORT_SPLIT: 'alternate',
+        }),
         {
           fixtureStdout: JSON.stringify({
             fixture: {
@@ -396,9 +431,167 @@ async function main(): Promise<void> {
           }),
         },
       );
-      assert.equal(deps.driverEnvs[0]!.W3_PARTICIPANTS, '20');
+      assert.equal(deps.driverEnvs[0]!.W3_PARTICIPANTS, '300');
       assert.equal(W3_ACCEPTANCE_PARTICIPANTS, 300);
-      assert.equal(deps.driverEnvs[0]!.W3_PARTICIPANTS, '20');
+      // Same rule for the cohort: an ambient alternate must not leak into the
+      // formal child env — the orchestrator overwrites it with the pinned
+      // acceptance value.
+      assert.equal(deps.driverEnvs[0]!.W3_COHORT_SPLIT, 'all');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- B2b ambient W3_COHORT_SPLIT=alternate must not weaken formal --------
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-b2b-'));
+    try {
+      const deps = await runScenario(
+        sourceEnv(dir, { W3_COHORT_SPLIT: 'alternate' }),
+        {
+          fixtureStdout: JSON.stringify({
+            fixture: {
+              ...validDescriptor(),
+              credentialFile: '%CREDENTIAL_PATH%',
+            },
+          }),
+        },
+      );
+      assert.equal(deps.driverEnvs[0]!.W3_COHORT_SPLIT, 'all');
+      assert.equal(deps.driverEnvs[0]!.W3_PARTICIPANTS, '300');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  // ---- B2c acceptance report gate: wrong-cohort driver report fails closed --
+  {
+    const dir = await mkdtemp(join(tmpdir(), 'w3-orch-b2c-'));
+    try {
+      // Simulate a driver that exited 0 but produced a historical
+      // alternate-cohort report (150/300): the orchestrator must reject it.
+      const badReport = {
+        participants: 300,
+        cohort: {
+          split: 'alternate',
+          answeredCount: 150,
+          abstainerCount: 150,
+        },
+        phaseB: { submitWindow: { attemptedSubmissionCount: 150 } },
+      };
+      let captured: unknown;
+      const deps = await runScenario(sourceEnv(dir), {
+        fixtureStdout: JSON.stringify({
+          fixture: {
+            ...validDescriptor(),
+            credentialFile: '%CREDENTIAL_PATH%',
+          },
+        }),
+        driverReport: badReport,
+        captureError: (error: unknown) => {
+          captured = error;
+        },
+      });
+      assert.equal(deps.driverCalls, 1);
+      assert.equal(deps.driverEnvs[0]!.W3_COHORT_SPLIT, 'all');
+      const evidence = JSON.parse(
+        await readFile(
+          `${deps.driverEnvs[0]!.W3_OUTPUT_PATH}.exit.json`,
+          'utf8',
+        ),
+      );
+      assert.equal(evidence.blockedReason, 'W3_ACCEPTANCE_COHORT_MISMATCH');
+      assert.match(
+        captured instanceof Error ? captured.message : String(captured),
+        /W3_ACCEPTANCE_COHORT_MISMATCH/,
+      );
+      // validator unit shape, exercised directly as well:
+      assert.throws(
+        () =>
+          validateAcceptanceCohortEvidence(
+            {
+              participants: 300,
+              cohort: { split: 'alternate', answeredCount: 150 },
+              phaseB: { submitWindow: { attemptedSubmissionCount: 150 } },
+            },
+            300,
+          ),
+        /W3_ACCEPTANCE_COHORT_MISMATCH/,
+      );
+      assert.throws(
+        () =>
+          validateAcceptanceCohortEvidence(
+            {
+              participants: 300,
+              cohort: { split: 'all', answeredCount: 300 },
+              phaseB: { submitWindow: { attemptedSubmissionCount: 150 } },
+            },
+            300,
+          ),
+        /attemptedSubmissionCount/,
+      );
+      // Work Item 1 report-gate regressions: each invalid shape fails
+      // independently, and report.participants is now itself gated.
+      // Case A: under-scaled participants while the rest claims 300.
+      assert.throws(
+        () =>
+          validateAcceptanceCohortEvidence(
+            {
+              participants: 20,
+              cohort: { split: 'all', answeredCount: 300 },
+              phaseB: { submitWindow: { attemptedSubmissionCount: 300 } },
+            },
+            300,
+          ),
+        /W3_ACCEPTANCE_COHORT_MISMATCH.*participants=/,
+      );
+      // Case B: alternate cohort with proportional counts.
+      assert.throws(
+        () =>
+          validateAcceptanceCohortEvidence(
+            {
+              participants: 300,
+              cohort: { split: 'alternate', answeredCount: 150 },
+              phaseB: { submitWindow: { attemptedSubmissionCount: 150 } },
+            },
+            300,
+          ),
+        /W3_ACCEPTANCE_COHORT_MISMATCH/,
+      );
+      // Case C: answered ok but attempted under-scaled.
+      assert.throws(
+        () =>
+          validateAcceptanceCohortEvidence(
+            {
+              participants: 300,
+              cohort: { split: 'all', answeredCount: 300 },
+              phaseB: { submitWindow: { attemptedSubmissionCount: 150 } },
+            },
+            300,
+          ),
+        /W3_ACCEPTANCE_COHORT_MISMATCH.*attemptedSubmissionCount=/,
+      );
+      // Missing `participants` field fails closed.
+      assert.throws(
+        () =>
+          validateAcceptanceCohortEvidence(
+            {
+              cohort: { split: 'all', answeredCount: 300 },
+              phaseB: { submitWindow: { attemptedSubmissionCount: 300 } },
+            },
+            300,
+          ),
+        /W3_ACCEPTANCE_COHORT_MISMATCH.*participants=/,
+      );
+      // The contract-compliant shape must not throw.
+      validateAcceptanceCohortEvidence(
+        {
+          participants: 300,
+          cohort: { split: 'all', answeredCount: 300 },
+          phaseB: { submitWindow: { attemptedSubmissionCount: 300 } },
+        },
+        300,
+      );
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -945,8 +1138,19 @@ async function main(): Promise<void> {
             stderr: '',
           };
         },
-        runDriver: async () => {
+        runDriver: async (childEnv) => {
           deps.driverCalls += 1;
+          // Minimal contract-compliant report (real-driver contract).
+          const n = Number(childEnv.W3_PARTICIPANTS);
+          await writeFile(
+            childEnv.W3_OUTPUT_PATH!,
+            `${JSON.stringify({
+              participants: n,
+              cohort: { split: 'all', answeredCount: n },
+              phaseB: { submitWindow: { attemptedSubmissionCount: n } },
+            })}\n`,
+            'utf8',
+          );
           return 0;
         },
         stopBackend: async () => undefined,

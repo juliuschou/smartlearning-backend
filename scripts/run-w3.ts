@@ -727,6 +727,43 @@ export type W3OrchestratorDependencies = {
   createRunId?: (explicit?: string) => string;
 };
 
+export function validateAcceptanceCohortEvidence(
+  report: {
+    participants?: unknown;
+    cohort?: { split?: unknown; answeredCount?: unknown };
+    phaseB?: { submitWindow?: { attemptedSubmissionCount?: unknown } };
+  },
+  expectedParticipants: number,
+): void {
+  const expectedAttempted = expectedParticipants;
+  const split = report.cohort?.split;
+  const answeredCount = report.cohort?.answeredCount;
+  const attempted = report.phaseB?.submitWindow?.attemptedSubmissionCount;
+  const reportedParticipants = report.participants;
+  const problems: string[] = [];
+  if (reportedParticipants !== expectedParticipants)
+    problems.push(
+      `participants=${JSON.stringify(reportedParticipants) ?? 'missing'} (expected ${expectedParticipants})`,
+    );
+  if (split !== 'all')
+    problems.push(
+      `cohort.split=${JSON.stringify(split) ?? 'missing'} (expected "all")`,
+    );
+  if (answeredCount !== expectedParticipants)
+    problems.push(
+      `cohort.answeredCount=${JSON.stringify(answeredCount) ?? 'missing'} (expected ${expectedParticipants})`,
+    );
+  if (attempted !== expectedAttempted)
+    problems.push(
+      `phaseB.submitWindow.attemptedSubmissionCount=${JSON.stringify(attempted) ?? 'missing'} (expected ${expectedAttempted})`,
+    );
+  // Fail closed: a wrong-cohort or wrong-count run is not a valid acceptance run.
+  if (problems.length > 0)
+    throw new Error(
+      `W3_ACCEPTANCE_COHORT_MISMATCH: driver report contradicts the formal acceptance contract — ${problems.join('; ')}.`,
+    );
+}
+
 export async function orchestrateW3(
   sourceEnv: NodeJS.ProcessEnv,
   dependencies: W3OrchestratorDependencies,
@@ -755,9 +792,19 @@ export async function orchestrateW3(
   const runId = (dependencies.createRunId ?? createW3RunId)(
     sourceEnv.W3_RUN_ID ?? randomUUID(),
   );
-  // Authoritative acceptance scale unless explicitly overridden.
-  const participants =
-    sourceEnv.W3_PARTICIPANTS ?? String(W3_ACCEPTANCE_PARTICIPANTS);
+  // Authoritative acceptance scale, fully pinned: the formal acceptance path
+  // must NOT inherit an ambient W3_PARTICIPANTS shell value (a stale
+  // `W3_PARTICIPANTS=20` must not weaken a formal run to 20/300). Smaller
+  // diagnostic workloads stay available via the direct driver path
+  // (`npm run load:w3:diag`), which never goes through this orchestrator.
+  const participants = String(W3_ACCEPTANCE_PARTICIPANTS);
+  // Acceptance cohort contract (Work Item 1, 2026-10-01): a formal W3 run must
+  // launch the driver with the all-submit acceptance cohort deterministically —
+  // never the driver's historical `alternate` default, and never an ambient
+  // shell value inherited through `...w3RunEnvironment(runId, sourceEnv)`.
+  // Historical `alternate`/`first-half` diagnostics run the driver directly
+  // (`npm run load:w3:diag`), bypassing this orchestrator; acceptance here is
+  // pinned, not configurable.
   const env: NodeJS.ProcessEnv = {
     ...w3RunEnvironment(runId, sourceEnv),
     NODE_ENV: 'test',
@@ -767,6 +814,7 @@ export async function orchestrateW3(
     W3_OUTPUT_PATH: outputPath,
     W3_CREDENTIAL_FILE: credentialOut,
     W3_PARTICIPANTS: participants,
+    W3_COHORT_SPLIT: 'all',
     REALTIME_TRACE_ENABLED: '1',
     REALTIME_TRACE_BUFFER_SIZE: '20000',
   };
@@ -1036,6 +1084,28 @@ export async function orchestrateW3(
       await writeEvidencePreserving(
         'DRIVER_CHILD_FAILED',
         new Error(`W3 driver failed with status ${driverStatus}.`),
+      );
+    }
+    // Acceptance report gate (fail closed): even with the env pinned above, a
+    // driver or report mismatch (stale binary, future regression) must not be
+    // recordable as a valid acceptance run. Safe subset only — the report is
+    // written by this same invocation to the validated outputPath.
+    try {
+      const reportText = await readFile(outputPath, 'utf8');
+      validateAcceptanceCohortEvidence(
+        JSON.parse(reportText) as Parameters<
+          typeof validateAcceptanceCohortEvidence
+        >[0],
+        Number(participants),
+      );
+    } catch (error) {
+      await writeEvidencePreserving(
+        'W3_ACCEPTANCE_COHORT_MISMATCH',
+        new Error(
+          `W3 acceptance report gate failed: ${
+            error instanceof Error ? error.message : 'unreadable driver report'
+          }`,
+        ),
       );
     }
     // Post-run read-only baseline snapshot, captured before the exit evidence is
