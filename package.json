@@ -39,7 +39,7 @@
     "load:w1": "tsx scripts/run-w1.ts",
     "load:test:list": "tsx scripts/load-harness/index.ts --list",
     "load:test:unit": "tsx scripts/load-harness/metrics.spec.ts",
-    "load:w3:unit": "tsx scripts/load-harness/w3/pipeline-classify.spec.ts && tsx scripts/load-harness/w3/trace-preflight.spec.ts && tsx scripts/load-harness/w3/run-orchestrator.spec.ts",
+    "load:w3:unit": "tsx scripts/load-harness/w3/pipeline-classify.spec.ts && tsx scripts/load-harness/w3/trace-preflight.spec.ts && tsx scripts/load-harness/w3/root-cause-analysis.spec.ts && tsx scripts/load-harness/w3/run-orchestrator.spec.ts",
     "gate3:static": "bash tools/gate3/static-check.sh",
     "gate3:test": "bash tools/gate3/tests/run.sh",
     "gate3:preflight": "bash tools/gate3/gate3.sh preflight",

@@ -111,6 +111,8 @@ export interface TraceStats {
   recordedCount: number;
   droppedCount: number;
   dispatchedEventCount: number;
+  claimCycleCount: number;
+  claimCycleDroppedCount: number;
 }
 
 export interface TimingRecord {
@@ -126,6 +128,18 @@ export interface TimingRecord {
   [key: string]: string | number | undefined;
 }
 
+export interface ClaimCycleRecord {
+  runId: string;
+  publisherInstanceId: string;
+  scanReason: 'periodic_poll' | 'wake' | 'continuation' | 'startup' | 'other';
+  claimedCount: number;
+  claimTransactionStartedAtIso?: string;
+  claimTransactionResolvedAtIso?: string;
+  minClaimedEventSeq?: string;
+  maxClaimedEventSeq?: string;
+  claimedAtIso: string;
+}
+
 export interface TraceSnapshot {
   /** False when the endpoint is disabled or unreachable — evidence is NOT usable. */
   enabled: boolean;
@@ -134,6 +148,7 @@ export interface TraceSnapshot {
   runId?: string;
   stats?: TraceStats;
   records: TraceRecord[];
+  claimCycles: ClaimCycleRecord[];
   timings: TimingRecord[];
   /** Run-relative ms when the fetch completed. */
   fetchedAtMs: number;
@@ -175,6 +190,7 @@ export class TraceClient {
           enabled: false,
           unavailableReason: 'DIAGNOSTICS_DISABLED (HTTP 404)',
           records: [],
+          claimCycles: [],
           timings: [],
           fetchedAtMs: fetchedAtMs(),
         };
@@ -184,6 +200,7 @@ export class TraceClient {
           enabled: false,
           unavailableReason: `HTTP ${response.status}`,
           records: [],
+          claimCycles: [],
           timings: [],
           fetchedAtMs: fetchedAtMs(),
         };
@@ -192,6 +209,7 @@ export class TraceClient {
         data?: {
           stats?: TraceStats;
           records?: TraceRecord[];
+          claimCycles?: ClaimCycleRecord[];
           timings?: TimingRecord[];
         } | null;
       };
@@ -205,6 +223,7 @@ export class TraceClient {
           enabled: false,
           unavailableReason: 'MALFORMED_RESPONSE',
           records: [],
+          claimCycles: [],
           timings: [],
           fetchedAtMs: fetchedAtMs(),
         };
@@ -215,6 +234,7 @@ export class TraceClient {
           enabled: false,
           unavailableReason: `RUN_ID_MISMATCH (${data.stats.runId} != ${this.runId})`,
           records: [],
+          claimCycles: [],
           timings: [],
           fetchedAtMs: fetchedAtMs(),
         };
@@ -224,6 +244,7 @@ export class TraceClient {
         runId: data.stats.runId,
         stats: data.stats,
         records: data.records,
+        claimCycles: Array.isArray(data.claimCycles) ? data.claimCycles : [],
         timings: data.timings,
         fetchedAtMs: fetchedAtMs(),
       };
@@ -233,6 +254,7 @@ export class TraceClient {
         unavailableReason:
           error instanceof Error ? `FETCH_ERROR ${error.name}` : 'FETCH_ERROR',
         records: [],
+        claimCycles: [],
         timings: [],
         fetchedAtMs: fetchedAtMs(),
       };

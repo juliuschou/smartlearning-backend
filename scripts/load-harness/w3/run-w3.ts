@@ -39,6 +39,14 @@ import {
   type TraceSnapshot,
 } from './trace-client';
 import { validateTracePreflight } from './trace-preflight';
+import {
+  cadence,
+  canonicalSummary,
+  classifyClaimCycles,
+  latencyAccounting,
+  queueTimeline,
+  type OutboxRow,
+} from './root-cause-analysis';
 
 type QuestionType = 'poll' | 'quiz';
 
@@ -936,6 +944,107 @@ async function main(): Promise<void> {
         )?.receivedAtMs ?? null,
     },
   ];
+
+  // ---- P10 root-cause timing analysis ------------------------------------
+  // Full durable row set for the run-owned session, joined with the phase-C
+  // (latest, most complete) trace snapshot. Payload-free: timestamps + identity
+  // only.
+  const allOutboxRows = await pg.query<OutboxRow>(
+    `SELECT id AS event_id, event_seq::text AS event_seq, event_name, visibility,
+            target_participant_id, delivery_state, coalesced,
+            server_timestamp, claimed_at, delivered_at, created_at
+     FROM live_session_event
+     WHERE live_session_id = $1
+     ORDER BY event_seq`,
+    [fx.liveSessionId],
+  );
+  const outboxRows = allOutboxRows.rows;
+  const mergedTrace = phaseCTrace ?? phaseBTrace;
+  const mergedRecords = mergedTrace?.records ?? [];
+  const mergedTimings = mergedTrace?.timings ?? [];
+  const rootCauseRollups = traceRollups(mergedTrace);
+  const claimCycles = mergedTrace?.claimCycles ?? [];
+
+  const snapshotRows = outboxRows.filter(
+    (r) => r.event_name === 'session.snapshot',
+  );
+  const voteOutboxRows = outboxRows.filter(
+    (r) =>
+      r.event_name === 'result.updated' &&
+      r.visibility === 'participant_after_submit',
+  );
+  const closeOutboxRows = outboxRows.filter(
+    (r) => r.event_name === 'result.updated' && r.visibility === 'participant',
+  );
+
+  const rootCauseSection = {
+    note: 'Derived from the frozen phase-C trace + DB outbox rows; append uses created_at (row insert return) as proxy — commit timestamps NOT_DIRECTLY_OBSERVED.',
+    eventCardinality: {
+      total: outboxRows.length,
+      sessionState: outboxRows.filter(
+        (r) => r.event_name === 'session.state_changed',
+      ).length,
+      questionOpened: outboxRows.filter(
+        (r) => r.event_name === 'question.opened',
+      ).length,
+      sessionSnapshot: snapshotRows.length,
+      voteResult: voteOutboxRows.length,
+      questionClosed: outboxRows.filter(
+        (r) => r.event_name === 'question.closed',
+      ).length,
+      finalResult: closeOutboxRows.length,
+    },
+    snapshotBacklog: {
+      firstSnapshotClaim: snapshotRows[0]?.claimed_at ?? null,
+      lastSnapshotDelivery:
+        snapshotRows[snapshotRows.length - 1]?.delivered_at ?? null,
+      firstVoteClaim: voteOutboxRows[0]?.claimed_at ?? null,
+      lastVoteDelivery:
+        voteOutboxRows[voteOutboxRows.length - 1]?.delivered_at ?? null,
+      firstSnapshotSeq: snapshotRows[0]?.event_seq ?? null,
+      lastSnapshotSeq: snapshotRows[snapshotRows.length - 1]?.event_seq ?? null,
+      firstVoteSeq: voteOutboxRows[0]?.event_seq ?? null,
+      lastVoteSeq: voteOutboxRows[voteOutboxRows.length - 1]?.event_seq ?? null,
+    },
+    claimCycleDistribution: classifyClaimCycles(claimCycles),
+    claimCycleRaw: claimCycles,
+    interEventCadence: {
+      voteRows: {
+        interClaim: cadence(voteOutboxRows, (r) => msOf(r.claimed_at)),
+        interDelivered: cadence(voteOutboxRows, (r) => msOf(r.delivered_at)),
+      },
+      snapshotRows: {
+        interClaim: cadence(snapshotRows, (r) => msOf(r.claimed_at)),
+        interDelivered: cadence(snapshotRows, (r) => msOf(r.delivered_at)),
+      },
+      closeRows: {
+        interClaim: cadence(closeOutboxRows, (r) => msOf(r.claimed_at)),
+        interDelivered: cadence(closeOutboxRows, (r) => msOf(r.delivered_at)),
+      },
+    },
+    latencyAccounting: latencyAccounting(
+      outboxRows,
+      rootCauseRollups,
+      mergedRecords,
+      mergedTimings,
+    ),
+    queueTimeline: queueTimeline(outboxRows, mergedRecords),
+  };
+
+  // Additive canonical summary aliases. These are pure projections of values
+  // already computed above — no formula is redefined, and the nested fields
+  // remain. Missing evidence is reported as NOT_OBSERVED, never guessed.
+  const canonical = canonicalSummary({
+    eventCardinality: {
+      sessionSnapshot: snapshotRows.length,
+      voteResult: voteOutboxRows.length,
+    },
+    claimCycleDistribution: rootCauseSection.claimCycleDistribution,
+    voteInterClaim: rootCauseSection.interEventCadence.voteRows.interClaim,
+    latencyAccounting: rootCauseSection.latencyAccounting,
+    claimCycleDroppedCount: mergedTrace?.stats?.claimCycleDroppedCount,
+  });
+
   const closedExpected = closedRecipients.filter((r) => r.expected).length;
   const closedActual = closedRecipients.filter(
     (r) => r.expected && r.received,
@@ -1181,6 +1290,10 @@ async function main(): Promise<void> {
     // Diagnostic trace: server-side emit evidence. `enabled=false` means the
     // backend was not started with REALTIME_TRACE_ENABLED=1 for this run id, so
     // a missing receipt CANNOT be attributed to the server layer from this run.
+    // Root-cause timing analysis (Phase 2/3 of the checkpoint contract):
+    // per-event segments, cadence, claim-cycle distribution, queue timeline.
+    rootCause: rootCauseSection,
+    canonicalSummary: canonical,
     serverTrace: {
       traceEnabled,
       deliveryStateSemantics:
@@ -1219,6 +1332,13 @@ async function main(): Promise<void> {
       `voteYes=${actualYes}/${expectedYes} forbidden=${forbiddenDelivery} closed=${closedActual}/${closedExpected} ` +
       `missClass=${missingClassification.map((m) => m.classification).join(',') || 'none'}\n`,
   );
+}
+
+/** Wall-clock parse shared by the cadence/timeline helpers. */
+function msOf(value: string | Date | null | undefined): number | undefined {
+  if (value === null || value === undefined) return undefined;
+  const parsed = value instanceof Date ? value.getTime() : Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 void main().catch((error: unknown) => {
