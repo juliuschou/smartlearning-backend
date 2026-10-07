@@ -52,6 +52,55 @@ export interface SubmitOnlyTransactionEvidence {
   databaseCode?: string;
 }
 
+export type SubmitOnlyTimingCorrelationStatus =
+  | 'HEALTHY'
+  | 'CORRELATION_ID_MISMATCH'
+  | 'NO_TIMINGS_OBSERVED'
+  | 'PARTIAL_MATCH';
+
+export interface SubmitOnlyTimingCorrelationSummary {
+  expectedTimingIdCount: number;
+  observedTimingIdCount: number;
+  matchedTimingIdCount: number;
+  notObservedTimingCount: number;
+  status: SubmitOnlyTimingCorrelationStatus;
+}
+
+export function summarizeSubmitOnlyTimingCorrelation(
+  requestIds: readonly string[],
+  timings: readonly SubmitOnlyTimingRecord[],
+): SubmitOnlyTimingCorrelationSummary {
+  const expectedIds = new Set(requestIds);
+  const observedIds = new Set(
+    timings
+      .map((timing) => timing.correlationId)
+      .filter((correlationId) => correlationId.length > 0),
+  );
+  let matchedTimingIdCount = 0;
+  for (const requestId of expectedIds) {
+    if (observedIds.has(requestId)) matchedTimingIdCount += 1;
+  }
+  const expectedTimingIdCount = expectedIds.size;
+  const observedTimingIdCount = observedIds.size;
+  const notObservedTimingCount = expectedTimingIdCount - matchedTimingIdCount;
+  const status: SubmitOnlyTimingCorrelationStatus =
+    observedTimingIdCount === 0
+      ? 'NO_TIMINGS_OBSERVED'
+      : matchedTimingIdCount === 0
+        ? 'CORRELATION_ID_MISMATCH'
+        : matchedTimingIdCount === expectedTimingIdCount
+          ? 'HEALTHY'
+          : 'PARTIAL_MATCH';
+
+  return {
+    expectedTimingIdCount,
+    observedTimingIdCount,
+    matchedTimingIdCount,
+    notObservedTimingCount,
+    status,
+  };
+}
+
 export function projectSubmitOnlyTransactionEvidence(
   requestIds: readonly string[],
   timings: readonly SubmitOnlyTimingRecord[],

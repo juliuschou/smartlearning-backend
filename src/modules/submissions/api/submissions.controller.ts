@@ -5,8 +5,11 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
+import { requestIdFrom } from '../../../common/http';
 import { CurrentParticipant } from '../../participants/api/participant-context';
 import { ParticipantOrSessionGuard } from '../../participants/api/participant-token.guard';
 import type { ParticipantContext } from '../../participants/application/participant.service';
@@ -24,12 +27,14 @@ export class SubmissionsController {
     @Headers('idempotency-key') idempotencyKey: string | undefined,
     @CurrentParticipant() participant: ParticipantContext | undefined,
     @Body() dto: CreateSubmissionDto,
+    @Req() request: Request,
   ): Promise<SubmissionDto> {
     const submission = await this.submissions.submit(
       liveSessionId,
       participant,
       idempotencyKey,
       dto,
+      { correlationId: requestIdFrom(request) },
     );
     return {
       id: submission.id,

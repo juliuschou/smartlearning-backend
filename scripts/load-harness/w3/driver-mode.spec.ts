@@ -6,6 +6,7 @@ import {
   parseW3DriverMode,
   projectSubmitOnlyTransactionEvidence,
   runW3DriverPhases,
+  summarizeSubmitOnlyTimingCorrelation,
 } from './driver-mode';
 import { W3_ACCEPTANCE_PARTICIPANTS } from './run-contract';
 import { executeSubmissionBurst } from './submission-burst';
@@ -196,6 +197,69 @@ async function main(): Promise<void> {
   );
   assert.equal(JSON.stringify(projected).includes('raw message'), false);
   assert.equal(JSON.stringify(projected).includes('meta'), false);
+
+  const expectedTimingIds = Array.from(
+    { length: W3_ACCEPTANCE_PARTICIPANTS },
+    (_, index) => `w3-timing-${index}`,
+  );
+  const matchedTimings = expectedTimingIds.map((correlationId) => ({
+    correlationId,
+    transactionDiagnostic: {
+      acquireStartedAt: '2026-10-06T00:00:00.000Z',
+      bodyStartedAt: '2026-10-06T00:00:00.010Z',
+      bodyCompletedAt: '2026-10-06T00:00:00.020Z',
+      succeeded: true,
+    },
+  }));
+  const matchedEvidence = projectSubmitOnlyTransactionEvidence(
+    expectedTimingIds,
+    matchedTimings,
+  );
+  assert.equal(
+    matchedEvidence.filter((evidence) => evidence.status === 'OBSERVED').length,
+    W3_ACCEPTANCE_PARTICIPANTS,
+  );
+  assert.deepEqual(
+    summarizeSubmitOnlyTimingCorrelation(expectedTimingIds, matchedTimings),
+    {
+      expectedTimingIdCount: 300,
+      observedTimingIdCount: 300,
+      matchedTimingIdCount: 300,
+      notObservedTimingCount: 0,
+      status: 'HEALTHY',
+    },
+  );
+
+  const disjointTimings = expectedTimingIds.map((_, index) => ({
+    correlationId: `server-random-${index}`,
+  }));
+  assert.deepEqual(
+    summarizeSubmitOnlyTimingCorrelation(expectedTimingIds, disjointTimings),
+    {
+      expectedTimingIdCount: 300,
+      observedTimingIdCount: 300,
+      matchedTimingIdCount: 0,
+      notObservedTimingCount: 300,
+      status: 'CORRELATION_ID_MISMATCH',
+    },
+  );
+  assert.equal(
+    summarizeSubmitOnlyTimingCorrelation(expectedTimingIds, []).status,
+    'NO_TIMINGS_OBSERVED',
+  );
+  assert.deepEqual(
+    summarizeSubmitOnlyTimingCorrelation(
+      expectedTimingIds,
+      matchedTimings.slice(0, 299),
+    ),
+    {
+      expectedTimingIdCount: 300,
+      observedTimingIdCount: 299,
+      matchedTimingIdCount: 299,
+      notObservedTimingCount: 1,
+      status: 'PARTIAL_MATCH',
+    },
+  );
 
   await assert.rejects(
     runW3DriverPhases('submit-only', {

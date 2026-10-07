@@ -48,6 +48,10 @@ export interface SubmissionProjection {
   submittedAt: Date;
 }
 
+export interface SubmissionTraceContext {
+  correlationId?: string;
+}
+
 @Injectable()
 export class SubmissionService {
   private readonly logger = new Logger(SubmissionService.name);
@@ -83,13 +87,16 @@ export class SubmissionService {
     participant: ParticipantContext | undefined,
     idempotencyKey: string | undefined,
     dto: CreateSubmissionDto,
+    traceContext?: SubmissionTraceContext,
   ): Promise<SubmissionProjection> {
     if (!participant) throw new UnauthorizedError();
     const canonicalLiveSessionId = normalizeUuid(liveSessionId);
     const canonicalQuestionId = normalizeUuid(dto.sessionQuestionId);
     const canonicalParticipantId = normalizeUuid(participant.participantId);
     const trace = this.trace;
-    const correlationId = trace?.enabled ? newId() : undefined;
+    const correlationId = trace?.enabled
+      ? (traceContext?.correlationId ?? newId())
+      : undefined;
     const requestReceivedAt = trace?.enabled
       ? new Date().toISOString()
       : undefined;

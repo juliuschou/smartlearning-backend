@@ -43,6 +43,7 @@ import {
   classifySubmitOnlyContention,
   parseW3DriverMode,
   projectSubmitOnlyTransactionEvidence,
+  summarizeSubmitOnlyTimingCorrelation,
 } from './driver-mode';
 import { W3_ACCEPTANCE_PARTICIPANTS } from './run-contract';
 import { executeSubmissionBurst } from './submission-burst';
@@ -348,9 +349,14 @@ async function main(): Promise<void> {
     const requestIds = [...submission.submitRecords.values()].map(
       (record) => record.requestId,
     );
+    const timings = diagnosticSnapshot?.timings ?? [];
     const transactionEvidence = projectSubmitOnlyTransactionEvidence(
       requestIds,
-      diagnosticSnapshot?.timings ?? [],
+      timings,
+    );
+    const timingCorrelation = summarizeSubmitOnlyTimingCorrelation(
+      requestIds,
+      timings,
     );
     const traceAvailable =
       diagnosticSnapshot?.enabled === true &&
@@ -392,6 +398,7 @@ async function main(): Promise<void> {
         unavailableReason:
           diagnosticSnapshot?.unavailableReason ??
           (traceAvailable ? null : 'NOT_OBSERVED'),
+        correlation: timingCorrelation,
         records: transactionEvidence,
       },
       contentionVerdict,
