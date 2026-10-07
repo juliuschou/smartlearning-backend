@@ -12,6 +12,7 @@
  */
 
 import type { DiagnosticErrorProjection } from '../../../common/observability';
+import type { RealtimeScanReason } from '../live-session-realtime-contract';
 
 export const REALTIME_TRACE_SCHEMA_VERSION = 1 as const;
 
@@ -37,6 +38,33 @@ export type RealtimeTraceGuard =
 
 export type RealtimeTraceTransition =
   'delivered' | 'retry' | 'dead' | 'stale_claim_lost' | 'coalesced';
+
+/**
+ * Why one publisher claim cycle ran. Diagnostic-only: the drain loop passes the
+ * trigger it already knows locally; no scheduling behavior is changed.
+ * The type is owned by `live-session-realtime-contract.ts` (re-exported here for
+ * diagnostic consumers).
+ */
+export type { RealtimeScanReason };
+
+/**
+ * One publisher claim cycle. This is the per-cycle (not per-row) evidence that
+ * lets a W3 run prove cadence and claim-batch distribution directly: scan
+ * reason, how many rows the claim SQL returned, and the claimed seq range.
+ */
+export interface RealtimeClaimCycleRecord {
+  runId: string;
+  publisherInstanceId: string;
+  scanReason: RealtimeScanReason;
+  claimedCount: number;
+  /** Claim transaction wall-clock start/return (ISO), when observed. */
+  claimTransactionStartedAtIso?: string;
+  claimTransactionResolvedAtIso?: string;
+  /** Inclusive claimed event_seq range ('' when zero rows). */
+  minClaimedEventSeq?: string;
+  maxClaimedEventSeq?: string;
+  claimedAtIso: string;
+}
 
 /**
  * One trace record. Publisher-leg fields (`claimedAtIso` .. `transitionWallIso`)
@@ -171,6 +199,10 @@ export interface RealtimeTraceStats {
   droppedCount: number;
   /** Distinct `eventId`s seen by the publisher leg. */
   dispatchedEventCount: number;
+  /** Claim cycles retained (separately bounded; see `claimCycleCapacity`). */
+  claimCycleCount: number;
+  /** Claim cycles evicted since start. */
+  claimCycleDroppedCount: number;
 }
 
 export interface RealtimeTraceFilter {
@@ -192,6 +224,17 @@ export interface RealtimeTimingRecord {
   eventSeq?: string;
   eventType?: string;
   requestReceivedAt?: string;
+  transactionDiagnostic?: {
+    acquireStartedAt?: string;
+    callbackEntered?: boolean;
+    bodyStartedAt?: string;
+    backendPid?: number;
+    backendPidObservedAt?: string;
+    bodyCompletedAt?: string;
+    resolvedAt?: string;
+    succeeded?: boolean;
+    error?: DiagnosticErrorProjection;
+  };
   transactionStartedAt?: string;
   transactionCallbackCompletedAt?: string;
   transactionResolvedAt?: string;
@@ -214,5 +257,6 @@ export interface RealtimeTimingRecord {
 export interface RealtimeTraceSnapshot {
   stats: RealtimeTraceStats;
   records: RealtimeTraceRecord[];
+  claimCycles: RealtimeClaimCycleRecord[];
   timings: RealtimeTimingRecord[];
 }

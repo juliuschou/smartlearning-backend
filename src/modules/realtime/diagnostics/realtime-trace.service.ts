@@ -7,6 +7,8 @@ import {
 import { realtimeRuntimeIdentity } from './realtime-runtime-identity';
 import {
   REALTIME_TRACE_SCHEMA_VERSION,
+  type RealtimeClaimCycleRecord,
+  type RealtimeScanReason,
   type RealtimeTraceFilter,
   type RealtimeTraceGuard,
   type RealtimeTraceRecord,
@@ -18,6 +20,8 @@ import {
 
 const DEFAULT_BUFFER_SIZE = 5_000;
 const MAX_BUFFER_SIZE = 200_000;
+/** Per-cycle claim evidence is small; cap it independently of the row buffer. */
+const MAX_CLAIM_CYCLES = 10_000;
 const KEY_SEP = '\u0000';
 
 /**
@@ -63,6 +67,8 @@ export class RealtimeTraceService {
    */
   private readonly timingByEvent = new Map<string, Set<string>>();
   private readonly recordByKey = new Map<string, RealtimeTraceRecord>();
+  private readonly claimCycles: RealtimeClaimCycleRecord[] = [];
+  private claimCycleDroppedCount = 0;
   private droppedCount = 0;
   private readonly dispatchedEventIds = new Set<string>();
 
@@ -514,6 +520,53 @@ export class RealtimeTraceService {
     });
   }
 
+  // --- publisher claim cycles ---------------------------------------------
+
+  /**
+   * Per-cycle (not per-row) claim evidence: why the scan ran and how many rows
+   * it claimed. Payload-free and separately bounded; a diagnostics failure
+   * never affects delivery.
+   */
+  recordClaimCycle(input: {
+    publisherInstanceId: string;
+    scanReason: RealtimeScanReason;
+    claimedCount: number;
+    claimTransactionStartedAtIso?: string;
+    claimTransactionResolvedAtIso?: string;
+    minClaimedEventSeq?: string;
+    maxClaimedEventSeq?: string;
+  }): void {
+    if (!this.enabled) return;
+    this.safe(() => {
+      this.claimCycles.push({
+        runId: this.runId,
+        publisherInstanceId: input.publisherInstanceId,
+        scanReason: input.scanReason,
+        claimedCount: input.claimedCount,
+        ...(input.claimTransactionStartedAtIso !== undefined
+          ? { claimTransactionStartedAtIso: input.claimTransactionStartedAtIso }
+          : {}),
+        ...(input.claimTransactionResolvedAtIso !== undefined
+          ? {
+              claimTransactionResolvedAtIso:
+                input.claimTransactionResolvedAtIso,
+            }
+          : {}),
+        ...(input.minClaimedEventSeq !== undefined
+          ? { minClaimedEventSeq: input.minClaimedEventSeq }
+          : {}),
+        ...(input.maxClaimedEventSeq !== undefined
+          ? { maxClaimedEventSeq: input.maxClaimedEventSeq }
+          : {}),
+        claimedAtIso: new Date().toISOString(),
+      });
+      if (this.claimCycles.length > MAX_CLAIM_CYCLES) {
+        this.claimCycles.shift();
+        this.claimCycleDroppedCount += 1;
+      }
+    });
+  }
+
   recordTiming(input: RealtimeTimingRecord): void {
     if (!this.enabled) return;
     this.safe(() => {
@@ -536,6 +589,24 @@ export class RealtimeTraceService {
         }
         ids.add(input.correlationId);
       }
+    });
+  }
+
+  recordTransactionDiagnostic(
+    correlationId: string,
+    patch: NonNullable<RealtimeTimingRecord['transactionDiagnostic']>,
+  ): void {
+    if (!this.enabled) return;
+    this.safe(() => {
+      const existing = this.timingRecords.get(correlationId);
+      if (!existing) return;
+      this.timingRecords.set(correlationId, {
+        ...existing,
+        transactionDiagnostic: {
+          ...existing.transactionDiagnostic,
+          ...patch,
+        },
+      });
     });
   }
 
@@ -585,6 +656,8 @@ export class RealtimeTraceService {
       recordedCount: this.records.length,
       droppedCount: this.droppedCount,
       dispatchedEventCount: this.dispatchedEventIds.size,
+      claimCycleCount: this.claimCycles.length,
+      claimCycleDroppedCount: this.claimCycleDroppedCount,
     };
   }
 
@@ -607,6 +680,7 @@ export class RealtimeTraceService {
     return {
       stats: this.stats(),
       records: records.map(cloneRecord),
+      claimCycles: this.claimCycles.filter((cycle) => cycle.runId === runId),
       timings: [...this.timingRecords.values()].filter(
         (timing) => timing.runId === runId,
       ),

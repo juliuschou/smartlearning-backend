@@ -35,29 +35,69 @@ export class TransactionService {
         callbackCompletedAt?: () => void;
         resolvedAt?: () => void;
         rolledBackAt?: () => void;
+        diagnostic?: {
+          acquireStartedAt?: () => void;
+          callbackEntered?: (entered: boolean) => void;
+          bodyStartedAt?: () => void;
+          backendPid?: (pid: number) => void;
+          bodyCompletedAt?: () => void;
+          resolvedAt?: () => void;
+          succeeded?: (succeeded: boolean) => void;
+          error?: (error: unknown) => void;
+        };
       };
     },
   ): Promise<T> {
     const diagnostics = options?.diagnostics;
+    const diagnostic = diagnostics?.diagnostic;
     const { diagnostics: _ignoredDiagnostics, ...prismaOptions } =
       options ?? {};
     let transactionCallbackEntered = false;
+    diagnostic?.acquireStartedAt?.();
     try {
       const result = await this.prismaService.prisma.$transaction(
         async (tx) => {
           transactionCallbackEntered = true;
+          diagnostic?.callbackEntered?.(true);
+          diagnostic?.bodyStartedAt?.();
           diagnostics?.startedAt?.();
+          if (diagnostic?.backendPid) {
+            try {
+              const rows = await tx.$queryRaw<Array<{ pid: number }>>`
+                SELECT pg_backend_pid() AS pid
+              `;
+              const pid = rows[0]?.pid;
+              if (typeof pid === 'number') diagnostic.backendPid(pid);
+            } catch {
+              // Best-effort diagnostic only; must not affect transaction behavior.
+            }
+          }
           const value = await fn(tx);
+          diagnostic?.bodyCompletedAt?.();
           diagnostics?.callbackCompletedAt?.();
           return value;
         },
         prismaOptions,
       );
+      diagnostic?.succeeded?.(true);
       diagnostics?.resolvedAt?.();
       return result;
     } catch (error) {
-      if (transactionCallbackEntered) diagnostics?.rolledBackAt?.();
+      if (!transactionCallbackEntered) {
+        diagnostic?.callbackEntered?.(false);
+      }
+
+      diagnostic?.error?.(error);
+      diagnostic?.succeeded?.(false);
+
+      // Preserve the pre-existing outer rollback callback semantics only.
+      if (transactionCallbackEntered) {
+        diagnostics?.rolledBackAt?.();
+      }
+
       throw error;
+    } finally {
+      diagnostic?.resolvedAt?.();
     }
   }
 

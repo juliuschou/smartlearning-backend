@@ -9,7 +9,10 @@ import {
   UnauthorizedError,
   ValidationError,
 } from '../../../common/errors';
-import { errorType } from '../../../common/observability';
+import {
+  errorType,
+  projectDiagnosticError,
+} from '../../../common/observability';
 import { TransactionService } from '../../../prisma/transaction.service';
 import {
   LiveSessionStatus,
@@ -20,6 +23,7 @@ import { AccountStatus } from '../../identity/domain/account-status';
 import { EnrollmentStatus } from '../../enrollments/domain';
 import { LiveSessionEventBus } from '../../realtime/live-session-event-bus';
 import { RealtimeTraceService } from '../../realtime/diagnostics/realtime-trace.service';
+import type { RealtimeTimingRecord } from '../../realtime/diagnostics/realtime-trace.types';
 import { LiveSessionOutboxService } from '../../realtime/live-session-outbox.service';
 import {
   RealtimeEvent,
@@ -103,6 +107,12 @@ export class SubmissionService {
       });
     };
     recordTiming({});
+    const recordTransactionDiagnostic = (
+      patch: NonNullable<RealtimeTimingRecord['transactionDiagnostic']>,
+    ) => {
+      if (!correlationId || !trace) return;
+      trace.recordTransactionDiagnostic(correlationId, patch);
+    };
     if (normalizeUuid(participant.liveSessionId) !== canonicalLiveSessionId) {
       throw new UnauthorizedError();
     }
@@ -356,6 +366,41 @@ export class SubmissionService {
                 recordTiming({
                   transactionRolledBackAt: new Date().toISOString(),
                 }),
+              diagnostic: {
+                acquireStartedAt: () =>
+                  recordTransactionDiagnostic({
+                    acquireStartedAt: new Date().toISOString(),
+                  }),
+                callbackEntered: (entered) =>
+                  recordTransactionDiagnostic({
+                    callbackEntered: entered,
+                  }),
+                bodyStartedAt: () =>
+                  recordTransactionDiagnostic({
+                    bodyStartedAt: new Date().toISOString(),
+                  }),
+                backendPid: (pid) =>
+                  recordTransactionDiagnostic({
+                    backendPid: pid,
+                    backendPidObservedAt: new Date().toISOString(),
+                  }),
+                bodyCompletedAt: () =>
+                  recordTransactionDiagnostic({
+                    bodyCompletedAt: new Date().toISOString(),
+                  }),
+                resolvedAt: () =>
+                  recordTransactionDiagnostic({
+                    resolvedAt: new Date().toISOString(),
+                  }),
+                succeeded: (succeeded) =>
+                  recordTransactionDiagnostic({
+                    succeeded,
+                  }),
+                error: (error) =>
+                  recordTransactionDiagnostic({
+                    error: projectDiagnosticError(error),
+                  }),
+              },
             },
           }
         : undefined,

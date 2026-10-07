@@ -102,6 +102,17 @@ export type RealtimeCheckpointReason =
 export type RealtimeOutboxReason =
   RealtimeSyncReason | RealtimeCheckpointReason;
 
+export const RealtimeScanReason = {
+  PERIODIC_POLL: 'periodic_poll',
+  WAKE: 'wake',
+  CONTINUATION: 'continuation',
+  STARTUP: 'startup',
+  OTHER: 'other',
+} as const;
+
+export type RealtimeScanReason =
+  (typeof RealtimeScanReason)[keyof typeof RealtimeScanReason];
+
 export const REALTIME_STATUSES = [
   LiveSessionStatus.WAITING,
   LiveSessionStatus.ACTIVE,

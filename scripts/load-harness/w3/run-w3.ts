@@ -20,7 +20,6 @@
 import 'dotenv/config';
 import { readFile, writeFile } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
-import { randomUUID } from 'node:crypto';
 import { Client } from 'pg';
 import { LoadHttpClient } from '../http-client';
 import { createOperation } from '../metrics';
@@ -40,6 +39,13 @@ import {
 } from './trace-client';
 import { validateTracePreflight } from './trace-preflight';
 import { parseW3CohortSplit, planCohort } from './cohort';
+import {
+  classifySubmitOnlyContention,
+  parseW3DriverMode,
+  projectSubmitOnlyTransactionEvidence,
+} from './driver-mode';
+import { W3_ACCEPTANCE_PARTICIPANTS } from './run-contract';
+import { executeSubmissionBurst } from './submission-burst';
 import {
   cadence,
   canonicalSummary,
@@ -99,6 +105,26 @@ function assertFixture(value: unknown): asserts value is { fixture: Fixture } {
   }
 }
 
+async function writeArtifact(
+  outputPath: string,
+  report: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const existing = await readFile(outputPath, 'utf8');
+    if (existing.trim().length > 0)
+      throw new Error(
+        `W3 artifact already exists; refusing to overwrite: ${outputPath}`,
+      );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('refusing to overwrite')
+    )
+      throw error;
+  }
+  await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+}
+
 interface ParticipantClient {
   index: number;
   participantId: string;
@@ -153,13 +179,14 @@ function withClient(values: Array<{ id: string; value: number }>) {
 }
 
 async function main(): Promise<void> {
+  const mode = parseW3DriverMode(process.argv.slice(2));
   // ---- P0 preflight -------------------------------------------------------
   const fixturePath = process.env.W3_FIXTURE_PATH;
   const outputPath = process.env.W3_OUTPUT_PATH;
   const databaseUrl = process.env.DATABASE_URL;
   if (!fixturePath || !outputPath)
     throw new Error('W3_FIXTURE_PATH and W3_OUTPUT_PATH are required.');
-  if (!databaseUrl?.includes('smartlearning_test'))
+  if (mode === 'full' && !databaseUrl?.includes('smartlearning_test'))
     throw new Error('DATABASE_URL must target smartlearning_test (refusing).');
   const baseUrl = process.env.LOAD_BASE_URL ?? 'http://127.0.0.1:3001';
   if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(baseUrl))
@@ -181,14 +208,18 @@ async function main(): Promise<void> {
   if (!fx.liveSessionId || !fx.sessionQuestionId || !fx.sessionCode)
     throw new Error('W3 fixture is incomplete.');
 
-  const participants = toNumber(process.env.W3_PARTICIPANTS, 20);
-  // Deterministic submission cohort. `all` is the acceptance-contract shape
-  // (W3 BDD: 300 participants, each submits one valid answer, burst <= 10 s);
-  // `alternate`/`first-half` preserve the historical half-submit behavior for
-  // abstainer-dependent evidence. Unsupported values reject (no fallback).
+  const participants =
+    mode === 'submit-only'
+      ? W3_ACCEPTANCE_PARTICIPANTS
+      : toNumber(process.env.W3_PARTICIPANTS, 20);
+  // Submit-only is a targeted acceptance-shaped measurement and cannot be
+  // weakened by inherited smoke settings. Full mode preserves its historical
+  // direct-driver defaults; the formal orchestrator still pins 300/all itself.
   const cohortPlan = planCohort(
     participants,
-    parseW3CohortSplit(process.env.W3_COHORT_SPLIT),
+    mode === 'submit-only'
+      ? 'all'
+      : parseW3CohortSplit(process.env.W3_COHORT_SPLIT),
   );
   const { answeredCount, isAnswered } = cohortPlan;
 
@@ -215,8 +246,11 @@ async function main(): Promise<void> {
       );
   }
 
-  const pg = new Client({ connectionString: databaseUrl });
-  await pg.connect();
+  let pg: Client | undefined;
+  if (mode === 'full') {
+    pg = new Client({ connectionString: databaseUrl });
+    await pg.connect();
+  }
   let phaseBTrace: TraceSnapshot | undefined;
   let phaseCTrace: TraceSnapshot | undefined;
   const traceRollups = (
@@ -291,6 +325,110 @@ async function main(): Promise<void> {
         `W3 join incomplete: joined=${joined.length}/${participants}.`,
       );
   }
+
+  if (mode === 'submit-only') {
+    const submitOp = createOperation('w3-submit', 'http');
+    const submission = await executeSubmissionBurst({
+      participants: joined.map((participant) => ({
+        ...participant,
+        answered: true,
+      })),
+      optionIds: fx.options.map((option) => option.id),
+      runId: fx.runId,
+      liveSessionId: fx.liveSessionId,
+      sessionQuestionId: fx.sessionQuestionId,
+      operation: submitOp,
+      gateThresholdMs: toNumber(process.env.W3_SUBMIT_WINDOW_MS, 10_000),
+      toRelativeMs: toRel,
+      submitRaw: http.submitRaw.bind(http),
+    });
+    const diagnosticSnapshot = traceClient
+      ? await traceClient.fetch()
+      : undefined;
+    const requestIds = [...submission.submitRecords.values()].map(
+      (record) => record.requestId,
+    );
+    const transactionEvidence = projectSubmitOnlyTransactionEvidence(
+      requestIds,
+      diagnosticSnapshot?.timings ?? [],
+    );
+    const traceAvailable =
+      diagnosticSnapshot?.enabled === true &&
+      diagnosticSnapshot.runId === fx.runId &&
+      diagnosticSnapshot.stats?.droppedCount === 0;
+    const contentionVerdict = classifySubmitOnlyContention({
+      traceAvailable,
+      transactionEvidence,
+      http500Count: submission.submitWindow.http500Count,
+    });
+    const report = {
+      schemaVersion: 1,
+      phase: 'W3-submission-contention',
+      executionMode: 'submit-only',
+      measurementStatus: 'completed',
+      runId: fx.runId,
+      participants,
+      cohort: {
+        split: cohortPlan.split,
+        answeredCount: cohortPlan.answeredCount,
+        abstainerCount: cohortPlan.abstainerCount,
+      },
+      fixture: {
+        liveSessionId: fx.liveSessionId,
+        sessionQuestionId: fx.sessionQuestionId,
+      },
+      expectedParticipantIds: joined.map(
+        (participant) => participant.participantId,
+      ),
+      summary: {
+        SUBMISSION_ATTEMPTS: submission.submitWindow.attemptedSubmissionCount,
+        SUBMISSION_SUCCESSES: submission.submitWindow.successfulSubmissionCount,
+        SUBMISSION_FAILURES: submission.submitWindow.failedSubmissionCount,
+        HTTP_500_COUNT: submission.submitWindow.http500Count,
+      },
+      submissionWindow: submission.submitWindow,
+      transactionEvidence: {
+        traceAvailable,
+        unavailableReason:
+          diagnosticSnapshot?.unavailableReason ??
+          (traceAvailable ? null : 'NOT_OBSERVED'),
+        records: transactionEvidence,
+      },
+      contentionVerdict,
+      postRunVerification: {
+        status: 'NOT_RUN',
+        reason: 'SEPARATE_DB_AUTHORIZATION_REQUIRED',
+        verifier: 'scripts/load-harness/w3/submission-post-run-verifier.ts',
+        requiredEvidence: [
+          'durable Submission rows',
+          'durable participant_after_submit result.updated outbox rows',
+          'duplicate submissions/events',
+          'missing submissions/events',
+        ],
+      },
+      skippedPhases: [
+        'publisher-drain-acceptance',
+        'realtime-delivery-acceptance',
+        'teacher-result-reveal-acceptance',
+        'question-close',
+        'session-close',
+        'broad-w3-verdict',
+      ],
+      safety: {
+        secretsRedacted: true,
+        destructiveCleanup: false,
+        databaseConnectionOpenedByDriver: false,
+      },
+    };
+    await writeArtifact(outputPath, report);
+    process.stdout.write(
+      `W3 submit-only completed attempts=${submission.submitWindow.attemptedSubmissionCount} successes=${submission.submitWindow.successfulSubmissionCount} failures=${submission.submitWindow.failedSubmissionCount} http500=${submission.submitWindow.http500Count} contention=${contentionVerdict}\n`,
+    );
+    return;
+  }
+
+  if (!pg)
+    throw new Error('W3 full mode PostgreSQL client was not initialized.');
 
   const clients: ParticipantClient[] = joined.map((p) => ({
     index: p.index,
@@ -428,23 +566,6 @@ async function main(): Promise<void> {
     },
   ];
 
-  const writeArtifact = async (report: Record<string, unknown>) => {
-    try {
-      const existing = await readFile(outputPath, 'utf8');
-      if (existing.trim().length > 0)
-        throw new Error(
-          `W3 artifact already exists; refusing to overwrite: ${outputPath}`,
-        );
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes('refusing to overwrite')
-      )
-        throw error;
-    }
-    await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  };
-
   if (!hardGatePassed) {
     const blocked = {
       schemaVersion: 1,
@@ -565,7 +686,7 @@ async function main(): Promise<void> {
       phaseA,
       safety: { secretsRedacted: true, destructiveCleanup: false },
     };
-    await writeArtifact(failed);
+    await writeArtifact(outputPath, failed);
     clients.forEach((c) => c.socket.disconnect());
     teacherSocket.disconnect();
     await pg.end();
@@ -575,78 +696,22 @@ async function main(): Promise<void> {
 
   // ---- P4 Phase B: vote-to-reveal ---------------------------------------
   const submitOp = createOperation('w3-submit', 'http');
-  const optionPool = fx.options.map((o) => o.id);
-  const answerByIndex = new Map<number, string>();
-  const submitRecords = new Map<
-    number,
-    { requestStartMs: number; responseEndMs: number; submissionId?: string }
-  >();
+  const answeredClients = clients.filter((client) => client.answered);
   // Submission-window gate (W3 BDD contract: 300 valid submission ATTEMPTS
-  // complete within 10 s). This measures only the wall-clock span of the
-  // submission HTTP burst — from dispatch of the first submit to the last submit
-  // response — and is independent of the broadcast drain, close latency, and the
-  // overall workload deadline. An HTTP response completing is not a durable
-  // broadcast completion; drain is measured separately below.
-  const submitWindowGateMs = toNumber(process.env.W3_SUBMIT_WINDOW_MS, 10_000);
-  const answeredClients = clients.filter((c) => c.answered);
-  const submitWindowStartedAtMs = toRel(performance.now());
-  const submitFailures: Array<{
-    client: string;
-    participantIndex: number;
-    httpStatus: number;
-    errorCode: string | null;
-    elapsedMs: number;
-  }> = [];
-  let successfulSubmissionCount = 0;
-  await Promise.all(
-    answeredClients.map(async (client) => {
-      const optionId = optionPool[client.index % optionPool.length] ?? '';
-      client.answerOptionId = optionId;
-      answerByIndex.set(client.index, optionId);
-      const requestStart = performance.now();
-      const result = await http.submitRaw(
-        submitOp,
-        fx.liveSessionId,
-        fx.sessionQuestionId,
-        client.participantToken,
-        { selectedOptionRefs: [optionId] },
-        randomUUID(),
-        `w3-${fx.runId}-${client.index}`,
-      );
-      const responseEnd = performance.now();
-      submitRecords.set(client.index, {
-        requestStartMs: toRel(requestStart),
-        responseEndMs: toRel(responseEnd),
-        submissionId: result.data?.id,
-      });
-      // Driver-side failure evidence: safe boundary fields only (index, status,
-      // stable error code, elapsed). No tokens, payloads, SQL, or raw errors.
-      if (result.status < 200 || result.status >= 300 || !result.data?.id) {
-        submitFailures.push({
-          client: `p${client.index}`,
-          participantIndex: client.index,
-          httpStatus: result.status,
-          errorCode: result.errorCode ?? null,
-          elapsedMs: result.elapsedMs ?? responseEnd - requestStart,
-        });
-      } else {
-        successfulSubmissionCount += 1;
-      }
-    }),
-  );
-  const submitWindowCompletedAtMs = toRel(performance.now());
-  const submitWindowMs = submitWindowCompletedAtMs - submitWindowStartedAtMs;
-  const submitWindow = {
-    startedAtMs: submitWindowStartedAtMs,
-    completedAtMs: submitWindowCompletedAtMs,
-    submitWindowMs,
-    attemptedSubmissionCount: answeredClients.length,
-    successfulSubmissionCount,
-    failedSubmissionCount: submitFailures.length,
-    failureEvidence: submitFailures,
-    gateThresholdMs: submitWindowGateMs,
-    gate: submitWindowMs <= submitWindowGateMs ? 'PASS' : 'FAIL',
-  };
+  // complete within 10 s). The extracted helper preserves the same single
+  // Promise.all fan-out and real LoadHttpClient.submitRaw invocation.
+  const submission = await executeSubmissionBurst({
+    participants: clients,
+    optionIds: fx.options.map((option) => option.id),
+    runId: fx.runId,
+    liveSessionId: fx.liveSessionId,
+    sessionQuestionId: fx.sessionQuestionId,
+    operation: submitOp,
+    gateThresholdMs: toNumber(process.env.W3_SUBMIT_WINDOW_MS, 10_000),
+    toRelativeMs: toRel,
+    submitRaw: http.submitRaw.bind(http),
+  });
+  const { submitRecords, submitWindow } = submission;
   // Single source of truth: the verdict derives from the report gate above, so
   // phaseB.submitWindow.gate and verdict.performance can never disagree.
   const submitWindowGatePassed = submitWindow.gate === 'PASS';
@@ -1391,7 +1456,7 @@ async function main(): Promise<void> {
   };
 
   // ---- P12 artifact ------------------------------------------------------
-  await writeArtifact(report);
+  await writeArtifact(outputPath, report);
 
   clients.forEach((c) => c.socket.disconnect());
   teacherSocket.disconnect();
