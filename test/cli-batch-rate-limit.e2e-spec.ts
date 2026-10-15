@@ -97,7 +97,7 @@ describe('CLI and question-batch operation rate limits (e2e)', () => {
     }
 
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when PostgreSQL or migrations are unavailable.

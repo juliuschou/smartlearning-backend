@@ -49,7 +49,7 @@ describe('LiveSession route matrix (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when any migration fails; do not probe stale schema.

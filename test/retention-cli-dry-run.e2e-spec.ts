@@ -203,7 +203,7 @@ describe('retention operator CLI dry-run (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when migrations cannot apply; never probe stale schema.

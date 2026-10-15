@@ -37,7 +37,7 @@ describe('Questions type expansion (poll multiple / open_text / quiz) (e2e)', ()
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when any migration fails.

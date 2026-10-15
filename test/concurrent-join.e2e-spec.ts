@@ -54,7 +54,7 @@ describe('Concurrent anonymous join (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when migration setup fails.

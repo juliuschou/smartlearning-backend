@@ -32,7 +32,7 @@ describe('Course enrollments (B2 e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Do not probe an existing schema when migration setup failed.

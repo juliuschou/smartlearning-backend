@@ -35,7 +35,7 @@ describe('Deletion manifest exporter (integration)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       app = await createTestApp();
       await app.init();
       prisma = app.get(PrismaService);

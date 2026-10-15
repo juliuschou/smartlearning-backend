@@ -38,7 +38,7 @@ describe('CLI credential (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // blocked

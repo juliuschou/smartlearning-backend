@@ -44,7 +44,7 @@ describe('CLI courses (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // requireDatabase() reports the blocked DB-backed suite below.

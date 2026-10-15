@@ -45,7 +45,7 @@ describe('CP3 terminal-state negative paths (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       /* suite remains blocked */

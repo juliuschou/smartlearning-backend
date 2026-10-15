@@ -70,7 +70,7 @@ describe('BE-5.3.6 backup-restore no-resurrection rehearsal (integration)', () =
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       app = await createTestApp();
       await app.init();
       prisma = app.get(PrismaService);

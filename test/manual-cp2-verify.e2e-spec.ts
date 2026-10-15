@@ -38,7 +38,7 @@ describe('BE-8.2 CP2 manual Checkpoint 2 verification', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
     } catch {
       // blocked
     }

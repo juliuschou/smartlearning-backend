@@ -43,7 +43,7 @@ describe('Questions mutation (update/delete/reorder) (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when any migration fails.

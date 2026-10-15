@@ -30,7 +30,7 @@ describe('External S3 sandbox manifest upload rehearsal', () => {
       return;
     }
     try {
-      setupTestDb();
+      await setupTestDb();
       app = await createTestApp();
       await app.init();
       prisma = app.get(PrismaService);

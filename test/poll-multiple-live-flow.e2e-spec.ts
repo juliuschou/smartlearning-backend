@@ -42,7 +42,7 @@ describe('Poll multiple-choice live flow (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when any migration fails.

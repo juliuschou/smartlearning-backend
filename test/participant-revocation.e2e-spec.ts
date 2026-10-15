@@ -71,7 +71,7 @@ describe('Participant revocation & races (BE-1.2)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when migration setup fails.

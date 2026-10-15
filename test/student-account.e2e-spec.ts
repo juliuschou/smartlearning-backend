@@ -37,7 +37,7 @@ describe('Student account (B1 e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when migration setup fails; do not probe stale DB.

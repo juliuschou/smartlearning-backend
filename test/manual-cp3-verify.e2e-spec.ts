@@ -44,7 +44,7 @@ describe('BE-8.3 CP3 manual Checkpoint 3 verification', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // requireDatabase() reports the blocked checkpoint below.

@@ -1,0 +1,6 @@
+{
+  "rootDir": ".",
+  "testRegex": "mutation-guards.offline-spec.ts$",
+  "transform": { "^.+\\.ts$": "ts-jest" },
+  "testEnvironment": "node"
+}

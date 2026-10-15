@@ -59,7 +59,7 @@ describe('Auth rate limit (e2e)', () => {
       process.env[k] = v;
     }
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // keep suite blocked

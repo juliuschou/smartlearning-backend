@@ -47,7 +47,7 @@ describe('Account admin & disable/restore lifecycle (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // blocked

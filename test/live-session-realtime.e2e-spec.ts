@@ -142,7 +142,7 @@ describe('LiveSession realtime (durable) (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when migration setup fails.

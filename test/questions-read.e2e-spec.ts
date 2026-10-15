@@ -43,7 +43,7 @@ describe('Questions read (list/detail) (e2e)', () => {
 
   beforeAll(async () => {
     try {
-      setupTestDb();
+      await setupTestDb();
       migrationsReady = true;
     } catch {
       // Keep the suite blocked when any migration fails.
