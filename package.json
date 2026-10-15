@@ -10,7 +10,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" \"scripts/load-harness/**/*.ts\" --fix",
     "lint:check": "eslint \"{src,apps,libs,test}/**/*.ts\" \"scripts/load-harness/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/load-harness/**/*.ts\"",
@@ -50,6 +50,7 @@
     "gate3:down": "bash tools/gate3/gate3.sh down",
     "gate3": "bash tools/gate3/gate3.sh",
     "env:doctor": "bash tools/dev/env-doctor.sh",
+    "env:doctor:test": "bash tools/dev/env-doctor.test.sh",
     "load:w3:diag": "W3_TRACE=1 W3_TRACE_REQUIRED=1 tsx scripts/load-harness/w3/run-w3.ts",
     "load:w3:diag:run": "tsx scripts/run-w3.ts"
   },

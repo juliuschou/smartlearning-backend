@@ -1,0 +1,26 @@
+name: smartlearning-local-db
+services:
+  db:
+    image: sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
+    pull_policy: never
+    container_name: smartlearning-local-db
+    labels:
+      io.smartlearning.local-db: retained-test-v1
+    restart: unless-stopped
+    user: postgres
+    entrypoint: [postgres]
+    command: ['-D', '/var/lib/postgresql/data']
+    ports: ['127.0.0.1:5432:5432']
+    volumes:
+      - type: volume
+        source: retained_pgdata
+        target: /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-h', '127.0.0.1', '-p', '5432']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+volumes:
+  retained_pgdata:
+    external: true
+    name: sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata
