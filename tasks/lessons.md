@@ -509,3 +509,459 @@
 - **Detection signal:** Baseline comparison fails on protected-event counts even though the protected run's evidence window is over and the rows have exceeded their retention window.
 - **Prevention rule:** Protected-baseline evidence in a shared test database must distinguish rows that production is legitimately allowed to expire/purge. Expired delivered-event rows must not be treated as immutable protected baseline.
 - **Tripwire:** Baseline assertions over `live_session_event` must exclude delivered rows past the retention window (or compare only against the run-owned scope) instead of asserting immutability over the whole table.
+
+## 2026-10-13 — Bound diagnostic reads and match shell commands as tokens
+
+- Failure mode: an initial task-history read returned excessive output; a mock safety assertion also matched `rm` inside `--format` and rejected allowed inspection commands.
+- Detection signal: truncated history output; successful mock doctor rejected by the command-audit assertion.
+- Prevention rule: read recent task sections with bounded output; match forbidden command names at token boundaries.
+- Tripwire: run the container-free doctor success case alongside negative identity cases; review exact recorded commands if the audit fails.
+
+## 2026-10-13 — Verify Windows ACL application before writing backups
+
+- Failure mode: PowerShell launched from WSL could not auto-load the security module for Set-Acl after creating an empty backup directory.
+- Detection signal: CouldNotAutoloadMatchingModule; ACL setup exited nonzero before any backup data was written.
+- Prevention rule: use explicit .NET directory ACL APIs where available, verify protected inheritance and SID allowlist, and gate all sensitive writes on success. Repair only the exact empty directory left by the failed setup.
+- Tripwire: ACL failure must leave data operations blocked; existing nonempty destinations must never be reused or overwritten.
+
+## 2026-10-13 — Fail closed inside Bash manifest command substitution
+
+- Failure mode: review found that default Bash clears errexit inside command substitution; manifest precondition tests could fail and still return a hash. Upstream hash failures also require pipefail.
+- Detection signal: minimal shell repro returned PASS after a failed test; corrected symlink regression exits nonzero before copy/start.
+- Prevention rule: use explicit failure exits for manifest preconditions, set pipefail and inherit_errexit, and verify forbidden input in the actual command-substitution context.
+- Tripwire: container-free symlink manifest test must fail safely; inspect named-volume ownership after Docker's idempotent volume-create API before use.
+
+## 2026-10-13 — Parse complete psql JSON values, not output lines
+
+- Failure mode: C SQL inventory assumed one physical output line per JSON value; PostgreSQL json_agg(record) emitted a multiline JSON array, blocking after the working copy started successfully.
+- Detection signal: Unexpected SQL result shape; lifecycle evidence shows successful SQL exec and intentional stop, no source mutation or backup write.
+- Prevention rule: use psql -qAt to suppress status output and parse the joined complete JSON result; do not strip a fixed number of command tags.
+- Tripwire: regression fixture must contain a multiline array with both postgres and application databases; continuation validates exact owned IDs, stopped state, mounts and isolation before restarting the intentionally stopped C working copy.
+
+## 2026-10-13 — Stop owned PostgreSQL before offline verification helper
+
+- Failure mode: final preservation helper mounted the owned working/restore volumes while their PostgreSQL servers were still running; the intended running-consumer guard correctly blocked finalization after restore comparisons passed.
+- Detection signal: New volume already has a running consumer; finally stopped the exact owned servers successfully.
+- Prevention rule: finish SQL comparisons and stop owned servers before offline helpers; never relax the consumer guard to permit concurrent mounts.
+- Tripwire: finalization must prove both owned servers stopped before starting the read-only source manifest helper. Keep lifecycle JSON fields escaped using Docker's json formatter.
+
+## 2026-10-13 — Apply bounded-read lesson before combining documents
+
+- Failure mode: combining task-history excerpts, runtime rules, README and lessons exceeded the output budget despite each input being targeted.
+- Detection signal: tool returned truncated output during checkpoint entry.
+- Prevention rule: read the exact next-scope gate first; budget the total combined output and inspect rule sections selectively.
+- Tripwire: avoid combining full rule files with multi-hundred-line history reads; retry only the missing authoritative sections after truncation.
+
+
+## 2026-10-13 — Apply entry read budgets and record plan before edits
+
+- Failure mode: E entry combined the complete task/lesson history despite the handoff's bounded-read instruction; the preparation checklist was also recorded after initial tooling edits.
+- Detection signal: terminal output truncated at 196461 tokens; task plan absent when the first file patch ran.
+- Prevention rule: first read the handoff alone, then only its cited ranges; append the scoped checklist before any implementation patch.
+- Tripwire: inspect bounded current checkpoint and confirm its unchecked plan exists before the first edit; never cat full tasks/todo.md or lessons.md.
+
+## 2026-10-13 — Bind rollback and post-write verification to observed state
+
+- Failure mode: executor review found helper rollback omitted the retained PG consumer of the same secret volume; post-update TCP originally used memory without verifying written env assignments.
+- Detection signal: exact consumer-set analysis rejects the valid retained PG; retained credentials alone cannot prove environment-file routing.
+- Prevention rule: allow only both recorded run IDs on their shared volume; validate protected written bytes/hash/assignments before authenticating the fixed target.
+- Tripwire: container-free retained-helper/PG consumer regression and written-target mismatch regression; revalidate runtime identity at mutation gates.
+
+## 2026-10-13 — Budget combined checkpoint-entry reads
+
+- Failure mode: G combined complete rule/spec files with history excerpts and exceeded output budget.
+- Detection signal: terminal output was truncated.
+- Prevention rule: read each authoritative specification separately and select rule ranges by headings.
+- Tripwire: total estimated output must fit the tool budget before batching document reads.
+
+### G continuation tripwire refinement
+
+- Detection: combining several bounded excerpts with full rule/code files still truncated output.
+- Prevention: read each specification separately; limit history excerpts to the current checkpoint (about 40 lines) and code reads to about 150 lines per result.
+
+## 2026-10-13 — Role separation SQL and simulation boundaries
+
+- Failure modes: psql boolean text is not JSON; comma-separated privilege inquiries prove any privilege rather than all; new full-runtime fixture initially indexed Docker filter arguments incorrectly and reused credential strings as container IDs.
+- Detection: code review and failing full RecordedExecutor regression; failures were corrected before extending scope.
+- Prevention: return `to_json` from SQL, check every required grant individually, distinguish simulated credentials from IDs, and snapshot journal inputs rather than retaining mutable references.
+- Tripwires: strict full-runtime success/privilege-failure sequence; reject elevated app URLs before backup; preserve bounded assertion diagnostics without dumping whole event journals.
+
+## 2026-10-13 — H entry must locate handoff before history reads
+
+- Failure mode: entry read combined full todo/lessons and truncated the output before locating the /tmp handoff.
+- Detection signal: 199527-token source output truncated.
+- Prevention rule: locate named handoff in workspace and /tmp first; read it alone, then only cited final sections.
+- Tripwire: never cat tasks/todo.md or tasks/lessons.md; use bounded tail or heading-specific ranges before checkpoint review.
+
+## 2026-10-13 — Stock image VOLUME applies to secret helpers too
+
+- Failure mode: PG image secret helper received an implicit anonymous PGDATA volume despite overriding entrypoint, so strict expected-mount verification blocked before helper start and guarded rollback stop.
+- Detection signal: live exact-ID inspect shows additional /var/lib/postgresql/data mount; helper state created/nonrunning, Mount mismatch.
+- Prevention rule: model image-declared VOLUME behavior in container-free runtime fixtures and explicitly review helper mount topology before fresh live authorization; preserve strict mount checks and retained resources.
+- Tripwire: secret-helper simulated inspect must include stock image automatic mount behavior unless the reviewed creation command explicitly prevents it; success fixtures cannot silently omit image volumes.
+
+## 2026-10-14 — I bounded entry output budget
+
+- Failure mode: combined rule/history entry reads exceeded the output budget.
+- Detection: tool output truncation, despite targeted paths.
+- Prevention: read rule and history excerpts separately; budget each returned result.
+- Tripwire: avoid full runtime-rule reads alongside task/lesson excerpts.
+
+## 2026-10-14 — J entry output budget enforcement
+
+- Failure mode: batching full runtime rules with proposal/history exceeded combined output budget again.
+- Detection: truncated tool result.
+- Prevention: each rules/proposal/history read uses its own call and bounded output; never combine complete runtime rules with history.
+- Tripwire: read AGENTS.md alone and only current checkpoint history; recover omitted authoritative sections before work.
+
+## 2026-10-14 — L entry bounded-read violation
+
+- Failure mode: initial read included complete todo/lessons despite the handoff's explicit bounded-read requirement.
+- Detection signal: 205055-token source output was truncated.
+- Prevention rule: read the named handoff alone first; inspect only its cited final sections in separate bounded results.
+- Tripwire: no full cat of tasks/todo.md or tasks/lessons.md at checkpoint entry.
+
+## 2026-10-14 — M aggregate output budget
+
+- Failure mode: independent bounded entry reads were combined in one exec and exceeded its aggregate output budget; runtime rules were also larger than their individual cap.
+- Detection: aggregate and individual truncation warnings.
+- Prevention: use separate exec calls for authoritative documents and heading-selected runtime rule ranges, even when individual shell outputs are bounded.
+- Tripwire: inspect result token estimate before batching; recover relevant omitted sections before implementing.
+
+## 2026-10-14 — N entry must enforce handoff read limits
+- Failure mode: initial entry combined the handoff with broad task/lesson reads and truncated output despite explicit instructions.
+- Detection: aggregate output truncation.
+- Prevention: read handoff alone, then exact final checkpoint and final lesson entries with separate bounded calls.
+- Tripwire: reject entry commands containing full cat of tasks history or more than one complete authoritative document.
+
+## 2026-10-14 — N bind loaded code and report every recorder failure
+- Failure modes: disk-derived approval hashes could describe different code from the imported implementation; inherited guards checked actual mounts but omitted complete configured Binds/Mounts; a transient evidence append failure could recover without setting recordingFailed.
+- Detection: independent adapter review and targeted simulated failure checks.
+- Prevention: bind loaded source snapshots, compare immutable operation plan at every guard, validate configured and actual mounts, track recording failure independently of later successful writes.
+- Tripwires: source/plan/configured-mount drift must stop before mutation; transient initialized-event failure must persist recordingFailed=true in complete evidence.
+
+## 2026-10-14 — O recover bounded entry reads
+- Failure mode: initial command combined handoff with early historical task/lesson ranges, violating the handoff read order and truncating output.
+- Detection signal: aggregate and per-command truncation warnings.
+- Prevention rule: finish a standalone handoff read before constructing any subsequent reads; use only the named checkpoint tail, one authoritative document per call.
+- Tripwire: never use first-220-line task/lesson reads for an after-checkpoint handoff; confirm the requested final section is present before proceeding.
+
+## 2026-10-14 — Q aggregate read budget enforcement
+- Failure mode: batched individually bounded source/history reads exceeded the aggregate exec output budget; a combined test read also exceeded its per-command cap.
+- Detection signal: tool truncation warning.
+- Prevention rule: keep authoritative history and test/source excerpts in separate calls with narrower ranges; recover omitted current sections before relying on them.
+- Tripwire: total requested output budgets must fit the exec budget, and each source excerpt must fit its own command cap.
+
+## 2026-10-14 — R distinguish evidence policy from evidence existence
+- Failure mode: initial new probe inherited retained=true reporting even when authorization/evidence initialization failed before a usable recorder existed.
+- Detection signal: focused subagent review identified ambiguous evidence guarantees.
+- Prevention rule: report retentionPolicy separately from evidenceStarted/recordingFailed; do not imply successful evidence creation from a no-deletion policy.
+- Tripwire: mock begin/initialization failures and incomplete CLI gates; assert evidenceStarted=false and sanitized blocked output.
+
+## 2026-10-14 — R inject callables captured in default parameters
+- Failure mode: patching subprocess.run/shutil.which after import does not replace callables already captured by Probe.__init__ defaults, so initial CLI tests did not fully fence accidental runtime calls.
+- Detection signal: final test review compared mocked module attributes with constructor default bindings.
+- Prevention rule: CLI tests inject the real Probe class with explicit failing runner/lookup callables and a temporary evidence root.
+- Tripwire: incomplete CLI gates must leave the temporary root empty; never rely solely on module patches for import-time default callables.
+
+## 2026-10-14 — S entry repeated unbounded history read
+- Failure mode: initial entry combined the handoff with a full lessons read and broad todo tail, repeating an existing bounded-read mistake.
+- Detection signal: 31825-token output truncated before authoritative review was read.
+- Prevention rule: read the named handoff alone before constructing further commands; then read only the exact final checkpoint section and final relevant lesson entries.
+- Tripwire: reject checkpoint-entry commands containing cat tasks/lessons.md or a historical todo tail; recover authoritative documents in bounded reads before decisions.
+
+
+## 2026-10-14 — U checkpoint entry read guard
+- Failure mode: combined handoff with complete task/lesson history despite explicit narrow-read order.
+- Detection signal: 214192-token source output truncated.
+- Prevention rule: first tool read must contain only the named handoff; subsequent reads use named section ranges, one bounded authoritative document at a time.
+- Tripwire: reject entry commands containing full cat of tasks/todo.md or tasks/lessons.md before execution.
+
+## 2026-10-14 — W enforce handoff-first reads before execution
+- Failure mode: initial entry combined the handoff with broad todo/complete lessons reads; a subsequent broad heading search also truncated output.
+- Detection signal: tool truncation warnings despite the handoff's explicit read order.
+- Prevention rule: execute a standalone handoff read first, then one named section/document per bounded call; select explicit filenames and line ranges rather than global historical heading matches.
+- Tripwire: before submitting the entry command, reject full task/lesson reads and combined handoff/history reads; recover each authoritative section separately before making decisions.
+
+## 2026-10-14 — X reject combined full-history entry commands
+- Failure mode: initial command combined handoff and full task/lesson histories despite the explicit read order; output truncated.
+- Detection signal: 216577-token source output and truncation warning.
+- Prevention rule: read handoff alone before constructing later commands; use one authoritative document or exact named section per result.
+- Tripwire: reject any entry command containing full cat of tasks/todo.md or tasks/lessons.md; recover omitted authority before decisions.
+
+## 2026-10-14 — Y strict approval values and verifier mutation
+- Failure mode: Python equality accepts 1 as True; an injected verifier may mutate manifest inputs after their initial digest comparison.
+- Detection signal: local gate review identified both before final verification.
+- Prevention rule: compare approval/bootstrap values canonically, freeze caller inputs, and repeat manifest digest validation after external verification.
+- Tripwire: injected tests must reject integer approval values and a verifier that changes closure hashes.
+
+## 2026-10-14 — Y interruption fixture classification
+- Failure mode: exception fixture used isinstance(value, Exception), returning KeyboardInterrupt as an invalid result rather than raising it.
+- Detection signal: test_outcome_classifications expected UNKNOWN but observed INVALID_RESULT for KeyboardInterrupt.
+- Prevention rule: when testing interruption handling, fixture raising logic must recognize BaseException.
+- Tripwire: include a KeyboardInterrupt fixture and verify sanitized UNKNOWN plus retained completed evidence.
+
+## 2026-10-14 — AB entry violated explicit bounded-read order
+- Failure mode: initial call combined handoff, historical todo tail and complete lessons despite the handoff's one-document entry order.
+- Detection signal: tool output truncation; authoritative documents had not yet been read separately.
+- Prevention rule: construct the first command using only the supplied handoff path; subsequent history reads must select the exact named section.
+- Tripwire: reject any entry command containing a full lessons read or historical todo tail; recover required documents separately before implementation.
+
+## 2026-10-14 — AB fixture reuse must preserve super() ancestry
+- Failure mode: assigning BindingTests.setUp to an unrelated TestCase failed because its zero-argument super() requires BindingTests ancestry.
+- Detection signal: AB fixture suite failed six setup cases with TypeError before executing assertions.
+- Prevention rule: subclass fixtures that use super(); report inherited cases separately from new coverage.
+- Tripwire: inspect reused fixture setup for super() before selecting method aliasing versus inheritance; run the focused fixture suite first.
+
+## 2026-10-14 — AD entry command must enforce the supplied handoff boundary
+- Failure mode: the initial command read full task/lesson histories despite the supplied handoff's exact entry order.
+- Detection signal: 220875-token source output was truncated.
+- Prevention rule: construct the first tool command from the handoff path alone; inspect the command before submission for full history reads. Recover authority through exact named sections before deciding scope.
+- Tripwire: reject commands containing cat tasks/todo.md or cat tasks/lessons.md; use heading-selected extraction for the current checkpoint only.
+
+## 2026-10-14 — After-AD entry repeated full-history read
+- Failure mode: initial tool call combined the handoff with complete todo/lessons reads before applying its entry limits.
+- Detection signal: 219976-token history result truncated.
+- Prevention rule: submit and inspect the handoff-only result before constructing any further read commands; then use separate exact-heading extraction.
+- Tripwire: reject entry commands containing full history cat; recover named authority before scope decisions. Recovery completed through separate bounded reads in this session.
+
+## 2026-10-14 — Runtime checkpoint entry repeated historical read
+- Failure mode: initial command combined handoff with complete task/lesson histories, violating the supplied bounded-read order.
+- Detection signal: 225840-token source output truncated.
+- Prevention rule: first command must read only the named handoff; construct subsequent commands only after reviewing it.
+- Tripwire: reject full task/lesson cat in command text before execution; use exact-heading extraction. Recovered required sections separately before any runtime decision.
+
+## 2026-10-14 — Compiled liveness startup includes background data mutations
+- Failure mode: recommended test-environment startup scope before completing initialization review; connection and /health/live alone do not describe startup data effects.
+- Detection signal: auto-close scheduler immediately runs and publisher processes/cleans durable DB events even with Redis off. No launch occurred.
+- Prevention rule: inspect immediate initialization hooks and downstream mutations before describing a launch as connection-only; require data-safe target scope for background updates/deletions.
+- Tripwire: targeted onModuleInit/onApplicationBootstrap/timer search plus follow-through to DB writes; Redis off is not evidence that database background jobs are disabled.
+
+## 2026-10-14 — Endpoint rechecks did not close development readiness gap
+- Failure mode: repeated blocked runtime socket checks without tracing service lifecycle and distinguishing test smoke scope from the user's development-environment objective.
+- Detection signal: user challenged wasted checkpoints; exact metadata and K record show stopped test service and failed dev provisioning before environment publication.
+- Prevention rule: after endpoint refusal, use bounded read-only listener/container/config evidence to trace the failed prerequisite; align acceptance to the requested environment and propose a concrete recovery deliverable.
+- Tripwire: compare env target host/port/database with container port/state and latest live provisioning result before recommending another runtime-only checkpoint.
+
+## 2026-10-14 — Preserve the user goal across handoff requests
+- Failure mode: fulfilled the handoff artifact request without clearly explaining that this paused progress toward the user's compiled runtime verification goal.
+- Detection signal: user explicitly requested goal alignment and notification when actions deviate from that goal.
+- Prevention rule: carry the ultimate goal across turns; explain when an intermediate request pauses or changes progress, and state the concrete next step and any actual authorization boundary. Do not interpret handoff as cancellation of the goal or as new execution/lifecycle approval.
+- Tripwire: before responding to a handoff or checkpoint gate, check the active runtime acceptance criteria and distinguish artifact completion, checkpoint completion and overall goal completion.
+
+## 2026-10-14 — Inspect search results before recording negative provenance
+- Failure mode: drafted a no-match provenance result before inspecting the expanded search output, which contained a positive match and a nonexistent path error.
+- Detection signal: rg returned scripts/run-w3.ts and exit 2 for missing .github.
+- Prevention rule: inspect every search result and exit status before writing conclusions; distinguish partial search errors from clean negatives.
+- Tripwire: confirm targeted paths exist and inspect positive matches before final task-record verification.
+
+## 2026-10-14 — Verify mount rejection semantics before declaring a blocker
+- Failure mode: described doctor as requiring a pure-volume layout and treated an extra read-only secret bind as unsupported without checking the actual mount predicate.
+- Detection signal: tools/dev/env-doctor.sh filters only /var/lib/postgresql/data and never rejects extra mounts.
+- Prevention rule: distinguish an unreviewed additional mount from an explicit tool rejection or unsafe configuration; review the predicate before stopping useful bounded evidence collection.
+- Tripwire: read the exact destination/type/RW check and inspect only the additional mount role before calling it a launch blocker.
+
+## 2026-10-14 — Retain sanitized lifecycle failure categories on first failure
+- Failure mode: initial lifecycle wrapper discarded captured Docker stderr before classification; State.Error was empty, requiring one unchanged startup reproduction to obtain a useful cause.
+- Detection signal: start returned nonzero but generic wrapper message and State.Error provided no cause.
+- Prevention rule: classify captured diagnostics into a strict safe category before discarding them, never print raw diagnostics or source paths. Preserve actionable evidence on the first failure.
+- Tripwire: ensure lifecycle wrappers emit an allowlisted failure category and command exit status before running authorized mutations.
+
+## 2026-10-14 — Distinguish rejected credentials from nonexistent login role
+- Failure mode: treated 28P01 as a password-only problem before proving the configured login role exists; also initially assumed a postgres database role exists because the image OS user is postgres.
+- Detection signal: local SQL reports both assumed/default and configured app roles absent; recorded initializer identity succeeds and verifies target database ownership.
+- Prevention rule: before credential rotation, verify actual cluster/database/role through a recorded existing admin identity. OS user names are not evidence of database role names; 28P01 alone does not establish role existence.
+- Tripwire: explicit role-existence/login/CONNECT predicates before any ALTER ROLE, plus sanitized local-role-absent/password-required categories on the first local SQL failure. Never silently replace app credentials with superuser identity.
+
+## 2026-10-14 — Bound planning discovery output before batching
+- Failure mode: combined Compose/docs/package/lesson-heading reads exceeded the output budget and were truncated during local DB planning.
+- Detection signal: tool output reported truncation; no lifecycle operation occurred.
+- Prevention rule: query only relevant service/script keys and targeted lesson sections; avoid batching complete discovery documents.
+- Tripwire: estimate aggregate output before execution and keep each discovery result below its token budget.
+
+## 2026-10-15 — Bound latest-state recovery reads
+- Failure mode: combined 150-line task tail, lesson tail and intake read exceeded the output budget during next-step discovery.
+- Detection signal: tool reported truncated output; latest plan was reread separately before implementation.
+- Prevention rule: read latest task headings first, then only the final relevant section; keep lesson/intake reads separate.
+- Tripwire: avoid batching historical task tails with other documents; inspect truncation before drawing conclusions.
+
+## 2026-10-15 — Docker inspect optional health field
+- Failure mode: direct .State.Health lookup in a composite Docker Go template failed on the retained original container without healthcheck.
+- Detection signal: template error map has no entry for key Health; the same container identity/state query succeeded.
+- Prevention rule: use index for optional map fields, and verify templates against both healthchecked and non-healthchecked containers before lifecycle mutations.
+- Tripwire: no direct .State.Health optional lookup; container-free regression checks the safe optional field access, and real original-container preflight must pass.
+
+## 2026-10-15 — Next-checkpoint entry recovery
+- Failure mode: initial command combined handoff with full task/lesson histories, violating the handoff bounded-read instruction.
+- Detection signal: tool output truncated.
+- Prevention rule: read handoff alone; then extract only its exact named final result section before deciding scope.
+- Tripwire: reject entry commands containing full task/lesson cat. Recovered named final authority before any runtime operation.
+
+## 2026-10-15 — Bound recovery-entry searches and single-line JSON reads
+- Failure: broad heading search and rg on a one-line build receipt exceeded output budgets.
+- Signal: truncated terminal output.
+- Prevention/tripwire: search only exact named headings; parse JSON and print selected scalar fields, never matched manifest lines. Use bounded sections for recovery history.
+
+## 2026-10-15 — Empty postgres dump TOCs need not contain DATABASE entries
+- Failure: restore precheck required a DATABASE TOC entry even for an empty postgres database archive.
+- Signal: fresh backup/hash/ACL passed, pg_restore --list succeeded, executor rejected listing before import.
+- Prevention: use successful pg_restore parsing plus custom archive/version header; permit zero application objects. Add empty-archive regression.
+- Recovery: retain backup and stopped owned cluster; exact-failure resume skips already-applied globals and revalidates identities/hashes/ACL before restore.
+
+## 2026-10-15 — One-shot init commands cannot restart an initialized cluster
+- Failure: restarting the initial restore container reran its empty-directory init precondition and safely exited.
+- Signal: resume restore exited before data import; original remains stopped and backups unchanged.
+- Prevention: separate initialization lifecycle from server lifecycle; continuation uses a fresh direct-postgres container against the exact owned volume only after proving the original stopped and no running consumers. Never rerun initdb over retained data.
+
+## 2026-10-15 — Published Docker connections may use a forwarding peer
+- Failure: isolated restore pg_hba allowed only its dedicated bridge gateway, but Rancher forwarded the localhost client under another private address (SQLSTATE 28000).
+- Prevention: independently pin restore identity/loopback publication, inspect only structured error peer, permit only observed RFC1918 IPv4 /32 for the exact restored database/app role, reload only restore HBA and verify the resulting connection identity. Reject public addresses before configuration writes.
+
+## 2026-10-15 — Budget aggregate discovery output before calling tools
+- Failure mode: combined heading searches and excerpts exceeded the tool output budget during daily-backup planning.
+- Detection signal: truncated output, including a 33717-token combined result.
+- Prevention rule: locate only exact cited headings first; read each authoritative section separately with a calculated line budget.
+- Tripwire: do not combine full AGENTS, all task headings and implementation symbol searches in one output; limit each result to the specific next decision.
+
+## 2026-10-15 — Backup publication review must cover identity and cleanup
+- Failure mode: first draft used an invalid trailing-backslash raw string; review also found absent TOC database mapping, published ACL recheck and interrupted-cleanup kill guarantee.
+- Detection: immediate AST parse failed before execution; focused review identified three safety gaps.
+- Prevention: syntax-check before live operations, validate archive database headers, recheck published ACLs, and use finally for Popen kill/wait cleanup even if deadline interrupts communicate.
+- Tripwire: offline tests include empty/wrong DB TOC, snapshot cleanup interruption, imported snapshot equality and publish/index failure boundaries.
+
+## 2026-10-15 — Exact handoff headings only
+- Failure: broad heading query across historical task ledger exceeded output budget.
+- Signal: truncated discovery output.
+- Prevention/tripwire: query exact named headings or bounded final sections; never enumerate all historical headings during checkpoint entry.
+
+## 2026-10-15 — Native launcher ACL module availability
+- Failure: Get-Acl autoload failed because Windows Security type-data entries were duplicated in the local environment.
+- Signal: native safe-failure launcher exited before creating control state; explicit Import-Module reported duplicate type members.
+- Prevention/tripwire: use the existing Windows .NET ACL API pattern rather than assuming PowerShell Security module autoload; verify native launcher before task registration.
+
+## 2026-10-15 — PowerShell native-state edge cases
+- Failure: script-scope foreach $sid overwrote $script:Sid (case-insensitive); passing $null to File.Replace string argument bound as an invalid empty path.
+- Signal: ACL identity rejection, then atomic-state replace ArgumentException during safe-failure acceptance.
+- Prevention/tripwire: use distinct allowedSid loop variable and [NullString]::Value; exercise real native ACL creation and two consecutive writes before claiming launcher readiness.
+
+## 2026-10-15 — Independent monitoring must survive backup-drive loss
+- Failure: initial scheduler state/script design shared D with backups, so drive loss could also remove its notification path.
+- Signal: failure-domain review before deployment; fixed C AppData state and native installed script path.
+- Prevention/tripwire: place watchdog state/executable outside monitored backup storage and WSL; use a nonexistent backup-root fixture to verify durable notification.
+- Additional regression checks: no ACL mutation before reparse checks, guard corrupt prior-state JSON, validate every per-DB snapshot timestamp, and construct both scheduler tasks disabled before final activation.
+
+## 2026-10-15 — Enforce handoff-first tool dependency
+- Failure mode: queued full todo/lessons reads before inspecting the handoff; output truncated.
+- Detection signal: 260176-token historical output.
+- Prevention rule: complete and inspect the handoff-only tool call before constructing any repository-history reads.
+- Tripwire: reject commands containing full todo/lessons cat; extract only exact named sections. Recovered bounded authority before any deployment.
+
+## 2026-10-15 — Validate effective task values and export encoding
+- Failure mode: parsed UTF-8 export bytes declaring UTF-16, then required XML nodes omitted for default task settings; verbose CIM serialization also exceeded output budget.
+- Detection: XML encoding error, absent Enabled node, truncated CIM output. No deployment mutations were retried.
+- Prevention/tripwire: decode known PowerShell UTF-8 exports first; normalize declaration in derived evidence; select scalar CIM properties and validate effective defaults alongside XML triggers/actions. Never serialize complete CIM class metadata.
+
+## 2026-10-15 — Second-copy entry bounded-read failure
+- Failure mode: initial call combined named handoff with historical todo tail and full lessons; output truncated.
+- Detection signal: tool truncation before authoritative context recovery.
+- Prevention rule: first call reads the named handoff alone; subsequent reads select exact named sections and bounded outputs.
+- Tripwire: reject entry command text containing full lessons reads or historical todo tails before submission. Recovered plan sections 3–6 and latest deployment section separately before any lifecycle action.
+
+## 2026-10-15 — User cancellation supersedes second-copy prerequisite
+- Failure mode to prevent: continuing destination intake or requiring a second copy after user cancels it.
+- Detection signal: explicit user statement that no second copy is needed and fresh daily runtime is the goal.
+- Prevention/tripwire: mark destination/copy tasks superseded before next execution; every preflight must resolve a concrete integrity/isolation/runtime blocker. Warn explicitly if repeated metadata checks do not advance runtime.
+
+## 2026-10-15 — Fresh daily entry full-history mistake
+- Failure: entry combined handoff with full task/lesson reads, causing truncation.
+- Prevention/tripwire: first inspect handoff alone before composing subsequent calls; forbid full history reads. Recovered exact authority before lifecycle operations.
+
+## 2026-10-15 — Policy-update native verification pitfalls
+- Failure: dot-sourced library replaced caller $repo; preflight stopped before mutations. Explicit ExecutionPolicy Default then selected Restricted despite actual installed no-override execution working. JSON evidence also required utf-8-sig and list-aware parsing.
+- Signal: baseline path mismatch, SecurityError, BOM/type parser errors.
+- Prevention/tripwire: use task-specific caller variable names across dot-source, match actual task invocation exactly for final acceptance, inspect JSON types and decode PowerShell UTF-8 BOM explicitly. Preserve failed probes separately from final evidence.
+
+## 2026-10-15 — Mutation-guard entry bounded-read recovery
+- Failure: queued complete history reads before inspecting handoff instructions; output truncated.
+- Prevention/tripwire: handoff call must finish before constructing subsequent commands; prohibit full todo/lessons cat. Use named bounded sections.
+
+## 2026-10-15 — Offline guard mock module lifecycle
+- Failure: resetModules recreated mocked fs/pg/CLI modules, leaving imported fixture references stale; positive path failed despite valid fixture.
+- Detection: rejection cases passed while positive contract load failed.
+- Prevention/tripwire: explicitly reuse mock objects via doMock after resetModules; always include a positive mutation-spy path alongside fail-closed cases.
+
+## 2026-10-15 — Isolated-runtime entry bounded-read recurrence
+- Failure: constructed full todo/lessons reads before inspecting handoff; output truncated.
+- Detection: 268087-token output before any runtime action.
+- Prevention/tripwire: submit handoff alone, inspect it, then read AGENTS and exact named sections in a separate call. No full-history cat. Recovered authority before changes.
+
+## 2026-10-15 — Match dotenv populate types in behavioral regressions
+- Failure: used config-only quiet option in populate options; ts-jest rejected TS2353.
+- Detection: offline suite compile failed before any test or database action.
+- Prevention/tripwire: check the specific API option type; mock module instances must survive resetModules. Use actual populate behavior to prove launcher URL precedence.
+
+## 2026-10-15 — Role-runtime entry bounded-read recurrence
+- Failure: combined handoff and historical tails before inspecting entry constraints; output truncated.
+- Detection: first tool returned truncation.
+- Prevention/tripwire: first invocation must contain only the named handoff read; inspect before constructing any history command. Bound migration review output by parsed summary rather than matching every DDL line.
+
+## 2026-10-15 — Runtime sentinel must follow migration schema
+- Failure: draft sentinel assumed created_at/updated_at columns absent from system_setting.
+- Detection: direct review of authoritative initial migration before live execution.
+- Prevention/tripwire: read the exact fixture table DDL before writing raw SQL; use its quoted updatedAt column. Typecheck alone cannot validate SQL strings.
+
+## 2026-10-15 — Detached worker soft-signal cleanup
+- Failure: first launcher draft handled timeout but default SIGTERM could bypass finally.
+- Detection: independent lifecycle review of detached process group.
+- Prevention/tripwire: install controlled SIGTERM/SIGINT unwinding, ignore repeats during cleanup, and keep worker-group cleanup in outer finally; offline regression asserts signal masking. SIGKILL remains an operational limitation.
+
+## 2026-10-15 — Cold recovery entry read ordering
+- Failure mode: entry call bundled the named handoff with status/discovery before reading its ordering constraint.
+- Detection: handoff requires its own first read, then AGENTS.md.
+- Prevention/tripwire: when a user supplies a continuation document, make the first call only that document; construct discovery calls after reading it.
+
+## 2026-10-15 — Recovery DB URL query override
+- Failure mode: validating URL authority alone allowed pg connection-string query keys to override the isolated host/port.
+- Detection: independent review followed runtime DATABASE_URL into PrismaPg connectionString.
+- Prevention/tripwire: recovery inputs accept only postgres/postgresql URLs with no query or fragment; regress query host/port override, scheme and fragment before any app writer can start.
+
+## 2026-10-15 — npm configuration double load
+- Failure mode: cold rebuild used /dev/null as both npm userconfig and globalconfig; real npm rejected configuration before dependency installation, despite mocked build tests passing.
+- Detection: single authorized live run failed at install; sanitized npm --version with identical configuration paths deterministically reproduced double-loading config.
+- Prevention/tripwire: distinct empty private config files for user/global configuration; assert paths differ, files are empty/mode0600, and run a real no-install npm config/version probe before approving a future fresh live run. Preserve failed run and never replay consumed identity.
+
+## 2026-10-15 — External CLI configuration verification gap
+- Failure mode: mocked install success and parent-environment npm version pin did not exercise npm parsing the actual isolated environment.
+- Detection: real no-install CLI probe reproduced a parser error despite green orchestration tests.
+- Prevention/tripwire: share environment constructor with a real side-effect-free CLI regression and production preflight; keep intentional failure assertions. Every external build stage must preserve sanitized status/exit/duration on failure, without relying on raw logs or secret-bearing error messages.
+
+## 2026-10-15 — Actual escrow configuration compatibility gap
+- Failure mode: blanket database URL query rejection prevented safe schema=public in actual private .env.test; fixture-only offline validation missed it until after real install/generate/build.
+- Detection: consumed02 run stopped at config subprocess; no-connect diagnosis emitted only predicate booleans/query key names and validator line, proving sole public schema query without routing parameters.
+- Prevention/tripwire: before future live approval, exercise actual private configuration in memory without connection or raw error/value output. Canonicalize explicitly permitted public schema only before any connection-string consumer; reject unknown/duplicate/routing queries. Capture sanitized config-specific failure receipt instead of only CalledProcessError; no widening live scope or consumed-run replay.
+
+## 2026-10-15 — Continuation entry repeated full-history read
+- Failure: initial call combined handoff with complete todo/lessons, truncating output.
+- Detection: tool output reported 280334 tokens.
+- Prevention/tripwire: first continuation command contains only supplied handoff; defer every other read until it is inspected. Recovered AGENTS and exact latest sections before changes or lifecycle actions.
+
+## 2026-10-15 — Canonical URL changes require target assertions
+- Failure: runtime consumer used normalized port55433 while retaining a source-port5432 assertion.
+- Detection: positive offline runtime regression failed before app launch.
+- Prevention/tripwire: when switching consumers to shared isolatedURL, audit all local source-authority assertions and run schema-query positive paths through runtime and credentials.
+
+## 2026-10-15 — Post-stop bind confuses TIME_WAIT with listeners
+- Failure: run03 service-ready and owned shutdown passed, but final strict bind reported ports-not-closed.
+- Detection: same-host independent checks showed ECONNREFUSED and kernel TIME_WAIT (no LISTEN) on both ports; isolated container exited and source healthy.
+- Prevention/tripwire: retain strict bind for preflight collisions, but post-stop require owned process/container shutdown plus explicitly refused connections. Never accept timeouts or unexpected network errors as closure; never rewrite consumed-run result to PASS.
+- Regression: refused/TIME_WAIT accepted, accepting listener rejected, timeout rejected. Sandbox network namespaces can differ; kernel socket diagnosis must use the same execution context as live.
+
+## 2026-10-15 — Cleanup diagnostics must not short-circuit independent checks
+- Failure: shared try around both post-stop port probes hid55433 after3001 failure; a cleanup-only failure also left reason null.
+- Detection: new lifecycle regression expected both probes but observed only3001; historical run03 result had reason=null.
+- Prevention/tripwire: check each endpoint independently, retain sanitized per-endpoint result and explicit cleanup reason. Closed ports must never override a failed owned-container stop. Regression covers first-port failure plus second probe and stop failure with refused ports.
+
+## 2026-10-16 — Temporary TypeScript configuration input scope
+- Failure: a tsconfig placed in /tmp with extends/exclude but no include used /tmp as its default input root and scanned unrelated retained workspaces.
+- Detection: diagnostic paths referenced /tmp copies rather than repository sources.
+- Prevention/tripwire: temporary configs must explicitly include absolute repository inputs and exclude artifacts/node_modules/dist; disable incremental output for read-only checks. Keep the unmodified npm typecheck failure visible separately.

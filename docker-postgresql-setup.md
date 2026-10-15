@@ -1,5 +1,10 @@
 # 開發環境 PostgreSQL（Docker）
 
+> **2026-10-13：歷史設定範例，不是目前環境的權威來源。**
+> Checkpoint A 未找到本文的 dev container／volume，且尚無已驗證外部備份。
+> 不可直接執行以下建立、啟動或刪除指令來修復現有環境；先依
+> [安全檢查說明](tools/dev/README.md) 核對身分，資料操作須另行授權。
+
 本文件定義**開發環境（development）**使用的 PostgreSQL 資料庫，以 Docker 容器方式運行。
 正式環境（production）與測試環境（test）應使用各自的設定，不要共用此容器。
 

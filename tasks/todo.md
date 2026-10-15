@@ -5846,6 +5846,47 @@ Per question type (poll / open_text / quiz)，各自 fresh fixture/run：
 
 **Working notes:** external publisher evidence is point-in-time observation only, not reservation-backed/global/continuous exclusivity. No production coordination mechanism is in scope.
 
+## 2026-10-13 Reliable local development environment — Checkpoint A
+
+### Goal and acceptance criteria
+
+- [x] Read the Windows 11 + WSL2 + Rancher Desktop + PostgreSQL disaster-recovery guide and current repository safety rules.
+- [x] Identify the actual WSL distribution, Rancher Desktop engine/settings, Docker context/endpoint/engine identity, PostgreSQL containers/volumes, and proposed backup mount without changing them.
+- [x] Record unsafe assumptions and stop before container start/rebuild, migration, test, cleanup, snapshot restore, or database writes.
+- [ ] Prove the authoritative PostgreSQL database identity with read-only SQL after explicit authorization to start the selected isolated container; blocked in Checkpoint A because every candidate PostgreSQL container is stopped.
+- [ ] Create and validate an external logical backup; belongs to Checkpoint C and requires separate authorization.
+
+### Baseline evidence
+
+- WSL: default distribution `Ubuntu`, WSL version 2; `rancher-desktop` is running and `rancher-desktop-data` is stopped. WSL package `3.0.3.0`; kernel `6.18.54.1-1`; Windows build `10.0.26200.9457`.
+- Rancher Desktop 1.24.0 settings: container engine `moby`, Ubuntu integration enabled, Kubernetes disabled, VM allocation 2 CPUs / 2 GiB. These settings already match the selected baseline and were not changed.
+- Docker CLI: context `default`, endpoint `unix:///var/run/docker.sock`, no `DOCKER_HOST` or `DOCKER_CONTEXT` override. The first sandboxed probe was permission-denied; the approved read-only host probe succeeded against Rancher Desktop Engine ID `8820f44b-5227-4afe-8eff-245fcc9e8a31`, server 29.5.3, storage driver `overlayfs`.
+- No `smart-learning-pg-dev` container and no `pgdata_smartlearning_dev` volume exist on this engine. The old setup document is not current authority and must not be used to recreate a dev database blindly.
+- `smart-learning-pg-test` exists but is stopped (`ExitCode=255`). It is PostgreSQL 16.15, database `smartlearning_test`, role `sl_w3_e5560ea0`, and mounts `sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata`. That volume is explicitly labelled disposable/test/W3 and must not be relabelled or adopted as a dev volume.
+- Recovery evidence is preserved and stopped: `smartlearning-pg-recovery-20261008` mounts `smartlearning-pg-recovery-20261008`; forensic copy `smartlearning-forensic-forensic-f1-20261010-d1-postgres` mounts `smartlearning-forensic-forensic-f1-20261010-d1-data`. The forensic labels tie the copy to the W3 source volume. Neither volume was mounted, started, copied, renamed, or modified in this checkpoint.
+- PostgreSQL logs show the recovery copy performed crash recovery on 2026-10-08 and reached `database system is ready to accept connections`. This is historical evidence only, not a current authority/readability proof. Starting PostgreSQL would write WAL/checkpoint state and therefore requires the next explicit authorization.
+- Local `postgres:16` resolves to image ID/digest `sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54` and reported PostgreSQL 16.15 in existing containers. No pull occurred.
+- `/mnt/d` is the Windows `D:` 9p/DrvFS mount with approximately 1.3 TiB free. `/mnt/d/Backups` and `/mnt/d/Backups/SmartLearning` do not exist, so no external logical backup was found at the guide's proposed location.
+- `rdctl snapshot list --json` did not return within the bounded probe and was terminated. Snapshot inventory remains unknown; no snapshot create/restore/delete action was attempted.
+
+### Risk, rollback, and stop conditions
+
+- **Risk: high.** There is no verified dev database, no verified external dump, and multiple stopped test/recovery/forensic volumes. A guessed container or volume mapping could initialize an empty database or write recovery state to evidence.
+- Until a logical backup and isolated restore are proven: do not run Factory Reset, `wsl --unregister`, `docker volume prune`, `docker system prune --volumes`, `docker compose down -v`, `pg_resetwal`, migration, seed, DB-backed tests, or two PostgreSQL servers against one volume.
+- Checkpoint A was read-only except for this audit record. Rollback is unnecessary; no Docker, Rancher Desktop, WSL, PostgreSQL, environment, or application state changed.
+- Checkpoint B may implement repo-only safety tooling and static tests. Any container start, Volume creation/adoption, Snapshot creation, PostgreSQL backup, migration, or restore remains deferred to separately authorized Checkpoint C.
+
+### Verification performed
+
+- PASS: repository/status inspection, guide review, `tasks/lessons.md` review, WSL version/distribution inventory, Rancher Desktop settings inventory, Docker context/engine/container/volume/image inspection, stopped-container log inspection, `/mnt/d` mount and free-space checks.
+- BLOCKED: current SQL authority/readability proof because all PostgreSQL candidates are stopped and Checkpoint A does not authorize starting them.
+- BLOCKED: Snapshot inventory because `rdctl snapshot list --json` exceeded the bounded timeout.
+- NOT RUN: Docker create/start/restart, migration, Prisma status, tests, backup, restore, cleanup, Snapshot mutation, or any database command.
+
+### Result / manual gate
+
+Checkpoint A is complete with status **BLOCKED FOR DATA OPERATIONS, CLEAR FOR REPO-ONLY CHECKPOINT B**. The environment must be treated as recovery-sensitive until the preserved PostgreSQL source is selected and backed up. Per project policy, stop here; start a new session and explicitly authorize Checkpoint B before modifying repository tooling.
+
 ### 2026-09-26 W3 Phase D4.1 — Baseline stabilization
 
 - [x] Rules gate: `.claude/rules/container-runtime.md` is the only applicable project rule; no container/DB mutation performed (read-only credential identity check only).
@@ -5880,3 +5921,1722 @@ Checkpoint (correctness FAIL · performance FAIL · no rerun authorized yet):
 - [ ] Another formal acceptance run: **NOT YET AUTHORIZED**. Work Item 1 only in this checkpoint.
 
 Work Item 1 (this task): `W3_COHORT_SPLIT=all` acceptance mode — every participant submits; `alternate`/`first-half` historical half-submit behavior unchanged; abstainer-only probes guarded for zero-abstainer cohorts; dedicated submission-window metric + ≤10 s gate independent of broadcast drain; expected Submission counts derived from cohort; driver-side per-submit safe failure evidence.
+
+## 2026-10-13 Reliable local development environment — Checkpoint B
+
+Authorization: user authorized Checkpoint B; repo-only tooling and static/mock verification.
+
+Acceptance: doctor requires explicit Docker context, engine ID, container, and volume; rejects mismatches, stopped resources, or shared writable mounts; never executes container commands, SQL, health HTTP, lifecycle, migration, or backup. Metadata success is not SQL/data/backup authority.
+
+- [x] Locate current doctor and repository safety rules.
+- [x] Replace implicit test defaults and active probes with bounded metadata-only identity checks.
+- [x] Add deterministic mock tests covering identity failures and forbidden runtime operations.
+- [x] Verify shell syntax, mock tests, and diff; document invocation and remaining Checkpoint C gate.
+
+Risk: low, repo-only diagnostic behavior change. Rollback: revert doctor, its tests, package script, and documentation. No database/environment configuration changed.
+Dependencies: Bash, timeout, Docker CLI for future authorized inspection; tests use mock Docker only.
+Working notes: existing env:doctor treated POSTGRES_DB metadata as database proof and executed pg_isready/Redis/HTTP probes. Replace these with explicit metadata-only evidence; no real Docker invocation in this checkpoint.
+
+### Checkpoint B results / manual gate
+
+- `tools/dev/env-doctor.sh`: explicit context/engine/container/volume expectations; bounded metadata-only inspection, exact PG16 mount mapping, running-consumer conflict rejection, stopped-container rejection. No container exec, HTTP, SQL, or lifecycle commands. Exit 0 is metadata-only success, never data-operation approval.
+- `tools/dev/env-doctor.test.sh` + `npm run env:doctor:test`: 12 deterministic mock cases PASS, including unavailable probe, missing input, overrides, identity/mount mismatch, stopped container, and shared volume. Strict Docker command allowlist used; no real Docker access.
+- `tools/dev/README.md`, README recovery notice, and historical PostgreSQL guide warning document invocation, evidence limits, and Checkpoint C boundary.
+- Verification: `bash -n tools/dev/env-doctor.sh tools/dev/env-doctor.test.sh` PASS; `npm run env:doctor:test` PASS (12 cases); `git diff --check` PASS. Application build/Jest/DB-backed tests not run: change is Bash diagnostic tooling/docs, verified with its dedicated mock suite; DB setup migration remains unauthorized.
+- No container/volume/snapshot changes, SQL, backup/restore, migrations, environment-file edits, commit, or push. Real runtime identity/readability and backup remain unverified.
+- Checkpoint B COMPLETE (repo-only). STOP per AGENTS.md manual checkpoint rule. 可以開啟新 Session 繼續下一個 Checkpoint；Checkpoint C requires explicit authorization for its exact recovery/data operations.
+
+## 2026-10-13 Reliable local development environment — Checkpoint C
+
+### Goal, authorization, and acceptance
+
+User explicitly authorized C data operations after reviewing this proposal. Status: **C RECOVERY BACKUP/RESTORE VERIFIED; DEVELOPMENT AUTHORITY UNRESOLVED; STOP AT CHECKPOINT GATE**. No migrations or DB-backed tests authorized.
+
+Acceptance: preserve the existing source; prove the isolated copy's SQL inventory/readability; create an external logical backup and prove isolated restore with matching database/schema/table inventories, exact row counts and sequence states. Record provenance separately: a readable recovery copy is not automatically the authoritative development database. Unknown provenance must remain UNKNOWN, even if restore passes.
+
+- [x] Review handoff, relevant A/B records, runtime rules, lessons, and existing changes.
+- [x] Define exact resources, permitted operations, verification, rollback, and stop conditions.
+- [x] Obtain explicit authorization for the operations below.
+- [x] Revalidate runtime/resource identity and implement reviewable repo-controlled execution with container-free checks before mutation.
+- [x] Preserve source manifest; copy stopped recovery source to a new isolated working volume and verify copy before starting PostgreSQL.
+- [x] Prove candidate SQL inventory/readability and export external logical backups (W3 test recovery data, not dev authority).
+- [x] Restore into a new isolated cluster and compare verification manifests.
+- [x] Stop only C-owned containers; preserve evidence, backups, and volumes; record results and stop at checkpoint gate.
+
+### Exact proposed resource boundary
+
+- Run ID: `sl-c-20261013-01`. Require every proposed resource/path to be absent; collision is a STOP, never reuse or overwrite.
+- Expected Docker context: `default`; endpoint: `unix:///var/run/docker.sock`; engine ID: `8820f44b-5227-4afe-8eff-245fcc9e8a31`. These are A expectations, not current observations; revalidate before operations and reject Docker environment overrides.
+- Candidate source: stopped container `smartlearning-pg-recovery-20261008`, named volume `smartlearning-pg-recovery-20261008`. Never start or modify this container/volume. Revalidate exact container ID, PGDATA mapping, image, state, and all source volume consumers. Selection is for candidate recovery verification only, not dev adoption.
+- Preserve untouched: `smart-learning-pg-test`, `sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata`, `smartlearning-forensic-forensic-f1-20261010-d1-postgres`, `smartlearning-forensic-forensic-f1-20261010-d1-data`, and every unrelated resource.
+- Pin existing local image ID `sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54`; verify PG16 and tool availability, no pull or build.
+- New working volume/container: `sl-c-20261013-01-work-data` / `sl-c-20261013-01-work-pg`.
+- New restore volume/container: `sl-c-20261013-01-restore-data` / `sl-c-20261013-01-restore-pg`.
+- Helper containers, if required: `sl-c-20261013-01-copy` and `sl-c-20261013-01-verify`. Exact run ownership labels on all created resources; `--network none`, no published ports, no auto-restart, no backend/Redis attachment.
+- External destination: `/mnt/d/Backups/SmartLearning/sl-c-20261013-01/`. Proposed creation is part of approval and also subject to filesystem sandbox escalation. Verify current mount resolves to Windows D:, free space, and effective access protections before writing. Never substitute `/tmp` as durable external backup.
+- Repo evidence: `artifacts/local-env/sl-c-20261013-01/`, sanitized metadata/manifests/results only; sensitive dump/role contents remain outside Git.
+
+### Proposed operations and secret-safe execution
+
+1. Bounded metadata preflight; record current IDs/mounts/state, available space, image/user, and relevant Docker lifecycle events. Abort if protected sources have any running consumer or identity/provenance is ambiguous. Metadata doctor intentionally rejects stopped sources; do not bypass it to claim readiness. Use a separate reviewed stopped-source preflight.
+2. With source mounted **read-only**, inspect PG_VERSION, PGDATA structure and symlinks; reject absent/empty/non-PG16 data, external tablespaces/WAL paths, or incomplete mount coverage. Preserve file/content/ownership manifests. Create an empty run-owned working volume; offline copy preserving ownership, modes, symlinks and contents. Compare source and copied manifests and recheck absence of running consumers before PostgreSQL start. No snapshot operation.
+3. Copy helper may require root solely to read all PostgreSQL files and preserve numeric ownership; record this limited exception. PostgreSQL servers run as the image-supported postgres UID/GID, after verifying permissions. Invoke postgres directly on validated working PGDATA; never allow entrypoint initialization of missing source data. Only the new restore volume may be initialized with initdb.
+4. Start the working copy in isolation; writes from crash recovery/WAL/checkpoint are authorized only on the new working volume. Verify readiness, SQL system identifier/version, database/role/schema/table inventory, and application schema evidence via read-only transactions with bounded statement timeouts. Discover roles from safe evidence, never guess passwords or change source authentication. If socket auth is unavailable, stop for a revised plan. Do not print rows, credentials, URLs, or role password hashes.
+5. Export globals without role passwords and each connectable non-template database as a custom-format `pg_dump`; preserve database properties and restore dependencies. Backup filenames use safe inventory indices, not untrusted SQL identifiers. Record versions, archive listings, exit codes, SHA-256 and sanitized manifests. Roles with missing passwords require later separately authorized credential setup; this is a data-recovery backup, not complete authentication recovery.
+6. Initialize only the isolated restore cluster; restore globals and databases with fail-on-error semantics, retaining ownership/ACLs and sequence state. SQL writes are permitted only in this restore cluster. No migrations/seed/application/DB-backed tests. Compare inventories, exact per-table counts, sequence states, and deterministic streamed content digests for ordinary tables without exporting row contents to reports. Unsupported objects/extensions or unverifiable content remain explicit blockers, not silent skips. Recheck the preserved source manifest after the run.
+7. Stop only run-owned containers after evidence capture, keeping both new volumes and external backups. Do not delete resources automatically. Record lifecycle capture gaps, warnings and failures. No commit/push.
+
+### Risk & rollback
+
+Risk: high, recovery-sensitive data and sensitive external backup. Affected resources are the two new clusters plus read-only access to the preserved candidate. Physical copy/recovery and logical restore are distinct evidence; none alone proves dev authority.
+
+Rollback: stop exact C-owned running container IDs after ownership validation; retain all original resources and run evidence/volumes/backups. No original environment/config changes to revert. Deletion requires separate authorization. Never run prune, reset, unregister, pg_resetwal, compose down -v, migration, or credential rotation. Any mismatch, consumer race, external path/access issue, copy mismatch, failed recovery/backup/restore, unexpected database write target, or insufficient evidence stops progression and preserves diagnostics. No automatic source fallback or retry against another volume.
+
+### Dependencies & environment / preparation verification
+
+Bash, timeout, Docker CLI, pinned local PostgreSQL 16 image/tools, current Docker identity, Windows D: mount/access controls, enough space for physical working copy + restore + logical dump. No `.env` edits, secrets in metadata, or NODE_ENV-dependent test setup. Dump/global files are sensitive even without role passwords.
+
+Preparation verification: `git diff --check` PASS; `python3 tools/dev/checkpoint-c.test.py` PASS (6 container-free safety/parser regressions); Python syntax compilation PASS. Existing B changes are preserved.
+
+Working notes: current engine/source/image match A; source container ID `b5c787348b867b34e73ae32e6c11640a38184b8fca5362c8808c99e88db22078`, stopped, no running source consumer observed. Recovery volume label explicitly links to `w3-env-20261005T143441Z-e5560ea0`: candidate is W3 recovery data, not proof of a dev database. D: is writable outside sandbox (sandbox view is read-only), ~1.4 TB free. Initial Windows ACL setup failed because PowerShell could not auto-load Microsoft.PowerShell.Security; the created directory is empty, no data/container mutation occurred. Revised preflight: use .NET Directory ACL APIs to repair only this exact empty directory and verify effective allowlist before any data write.
+
+### Results and verification evidence
+
+- Execution artifacts: `tools/dev/checkpoint-c.py`, its container-free regression tests, and `checkpoint-c-backup-dir.ps1`. Scoped to this exact authorized run; never rerun against retained names as a fresh run. Generated Python bytecode is ignored locally.
+- Source: offline 67,330,459-byte PG16 candidate. File contents/modes/numeric ownership/mtime manifests match before copy, after copy, and at final preservation check: `9d958706ace12156fc6b15b99e60584ce74d6b0df0f40674193ffe17d820424e`. No source start or write. No external tablespaces/symlinks/special files accepted.
+- SQL: PostgreSQL 16.15, system identifier `7693192948338032678`, actual superuser `sl_w3_e5560ea0`. Databases are `postgres` and `smartlearning_test`; no `smartlearning_dev`. Source provenance explicitly remains W3/test; authoritative dev data remains unlocated/unproven.
+- External backup: `/mnt/d/Backups/SmartLearning/sl-c-20261013-01/` contains `globals.sql` (role passwords excluded), `database-000.dump` (postgres), `database-001.dump` (smartlearning_test), two TOCs, and `sha256.json`. Windows DACL verified for directory and every file: current Windows user, SYSTEM, Administrators only. All five data/TOC checksums recomputed and PASS.
+- Real isolated restore: both databases restored with fail-on-error; ownership/ACLs, DB encoding/collation/connection properties, object definitions/columns/constraints/extensions, exact per-table counts and canonical JSON stream SHA-256 match. `smartlearning_test`: 22 tables, 21 total rows, 111 objects, no sequences. `postgres`: no user tables. Source/restore SQL manifest files compare exactly. No foreign tables or large objects accepted.
+- Recovery of tooling failures: Windows ACL module/owner-write failure resolved by changing DACL only on the owned empty directory; multiline JSON parser fixed with regression coverage; final read-only helper initially blocked by running-consumer protection, then ran after exact owned servers stopped. No guard was weakened; no backup/restore rerun against another source. Initial failure records retained.
+- Runtime: four exact C-owned containers retained and stopped, exit 0; two new C-owned volumes retained. Original recovery, forensic and test container IDs remain stopped, original exit 255. No source/test/forensic adoption, migration, seed, DB-backed tests, snapshot, pull, prune, delete, env edit, commit or push.
+- Evidence directory: `artifacts/local-env/sl-c-20261013-01/`. Includes preflight, physical-copy, SQL identity, source/restore manifests, preserved-source, backup hashes, result and final-state JSON. `lifecycle-events.jsonl` has 523 normalized events; 132 older command-action records needed quote escaping. Original `events.jsonl` preserved; intentional capture gaps between failure/continuation are recorded, not continuous exclusivity proof.
+- Database-properties equality passed in the restore execution before its final helper ordering failure; finalization reused recorded matching SQL manifests and performed only source verification/checksums, not additional SQL writes. `result.json` records this provenance.
+- Peer review: initial manifest/volume-ownership blockers corrected with regressions; final review found no blocker for this completed run. Future fresh execution records restored database properties explicitly; this run's earlier loaded code proved equality by reaching the subsequent helper guard, as documented above (no separate database-properties artifact claimed).
+
+### Checkpoint C manual gate / next scope
+
+C's authorized candidate backup and isolated restore are VERIFIED. The reliable development-environment goal is NOT complete: preserved candidate is test data, dev authority remains unresolved, and role passwords are intentionally absent from the logical backup. Do not change `.env.development`, adopt these volumes as dev, run migrations/tests, or initialize a replacement dev database based on this result. Next checkpoint must select an explicitly reviewed dev-data source or obtain authorization for a fresh dev baseline; keep this backup as recovery evidence.
+
+STOP per AGENTS.md. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-13 Reliable local development environment — Checkpoint D
+
+Authorization: user requested the next checkpoint based on the C handoff. Execute read-only provenance discovery and repo-only planning; no new database initialization/adoption, environment edits, migrations, DB-backed tests or lifecycle changes are included.
+
+Acceptance: distinguish current runtime metadata from historical recipes; inspect development connection targets without exposing secrets; identify a defensible dev source or document the bounded search and propose a fresh baseline for separate explicit approval.
+
+- [x] Review C handoff, next-scope gate and safety rules.
+- [x] Bounded runtime, configuration and backup provenance inspection.
+- [x] Record concrete next-operation proposal, preservation boundary and rollback.
+- [x] Verify sanitized evidence and diff; report results and stop at manual gate.
+
+Risk: low for this read-only checkpoint; future initialization is high risk and separately gated. Rollback: remove only this checkpoint's audit documentation/evidence if necessary; preserve earlier work. Dependencies: Python 3, Docker CLI, bounded metadata queries; no services started or environment loaded into application processes.
+
+### D findings and concrete next proposal
+
+- Current default engine matches C: `8820f44b-5227-4afe-8eff-245fcc9e8a31`; only `default` Docker context listed. All nine project recovery/test/forensic/C containers are exited. No `smart-learning-pg-dev` container or `pgdata_smartlearning_dev` volume appears.
+- Both anonymous volumes are attached to stopped forensic copy/compare helpers at PGDATA. Their contents/provenance remain uninspected; names/mount paths do not prove development authority. Preserve them alongside every existing volume.
+- `.env.development` connection targets agree on localhost:5433 / smartlearning_dev; credentials/query were omitted from evidence and no env was sourced or edited. No container publishes host 5433; `ss -H -ltn 'sport = :5433'` observed no listener in this WSL namespace. This does not prove Windows-wide port availability.
+- Direct `/mnt/d/Backups/SmartLearning` inventory contains only the completed C backup directory. No other disks/distributions/engines, snapshots or database contents were inspected. Authoritative development data remains UNKNOWN, not proven lost.
+- Existing `docker-compose.yml` defaults to a different database (`smartlearning`) and volume (`pgdata_smartlearning`); historical instructions and Compose defaults cannot establish data identity. Do not run Compose implicitly as a recovery action.
+
+**Recommended next Checkpoint E: prepare a fresh-development-baseline implementation, then seek explicit data-operation approval on the executable plan.** Treat it as new empty development data, not restoration of historical dev records.
+
+Concrete proposed execution boundary (NOT EXECUTED / NOT AUTHORIZED HERE):
+
+1. Use run ID `sl-e-20261013-01`, container `sl-e-20261013-01-dev-pg`, new persistent volume `sl-e-20261013-01-dev-data`; reject any collision. Pin the C-reviewed PG16 image ID `sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54` after runtime revalidation; no pull. Run ownership labels and exact container/volume IDs must be recorded.
+2. Initialize only that new volume with database `smartlearning_dev`; publish only `127.0.0.1:5433:5432` after WSL AND Windows bind-availability checks. No old resource mounted or adopted; no seed, automatic restart, backend, Redis, test suite or cleanup. Generate a new credential without printing it; final credential-file mechanism must be reviewed before execution. Do not reuse C's password-free role exports.
+3. Prepare repo-controlled fail-closed provisioning/verification tooling and container-free regressions before requesting approval. Proposed authorized writes must explicitly include initdb, PostgreSQL start, and repository migrations on the exact new DB; `prisma db push` remains excluded. Review migration SQL and connection-target checks before requesting migration permission.
+4. After approval, prove engine/container/mount identity, PostgreSQL readiness, actual DB/role identity, host credential authentication and migration completion on that new database. Stop at failed gates. No DB-backed application tests in this execution scope; their implicit migration requires separate explicit approval.
+5. Only after verification, update `.env.development` credential/connection atomically with a protected, untracked backup and no secrets in artifacts or Git. This environment edit must be expressly included in approval. Preserve the existing file if any earlier check fails.
+6. Rollback: stop only the exact E-owned container after matching ownership IDs; restore the protected prior environment file if changed. Retain the new volume/evidence for diagnosis; no deletion or down -v. Existing C backups, nine stopped project containers, all existing named/anonymous volumes and unrelated runtime resources stay preserved. No claim that historical dev data was recovered.
+
+### D results and manual gate
+
+- [x] Bounded runtime, configuration and backup provenance inspection completed.
+- [x] Concrete next-operation proposal, preservation boundary and rollback recorded.
+- [x] Sanitized evidence schema/invariants and `git diff --check` verified (commands below).
+
+Evidence: `artifacts/local-env/sl-d-20261013-01/provenance.json`. Verification: bounded Docker context/info/ps/volume ls/formatted container inspect, credential-omitting configuration parser, direct backup-directory listing and WSL `ss`; no SQL/lifecycle/configuration mutation. Application tests/build are not relevant to this documentation/metadata checkpoint and were not run; DB-backed test migration remains unauthorized.
+
+Checkpoint D COMPLETE for bounded discovery/planning. Reliable development environment is NOT complete. Per `AGENTS.md` §1 manual checkpoint gate, STOP before E; per §2, initialization/configuration/migration require explicit scoped authorization rather than inference from this read-only checkpoint. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+
+## 2026-10-13 Reliable local development environment — Checkpoint E preparation
+
+Authorization: user authorized the next checkpoint from `/tmp/smartlearning-next-checkpoint-handoff-after-d-20261013.md`. Scope: repository-only fresh-baseline preparation and container-free verification. No initdb, lifecycle, migration, real env edit or DB-backed tests authorized/executed.
+
+Acceptance: reviewable pinned resource/credential/migration/environment-update contract; deterministic SQL hashes; fail-closed input regressions; explicit live-execution prerequisites and rollback. Historical development authority remains UNKNOWN.
+
+- [x] Review D proposal, preservation boundaries and current working-tree state.
+- [x] Prepare repository-controlled contract generator and migration/environment transformation guards.
+- [x] Document provisioning/verification sequence, secret volume and external protected env backup design.
+- [x] Run container-free regressions and contract generation; check diff whitespace.
+- [x] Record results and stop at manual gate.
+
+Risk & Rollback: preparation low risk; proposed live operations high risk. Preparation can be reverted independently. Future rollback stops only exact E-owned PG and hash-guards atomic env restoration; retain volumes/evidence and all old resources. No destructive schema rollback.
+Dependencies & Environment: Python 3 standard library only for E preparation. Future live executor requires pinned Docker context/engine/image, Windows PowerShell bind/exclusion checks, reviewed postgres UID/GID, Node/installed Prisma CLI and protected POSIX backup directory. No dependency/environment changes performed.
+
+Working Notes: `tools/dev/checkpoint-e-plan.md` is the authoritative executable-operation specification; `checkpoint-e.py` emits its pinned contract and all 20 SQL hashes. Additional proposed secret volume `sl-e-20261013-01-dev-secret` avoids durable Rancher host-bind dependency. Migration backfills and constraint replacements require new-empty-schema proof. Preparation intentionally has no live execute mode. A live provisioner and its mocked safety fixtures still need implementation/review before data-operation approval; this result is not a production-ready provisioning tool or completion of the overall environment objective.
+
+Results: added contract generator, pure env transform, six container-free tests and reviewable operation proposal; updated tools README. `python3 -B tools/dev/checkpoint-e.test.py` → 6 tests PASS; contract generation → PREPARED_NOT_AUTHORIZED_FOR_EXECUTION, migration_count=20; `git diff --check` → PASS. No application tests/build ran because this checkpoint modifies preparation tooling only; no real Docker/SQL/env operations occurred. Existing changes preserved.
+
+Manual gate: E repository preparation recorded; live executor implementation/verification remains the next proposed checkpoint, before requesting actual data-operation permission. Per AGENTS.md project §1 “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” STOP here. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-13 Reliable local development environment — Checkpoint F executor
+
+Authorization: user authorized the next checkpoint from the after-E handoff. Repository implementation and container-free verification only; live data operations remain separately gated.
+Acceptance: injectable fail-closed executor, exact identity/secret/migration/env/rollback guards, container-free negative-path tests, concrete live approval scope. No Docker/SQL/real env operations in this checkpoint.
+- [x] Implement executor and protected filesystem transaction.
+- [x] Verify negative paths and successful mocked stage sequence.
+- [x] Review diff, document limitations and live operation scope; stop at manual gate.
+Risk & Rollback: high-risk future provisioning; stop only exact owned IDs, hash-guard env restoration; retain resources. Repository-only changes reversible independently.
+Dependencies & Environment: Python standard library; future Docker, PowerShell, Node/Prisma/pg. Preserve all existing changes/resources. Operation contract: tools/dev/checkpoint-e-plan.md.
+Working Notes: initial owner is a bootstrap superuser; not a least-privilege application credential. Live readiness must explicitly resolve that choice. No database-backed suites allowed.
+
+F Results: added tools/dev/checkpoint-f.py (injectable single-use executor, review-only CLI), checkpoint-f-env.py (protected atomic env transaction), two regression suites and checkpoint-f-review.md; updated tooling README. Executor inspection covers runtime/ownership/consumers/mounts/actual publication, secret stdin, TCP rejection, migration hashes/completion/empty rows, guarded rollback and exact env/backup targets. Focused review corrected shared-volume rollback consumers and verified written env routing.
+
+Verification: python3 -B tools/dev/checkpoint-e.test.py → 6 PASS; python3 -B tools/dev/checkpoint-f.test.py → 18 PASS; python3 -B tools/dev/checkpoint-f-env.test.py → 15 PASS (39 total); review CLI → REVIEW_ONLY_NO_LIVE_CLI; git diff --check → PASS. Runtime actions are mocked; filesystem tests use temporary fixtures. No real env read/write, Docker query/lifecycle, SQL/initdb/migration, app test/build, commit or push. TS build/lint are not relevant to Python-only tooling; no DB-backed suites invoked.
+
+Limits: executor core verified, NOT live provisioning readiness or reliable-development-environment completion. Live wrapper with persistent sanitized failure/success/lifecycle evidence is not implemented; initial stock bootstrap superuser would be the development credential and requires an explicit privilege decision before enabling a live entry point. Image UID 999:999 is asserted before secret write/PG initialization, not live-revalidated in this checkpoint. Windows port/image/PG16/migrations remain unproven live. Exclusive env editing and serialized provisioning required; external races cannot be eliminated by snapshots. See tools/dev/checkpoint-f-review.md rather than duplicating execution specification.
+
+Manual gate: F repository executor implementation/container-free verification COMPLETE. Next checkpoint should resolve bootstrap/application credential scope and implement/test a gated live entry point with persistent evidence, then present concrete separately scoped data-operation approval. This authorization did not include live operations. STOP per AGENTS.md project §1 checkpoint confirmation rule. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-13 Reliable local development environment — Checkpoint G gated entry
+
+Authorization: next checkpoint from after-F handoff; repository implementation and container-free verification only. No live operations or real env access.
+Acceptance: explicit credential-scope decision; exact contract/hash/targets and approval gates; persistent sanitized lifecycle/success/failure evidence; lost-response and recorder-failure regressions.
+- [x] Resolve privilege choice: user explicitly selected separate bootstrap/migration/application roles.
+- [x] Implement gated entry and durable lifecycle recorder; role decision resolved, execute still requires separately scoped live approval.
+- [x] Verify container-free negative paths and existing E/F suites.
+- [x] Document concrete revised live scope, results and stop at manual gate.
+Risk & Rollback: future live provisioning high risk; repository changes reversible. Exact-ID guarded stop and hash-guarded env restore; retain all resources/evidence. No deletion or old-resource adoption.
+Dependencies & Environment: Python standard library; mocked Docker/SQL and temporary filesystem only. Existing E contract and F review remain authoritative until explicitly revised.
+Working Notes: role choice is required before live entry enablement; an approval string is a guard, not human authorization. Evidence must never include raw errors/argv/env/URLs/passwords.
+
+G interim results: added checkpoint-g.py, checkpoint-g.test.py and checkpoint-g-review.md; updated tooling README. Container-free suites: G 13 + E 6 + F executor 18 + F filesystem 15 = 52 PASS. Review CLI reports pending credential decision/liveEnabled=false; contract SHA-256 326716f266bcafb1b142da8764143d621add29150b5b0b6dd46c5fe652f7ff91. git diff --check PASS. No Docker/SQL/real env/app suite/build/commit/push. Required user privilege decision remains pending; do not mark G complete or proceed to live operations.
+
+### 2026-10-13 G continuation
+
+Authorization: user requested continuation from the during-G handoff. Resume G only; credential choice and live operations are not implicitly approved.
+Acceptance: test CLI rejection before evidence/env/runtime access; test recovered foreign IDs cannot be stopped; retain pending role gate until explicit decision.
+- [x] Add independent CLI and recovery ownership regressions.
+- [x] Run E/F/G container-free suites and review CLI; record evidence.
+- [x] Implement selected role separation and revise E/F/G contract and env/auth guards.
+- [x] Add role/routing/privilege regressions and rerun container-free verification.
+- [x] Document concrete revised live scope, rollback and results; stop at manual gate.
+Dependencies: Python standard library, strict mocked runtime and temporary files only.
+Risk/rollback: repository-only changes reversible; no live operations or real environment access.
+
+Results: G now has 17 passing tests, including CLI pending-decision rejection before Journal/execute, review-only output, retained foreign recovered ID blocked from stop, and real RecordedExecutor/F execute orchestration with mocked stages/runtime/transaction for success and commit failure. Stage internals are independently tested in F; this is not a full unpatched provisioning integration or live readiness proof. E 6 + F 18 + F env 15 + G 17 = 56 PASS. Commands: python3 -B tools/dev/checkpoint-{e,f,f-env,g}.test.py (each separately); python3 -B tools/dev/checkpoint-g.py; git diff --check. Review CLI remains REVIEW_ONLY, credentialDecision=pending, liveEnabled=false; contract hash unchanged from interim results. No real env/Docker/SQL/migration/app suite/build/commit/push. G remains INCOMPLETE pending explicit role choice; async question presented, no acceptance inferred. 可以開啟新 Session 繼續下一個 Checkpoint；交接時須先續完 G，不得跳至 H。
+
+### G final results after explicit role decision (supersedes pending interim status)
+
+User explicitly chose separate bootstrap/migration/application roles. Added `tools/dev/checkpoint-roles.py`; revised E contract with distinct role names and policy source hash, F role setup/migration/app grants/effective privilege audit/TCP routing, protected migration URL persistence, application-only env guard and G privilege/approval gate. Bootstrap remains superuser only for init/admin; migration is a non-superuser DB/public-schema owner; application is a non-superuser with application-table DML and sequence USAGE/SELECT, without migration-metadata/function access or role memberships. All three credentials differ. Bootstrap secret stays in its volume; migration URL is retained outside Git at `/home/user/.local/share/smartlearning/sl-e-20261013-01/migration.url` mode 0600, with hash/permission checks before env commit/verification. DATABASE_URL and optional DIRECT_URL contain only application credentials. Future new migration objects require reviewed application grant refresh.
+
+Verification: `python3 -B tools/dev/checkpoint-e.test.py` 6 PASS; `python3 -B tools/dev/checkpoint-f.test.py` 21 PASS; `python3 -B tools/dev/checkpoint-f-env.test.py` 18 PASS; `python3 -B tools/dev/checkpoint-g.test.py` 19 PASS (64 total). G complete deterministic simulated runtime executes real F preflight/provision/role setup/migrate/rollback through recorder for success and failed privilege audit; SQL/TCP/filesystem transaction responses are simulated, not live semantics proof. Credential injection/duplication, migration-only child routing, elevated-app-URL rejection, external migration-file alteration, old CLI approval/privilege/hash rejection covered. `python3 -B tools/dev/checkpoint-g.py` → REVIEW_ONLY, credentialDecision=separated-roles, liveEnabled=true (code gate available, NOT live human authority). Revised contract SHA-256: `e5da104678835296a6f60d80a8eca6bd044a7181eda06e195b55412b9a1b8b46`. `git diff --check` PASS. Independent read-only role/security review found no concrete blocker; its limits are actual PostgreSQL grants/migrations/authentication and application CRUD.
+
+Revised high-risk live proposal is reviewable in `tools/dev/checkpoint-g-review.md` and `checkpoint-e-plan.md`: exact new data/secret volumes, retained helper/PG creation and initdb/start, three independent credentials, migration/application role creation, DB/public-schema ownership transfer, PUBLIC revocation on only the fresh cluster's development/postgres/template1 databases, application grants/audits, 20 migrations using migration role, external env backup/migration credential file, atomic application-only env update, sanitized evidence and guarded rollback. New approval literal: `fresh-initdb-start-secret-helper-separated-roles-grants-20-migrations-env-backup-update`; old approval/hash is invalid. Rollback uses existing exact-ID/image/labels/mount/consumer checks before stopping only owned PG/helper and restores protected env only when its current hash matches the written hash; changed backup/credential files block restore for review. Retain all old/new resources, original C backup and evidence; no destructive schema rollback or cleanup. Host/process termination recovery remains manual, not automatically proven.
+
+No Docker queries/lifecycle, SQL/initdb/migrations, real env read/write, DB-backed tests, TS build/lint, commit or push performed. Python-only tooling does not require TS build; DB-backed setup implicitly migrates and remains unauthorized. Windows bind/image UID/live PG16 compatibility/auth/publication/rollback remain unverified; reliable local development goal remains incomplete, historical data authority UNKNOWN.
+
+Checkpoint G repository implementation and container-free verification COMPLETE. STOP at manual checkpoint gate per AGENTS.md project §1; actual data/env operations still require explicit scoped authorization per §2 and the handoff. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-13 Checkpoint H — revised live proposal review
+
+Authorization: user authorized the next checkpoint from after-G handoff. Repository review/preparation only; live data/env/runtime permissions require the exact separate scope.
+Acceptance: revalidate separated-role contract and migration/policy hashes, inspect execution gates and rollback, rerun container-free verification, present concrete live approval.
+- [x] Review authoritative contract, executor, role policy and rollback.
+- [x] Run E/F/F-env/G container-free suites, review CLI and diff check.
+- [x] Record results and exact proposed live scope.
+- [x] Separate live authorization and execution — authorized once, blocked before initialization; baseline incomplete.
+Risk & Rollback: high risk for proposed live operations; current work repository-only. Preserve all changes/resources; exact owned-ID stop and hash-guarded env restoration only; retain volumes and evidence.
+Dependencies & Environment: Python standard library, simulated runtime/temp fixtures; no Docker queries, real env reads, SQL or DB-backed tests. Live Windows publication, pinned image/UID, PG16 SQL/migrations/auth and rollback remain unproven.
+Working Notes: retain explicit three-role choice; G review and E plan are the operational authority. No automatic retries or ad hoc provisioning.
+
+H review Results: inspected E/G contracts, F preflight/provision/role/migration/rollback, protected env transaction and Prisma child routing. No new concrete code blocker found within this bounded review. E 6 + F 21 + F-env 18 + G 19 = 64 PASS; review CLI REVIEW_ONLY/separated-roles/liveEnabled=true; git diff --check PASS. Recomputed contract SHA-256 e5da104678835296a6f60d80a8eca6bd044a7181eda06e195b55412b9a1b8b46 binds migration manifest and role-policy source. Existing G/E reviews remain authoritative; no operational spec duplicated or rewritten.
+
+Live approval request: one single-use invocation of reviewed G entry with this hash and approval literal fresh-initdb-start-secret-helper-separated-roles-grants-20-migrations-env-backup-update. Includes pinned runtime/image and WSL/Windows port inspection; new sl-e-20261013-01-dev-pg, -dev-data, -dev-secret and sl-e-20261013-01-secret-helper; new-volume initdb/start at 127.0.0.1:5433; three independent role credentials, ownership/PUBLIC revocation/grants/audits on fresh cluster; 20 pinned migrations; protected .env.development read/backup and application-only atomic update; external /home/user/.local/share/smartlearning/sl-e-20261013-01 backup/migration.url; sanitized artifacts/local-env/sl-e-20261013-01 evidence; guarded exact-ID stop/hash-checked env restoration on failure. Requires user to reserve exclusive env editing/provisioning during invocation. No automatic retry/ad hoc fallback, old resource adoption/deletion, db push, seed, backend/Redis, DB-backed suites, commit/push.
+
+No Docker query/lifecycle, real env access, SQL/initdb/migration or DB-backed suites performed. Live compatibility and rollback remain unproven; local environment objective incomplete. H repository review/preparation COMPLETE; live portion PENDING explicit scoped authorization. Manual gate per AGENTS.md §§1–2 and after-G handoff; 可以開啟新 Session 繼續下一個 Checkpoint，或在本 Session 明確授權上述 live scope 後續完 H。
+
+### H live single-use authorization
+
+User explicitly authorized single live execution under tools/dev/checkpoint-g-review.md. Includes the exact previously presented resources, initdb/three-role policy/20 migrations, external credential/env backup and atomic env update, sanitized evidence and guarded rollback. Exclusive env editing/resource provisioning is reserved for this invocation. No DB-backed tests, deletion, seed, backend/Redis, commit/push or automatic retry.
+- [x] Revalidate repository contract/hash and diff before invocation.
+- [x] Invoke reviewed G entry exactly once — exit 1, BLOCKED.
+- [x] Inspect sanitized outcome, record verified stages/limitations, stop at manual gate.
+
+H live Results: reviewed G --execute invoked exactly once with pinned hash/approval/privilege/exclusivity, exit 1 BLOCKED. Preflight passed (runtime/image/Windows+WSL port checks). Secret volume and helper were created. Read-only exact-ID follow-up proved helper state=created/running=false, pinned image/labels, Mount mismatch: stock image automatically added anonymous /var/lib/postgresql/data volume 33c80a5056e2d2b457d141cde76830ec57e4e25aea1eb30f3bc88286c1b89b77 in addition to approved /secret mount. Helper never started; secret was not streamed. Guarded rollback also rejected that mount (helper-stop-blocked); helper is already nonrunning. Retain helper 9ffe6e0a3b61550acebd5b1087621b69e472b906931a93f3103805132cbe1bf5, secret volume and anonymous volume; no cleanup/retry/adoption.
+
+No PG container or named data volume exists; external backup destination absent. No initdb, role setup, migrations, env transaction or DB-backed tests ran. Recording succeeded; unresolvedCreate=[]; sanitized evidence: artifacts/local-env/sl-e-20261013-01/{lifecycle.jsonl,outcome.json,h-diagnosis.json}. Historical resources were not modified. Root cause: deterministic mocks omitted Docker image-declared VOLUME behavior for helper creation.
+
+Next checkpoint: repository-only correction/review of image VOLUME handling and regression coverage before any new scoped live proposal. Do not relax exact-mount ownership guards, delete retained resources, reuse names/evidence or re-invoke G under consumed single-use authorization. Any revised contract/hash/resource names require fresh review and explicit live authorization. Local environment remains incomplete. H authorized single attempt and diagnosis COMPLETE; STOP per AGENTS.md manual gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint I — repository-only helper VOLUME correction
+
+Authorization: user authorized next checkpoint from after-H handoff; no live invocation.
+Acceptance: helper explicitly shadows stock PGDATA VOLUME with bounded tmpfs; strict mount/config guards reject anonymous volumes and altered topology; new run/evidence/backup names preserve H. Separated roles unchanged.
+- [x] Reproduce image VOLUME mismatch with realistic container-free fixture.
+- [x] Implement minimal helper topology and refreshed manifest/resource identity.
+- [x] Verify E/F/F-env/G container-free suites, review CLI/hash, diff checks.
+- [x] Document concrete revised proposal/results and stop at manual gate.
+Risk & Rollback: medium (future provisioning); repository changes reversible; future live failure uses exact-ID guarded stop and hash-guarded env restore, retains volumes/evidence. No Docker, real env, migration, DB suites, deletion, commit or push in I.
+Dependencies & Environment: Python3, temporary fixture files only; runtime integration deferred to separate explicit live approval.
+Working Notes: H retained resources/evidence remain untouched; authoritative diagnosis is artifacts/local-env/sl-e-20261013-01/h-diagnosis.json.
+
+Results: helper creation explicitly shadows image VOLUME using bounded read-only tmpfs; strict actual/config mount checks and image volume preflight added. F stock-image fixture reproduces missing override and G derives inspect from creation arguments. New identity sl-i-20261014-01 changes resource/evidence/external-backup paths without touching H. Revised proposal: tools/dev/checkpoint-i-review.md; E plan/G review/README updated.
+Verification: E 6 + F 23 + F-env 18 + G 19 = 66 PASS; regression failed first (F 21, one failure); review CLI REVIEW_ONLY, separated-roles, hash e6b0dd19379ccc391a99de9cdf58f0e2a6973d74b064d4708d15c250e46229fe; git diff --check PASS. No live runtime, real env, migration or app suites. Runtime tmpfs shadowing/inspect and later SQL/env behavior remain unverified. Local baseline incomplete; historical data authority UNKNOWN.
+Checkpoint I COMPLETE; STOP under AGENTS.md manual gate. Next requires separate explicit approval of revised single-use live scope. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint J — revised contract repository review
+
+Authorization: next checkpoint from after-I handoff; repository review only. Generic checkpoint authorization excludes live/migration permission.
+Acceptance: recompute current contract hash, verify container-free E/F/F-env/G suites, present concrete single-use live scope and stop at manual gate.
+- [x] Review current proposal and recompute contract hash.
+- [x] Run container-free verification and diff check.
+- [x] Record results and explicit live approval boundary.
+Risk & Rollback: high-risk proposed live provisioning; this checkpoint only reads repository files and updates audit notes. Future rollback: exact-ID guarded stops and hash-guarded env restore; retain resources/evidence.
+Dependencies & Environment: Python3 standard library and temporary test fixtures; no Docker queries, real env access, SQL, migrations or DB-backed suites.
+Working Notes: I proposal is authoritative; H approval consumed. Preserve existing changes and H resources. No new live invocation is authorized.
+
+J Results: reviewed I/E/G proposal and current CLI gate. Recomputed contract SHA-256 e6b0dd19379ccc391a99de9cdf58f0e2a6973d74b064d4708d15c250e46229fe matches I. No implementation change. Commands: python3 -B tools/dev/checkpoint-e.test.py (6 PASS), checkpoint-f.test.py (23 PASS), checkpoint-f-env.test.py (18 PASS), checkpoint-g.test.py (19 PASS); total 66 PASS. python3 -B tools/dev/checkpoint-g.py reports REVIEW_ONLY / separated-roles / liveEnabled=true; git diff --check PASS. These are simulations, not live Docker/PG16/SQL/env proof.
+
+Approval-ready scope: one invocation for sl-i-20261014-01, exact I container/helper/data/secret names and evidence directory; external backup /home/user/.local/share/smartlearning/sl-i-20261014-01. Includes helper read-only PGDATA tmpfs, fresh initdb/start, distinct bootstrap/migration/application roles, grants/audits, 20 migrations as migration role, protected env backup/migration.url and atomic application env update; exclusive env editing and serialized provisioning required. On failure exact-ID guarded stops/hash-guarded env restore, retain resources/evidence, no retry. Full scope: tools/dev/checkpoint-i-review.md and checkpoint-e-plan.md. No Docker query, real env access, SQL, initdb/migration, app suites, cleanup, commit or push performed. Local environment remains incomplete; historical data authority UNKNOWN.
+
+Checkpoint J repository review COMPLETE; live attempt NOT AUTHORIZED. STOP per AGENTS.md project sections 1 (manual checkpoint gate) and 2 (explicit migration permission). Next live authorization must explicitly accept the above scope/hash and exclusive editing/provisioning; generic checkpoint authorization is insufficient under the handoff. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint K — I single-use live attempt
+
+Authorization: user explicitly authorized the single live attempt in tools/dev/checkpoint-i-review.md, including its exclusive env editing/provisioning condition and scoped migrations. No DB-backed application suites authorized.
+Acceptance: invoke reviewed harness once with exact current hash; preserve sanitized outcome/lifecycle evidence, perform only harness-guarded rollback on failure, no retry.
+- [x] Revalidate contract and invoke single-use harness.
+- [x] Inspect sanitized outcome and bounded failure evidence if needed.
+- [x] Record verified stages, limitations and manual gate.
+Risk & Rollback: high; new cluster roles/grants/migrations and protected env update. Exact-ID identity/mount/consumer guarded stops, hash-guarded env restore; retain all resources/evidence. No deletion or old-resource adoption.
+Dependencies & Environment: pinned Docker context/engine/image, Windows/WSL port preflight, Python3, Node/Prisma/pg; harness must fail closed on mismatch. Preserve preexisting changes and H resources.
+Working Notes: I contract hash must match e6b0dd19379ccc391a99de9cdf58f0e2a6973d74b064d4708d15c250e46229fe. One invocation only; no automatic retry or relaxed guards. User approval now supersedes J's pending live authority for this single attempt only.
+
+K Results: exact reviewed hash matched; invoked checkpoint-g.py --execute once with I approval scope/selected privilege/exclusivity/hash. Exit 1, outcome BLOCKED, recordingFailed=false, rollback=[], unresolvedCreate=[]. Completed stage list: preflight, initialized-authenticated, roles-separated. Lifecycle migration before/after 168/169 proves command success; SQL after 181/193/205 maps to migration completion/checksums, zero application rows and grants checks. SQL failed 217 maps to roles.AUDIT; stderr suppressed, root cause UNKNOWN. No further SQL, retries or restarts performed. EnvTransaction.prepare/commit and migration.url persistence were not reached; real env unchanged by executor. Exact-ID read-only docker inspect confirmed both new helper/PG exited, running=false, exitCode=0. Resources retained. Evidence: artifacts/local-env/sl-i-20261014-01/{outcome.json,lifecycle.jsonl,k-diagnosis.json}. No DB-backed suites, seed, db push, cleanup/deletion, commit or push.
+
+Verification: live harness returned BLOCKED with durable evidence; read-only exact-ID state inspection confirmed rollback stops. git diff --check PASS. Repository suites previously passed 66/66 in J; not repeated for audit-note-only changes. Runtime helper tmpfs/initdb/auth/role separation and migration checks now have live evidence; effective privilege audit/application authentication/env publication remain incomplete. Outcome timestamps report 2026-10-13 UTC, while task naming follows provided 2026-10-14 Asia/Taipei context.
+
+Checkpoint K authorized single attempt + bounded diagnosis COMPLETE, local baseline INCOMPLETE. I single-use authorization consumed. Next proposed checkpoint: repository-only diagnosis/regression fix for roles.AUDIT, preserving stopped K/H resources and evidence; any changed live contract needs fresh explicit authorization. STOP per AGENTS.md manual gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint L — repository-only AUDIT diagnosis
+
+Authorization: next checkpoint per after-K handoff; repository work only. No live SQL, Docker, migration, restart, cleanup or real env access.
+Acceptance: inspect effective-privilege SQL against authoritative PostgreSQL semantics; fix only demonstrated repository defects, add regression coverage where justified, record remaining unknowns and next gate.
+- [x] Inspect AUDIT and closest executor/tests.
+- [x] Document no proven correction; preserve SQL and privilege guards.
+- [x] Run container-free verification and diff check.
+- [x] Record results and stop at manual gate.
+Risk & Rollback: medium for future privilege policy; repository changes reversible, retain H/K resources and evidence. Any fresh live attempt requires separate explicit scope approval.
+Dependencies & Environment: Python3 standard library, temporary simulated fixtures; PostgreSQL documentation only, no infrastructure access.
+Working Notes: K SQL subprocess failed at sequence 217; suppressed diagnostics cannot establish the SQL root cause. Existing changes preserved.
+
+L Results: tools/dev/checkpoint-l-diagnosis.md records subprocess-vs-false-result distinction, PostgreSQL 16 documentation review and simulation limits. No demonstrated SQL defect; root cause remains UNKNOWN, no speculative policy change or regression test. E/F/F-env/G 6+23+18+19=66 PASS; default G REVIEW_ONLY and unchanged hash e6b0dd19379ccc391a99de9cdf58f0e2a6973d74b064d4708d15c250e46229fe; git diff --check PASS. No Docker, SQL, migration, real env, app suites, cleanup, commit or push. Next proposed checkpoint is repository preparation of a fresh SQL-only diagnostic harness and concrete scope; live operations still need separate explicit authorization. Local baseline incomplete. L repository diagnosis COMPLETE within authorized scope; STOP per AGENTS.md §1 manual gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint M — SQL-only diagnostic preparation
+
+Authorization: next checkpoint from after-L handoff; repository preparation and container-free tests only. No live operations authorized.
+Acceptance: independent fresh-resource SQL diagnostic contract; unchanged exact AUDIT with positive/negative synthetic privilege cases; fixed diagnostic IDs and allowlisted SQLSTATE only; guards remain strict; concrete review proposal; no env publication or migrations.
+- [x] Read authoritative L findings, role policy and executor boundaries.
+- [x] Implement isolated SQL-only diagnostic contract/driver and sanitized failures.
+- [x] Verify container-free failure/guard/privilege-case tests and existing suites.
+- [x] Record proposal/hash/results and stop at manual gate.
+Risk & Rollback: medium repository preparation; future isolated role/schema provisioning is high risk. Exact-ID guarded stops only; retain owned volumes/evidence, no deletion, retries, old-resource adoption or env writes.
+Dependencies & Environment: Python3 standard library; future pinned PG16 Docker runtime. Existing H/K evidence/resources untouched; real credentials/environment files excluded.
+Working Notes: SQL subprocess failure in K is UNKNOWN. Synthetic schema cannot establish full 20-migration compatibility. M adds a review-only CLI; live orchestration must be separately authorized and reviewed before enabled.
+
+M Results: added tools/dev/checkpoint-m.py (review-only contract/guarded SQL transport/synthetic privilege driver), checkpoint-m.test.py and checkpoint-m-review.md. Exact existing AUDIT/GRANTS/role policy unchanged. Eight transaction-scoped negative cases each require false then restored true. Only fixed diagnostic IDs/booleans/allowlisted classification are returned; raw errors never enter evidence. Transport revalidates source-bound contract/runtime/container/mount/consumer guards before each SQL. Lifecycle/migration/env entry methods remain disabled; no live command is currently enabled. Concrete proposed identities/lifecycle/retention scope and the required next adapter review are in M review.
+Verification: python3 -B tools/dev/checkpoint-m.test.py — 16 PASS; E/F/F-env/G — 6+23+18+19=66 PASS (82 total). M CLI REVIEW_ONLY/liveEnabled=false/hash 319359319c3c7cc9ff99821f15d3933d5df769884f749c7a1e0ad2fddd9f6f8c; --execute rejects with exit 1/LIVE_NOT_ENABLED in regression. Existing G review hash unchanged e6b0dd19379ccc391a99de9cdf58f0e2a6973d74b064d4708d15c250e46229fe. git diff --check PASS.
+Limitations: all tests are container-free; no PostgreSQL syntax/semantic or migration proof. K root cause UNKNOWN; development baseline incomplete. No Docker queries/lifecycle, SQL, real env reads, migration, application suites, cleanup, commit or push occurred. Existing H/K resources/evidence and prior changes preserved. Entry aggregate-read truncation was recorded in lessons; relevant rule excerpts recovered.
+Next: repository-only single-use lifecycle adapter plus full-runtime simulated guards/evidence failures and refreshed exact command/hash review; only afterward request separate explicit live SQL/container permission. M prepared core/proposal COMPLETE, live orchestration NOT enabled or authorized. STOP per AGENTS.md §1 manual checkpoint gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint N — SQL-only lifecycle adapter
+
+Authorization: user authorized next checkpoint from after-M handoff; repository preparation/container-free verification only.
+Acceptance: separate single-use source-bound SQL-only adapter, fresh identity/runtime/volume/mount/consumer guards, durable sanitized evidence before creation, unresolved-create and guarded-stop recording, concrete final command/hash review. No live Docker/SQL/initdb/migration/env operations.
+- [x] Read handoff and authoritative M boundary.
+- [x] Implement adapter.
+- [x] Add full lifecycle simulated regression coverage and review.
+- [x] Run container-free suites, CLI gates and diff verification.
+- [x] Record final review/hash/results and stop at manual gate.
+Risk & Rollback: repository preparation reversible; future live lifecycle high risk. Stop only exact current-run owned IDs with runtime/mount/consumer guards; retain all volumes/evidence. No cleanup or retries.
+Dependencies & Environment: Python3 standard library and temporary simulated fixtures only. Runtime names are proposed, not verified available.
+Working Notes: preserve M exact AUDIT and SQL classifications; do not invoke inherited migration/env paths. Existing changes/H/K artifacts preserved.
+
+N Results: added checkpoint-n.py, checkpoint-n.test.py and checkpoint-n-review.md. Separate single-use SQL lifecycle adapter binds loaded source snapshots and immutable operation plan, validates runtime/image/fresh names/ports, exact configured + actual mounts and consumers, generates distinct stdin-only credentials, writes durable sanitized intent/check/complete evidence, retains unresolved creates and recording/stop failure flags. Exact M AUDIT/GRANTS and eight negative cases/restoration unchanged; inherited migration/env/TCP/URL paths disabled. Success/failure both stop only known guarded current-run IDs and retain resources.
+Verification: python3 -B tools/dev/checkpoint-n.test.py — 24 PASS; E/F/F-env/G/M — 6+23+18+19+16=82 PASS, total 106. N default CLI REVIEW_ONLY/liveEnabled=true/hash 5f87442dcfb6210335fec648e1e6f8a333d51b6fec23113d894b18c6583df5ea; incomplete execution rejected before evidence/runtime in tests. Existing G hash unchanged e6b0dd19379ccc391a99de9cdf58f0e2a6973d74b064d4708d15c250e46229fe. git diff --check PASS. Exact proposed NOT-authorized command and scope in tools/dev/checkpoint-n-review.md.
+Limits: simulated runtime/SQL only; no PostgreSQL parsing/effective privilege/Docker/Windows proof. Advisory lock covers cooperating same-root runs; explicit external serialization and trusted unchanged sources remain required. Evidence storage failure can prevent durable final publication; sanitized returned outcome reports it. K root cause UNKNOWN; development baseline/full migration compatibility incomplete. No live Docker queries/lifecycle, SQL/initdb/migration, real env files, application suites, cleanup, commit or push. Preexisting files/H/K evidence preserved.
+Manual gate: N repository preparation COMPLETE. Any live diagnostic run requires fresh separately scoped authorization of the exact N command/hash and M identities/retention scope. Stop per [AGENTS.md](../AGENTS.md) §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint O — N execution contract repository review
+
+Authorization: generic next checkpoint from after-N handoff; repository review only. Live Docker/SQL/initdb authorization remains pending.
+Acceptance: verify current review-only contract hash against N proposal, run focused container-free lifecycle tests, present exact reviewed execution scope and stop before runtime access.
+- [x] Read after-N handoff, N/M proposals and final N records.
+- [x] Verify review-only hash and focused container-free tests.
+- [x] Record results and concrete live approval request.
+Risk & Rollback: repository audit notes only; proposed live lifecycle high risk. Future rollback is guarded stops of known current-run IDs, retaining volumes/evidence; deletion requires separate authorization.
+Dependencies & Environment: Python3 standard library, simulated fixtures only. External serialized runtime/port access and trusted unchanged sources are required for any future live attempt.
+Working Notes: no adapter changes needed; preserve existing changes and H/K resources. Generic checkpoint approval excludes runtime access per handoff. Exact command resides in tools/dev/checkpoint-n-review.md; reviewed M identities remain unchanged.
+
+O Results: no adapter/source changes. python3 -B tools/dev/checkpoint-n.py returned REVIEW_ONLY/liveEnabled=true/runId sl-m-20261014-01 and contract SHA-256 5f87442dcfb6210335fec648e1e6f8a333d51b6fec23113d894b18c6583df5ea, matching the exact N proposed command. python3 -B tools/dev/checkpoint-n.test.py: 24 tests PASS. git diff --check: PASS. Verification is container-free and does not prove PostgreSQL/actual runtime behavior; full historical suites were not repeated for audit-note-only changes.
+Approval-ready request: authorize exactly one invocation of the command in tools/dev/checkpoint-n-review.md with the verified hash and full M resource/runtime scope in tools/dev/checkpoint-m-review.md. Includes Docker preflight/create/start, fresh initdb, stdin synthetic secret helper, synthetic schema/independent roles/grants/exact AUDIT/eight negative cases and restoration, bounded readiness probes, guarded current-run stops. Requires external serialized runtime/port access and trusted unchanged sources. Retain all volumes/evidence; no migrations, real env files, application suites, old-resource access, deletion or automatic retry. Approval string is not human authorization.
+No live Docker query/lifecycle, SQL, initdb/migration, real env access, cleanup, commit or push occurred. K root cause UNKNOWN; development baseline incomplete. Existing H/K resources/evidence and prior changes preserved.
+O repository review COMPLETE; live authorization PENDING. Stop under AGENTS.md §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint P — N single-use live SQL diagnostic attempt
+
+Authorization: user explicitly authorized N command once, accepted full M scope and confirmed external runtime/port exclusivity and unchanged sources. No migrations or application DB suites authorized.
+Acceptance: exact reviewed hash/command once; preserve sanitized result/evidence, guarded current-run stops and retained resources; no retry.
+- [x] Review runtime rules and verify N contract hash matches reviewed proposal.
+- [x] Invoke exact N command once.
+- [x] Record sanitized result, limitations and manual gate.
+Risk & Rollback: high-risk isolated initdb/roles/schema/SQL lifecycle. Adapter stops only guarded known current-run IDs; retain volumes/evidence including protected synthetic secrets. No deletion, source changes or automatic retry.
+Dependencies & Environment: pinned M runtime/image/resource identities, Python3, Docker, Windows/WSL port checks; fail closed on mismatch. Preserve H/K resources and all preexisting workspace changes.
+Working Notes: hash matches 5f87442dcfb6210335fec648e1e6f8a333d51b6fec23113d894b18c6583df5ea. Approval consumed by the following single invocation, even if blocked.
+
+P Results: review-only N hash matched; exact approved N command invoked ONCE, exit 1. Sanitized outcome: BLOCKED, classification TRANSPORT_UNAVAILABLE, checks=[], errors=[lifecycle-blocked], recordingFailed=false, unresolvedCreates=[], retained=true. Durable evidence artifacts/local-env/sl-m-20261014-01/lifecycle.jsonl has exactly begin/blocked/complete (sequences 1–3), zero create intents. Failure occurred during initial runtime guard before preflight completion/provisioning; no container/volume creation, initdb or SQL diagnostic was reached. TRANSPORT_UNAVAILABLE alone does not establish which subprocess availability/timeout cause occurred; raw exceptions were suppressed by the reviewed transport. No additional live queries or retry performed.
+Verification: exact command outcome plus bounded sanitized lifecycle JSONL inspection; git diff --check PASS. No source change, migration, application suites, real env access, old-resource access, cleanup/deletion, commit or push. Current-run evidence retained and identity consumed; H/K resources untouched. Repository tests were not rerun for audit-note-only changes. K root cause UNKNOWN; actual privilege SQL and development baseline remain unverified.
+Next proposed checkpoint: repository-only transport/PATH/failure-classification diagnosis and a reviewed fresh-identity proposal if necessary. Any extra runtime probe or new live attempt needs separate explicit authorization; do not reuse the consumed sl-m-20261014-01 identity, delete evidence or retry N.
+P single-use attempt COMPLETE, diagnostic BLOCKED. User live approval consumed. STOP per AGENTS.md §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint Q — repository-only transport diagnosis
+
+Authorization: next checkpoint per after-P handoff; repository reads and fully mocked/container-free tests only. No runtime availability probes, Docker queries, lifecycle, SQL, initdb, migrations, old-resource reads or real environment files.
+Acceptance: demonstrate fixed subprocess environment and exception classifications with mocked availability/timeout/decoding cases; preserve secret redaction and fail-closed behavior; change bound sources only for a proven defect; document remaining unknowns and a concrete next scope.
+- [x] Inspect initial runtime guard, fixed PATH, transport and closest tests.
+- [x] Add deterministic simulated transport/initial-guard coverage and diagnosis.
+- [x] Run targeted container-free suites, review-only contract comparison and diff check.
+- [x] Record results, limitations and manual gate.
+Risk & Rollback: low; tests/documentation only unless a demonstrated defect warrants replanning. No approved live contract changes or evidence deletion. P identity sl-m-20261014-01 remains consumed; H/K/P resources/evidence preserved.
+Dependencies & Environment: Python3 standard library, mocked subprocess.run and temporary test evidence only. No application suite or test/setup/db.ts execution.
+Working Notes: initial guard starts with Docker context show, then context inspect/engine/image checks. Fixed PATH alone is not evidence of actual executable availability. TRANSPORT_UNAVAILABLE combines OSError, TimeoutExpired and UnicodeError; P's exact command/cause cannot be recovered from its sanitized result. No speculative PATH change or fresh live execution proposal until runtime cause is established.
+
+Q Results: tools/dev/checkpoint-q-diagnosis.md documents exact fixed environment, ordered initial identity commands, classification branches and evidence limitations. Added 3 M tests and 1 N test containing 16 mocked initial-guard cases (missing executable/permission/timeout/decoding across all four commands). Each N case reproduces P's sanitized classification and event shape with no provisioning/retry. No demonstrated implementation defect; bound sources unchanged, actual PATH/tool/config availability and P root cause remain UNKNOWN. Evidence cannot identify which of the four guard commands failed. Do not claim that context show specifically failed.
+Verification: python3 -B tools/dev/checkpoint-m.test.py — 19 PASS; python3 -B tools/dev/checkpoint-n.test.py — 25 PASS (44 total). python3 -B tools/dev/checkpoint-n.py — REVIEW_ONLY, unchanged SHA-256 5f87442dcfb6210335fec648e1e6f8a333d51b6fec23113d894b18c6583df5ea. git diff --check PASS. Broader historical suites not rerun because only focused tests/docs changed; application suites excluded because implicit migrations are not authorized. No runtime availability probes, Docker queries/lifecycle, SQL/initdb/migrations, real env files, old-resource reads, cleanup, commit or push. H/K/P evidence/resources and preexisting workspace changes preserved.
+Next proposed Checkpoint R: repository-only preparation of a bounded read-only transport probe, simulated verification and exact command/hash review. Proposed future separately authorized runtime scope is fixed-PATH executable lookup and the four pinned initial identity reads, with sanitized phase/cause/match outputs and bounded timeouts. No live execution is authorized by Q. Another SQL lifecycle proposal is deferred until evidence establishes a justified correction; it must use fresh identities and refreshed explicit single-use approval. P's consumed identity cannot be reused. K SQL cause/development baseline remain incomplete.
+Q repository diagnosis COMPLETE. Stop under [AGENTS.md](../AGENTS.md) §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint R — bounded read-only transport probe preparation
+
+Authorization: user authorized next checkpoint from after-Q handoff; repository preparation and fully simulated tests only. No actual executable lookup or runtime command is authorized.
+Acceptance: default pure review; exact fixed PATH and four pinned identity reads bound to loaded sources/immutable contract; separate single-use hash/approval gates and fresh exclusive evidence; bounded subprocesses with allowlisted phase/cause/match evidence only; fail closed without retries or raw errors; concrete reviewed future command.
+- [x] Read authority, Q findings, closest source/test patterns and relevant runtime rules.
+- [x] Implement minimal isolated probe and container-free guard/redaction tests.
+- [x] Verify focused suites, pure CLI gates, unchanged N hash and diff hygiene.
+- [x] Publish exact execution review, results/limitations and manual gate.
+Risk & Rollback: low repository preparation; future read-only runtime diagnosis requires separate permission. No Docker mutation/data changes. Preserve all H/K/P evidence and preexisting files. Retain fresh probe evidence on success/failure; no cleanup or retry.
+Dependencies & Environment: Python3 standard library and mocked executable lookup/subprocesses. Future same constrained PATH, pinned default context/endpoint/engine/image. No real env files, migrations or application suites.
+Working Notes: P phase/cause is unknown; do not widen PATH or change pinned identities. A current probe can diagnose current state only, not prove historical P cause. Software execution gates do not substitute for user authorization. Sources must remain trusted/unchanged throughout any future run.
+
+R Results: added tools/dev/checkpoint-r.py, checkpoint-r.test.py and checkpoint-r-review.md. Isolated pure-review CLI with source-bound exact lookup/four-read plan, 30-second subprocess timeouts, fail-closed phase/cause/match reporting, no raw diagnostics, no retry, fresh exclusive protected evidence identity sl-r-20261014-01. Single-use approval/hash/exclusivity gates precede evidence and any runtime call. Durable intents precede lookup/commands; recording/close failures remain reported. retentionPolicy is separate from evidenceStarted; false evidenceStarted does not imply no partial directory exists. Independent subagent correctness/security review found no blocking defect; reporting ambiguity fixed and capture-size limitation documented. CLI tests inject explicit failing dependencies to fence import-time defaults.
+Verification: R 13 PASS (including 28 transport-failure subcases), M 19 PASS, N 25 PASS — 57 total. R default CLI REVIEW_ONLY; repository-only review/hash consistency PASS; git diff --check PASS. R exact reviewed hash 8e080f97ffe1bae0eae30ba9c132e06a66066f91d4be1b3845cbbfd222c8c913. Existing N REVIEW_ONLY hash unchanged 5f87442dcfb6210335fec648e1e6f8a333d51b6fec23113d894b18c6583df5ea. R focused tests rerun after test/implementation corrections; broader suites not repeated for isolated addition. Application suites excluded because implicit migration is unauthorized.
+Limitations: captured output has no byte/memory cap; timeouts do not bound total wall time including lookup/process creation/evidence I/O. Runtime/source/tool stability requires trusted external exclusivity; hash guards cannot defeat outside edits racing imports. Evidence storage can prevent final publication; sanitized returned outcome is fallback and takes precedence over a prior complete event on close failure. Actual executable/runtime availability, P phase/cause, K SQL cause, migration compatibility and development baseline remain unproven.
+No actual executable lookup, Docker/runtime query, port probe, lifecycle, SQL/initdb/migration, real env file, old-resource read, deletion, commit or push occurred. All test runtime calls were injected; temporary test evidence only. Existing H/K/P resources/evidence and all preexisting changes preserved; no bound N/M/F/E/role implementation changed.
+Next: review-only next checkpoint or separate explicit authorization for exactly one invocation of the command/hash/scope in tools/dev/checkpoint-r-review.md, accepting lookup plus four pinned reads, fixed environment, fresh retained evidence, no retry and external exclusivity. Generic next-checkpoint approval does NOT authorize that command. No new SQL lifecycle attempt is proposed; consumed sl-m-20261014-01 must not be reused.
+R repository preparation COMPLETE; live probe NOT AUTHORIZED. Stop per [AGENTS.md](../AGENTS.md) §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint S — R execution contract repository review
+
+Authorization: generic next-checkpoint approval based on after-R handoff; repository-only review and fully injected/container-free tests. No executable lookup, Docker/runtime query or R execute authorization.
+Acceptance: pure R review must match the exact reviewed hash/command/scope; focused simulated suites pass; present the existing exact proposal and stop at the manual gate.
+- [x] Read after-R handoff, AGENTS.md, final R notes and exact R review.
+- [x] Verify pure review/hash consistency and focused container-free tests.
+- [x] Record results, remaining uncertainties and concrete next authorization scope.
+Risk & Rollback: low, audit notes only; preserve all existing files and H/K/P evidence. Future probe is read-only with fresh retained evidence and no retry; no deletion.
+Dependencies & Environment: Python3 standard library, injected lookup/subprocesses and temporary fixtures only. No application DB suite or implicit migration.
+Working Notes: use the sole command in tools/dev/checkpoint-r-review.md; software approval flags are not permission. P identity remains consumed; actual runtime/PATH and historical P/K causes remain unknown.
+
+S Results: repository review only; no implementation/source changes needed. R pure CLI returned REVIEW_ONLY with contract SHA-256 8e080f97ffe1bae0eae30ba9c132e06a66066f91d4be1b3845cbbfd222c8c913, matching the sole exact proposal in tools/dev/checkpoint-r-review.md. Fixed PATH, four ordered commands, pinned identities, fresh sl-r-20261014-01 evidence and approval/exclusivity requirements agree with that review.
+Verification: python3 -B tools/dev/checkpoint-r.test.py — 13 PASS; checkpoint-m.test.py — 19 PASS; checkpoint-n.test.py — 25 PASS (57 total). python3 -B tools/dev/checkpoint-r.py — REVIEW_ONLY/matching hash. git diff --check — PASS. All lookup/subprocess test calls injected; temporary fixtures only. Broader historical suites not repeated for audit-note-only work; application DB suites excluded because implicit migration is unauthorized.
+Approval-ready proposal: authorize exactly one invocation of the existing command in tools/dev/checkpoint-r-review.md, accepting its exact hash, fixed-PATH Docker executable lookup and at most four pinned identity reads, fresh retained evidence, no retry, and --exclusive assertion of trusted unchanged sources plus externally serialized runtime/tool/configuration/evidence access. No alternative command or SQL lifecycle proposal was created.
+Limits: actual executable/runtime availability and historical P/K causes remain UNKNOWN; effective SQL privileges, migration compatibility and development baseline remain unverified. Output capture lacks a byte cap and per-command timeouts do not bound total wall time. Current probe results cannot establish historical P cause. Evidence/close failures require the sanitized returned outcome to take precedence as documented in R review.
+No actual executable lookup, Docker/runtime query, port probe, lifecycle, SQL/initdb/migration, real env access, old-resource read, cleanup, commit or push occurred. Preserve all prior workspace changes and H/K/P resources/evidence; P identity remains consumed. Only task/lesson notes changed in S. Entry over-read correction recorded in lessons.
+S repository review COMPLETE; live probe approval PENDING. Stop under [AGENTS.md](../AGENTS.md) §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint T — R single-use live read-only transport probe
+
+Authorization: user explicitly authorized exactly one invocation of tools/dev/checkpoint-r-review.md command and accepted full scope, retention, no retry and external exclusivity. No SQL lifecycle or migration authorization.
+Acceptance: verify unchanged reviewed hash; execute exact command once; retain sanitized returned result/current-run evidence; record verified stages and limits; stop.
+- [x] Read exact R review/relevant runtime rules; pure REVIEW_ONLY hash matches 8e080f97ffe1bae0eae30ba9c132e06a66066f91d4be1b3845cbbfd222c8c913.
+- [x] Invoke exact authorized R command once.
+- [x] Inspect only sanitized current-run evidence and record results/manual gate.
+Risk & Rollback: bounded read-only runtime operations; no mutation/cleanup or retries. Retain sl-r-20261014-01 evidence even on failure; created directory consumes identity. Preserve H/K/P resources and all preexisting changes.
+Dependencies & Environment: Python3; exact fixed PATH/pinned context/endpoint/engine/image; user accepted trusted unchanged sources and external serialized runtime/tool/config/evidence access. Per-command 30-second timeout, no total wall-clock/output-byte bound.
+Working Notes: this single-use authorization is consumed by the following invocation regardless of success. Returned recordingFailed/BLOCKED takes precedence over evidence complete event on close failure. Current results cannot prove historical P cause.
+
+T Results: exact approved R command invoked ONCE, exit 1. Sanitized returned outcome: status=BLOCKED; checks=[phase=lookup, cause=NOT_FOUND, available=false]; evidenceStarted=true; recordingFailed=false; retentionPolicy=retain-created-evidence. Fixed-PATH shutil.which did not find an available Docker executable. No Docker subprocess/identity read was reached. This does not prove Docker is absent from other PATHs, nor establish P's historical failure cause.
+Evidence: artifacts/local-env/sl-r-20261014-01/probe.jsonl retained; four sequential events begin/intent(lookup)/check(NOT_FOUND)/complete(BLOCKED), sequences 1–4, matching returned result with recordingFailed=false. No extra runtime queries, PATH changes or retry. sl-r-20261014-01 and this single-use permission are consumed.
+Verification: pure R CLI hash matched exact approved hash before invocation; exact command returned sanitized BLOCKED; bounded current-run evidence inspection agrees; git diff --check PASS. Prior S simulated suites (57 PASS) not repeated for audit-note-only live execution results. No application DB suites/implicit migration authorized or run.
+Limits: pinned context/endpoint/engine/image remain unverified; historical P/K causes, SQL privileges, migration compatibility and development baseline remain incomplete. No container mutation, port probe, SQL/initdb/migration, real env access, old-resource query, cleanup/deletion, commit or push. Existing H/K/P resources/evidence and preexisting workspace changes preserved; implementation sources unchanged.
+Next proposed checkpoint: repository-only review of fixed-PATH lookup behavior and an exact fresh-identity correction/probe proposal if justified. Do not change runtime tooling/PATH or invoke any live probe under this consumed approval. Any future runtime scope requires a newly reviewed contract/identity and separate explicit authorization; never reuse sl-r-20261014-01 or sl-m-20261014-01.
+T single-use attempt COMPLETE; runtime diagnostic BLOCKED. Stop under [AGENTS.md](../AGENTS.md) §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+
+## 2026-10-14 Checkpoint U — fixed-PATH repository-only diagnosis
+
+Authorization: next checkpoint per after-T handoff; repository reads and injected/controlled-fixture tests only. No live lookup, caller PATH inspection, runtime query, migration or retry.
+Acceptance: explain NOT_FOUND classification and limits with deterministic tests; preserve approval-bound sources/hash and consumed identities; prepare a fresh proposal only if evidence supports correction; stop at manual gate.
+- [x] Read handoff, AGENTS.md, final T and R contract/targeted source/tests.
+- [x] Diagnose lookup versus launch with controlled fixtures and injected calls.
+- [x] Run focused container-free verification and diff hygiene.
+- [x] Record findings, limits and next checkpoint gate.
+Risk & Rollback: low; additive diagnosis/tests/notes only. Revert only U additions if needed; preserve all existing files/resources/evidence.
+Dependencies & Environment: Python3 standard library; temporary filesystem fixtures; injected runner/lookup. No DB/service or actual executable installation needed.
+Working Notes: R and N use the same fixed PATH; R lookup reports only boolean availability and launches docker by name. None maps to NOT_FOUND; permission checks may yield None without raising PermissionError. Lookup success cannot prove launch or pinned runtime identity. No guessed PATH correction is justified by T alone.
+
+U Results: tools/dev/checkpoint-u-diagnosis.md records evidence and limits; tools/dev/checkpoint-u.test.py adds six deterministic fixture/injected tests. NOT_FOUND includes absent/nonexecutable/directory/out-of-search candidates; explicit PermissionError remains distinct. AVAILABLE cannot guarantee launch. R/N fixed PATH agrees; no justified source/PATH correction or fresh live proposal.
+Verification: U 6 PASS; R 13 PASS; pure R REVIEW_ONLY hash unchanged (8e080f97ffe1bae0eae30ba9c132e06a66066f91d4be1b3845cbbfd222c8c913); git diff --check PASS. No real lookup, caller PATH inspection, runtime query, migration/application DB suite, cleanup, commit or push. Existing sources/resources/evidence preserved.
+Next possible scope: repository-only preparation of a narrowly defined discovery contract; any actual discovery requires separate explicit authorization. U COMPLETE; stop under [AGENTS.md](../AGENTS.md) §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint V — repository-only executable-discovery contract
+
+Authorization: user approved next checkpoint per after-U handoff. Repository preparation only; no actual discovery or runtime operations.
+Acceptance: define a bounded candidate domain, metadata/redaction, fresh evidence identity/retention and stop rules; distinguish a specification from a runnable approval proposal; preserve consumed sources and evidence.
+- [x] Read handoff, AGENTS.md, U findings and relevant R retention/lookup lessons.
+- [x] Write the minimal discovery contract and implementation acceptance checks.
+- [x] Verify the specification against repository constants and diff hygiene.
+- [x] Record results and stop at the manual checkpoint gate.
+Risk & Rollback: low; documentation only. Revert only V document and V task entry; preserve all preexisting work and evidence. Future discovery has separate authorization requirements.
+Dependencies & Environment: existing R PATH constant is the sole domain reference; no caller environment, installed tool, service or DB assumptions. No executable implementation is introduced in V.
+Working Notes: U establishes no evidence-backed PATH correction. Scope therefore stays on the existing explicit domain; no new location is guessed. A discovery result cannot establish launchability, runtime identity or historical failure cause.
+
+V Results: tools/dev/checkpoint-v-discovery-contract.md defines one existing fixed-domain lookup, allowed sanitized metadata/classifications, reserved fresh identity, durable evidence/retention and no-retry gates. No executor or live command/hash is proposed; later repository implementation must resolve implicit platform environment dependencies and provide injected regression tests before any live approval request.
+Verification: Python AST/document assertion PASS (literal domain equals R PATH; eight contract markers); git diff --check PASS. Documentation-only slice; no runtime tests needed. No actual lookup, caller PATH/environment inspection, executable launch, Docker operation, DB suite/migration, evidence creation/cleanup, commit or push. Approval-bound sources and prior work preserved.
+Next suggested scope: repository-only implementation and injected verification; separate explicit approval remains required for actual discovery. V COMPLETE; stop under [AGENTS.md](../AGENTS.md) §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint W — discovery implementation prerequisite review
+
+Authorization: next checkpoint from after-V handoff; repository preparation only.
+Acceptance: review V's mandatory platform/environment prerequisite before implementing; either establish a repository-backed execution environment and implement/test its contract, or stop preparation with concrete missing requirements as V directs. No host/tool/environment discovery.
+- [x] Read V contract, final V record, AGENTS.md and targeted R/U sources.
+- [x] Establish whether implicit platform dependencies are bounded: not established by the reviewed repository evidence.
+- [x] Document the blocking prerequisite in tools/dev/checkpoint-w-prerequisite-review.md; executor/injected suite DEFERRED per V stop rule.
+- [x] Verify repository assertions and diff hygiene; record results and stop.
+Risk & Rollback: low for repository review; future filesystem discovery/evidence writes require separate exact-scope approval. Revert only W additions; preserve all preexisting sources/resources/evidence.
+Dependencies & Environment: repository text and Python AST parsing only; no caller PATH/PATHEXT/platform inspection, executable discovery, runtime operations or DB suites.
+Working Notes: V requires preparation to stop if implicit environment dependencies cannot be bounded. R's literal search path and generic python3 command do not themselves specify interpreter/platform semantics. Do not silently replace platform-native which with custom lookup or infer semantics from slash-separated path syntax.
+
+W Results: repository prerequisite review recorded in tools/dev/checkpoint-w-prerequisite-review.md. R's plan/default and generic python3 commands do not establish reviewed interpreter/platform/stdlib semantics. V explicitly says “if it cannot bound them to the reviewed environment, preparation must stop.” Preparation therefore STOPPED before executor implementation; suggested W implementation/injected-suite deliverables remain incomplete. No runnable command/hash or live approval request produced. Next suggested repository-only slice: concrete environment-contract amendment and authoritative standard-library semantic review, then implementation once its prerequisites are satisfied.
+Verification: repository-only Python AST/text assertions PASS (exact R/V domain, captured shutil.which default, stop language and review markers); git diff --check PASS. Documentation-only changes; runtime/app tests excluded. No actual lookup, caller environment/tool inspection, Docker, DB/migration, evidence identity inspection/creation, cleanup, commit or push. Preexisting sources/resources/evidence preserved. Entry output-limit violation recorded in lessons; authoritative sections recovered separately.
+Manual gate: W prerequisite review finished; executor DEFERRED and live authorization PENDING. Stop under AGENTS.md §1: “若規格計畫書中標示為 Checkpoint，必須停下來回報狀態，等待人類使用者回覆授權後，才能繼續執行。” 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint X — proposed environment contract and authoritative semantic review
+
+Authorization: next checkpoint from after-W handoff; repository-only preparation.
+Acceptance: propose a concrete future interpreter/platform and bootstrap trust contract; review authoritative stdlib dependencies; preserve V's operation/domain/metadata and distinguish specification from host evidence. No executor or live command in this checkpoint.
+- [x] Read W/V/AGENTS and exact W results; recover truncated entry reads.
+- [x] Review official pinned CPython sources and document environment/source/launch requirements.
+- [x] Verify documentation against sources and V; record results and stop at manual gate.
+Risk & Rollback: low, documentation only; remove only X additions to revert. Preserve preexisting work and all evidence/resources.
+Dependencies & Environment: repository text plus external official CPython source/documentation access only. External source review does not authorize host/environment/installed-tool inspection. No lookup, candidate execution, Docker, DB/migration or identity-directory access.
+Working Notes: proposed POSIX/CPython constraints describe a future supported environment, not the current host. V remains authoritative for lookup, metadata and durability. Interpreter provisioning and real source attestation require separately scoped approval.
+
+X Results: added tools/dev/checkpoint-x-environment-contract.md. Proposed Linux POSIX/CPython 3.12.0 semantic baseline, explicit replacement launch environment, isolated/no-site startup, immutable external deployment attestation and loaded-source digest requirements. Reviewed official pinned shutil/posixpath/genericpath/os/posixmodule lookup branch and helpers; linked authoritative sources. No host compatibility or full import-closure security audit claimed. Concrete deployment manifest remains a future prerequisite, not an invitation to repeat generic discovery reviews.
+Verification: official source review completed; fail-fast shell contract-marker assertions PASS; git diff --check PASS. Marker assertions establish document constraints only, not executor correctness. No executor exists; injected/runtime/application suites not run for this documentation-only slice. No lookup, caller-variable/installed-tool inspection, candidate launch, Docker, DB/migration, evidence identity access, cleanup, commit or push. Preexisting changes preserved. Entry truncation recorded in lessons and authoritative reads recovered.
+Next suggested checkpoint: repository-only executor and explicitly injected tests using the proposed environment and fail-closed missing-attestation behavior; produce no live claim without concrete approved deployment/source binding. Live authorization remains separate and pending.
+Manual gate: X preparation finished; stop under AGENTS.md §1. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint Y — repository-only discovery executor and injected verification
+
+Authorization: next checkpoint from `/tmp/smartlearning-next-checkpoint-handoff-after-x-20261014.md`; repository preparation and injected fixture tests only.
+Acceptance: preserve V operation/schema/identity/durability; X environment/source/deployment drift blocks before evidence or lookup; defaults and CLI remain REVIEW_ONLY without real external attestation. No live command/hash or host compatibility claim.
+- [x] Read ordered authoritative documents, exact X results and entry lesson; inspect closest implementation.
+- [x] Implement isolated injected executor, source/manifest gates and sanitized durable recorder.
+- [x] Verify classification, drift, CLI gates, identity collision, recorder failures and retention with temporary fixtures.
+- [x] Record results and stop at the manual checkpoint boundary.
+Risk & Rollback: medium, future discovery/evidence boundary; no live adapter in Y. Revert only Y files and this section; preserve preexisting changes/evidence. Future live rollout requires separately reviewed deployment, command/hash and human scope.
+Dependencies & Environment: standard-library fixture tests with explicitly injected verification/lookup; no installed-tool query, candidate execution, caller-variable inspection, reserved evidence access, Docker, DB/migration or application suites.
+Working Notes: X and V remain authoritative; injected attestations demonstrate decision logic only. Supplied expected hashes are review inputs, never calculated from unreviewed files as their own baseline. No subprocess runner is needed because discovery ends after one lookup.
+
+Y Results: added tools/dev/checkpoint-y.py, checkpoint-y.test.py and checkpoint-y-review.md. Delivered injected discovery flow, manifest/source/digest gates, fixed redacted event schema and exclusive durable recorder with partial-init reporting/retention and final BLOCKED fallback on recording/close failure. No production lookup/verifier adapter or live command/hash; external attestation remains an explicit unimplemented trust boundary. CLI always REVIEW_ONLY. W's deferred repository executor preparation is now delivered in Y; runnable live preparation remains incomplete.
+Verification: python3 -B tools/dev/checkpoint-y.test.py → 15 tests PASS; git diff --check PASS. Tests used explicit callables and temporary fixtures only; no installed-tool discovery/candidate launch or production identity access. A KeyboardInterrupt fixture initially failed because it returned rather than raised BaseException; corrected fixture and reran all 15 tests successfully. Strict boolean/mutation review findings and fixture correction recorded in lessons. No application/DB suite, migration, Docker, environment inspection, provisioning, evidence cleanup, commit or push. Preexisting work preserved.
+Next gate: separately scope concrete external deployment attestation and trusted verifier/supervisor implementation before any live command/hash or execution request. Generic checkpoint permission cannot authorize host discovery or installation. Missing deployment remains REVIEW_ONLY.
+Manual gate: Y repository preparation finished; stop under AGENTS.md §1. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint Z — supplied trust-boundary observation verification
+
+Authorization: next checkpoint from `/tmp/smartlearning-next-checkpoint-handoff-after-y-20261014.md`; repository preparation only.
+Acceptance: compare supplied deployment observations against V/X/Y commitments; reject platform, source/import, bootstrap/supervisor and serialization drift before lookup; retain CLI REVIEW_ONLY. Fixture comparisons do not authenticate external provenance.
+- [x] Read ordered entry documents and bounded Y task/lesson/implementation records.
+- [x] Implement minimal injected observation comparator and negative regression fixtures.
+- [x] Run Z fixture tests, existing Y fixture tests and diff hygiene.
+- [x] Record results and stop at checkpoint boundary.
+Risk & Rollback: medium trust-boundary preparation; remove only Z files and this section to roll back. No production adapters or deployment rollout.
+Dependencies & Environment: standard-library injected Python fixtures only; no host tooling discovery, caller environment reads, live deployment/evidence identity access, application DB tests or migrations.
+Working Notes: V/X/Y remain authoritative. Authentication must be supplied separately from equality checks; externally serialized continuity through lookup cannot be proven by fixture booleans.
+
+Z Results: added tools/dev/checkpoint-z.py, checkpoint-z.test.py and checkpoint-z-review.md. Explicit observation/authentication dependencies compare complete supplied deployment commitments and contract/run serialization state, reject missing/extra fields, bool/int impostors, drift and authenticator mutation, and integrate with both Y guards. Y implementation/CLI unchanged; CLI remains REVIEW_ONLY. No live observation/authentication adapters, deployment or runnable command/hash supplied. Future use of Z requires newly reviewed source/closure binding including Z and adapters; Y's existing source digest does not cover Z.
+Verification: python3 -B tools/dev/checkpoint-z.test.py → 5 tests PASS (negative subcases and second-guard retained fixture evidence); python3 -B tools/dev/checkpoint-y.test.py → 15 tests PASS; git diff --check → PASS. Temporary fixture-owned roots only. No host/tooling/environment discovery, candidate launch, provisioning, application/DB suite, migrations, production evidence identity reads, cleanup, commit or push. Prior changes preserved.
+Next gate: independently authenticated deployment observations/supervisor and exact external read/provisioning scope remain prerequisites for any live proposal. Comparison of supplied fixtures proves no actual deployment provenance or serialization continuity.
+Manual gate: Z repository preparation finished; stop under AGENTS.md §1. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint AA — reviewed Y/Z adapter binding
+Authorization: next checkpoint from after-Z handoff; repository/injected fixtures only.
+Acceptance: separate binding digest covers Y contract, Y/Z/AA sources, explicit adapter sources and dependency closure; missing/changed commitments reject before lookup. Y metadata and CLI remain unchanged.
+- [x] Read bounded authoritative contracts, sources and lesson entries.
+- [x] Implement supplied binding artifact and verifier wrapper.
+- [x] Verify AA/Z/Y injected tests and diff hygiene.
+- [x] Record results and stop.
+Risk & Rollback: medium trust-boundary preparation; remove AA files and this entry only. No live rollout.
+Dependencies & Environment: standard-library fixtures only; no discovery, environment inspection, production identity reads, DB suites or migrations.
+Working Notes: independent authentication must authenticate the new binding and serialization through lookup. Legacy Y digest alone is insufficient. Source suppliers are claims, not proof of loaded callable identity.
+
+Results: added tools/dev/checkpoint-aa.py, checkpoint-aa.test.py and checkpoint-aa-review.md. Separate binding digest commits to Y contract, V/X/Y/Z/AA source hashes, explicit adapter roles and supplied dependency closure. BoundVerifier rejects missing/extra/changed bytes, wrong/legacy digest and failed/mutating authentication, then delegates observation checks to Z. Y implementation, CLI and V metadata unchanged. No actual externally reviewed deployment binding or live adapters supplied; repository status remains REVIEW_ONLY.
+Verification: python3 -B tools/dev/checkpoint-aa.test.py → 11 tests PASS; python3 -B tools/dev/checkpoint-z.test.py → 5 tests PASS; python3 -B tools/dev/checkpoint-y.test.py → 15 tests PASS; git diff --check → PASS. Covers second-guard adapter drift retaining fixture evidence, exact single lookup and recorder failure/redaction. No application DB tests/migrations or external operations performed. Prior changes preserved.
+Next gate: independently authenticated loaded callable/source/closure bindings and serialized continuity through lookup remain external prerequisites; no generic authorization for host discovery/provisioning. No new lesson: no correction or discovered mistake.
+Manual gate: AA complete; stop under AGENTS.md §1. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint AB — composed binding negative coverage
+Authorization: user authorized next checkpoint from after-AA handoff; repository-only review and injected fixtures.
+Acceptance: verify composed AA/Y/Z rejection of incomplete commitments, divergent Y linkage, callback mutation and second-guard authentication failure; detached caller binding remains stable. No deployment claim.
+- [x] Read bounded authoritative contracts and relevant implementation/tests (entry over-read recorded separately).
+- [x] Add narrowly scoped injected regression coverage and review artifact.
+- [x] Run AB/AA/Z/Y standalone fixtures and git diff --check.
+- [x] Record results and stop at manual gate.
+Risk & Rollback: medium trust-boundary review; remove only AB test/review/task additions. No live rollout or existing implementation changes planned.
+Dependencies & Environment: Python standard-library fixtures and unittest-owned temporary storage only; no host/tool discovery, environment inspection, external identity reads, Docker, DB suites or migrations.
+Working Notes: existing AA checks detach binding, compare commitments before independent binding authentication, delegate to Z and repeat binding/Y digest checks. Y freezes caller inputs and invokes both guards. External callable identity, complete closure and serialization through lookup remain independent obligations.
+
+Results: added tools/dev/checkpoint-ab.test.py and checkpoint-ab-review.md; no AA/Y/Z implementation changes justified. Six new cases cover missing supplied sections/adapter commitments, divergent valid Y manifest linkage, detached caller binding, binding mutation at three callback phases and second-guard binding authentication failure with complete retained fixture evidence and no lookup. Y event digest remains distinct from AA binding digest.
+Verification: python3 -B tools/dev/checkpoint-ab.test.py — 17 PASS (6 new + 11 inherited); AA — 11 PASS; Z — 5 PASS; Y — 15 PASS. git diff --check — PASS. Initial fixture-super() setup failure corrected and rerun; entry over-read and fixture reuse lessons recorded. All runtime calls injected and storage temporary; no DB suites/implicit migrations or external operations. Prior changes preserved.
+Limits & next gate: no actual external authenticated deployment/binding, loaded-callable attestation or complete closure proven; externally serialized continuity through lookup remains required. REVIEW_ONLY. Further repository review needs a concrete bounded objective; external artifact acquisition/live reads/provisioning require separate explicit scope.
+Manual gate: AB complete; stop under AGENTS.md §1. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint AC — repository readiness and external gate
+Authorization: user authorized next checkpoint from after-AB handoff; repository-only preparation and injected fixtures.
+Acceptance: reconcile AA/AB findings and existing composed coverage, record actionable remaining prerequisites without asserting deployment readiness, and rerun established standalone fixtures. No new binding layer or duplicate tests without a concrete defect.
+- [x] Read prescribed bounded handoff, repository rules, AA/AB reviews, AB task/lessons and composed tests.
+- [x] Document readiness findings and externally supplied prerequisites.
+- [x] Verify existing AB/AA/Z/Y fixtures and git diff --check.
+- [x] Record results and stop at manual gate.
+Risk & Rollback: low documentation-only review; remove only AC review and this task section. No rollout or implementation changes.
+Dependencies & Environment: existing Python standard-library injected fixtures; unittest-owned temporary evidence only. No executable discovery, environment inspection, provisioning, external reads, candidate launch, Docker, application DB suites/migrations, identity access, staging or commit.
+Working Notes: AA and AB report no concrete defect requiring implementation changes. AB covers six composed cases plus eleven inherited cases; suite totals overlap. Fixture success cannot establish loaded callable identity, complete dependency closure or serialized continuity through lookup. Status remains REVIEW_ONLY.
+
+Results: added tools/dev/checkpoint-ac-review.md with repository readiness limits and required external inputs/scope. No concrete new implementation gap identified in bounded review; implementation and tests unchanged.
+Verification: AB 17 PASS (6 AB + 11 inherited), AA 11 PASS, Z 5 PASS, Y 15 PASS; overlapping counts. git diff --check PASS. No DB suites or implicit migrations run.
+Manual gate: AC complete; REVIEW_ONLY pending separately supplied authenticated artifacts and explicit external operation scope. Stop under AGENTS.md §1. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Checkpoint AD — external proposal intake template
+Authorization: user authorized the next checkpoint from the after-AC handoff; bounded repository-only documentation preparation.
+Acceptance: provide a fillable intake template mapping AC external prerequisites to supplied evidence and explicit operation scope; preserve REVIEW_ONLY and distinguish missing inputs from authorization. No new implementation or trust claims.
+- [x] Read AC handoff, repository rules, exact AC task section and relevant AB lessons.
+- [x] Create the external proposal intake template.
+- [x] Verify prerequisite coverage, source links and git diff --check.
+- [x] Record results and stop at manual gate.
+Risk & Rollback: low, documentation only; remove only the AD template and this section. No rollout.
+Dependencies & Environment: repository documents only; no host/tool discovery, caller environment inspection, external reads, Docker, candidate launch, provisioning, identity access, application DB suites/migrations, staging or commit.
+Working Notes: AC found no concrete implementation gap. AD makes its existing input gate actionable without adding binding layers, flags or duplicate tests. Historical changes must be preserved.
+
+Results: added tools/dev/checkpoint-ad-intake.md, a fillable template with seven AC evidence prerequisites, seven operation-scope categories, bounded acceptance/risk/rollback fields and explicit REVIEW_ONLY disposition. No implementation changes or external inputs acquired. Recorded the entry-read correction in tasks/lessons.md.
+Verification: standalone Python document assertions PASS (seven evidence fields, seven scope fields, prerequisite/boundary coverage and existing AC link); git diff --check PASS. Runtime tests/build omitted because this checkpoint changes documentation only; no application DB setup or implicit migrations executed.
+Manual gate: AD complete. External artifacts and explicit operation scope remain missing; this template provides no authentication or live readiness. Stop under AGENTS.md §1. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Next checkpoint authorization — scope pending
+Authorization: user authorized the next checkpoint based on the after-AD handoff. This covers bounded repository preparation only.
+- [x] Recover authoritative AGENTS.md, AD intake, AC review and exact AD history through separate bounded reads.
+- [ ] Obtain one concrete objective with observable acceptance criteria, or a supplied external proposal with explicit operation scope.
+- [ ] Define the scoped implementation and verification checklist before edits.
+Working Notes: AC identifies no concrete implementation gap; AD intake remains unfilled. Do not manufacture AE work by adding another readiness review, binding layer, digest, flag or duplicate tests. No external operations or application DB suites are authorized.
+Risk & Rollback: current work is tracking only; remove this entry if superseded, preserve prior changes and the lesson correction.
+Dependencies & Environment: repository documents only; no acquisition, discovery, provisioning, Docker, live launch, identity access or migrations.
+Results: scope selection awaits a concrete objective; no AE implementation started.
+
+## 2026-10-14 Static development-flow discovery checkpoint
+Authorization: user explicitly authorized the next checkpoint using the static-dev-flow handoff.
+Acceptance: identify one current, evidence-backed development blocker with reproduction and minimum fix scope, or record「無需繼續修改」and close environment-tool work. No implementation in this checkpoint.
+- [x] Read handoff, repository boundaries and exact current task/lesson sections.
+- [x] Inspect documented development commands and prerequisites.
+- [x] Resolve one concrete blocker against source evidence, or record no-change finding.
+- [x] Document reproduction, expected/actual behavior, proposed scope and future verification.
+- [x] Verify documentation diff with git diff --check and report checkpoint boundary.
+Risk & Rollback: low risk, static inspection and task documentation only; revert only this appended section if needed.
+Dependencies & Environment: repository sources only; no runtime discovery, environment inspection, artifact reads, Docker, installation, application tests, migrations or external operations.
+Working Notes: preserve existing modified/untracked work; historical failures and unfilled attestations alone do not establish current defects.
+
+### Results — supported flows and selected implementation task
+Supported entry points (static sources, not runtime certification):
+- Local watch: README.md Quick start → Node 24+, npm, configured DATABASE_URL/CORS_ORIGIN/COOKIE_SECRET, generated Prisma client, authoritative PostgreSQL 14+ with required migrations, then `npm run start:dev`. `src/app.module.ts:30` selects `.env.development`/`.env` by default. Current development DB authority remains unproven per tools/dev/README.md; historical Docker setup is not an adoption instruction.
+- Compiled local run: `npm run build` then `npm run start:prod`; requires the same reviewed runtime configuration/database and a CJS-compatible generated client. README Prisma normalization and Dockerfile:46–49 document the normalization step. Generation/normalization/build are future operations, not performed here.
+- UAT/staging full stack: reviewed `.env.production`, shell interpolation configuration, then `docker compose up -d --build`; includes migration and requires separate environment-specific authorization. Dockerfile:106 launches `node dist/src/main`.
+- Environment diagnostics: `npm run env:doctor` needs four reviewed expected context/engine/container/volume values; metadata match does not establish database authority. Container-free helper verification is documented separately in tools/dev/README.md; neither flow was executed.
+- Code checks: README lists typecheck/lint:check and unit tests. DB integration/e2e require isolated test configuration and explicit implicit-migration approval (`test/setup/db.ts:35`). No application tests executed.
+
+Selected concrete blocker: compiled local launch uses an inconsistent entry path.
+Evidence:
+- package.json:13 defines `start:prod` as `node dist/main`.
+- README.md Prisma normalization note and Available scripts explicitly record emitted `dist/src/main.js` and the manual workaround `node dist/src/main`.
+- Dockerfile:106 already uses `node dist/src/main`; package.json bootstrap/retention commands likewise use `dist/src/...`.
+- tsconfig.json emits to `./dist`; tsconfig.build.json extends it without a rootDir override. `src/prisma/prisma.service.ts:8` imports the generated client outside src. Existing documentation's explanation that `rootDir=src` is configured is inaccurate: neither checked tsconfig sets rootDir. Do not carry that explanation into the fix.
+Expected vs actual: after a successful clean build, the advertised compiled-run command should load the application entry point. The configured command instead targets `dist/main`, inconsistent with the documented build output and Docker runtime. A missing-entry MODULE_NOT_FOUND is the predicted failure; it was NOT observed during this static checkpoint. Stale output can mask the defect, so future verification must use a fresh isolated checkout/build.
+Minimum proposed change for the next separately authorized checkpoint:
+1. Set package.json `start:prod` to `node dist/src/main` to match the established runtime command.
+2. Update README's workaround note and script table to describe the corrected command; remove the unsupported rootDir explanation in touched documentation. Do not refactor build layout, Docker deployment, database recovery tools or Prisma normalization.
+Risk: low for the script/documentation fix; actual startup/build verification has separate environment prerequisites and permissions. Rollback: restore only the start:prod value and associated new documentation changes; preserve all earlier work.
+
+### Reproduction and future verification plan (not executed)
+- In a separately authorized disposable checkout with Node 24+, installed locked dependencies and reviewed Prisma configuration, generate and normalize the client as in Dockerfile:46–49, then `npm run build`. Generation/build authorization and prerequisites must be settled in the next checkpoint; do not create/adopt a DB or migrate merely to demonstrate the entry-path bug.
+- File-only check after build: `test -f dist/src/main.js && test ! -f dist/main.js` (no application startup). Compare the start:prod value against the emitted entry.
+- Before fix, `npm run start:prod` should fail resolving dist/main on that clean build. Run this only with separately authorized application launch/configuration; if unexpectedly resolved, stop and inspect the actual output layout instead of assuming this diagnosis.
+- After fix, use a repository-pattern static assertion that start:prod matches the established Docker entry and verify the emitted entry exists. Only with approved runtime configuration/database, run `npm run start:prod` and check `/health/live`; `/health/ready` additionally requires authorized database access. No migrations are part of the proposed script fix.
+- Verify touched documentation with `git diff --check`. Do not add application DB tests for this script-only change.
+
+Disposition: one evidence-backed task is ready for a later implementation checkpoint. Database authority is a recorded operational prerequisite, not proof of another current code defect; no new environment-tool layers/intake templates are justified by this finding. Stop here at the manual gate.
+Verification performed: exact source/configuration references checked; `git diff --check` passed. Runtime reproduction, builds, tests, Docker and migrations were not run under static-only authorization. This checkpoint changed tasks/todo.md only and preserved pre-existing work.
+
+
+## 2026-10-14 Compiled startup entry implementation checkpoint
+Authorization: user explicitly authorized the next checkpoint based on /tmp/smartlearning-next-checkpoint-start-prod-handoff-20261014.md.
+Acceptance: start:prod equals `node dist/src/main`, matches Docker runtime CMD, and README documents that command without the unsupported tsconfig rootDir explanation.
+- [x] Read handoff, repository gates, exact discovery task and relevant lesson; inspect authoritative sources.
+- [x] Implement the bounded package.json and README corrections.
+- [x] Verify JSON parsing, script/Docker agreement, README consistency and git diff --check.
+- [x] Record results and runtime verification limits; stop at the checkpoint boundary.
+Risk & Rollback: low risk; restore only this checkpoint’s start:prod value and README edits to roll back. Preserve all pre-existing changes; no staging or commits.
+Dependencies & Environment: Python standard library and repository sources only. No dependency installation, Prisma generation/normalization, build/startup, application tests, database operations, Docker or external operations are authorized by this checkpoint.
+Working Notes: static evidence supports the entry mismatch; emitted build layout and runtime failure remain unobserved. Keep build layout, Docker runtime and Prisma normalization unchanged. No new test suite is needed for this script/documentation correction; use a deterministic repository-only assertion.
+
+### Results
+- package.json start:prod now runs `node dist/src/main`, consistent with the existing Docker runtime CMD.
+- README normalization note and Available scripts table now document the corrected command; removed the unsupported rootDir explanation and obsolete workaround. Docker/configuration/normalization remain unchanged.
+- Verification: Python standard-library assertions passed for package JSON parsing, exact start:prod value, equality with parsed Docker CMD, README note/table and absence of obsolete rootDir/dist/main statements. `git diff --check` passed; final scoped diff reviewed.
+- Runtime limits: no build, startup, lint/typecheck, application tests, Prisma operations, database access or Docker executed. Application lint/typecheck would not validate this script/documentation-only change. Emitted entry layout and runtime success are not certified.
+- Future verification remains the preceding discovery section’s separately authorized disposable-checkout plan: generate/normalize with reviewed configuration, `npm run build`, then `test -f dist/src/main.js && test ! -f dist/main.js`; only after explicit runtime/database authorization, `npm run start:prod` and `/health/live` (`/health/ready` additionally accesses the database). No migrations are required by this fix.
+- Preserved all earlier modified/untracked work; no staging/commit/push. No correction or discovered agent mistake in this checkpoint requiring a new lesson.
+Disposition: bounded implementation checkpoint complete. Stop at manual gate before subsequent runtime work. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+
+## 2026-10-14 Compiled startup file-only verification checkpoint
+Authorization: user authorized the next checkpoint using the verification handoff; user subsequently explicitly authorized npm ci, Prisma client generation/normalization, build and file-only verification in an isolated temporary copy; no startup/database/migration/Docker.
+Acceptance: in an isolated temporary source snapshot reflecting current working files, a clean build produces dist/src/main.js and no dist/main.js, and start:prod matches Docker CMD. This does not certify application startup.
+- [x] Read handoff, AGENTS.md, exact previous task/lesson sections, Prisma configuration and normalization script.
+- [x] Confirm permission for the proposed file-only operations.
+- [x] Create an isolated temporary source snapshot without .env files, existing generated output, node_modules, dist or artifacts; preserve current working changes.
+- [x] Install locked dependencies with npm ci, generate/normalize Prisma client, and run npm run build in that snapshot only.
+- [x] Check emitted entry existence and script/Docker agreement; record results and stop at manual gate.
+Dependencies & Environment: observed Node v26.5.1 and npm 11.17.0; Node 24+ requirement satisfied, but production Node 24 parity is not certified. Proposed generation uses a non-secret dummy DATABASE_URL with no reachable database and no copied .env files. npm ci may run package lifecycle scripts and needs network access.
+Risk & Rollback: temporary dependency install/build only; no production runtime or database changes. All outputs stay in the isolated temporary directory; original source and pre-existing work remain untouched except this task record. No application launch, migrations, Docker, database access, commit or push proposed.
+Working Notes: Prisma config loads environment-specific dotenv; omit all .env files from the isolated snapshot. Copy current sources rather than HEAD alone, so the just-completed uncommitted script fix is included. Build output checks are file-existence checks only, not broad compiled-output reads. Explicit operation-scope authorization received before installation/generation/build.
+
+### Results
+- Isolated snapshot: /tmp/smartlearning-start-prod-verify-isod6v4z (452 tracked working files, excluding .env files, generated, node_modules, dist and artifacts). Retained for reproducibility; no checkout/reset/clean/staging/commit/push occurred.
+- `npm ci` exited 0: installed 937 packages from the existing lockfile. npm reported 44 vulnerabilities (4 moderate, 38 high, 2 critical), deprecated packages and pending lifecycle-script approval warnings. No audit fix, dependency upgrade or extra lifecycle approvals ran. Dependency review is a separate follow-up; audit output alone does not establish application exploitability.
+- `NODE_ENV=test DATABASE_URL=postgresql://build_only:build_only@127.0.0.1:1/build_only npm run prisma:generate` exited 0, generated Prisma Client 7.9.1. Dotenv reported zero values loaded; no .env files were copied. A dummy URL was used, no application/database command or migration ran.
+- `node scripts/normalize-prisma-client.mjs generated/prisma` exited 0; reported 0 stripped-extension files and 0 shim removals. This is the observed generator/script result, not evidence of runtime module compatibility.
+- `npm run build` exited 0 (`nest build`), using Node v26.5.1/npm 11.17.0. Production Node 24 parity is not certified.
+- Deterministic file-only assertions passed: dist/src/main.js exists, dist/main.js does not exist, start:prod is `node dist/src/main` and equals parsed Docker CMD. Key package/lock/Docker/tsconfig/schema/main source hashes match the current workspace. No compiled file contents were read.
+- `git diff --check` passed after results were recorded. No application startup, application tests, Docker or database operations executed. Build entry layout is now observed; application runtime and /health/live or /health/ready remain unverified.
+Disposition: authorized file-only verification checkpoint complete. Further startup verification requires explicit application launch/configuration and database scope authorization per the preceding plan; do not migrate or adopt a database implicitly. No implementation changes or new agent-mistake lesson needed in this checkpoint. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Compiled startup runtime verification checkpoint
+Authorization: user authorized the next checkpoint via /tmp/smartlearning-next-checkpoint-start-prod-runtime-handoff-20261014.md; concrete runtime configuration and database/service scope remain pending per that handoff.
+Acceptance: with explicitly approved configuration and service targets, verify retained snapshot freshness, run npm run start:prod, observe HTTP 200 /health/live with status=ok and checks={}, then stop the launched process. /health/ready only if explicitly included.
+- [x] Recover exact handoff/task/lesson authority and inspect bounded startup/configuration/health sources.
+- [x] User explicitly authorized the recommended concrete scope: .env.test, NODE_ENV=test, existing localhost:5432/smartlearning_test, no Redis, compiled startup and /health/live then stop; no migration/Docker.
+- [x] Inspect initialization hooks and test/production validation boundaries; verify snapshot freshness before launch. Startup background database mutations discovered; no application launch attempted.
+- [x] Runtime launch and health acceptance completed in the 2026-10-14 authorized least-privilege app-role execution below: retained npm run start:prod, HTTP 200 /health/live status=ok checks={}, owned process/container cleanup verified. Historical blocked results below are superseded by that final execution.
+- [x] Record deterministic prerequisite evidence and stop at human gate without provisioning services.
+Risk & Rollback: medium; application initialization connects to external services. No migration, Docker, environment creation/adoption, destructive cleanup, staging/commit/push or dependency upgrades. Stop only the process launched by this checkpoint; preserve existing workspace/snapshot/resources.
+Dependencies & Environment: retained snapshot /tmp/smartlearning-start-prod-verify-isod6v4z; recorded Node v26.5.1/npm 11.17.0 do not certify production Node 24 parity. No environment file contents or credentials may be printed. Runtime configuration source, DB identity and Redis scope are not yet established.
+Working Notes: src/prisma/prisma.service.ts onModuleInit invokes $connect before serving requests; /health/live itself has no dependency checks but launching is not database-free. /health/ready issues SELECT 1 and checks realtime/login-rate-limit readiness. src/app.module.ts loads .env.production then .env for NODE_ENV=production; do not implicitly import existing workspace settings. tools/dev/README.md states development database authority remains unproven. Initial broad historical read was truncated; recovered exact named sections and recorded recurrence in lessons.
+Results so far: source inspection only; no launch, build, application tests, database access, migration or Docker performed. Prior implementation/file-only build checkpoint remains complete. Runtime execution awaits concrete scope; this checkpoint is not complete.
+
+### Runtime scope candidate discovery
+User requested help choosing configuration/service scope. Read existing env files locally with output restricted to file existence, non-secret target host/port/database and selected modes/presence flags; no secrets printed and no connections made.
+- .env.test: NODE_ENV=test, PORT=3001, PostgreSQL localhost:5432/smartlearning_test, realtime Redis off, login key absent; test default login-rate-limit mode is memory per src/config/env.validation.ts. Candidate for compiled-entry smoke verification only, not production configuration parity.
+- .env.development: PostgreSQL localhost:5433/smartlearning_dev; development database authority remains unproven, so do not adopt it implicitly.
+- .env.production: production mode, login limiter redis-required targeting redis:6379; no literal DATABASE_URL assignment observed by bounded assignment parser. Not a ready configuration for isolated host startup; target availability and full validation remain unverified.
+Recommendation: explicitly authorize .env.test, NODE_ENV=test, existing localhost:5432/smartlearning_test only, no Redis, start:prod plus /health/live then stop. This is a compiled runtime smoke test; it does not prove NODE_ENV=production behavior. Database connection permission and actual target identity remain pending; verify initialization hooks before launch, and stop if existing target is unavailable. Do not start Docker, create/adopt a database, migrate, or run migration-backed tests.
+Verification: static configuration inspection only; no runtime/service access.
+
+### Authorized scope preflight results
+- User explicitly authorized the recommended scope. No additional approval needed for repeating these exact nonmutating checks or the scoped configuration inspection.
+- Python socket connect to 127.0.0.1:5432 returned ConnectionRefusedError errno=111. getaddrinfo(localhost,5432) returned only 127.0.0.1 and repeat connect failed identically. No PostgreSQL authentication/query could be performed; existing DB identity, schema and contents remain unverified. Port 3001 also refused TCP.
+- Compared SHA-256 of 314 tracked source/script/package/lock/build/schema files against /tmp/smartlearning-start-prod-verify-isod6v4z: zero mismatches. File-existence checks: dist/src/main.js present; dist/main.js absent. No compiled contents read, rebuild or installation.
+- Initialization review: LiveSessionAutoCloseScheduler.onModuleInit immediately calls runOnce; LiveSessionService.autoCloseExpiredSessions can close active expired sessions. LiveSessionPublisher immediately queues processing; processBatch includes expiry, coalescing, recovery, claim/dispatch, and cleanupExpiredDeliveredRows invokes deleteMany on expired delivered/dead events. Realtime Redis off does not disable this DB publisher. These effects exceed an assumption of connection-only startup and require explicit data-safety scope before launch on a nonempty database. No code changes/feature-flag workaround proposed.
+- Runtime result: blocked by unavailable approved service; no start:prod, HTTP probe, Redis connection, migration, Docker, DB mutation or application tests ran. Prior script/file-only build checkpoint remains complete. Current runtime acceptance criteria are not met.
+- Safest continuation: restore availability of the exact already-approved existing test DB outside this checkpoint; verify DB identity and startup-data safety before launching. New service lifecycle/provisioning, different DB targets or background deletion approval must be explicitly scoped; do not infer them from the present authorization.
+- Verification: bounded initialization-source inspection, socket availability checks, source hash/file-existence assertions; git diff --check passed.
+Disposition: preflight evidence recorded; stop at human gate. Runtime verification remains pending, not complete. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized continuation endpoint recheck
+Authorization: user authorized the next checkpoint using /tmp/smartlearning-next-checkpoint-start-prod-runtime-db-blocked-handoff-20261014.md. Existing .env.test / NODE_ENV=test / localhost:5432/smartlearning_test scope remains approved; service lifecycle/provisioning and background data deletion are not newly authorized.
+- [x] Read the named handoff, AGENTS.md, exact active task section and the two named lessons; preserve existing modified/untracked work.
+- [x] Recheck the already-approved endpoint with nonmutating socket probes.
+- [x] Record prerequisite evidence and stop at the checkpoint boundary.
+- [ ] Launch retained compiled app, observe HTTP 200 /health/live with status=ok and checks={}, then stop the owned process; pending service availability, DB identity/schema and startup-data safety verification.
+Evidence: at 2026-10-14T14:16:19Z, localhost resolved only to 127.0.0.1. Both TCP attempts to 127.0.0.1:5432 failed with ConnectionRefusedError errno=111 (3-second timeout per attempt). No PostgreSQL authentication or SQL occurred.
+Results: endpoint availability recheck completed; runtime acceptance remains unmet. No application process launched, no HTTP response observed, and no process requires shutdown. No Docker/service lifecycle, DB mutation, migration, application tests, rebuild, dependency install or environment changes occurred. This continuation changed only this task record. git diff --check passed.
+Next prerequisite: restore the exact approved existing test DB service through separately scoped lifecycle authorization or user action; do not infer ownership of any retained container/volume. Once available, verify target identity/schema and startup-data safety before launch. Prior snapshot freshness evidence was not repeated because no launch was possible; revalidate before any future launch.
+Disposition: stop at human gate; runtime checkpoint remains pending. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized runtime prerequisite recheck and restoration intake
+Authorization: user authorized the next checkpoint via /tmp/smartlearning-next-checkpoint-runtime-db-recheck-handoff-20261014.md. Existing test runtime scope persists; no new service lifecycle, provisioning, migration or background deletion authority.
+Acceptance for this bounded continuation: recheck the approved endpoint; if unavailable, inspect only nonsecret repository service/provenance cues, document the concrete next action and stop.
+- [x] Read named handoffs, AGENTS.md, exact active task and named lessons; preserve existing workspace changes.
+- [x] Recheck localhost:5432 using a nonmutating socket connection.
+- [x] Inspect bounded nonsecret PostgreSQL service configuration/provenance cues.
+- [x] Record results, verify diff whitespace and stop at the human checkpoint gate.
+- [ ] Runtime acceptance remains pending: verify DB identity/schema/startup-data safety, snapshot freshness and complete isolated configuration before start:prod; observe HTTP 200 /health/live with status=ok and checks={}, then stop the owned process.
+Evidence: 2026-10-14T14:50:46.174838+00:00; localhost resolved only to 127.0.0.1; TCP 127.0.0.1:5432 failed with ConnectionRefusedError errno=111 (3-second timeout). No authentication or SQL occurred.
+Repository discovery: docker-compose.yml names smartlearning-db and defaults its host mapping to 5433, so this is not evidence for the approved 5432 service. docker-postgresql-setup.md documents smart-learning-pg-dev on host 5432 and docker start smart-learning-pg-dev, but documentation does not establish current ownership, actual mounts or test DB identity. tools/dev/README.md explicitly withholds adoption authority for historical recovery/test volumes; starting PostgreSQL writes recovery/WAL state.
+Next concrete bounded action proposal: read-only Docker context/engine identity plus sanitized metadata inspection of the exact documented candidate smart-learning-pg-dev (status, port bindings, mount names/destinations and competing consumers only; no environment/credentials). This would establish whether a separately scoped start proposal is possible; it does not authorize starting that container, using its data, changing Docker context or adopting volumes. If absent or mismatched, stop rather than create a replacement. Alternatively the user may restore the exact approved existing test service externally. No docker start/compose up command is cleared by this discovery.
+Risk & Rollback: this continuation only changes the task record and performs read-only repository/socket checks. No runtime process or service was created, so no shutdown/rollback is needed.
+Results: approved endpoint remains unavailable; no application launch/HTTP acceptance, Docker access/lifecycle, DB mutation/migration, application tests, rebuild/install or environment changes. Snapshot freshness was not repeated because launch prerequisites failed; revalidate before future launch. Verification: socket probe and bounded nonsecret configuration inspection completed; git diff --check passed.
+Disposition: permitted prerequisite checkpoint completed; compiled runtime verification remains pending. Stop per AGENTS.md manual checkpoint gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized Docker metadata intake checkpoint
+Authorization: user authorized the next checkpoint via /tmp/smartlearning-next-checkpoint-runtime-db-metadata-handoff-20261014.md; only bounded read-only Docker metadata intake for documented candidate smart-learning-pg-dev. No lifecycle, provisioning, data adoption, SQL, migration or application launch.
+Acceptance: establish current context/engine and candidate status/ports/mounts/competing consumers if inspection is available; otherwise record the precise failed prerequisite and stop. Metadata alone does not establish DB identity or ownership.
+- [x] Read exact handoff, AGENTS.md, active task and metadata helper contract; preserve existing work.
+- [x] Validate Docker overrides and perform bounded sanitized metadata discovery pinned to the observed context; candidate absent, so mount/consumer discovery cannot proceed.
+- [x] Record findings and next prerequisite; run git diff --check; stop at human gate.
+Risk & Rollback: read-only discovery, no service/data changes; only task record edited. No rollback process needed.
+Dependencies & Environment: Docker CLI and accessible current engine; reject Docker endpoint/context overrides rather than adopting them. Queries time out after 10 seconds; raw errors, environment and credentials suppressed. Do not run env:doctor with guessed expected identities.
+
+Evidence: 2026-10-14T14:54:47.667732+00:00. No nonempty DOCKER_HOST/DOCKER_CONTEXT/DOCKER_CONFIG/DOCKER_TLS_VERIFY/DOCKER_CERT_PATH overrides detected. docker context show returned default; context-pinned docker info returned engine ID 8820f44b-5227-4afe-8eff-245fcc9e8a31. Sanitized container inspect for smart-learning-pg-dev exited 1; raw diagnostics suppressed. Rechecked the same pinned engine identity, then docker --context default ps --all --filter 'name=^/smart-learning-pg-dev$' with bounded ID/name/state format succeeded and returned zero matches. Each query used a 10-second timeout.
+Results: the exact documented candidate is absent from the currently observed engine. Port bindings, mounts and competing volume consumers cannot be determined for an absent candidate; no volume inspected and no broader container inventory performed. Observed context/engine identities are discovery evidence, not previously approved ownership expectations. No supported service-start proposal can be made from this evidence. Runtime acceptance remains pending; no application/HTTP probe, SQL, Docker lifecycle/provisioning, migration, tests, rebuild/install or configuration change occurred.
+Next prerequisite: identify the actual existing service for the approved localhost:5432/smartlearning_test target. A possible separately authorized discovery checkpoint is a sanitized read-only container inventory on this exact context/engine restricted to ID/name/state/port mappings, to locate a candidate publishing host 5432; no container startup or volume adoption. If none exists, service restoration/provisioning needs its own explicit scope; do not create a replacement or switch targets under current authorization.
+Verification: bounded Docker metadata commands established engine accessibility and candidate absence; git diff --check passed. Only this task record changed during the checkpoint; existing workspace changes preserved.
+Disposition: metadata intake checkpoint completed with candidate absent; compiled runtime verification remains unmet. Stop per AGENTS.md manual checkpoint gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Reauthorized bounded Docker metadata recheck
+Authorization: user again authorized the next checkpoint via /tmp/smartlearning-next-checkpoint-runtime-db-metadata-handoff-20261014.md. The named metadata intake already has results above; repeat only that exact bounded scope, without treating the later inventory proposal as authorized.
+Acceptance: validate Docker overrides, context/engine identity, and exact smart-learning-pg-dev candidate metadata; stop if absent, unavailable or mismatched. No lifecycle, inventory expansion, SQL or runtime launch.
+- [x] Read named handoff, AGENTS.md, active task, named lessons and metadata helper contract.
+- [x] Recheck bounded sanitized metadata; exact candidate absent.
+- [x] Record evidence, run git diff --check and stop at human gate.
+Risk & Rollback: read-only metadata queries with 10-second limits; preserve existing work. Only task notes change; no service rollback needed.
+Dependencies & Environment: accessible Docker CLI/engine; reject endpoint/configuration overrides; pin queries to observed context and require prior observed engine identity. Do not supply guessed doctor expectations.
+Evidence: 2026-10-14T14:58:01.245748+00:00; no nonempty Docker endpoint/context/config/TLS overrides. Context remained default; pinned engine ID remained 8820f44b-5227-4afe-8eff-245fcc9e8a31. Exact candidate container inspect exited 1 (raw diagnostics suppressed). Engine identity recheck matched; exact-name ps --all succeeded with zero matches. Each query had a 10-second timeout.
+Results: smart-learning-pg-dev remains absent on the same observed engine; mounts/competing consumers cannot be established. No supported service-start proposal; metadata cannot prove DB ownership or SQL identity. No broader inventory, volume inspection, lifecycle, SQL, migrations, tests, runtime launch, build/install or environment edits performed. Only this task record changed in this continuation; pre-existing changes preserved. Runtime acceptance remains pending.
+Next separately scoped proposal: read-only ID/name/state/port inventory on context default and the exact engine above to identify an existing host-5432 candidate. This proposal remains unauthorized; if none exists, restoration/provisioning requires explicit separate scope.
+Verification: bounded metadata recheck completed; git diff --check passed.
+Disposition: stop per AGENTS.md manual checkpoint gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized same-engine container port inventory checkpoint
+Authorization: user explicitly authorized read-only container name/state/port inventory on the same engine to locate host-5432 candidates.
+Acceptance: reject Docker overrides; require context default and engine 8820f44b-5227-4afe-8eff-245fcc9e8a31 before/after inventory; list only names, states and ports. No lifecycle, SQL, volume adoption or runtime launch.
+- [x] Confirm checkpoint scope and repository manual gate.
+- [x] Run bounded same-engine inventory; one host-5432 candidate found.
+- [x] Record findings and next scoped action; verify git diff --check; stop.
+Risk & Rollback: read-only metadata; only task record changes. No resources created or changed, no service rollback needed.
+Dependencies & Environment: Docker CLI and previously observed engine; each command limited to 10 seconds; suppress raw Docker diagnostics and configuration/credentials.
+Evidence: 2026-10-14T15:01:51.926568+00:00. No nonempty DOCKER_HOST/DOCKER_CONTEXT/DOCKER_CONFIG/DOCKER_TLS_VERIFY/DOCKER_CERT_PATH overrides. Context default and engine 8820f44b-5227-4afe-8eff-245fcc9e8a31 matched; engine identity matched again after inventory. Ran docker --context default ps --all with only JSON-encoded Names, State and Ports fields; all commands bounded to 10 seconds, diagnostics suppressed.
+Inventory findings: 38 containers (37 exited, 1 created); no running containers. Exactly one row advertised host 5432: smart-learning-pg-test | exited | 127.0.0.1:5432->5432/tcp. The other 37 rows had empty Ports fields; empty summary fields do not prove absence of configured bindings on stopped containers. The documented smart-learning-pg-dev name remains absent. Relevant other stopped names include sl-i-20261014-01-dev-pg, sl-c-20261013-01-restore-pg, sl-c-20261013-01-work-pg and smartlearning-pg-recovery-20261008; no ownership/data adoption inferred.
+Results: smart-learning-pg-test is a port-based candidate only; its data ownership, actual smartlearning_test database, mount provenance, schema and startup-data safety remain unproven. Inventory does not authorize starting it. No container/volume inspect, lifecycle, SQL, migrations, application tests, runtime launch, builds, dependencies or environment changes performed. Only this task record changed during this checkpoint; existing work preserved. Runtime acceptance remains pending.
+Next separately scoped proposal: read-only exact smart-learning-pg-test container identity/status, configured host port bindings and mount type/name/destination metadata on the same pinned engine; inspect competing consumers of discovered named volumes and bounded repository provenance references to that exact container/volume. Do not expose environment/credentials, adopt volumes or start PostgreSQL. Use findings to determine whether a concrete later service-start proposal is supportable; fail closed on ambiguity.
+Verification: same-engine pre/post identity and bounded inventory succeeded; git diff --check passed. No application tests required for metadata-only task notes.
+Disposition: authorized inventory checkpoint complete; stop per AGENTS.md manual checkpoint gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Development database availability root-cause analysis
+Goal: explain refused localhost DB connections and define a reproducible development-environment acceptance path, beyond repeated socket checks.
+Acceptance: identify listener/container/config evidence, distinguish test from development target, document uncertainty and bounded remediation with verification.
+- [x] Inspect endpoint listeners, Docker availability and repository port conventions.
+- [x] Inspect exact PostgreSQL container lifecycle/port metadata and bounded configuration provenance.
+- [x] Record diagnosis, prevention proposal and verification evidence.
+Risk: read-only diagnosis; no container lifecycle, SQL, migration, cleanup or configuration changes. Any later service start requires exact resource/data-safety scope.
+
+Results / causal chain:
+- Current Docker default context is responsive. ss shows no local 5432/5433 listener; both socket targets refuse connections. postgresql systemd service is inactive (not proof a native installation exists).
+- Exact metadata: smart-learning-pg-test publishes 127.0.0.1:5432, status exited, exit 255, OOM false, restart policy no, restartCount 0; finished 2026-10-07T12:10:32Z. Its historical W3 test volume is not development adoption authority. Exact reason for its exit 255 is unproven; do not attribute it to corruption, OOM or Rancher shutdown without evidence.
+- .env.test points to localhost:5432/smartlearning_test; .env.development points to localhost:5433/smartlearning_dev. These are distinct targets; test smoke verification does not establish a working development baseline.
+- sl-i-20261014-01-dev-pg binds 127.0.0.1:5433, is exited with code 0, restart policy no. Checkpoint K records a provisioning attempt blocked at roles.AUDIT, followed by guarded stops; application authentication and env publication were not reached. Thus development provisioning never completed. SQL subprocess root cause remains UNKNOWN per checkpoint-l-diagnosis.md.
+- Root cause of present connection refusal: relevant container is stopped and no listener exists. Development readiness gap: K failed before publication and subsequent repository-only checkpoints did not close that live failure. Existing env configuration alone is not live readiness evidence.
+Prevention / recommended next deliverable: return to the K AUDIT blocker, obtain one bounded live SQL-only diagnostic scope after checking the existing M/N/O proposal rather than add another intake/framework. Preserve old resources. Capture fixed diagnostic identifiers and SQLSTATE, resolve the demonstrated failure, then use a separately reviewed fresh provisioning run to verify effective grants, application TCP authentication and safe configuration publication. Development acceptance must target .env.development / 5433 / smartlearning_dev and include identity/schema, application health, and explicitly authorized service restart/reconnect verification.
+Service lifecycle design: after successful provisioning/adoption, explicitly agree on development service ownership, start/stop command and restart policy; evaluate unless-stopped for the dedicated adopted dev service, never blindly change historical recovery/test containers. Pair metadata doctor with scoped DB identity/auth/schema and application checks; metadata-only success cannot certify readiness. No guarantee against all future service failures; require deterministic detection and recovery instructions.
+Verification: bounded docker context/ps/inspect, ss, two endpoint probes, sanitized env target parsing, exact K/L history and repository compose inspection; git diff --check passed. No SQL, service start, migration, tests or source/config edits. Preserved all existing work.
+Disposition: analysis complete, environment repair and runtime acceptance still pending; stop at human checkpoint gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized test-container metadata and provenance checkpoint
+Authorization: current user authorizes the next read-only checkpoint from the named handoff; service lifecycle remains separately gated.
+Acceptance: exact candidate identity, configured bindings, safe mount metadata, named-volume consumers and targeted repository provenance; require default context and engine 8820f44b-5227-4afe-8eff-245fcc9e8a31 before/after. Fail closed on ambiguity.
+- [x] Read handoff, AGENTS.md, bounded active notes/lessons and metadata/recovery contract.
+- [x] Attempt bounded selected metadata inspection; stopped on unavailable candidate metadata. Provenance and consumer checks remain blocked.
+- [x] Record blocked findings and next diagnostic proposal; git diff --check passed.
+Risk & Rollback: read-only Docker/repository inspection; only this task record changes, no service rollback required.
+Dependencies & Environment: Docker CLI; each query limited to 10 seconds, pinned context; no override values, raw inspect/errors, env, credentials or bind-source paths printed. No SQL, service start, migration, tests, build or adoption.
+Evidence: 2026-10-14T15:09:36.928721+00:00. No nonempty DOCKER_HOST/DOCKER_CONTEXT/DOCKER_CONFIG/DOCKER_TLS_VERIFY/DOCKER_CERT_PATH/DOCKER_TLS overrides. Bounded context show returned default; pinned info engine ID matched 8820f44b-5227-4afe-8eff-245fcc9e8a31. The subsequent pinned container inspect with selected identity/state/HostConfig.PortBindings/mount type-name-destination-RW fields returned nonzero. Raw diagnostics were suppressed as required; failure cause is unknown, and container absence is NOT established. No candidate metadata was accepted; stopped immediately under the handoff fail-closed rule. No further Docker queries or post-inspection engine check occurred because candidate inspection failed.
+Results: checkpoint attempt concluded blocked; mount identity, named-volume consumers and repository provenance remain unverified. No service lifecycle, SQL, data/volume adoption, environment changes, tests, migrations, build or runtime launch occurred. Existing workspace changes preserved; only tasks/todo.md changed during this checkpoint. Compiled runtime acceptance remains pending, not satisfied by metadata.
+Next separately scoped proposal: read-only diagnosis of this selected-field inspect failure on the same pinned context/engine, using minimal individual identity/state, binding and mount-field queries with sanitized failure categories (never raw diagnostics or host paths); if successful, complete the outstanding exact-volume consumer/provenance checks. A concrete service-start proposal is not yet supported. Do not infer a missing container or create replacements. This directly resolves the evidence blocker before DB availability, actual database/schema/startup-data safety checks and the retained compiled runtime launch can proceed.
+Verification: pre-inspection context/engine guards passed; candidate metadata query failed (nonzero, cause unverified); no application tests run because this was metadata-only and DB-backed tests can implicitly migrate. git diff --check passed.
+Disposition: stop at AGENTS.md manual checkpoint gate; further diagnostic checkpoint requires user authorization. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized runtime-unblock diagnostic checkpoint
+Authorization: user authorizes next checkpoint under runtime-unblock handoff. Goal: remove inspect blocker and finish outstanding read-only provenance checks to support a concrete launch decision.
+- [x] Review bounded authority and metadata/recovery contract.
+- [x] Diagnose query as template-category failure; selected identity/bindings/mount queries succeed. Stop Docker expansion on unsupported bind layout; targeted provenance search performed.
+- [x] Record concrete unsupported-layout prerequisite and verify git diff --check.
+Acceptance: isolated query failure cause plus exact candidate/volume/consumer evidence and targeted provenance, or actionable remaining blocker. No service startup or SQL.
+Risk & Rollback: read-only queries; only task/lesson notes may change; no service rollback needed.
+Dependencies: Docker default context, engine 8820f44b-5227-4afe-8eff-245fcc9e8a31; 10-second queries, overrides rejected and sensitive outputs suppressed.
+Evidence: 2026-10-14T15:17:36.022577+00:00; override guards passed and pinned default context engine 8820f44b-5227-4afe-8eff-245fcc9e8a31 matched. Exact candidate ID b0068d3ee1f6fc6b2fe3fa64a9789d523782b5cd77e24f5336e2ca51f9333d8a, name /smart-learning-pg-test, state exited. Configured binding 5432/tcp -> 127.0.0.1:5432. Minimal individual identity/state, bindings and mount queries succeeded. Reproduction of the original combined template failed with sanitized template error category; the isolated mount Name query succeeded, so do not claim that field caused the failure. Exact template subexpression cause remains unlocalized; individual queries bypass the query-construction blocker and further template debugging is unnecessary for runtime progress.
+Mount findings: bind at /run/secrets/postgres-password, RW=false (host source deliberately suppressed); volume sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata at /var/lib/postgresql/data, RW=true. Existing doctor pure-volume expectations do not cover this bind layout. No bind-source/content inspection, volume inspection, consumer expansion or adoption performed after unsupported-layout detection. A bounded follow-up reproduced only the original query failure and verified pinned engine again; final engine matched. Layout ambiguity remains a startup blocker, not proof of unsafe data or incorrect ownership.
+Provenance: initial exact-name searches of README.md, docker-postgresql-setup.md, root docker-compose*.yml, tools/dev and tasks/lessons.md found no matches. Expanded targeted search found scripts/run-w3.ts:259: process.env.W3_TEST_DB_CONTAINER defaults to smart-learning-pg-test. This is a concrete W3 harness container reference, not proof of data ownership, intended startup mutations or exact volume creation. No exact-volume reference found in searched files. The expanded query also included nonexistent .github and returned exit 2; its positive script match was inspected separately, and no clean exhaustive negative result is claimed. Excluded artifacts/local-env, node_modules, dist and env files. Volume naming alone does not establish authority.
+Results: inspect availability blocker resolved through selected individual fields; original combined query failure classified as template-related. Concrete launch blocker is now unsupported secret-bind layout plus unproven data provenance. Named-volume consumers remain unverified because unsupported layout triggered the handoff fail-closed boundary. No service/SQL/migration/tests/env/build changes; compiled runtime acceptance remains pending. Only task record edited; existing work preserved.
+Next concrete proposal: one bounded startup-safety review of this exact existing test container configuration, explicitly covering the read-only secret bind without revealing its source/content, discovered named-volume metadata/consumers and an authoritative ownership/provenance attestation or approved evidence source. First resolve whether this existing test data may be used and modified by PostgreSQL/app startup; do not propose generic inventory or debugging the already-bypassed template. If provenance cannot be established from authorized evidence, ask the user the single missing decision: whether they own/authorize using this exact existing test dataset for startup writes, or require a separately authorized isolated-copy strategy. No inferred adoption. Service start still requires a concrete separately authorized lifecycle plan; SQL identity/schema/startup-data safety and retained compiled runtime acceptance follow availability. Do not treat the review as service-start permission.
+Verification: selected metadata queries succeeded, combined-template repro failed in template category, final pinned engine guard passed, targeted provenance search found the W3 default container reference; expanded search had a missing .github path (exit 2), followed by successful exact-file inspection. git diff --check passed. No DB-backed tests: unnecessary for read-only inspection and implicitly migrating setup remains unauthorized.
+Disposition: checkpoint finished with actionable layout/provenance prerequisite; stop per AGENTS.md manual checkpoint gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized exact-container startup safety review checkpoint
+Authorization: user authorizes startup-safety-plan handoff review; no lifecycle or SQL.
+Acceptance: review exact configuration, volume consumers and data-use authority; produce concrete conditional startup plan or one missing user decision.
+- [x] Read bounded authority, doctor implementation and relevant lessons.
+- [x] Review exact mount role and volume consumers; prepare conditional startup proposal.
+- [x] Record results, missing authority and verification; stop at manual gate.
+Risk & Rollback: read-only review, no runtime/data mutation; only task/lesson records change. Eventual startup is high-risk and needs explicit lifecycle/data-use consent and stop-on-failure handling.
+Dependencies: Docker default context and pinned engine 8820f44b-5227-4afe-8eff-245fcc9e8a31; bounded 10-second selected-field queries, no secrets or host paths.
+Evidence: 2026-10-14T15:22:37.852406+00:00. Overrides absent; current context default and pinned engine 8820f44b-5227-4afe-8eff-245fcc9e8a31 matched before/after bounded queries. Candidate full ID b0068d3ee1f6fc6b2fe3fa64a9789d523782b5cd77e24f5336e2ca51f9333d8a still /smart-learning-pg-test, exited. Mounts unchanged: read-only secret bind at /run/secrets/postgres-password; writable named volume sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata at /var/lib/postgresql/data. Only a boolean secret-role assertion was emitted: configured POSTGRES_PASSWORD_FILE equals the secret destination. No environment values, secret contents or bind-source paths printed. This establishes configured role only, not secret availability, correctness or credential validity.
+Volume: exact name confirmed; driver local, scope local. All exact-volume consumers: candidate exited, RW=true at /var/lib/postgresql/data; smartlearning-forensic-forensic-f1-20261010-d1-compare (58fc54e61d0c3ddfeab21441e5294a65436ed13132e50868448f1d605153b193) exited, RW=false at /source; smartlearning-forensic-forensic-f1-20261010-d1-copy (cbf64cf596ecb512bdbf2e68b4a5af8d97f1537feabc377b6be674b738e90a1b) exited, RW=false at /source. No running consumer observed; point-in-time only. Forensic names are preservation context, not proof of actual historical operations or ownership.
+Correction: tools/dev/env-doctor.sh filters mounts to /var/lib/postgresql/data; it does NOT reject an additional secret bind. Earlier descriptions of a pure-volume-only doctor and an unsupported-bind startup blocker overstated its implementation. The read-only secret bind is not by itself a proven blocker; no tooling modification is needed to bypass it. No further combined-template debugging or broad inventory is justified.
+Data-use authority: W3 harness reference and metadata cannot grant ownership or consent to PostgreSQL WAL/recovery changes or immediate application background updates/deletions. Existing stopped forensic consumers reinforce need for an explicit preservation decision but do not establish that writes are prohibited. This user review authorization is not write consent. One remaining human decision: permit using/mutating this exact existing dataset, or preserve it and use a separately authorized isolated copy. Recommend preserving the original unless the user confirms the dataset is disposable/approved for these writes. Do not choose or create a copy autonomously.
+Conditional existing-dataset startup proposal (reviewable, NOT executed):
+1. User explicitly confirms authority and accepts PostgreSQL recovery/WAL plus application startup writes on the exact named volume, and authorizes starting only smart-learning-pg-test on the pinned engine for this verification. No migrations/seeds or forensic-container starts.
+2. Immediately before lifecycle action, recheck exact identity, stopped state, unchanged mounts/bindings, no active competing consumers and host 5432 availability using bounded targeted checks. Abort on drift/conflict; do not switch resources, rewrite config or create replacements.
+3. Start only the verified full container ID using docker --context default start <verified-ID>. Bound command and readiness wait; a timeout does not prove no start occurred, so re-observe exact owned state. No raw logs/config dumps. If unavailable or secret/DB startup fails, stop only the originally stopped container started by this run, record sanitized failure and do not repair/reinitialize automatically.
+4. With separately included read-only SQL authorization, connect only to intended localhost:5432/smartlearning_test via approved test config without printing credentials. Use read-only transactions and bounded statements to establish database/server identity, required schema/migration compatibility and targeted startup-job data safety. No DDL/DML, migrate deploy, db push, seed or DB-backed tests. Abort application launch if identity/schema/data predicates fail; document exact checks against current startup code before executing SQL.
+5. Revalidate retained snapshot /tmp/smartlearning-start-prod-verify-isod6v4z freshness and complete isolated .env.test/NODE_ENV=test/no-Redis configuration under existing runtime scope; do not rebuild, install or read dist contents. If freshness cannot be proven, report blocker rather than reuse blindly.
+6. Run retained compiled npm run start:prod, require bounded HTTP 200 /health/live with status=ok and checks={}, stop only the run-owned app process and this run-started DB container. /health/ready excluded. Record outcomes and any startup background effects; preserve resources and evidence. Handle termination on both success and failure.
+Risk & rollback: stopping owned app/container restores lifecycle state only; it cannot undo WAL/recovery/app data writes. Existing-dataset path requires explicit acceptance of this limitation. If preservation is required, reject original-start path and prepare/authorize a concrete fresh isolated-copy lifecycle scope before creating anything; do not silently substitute endpoints/resources or reuse historical recovery approvals.
+Results: configuration-role and no-active-consumer questions resolved; only dataset write/preservation decision remains before selecting lifecycle plan. Concrete conditional original-start proposal recorded; isolated-copy path remains a user choice requiring its own resource-scoped plan. No services, SQL, migrations, env changes, builds or application tests executed; compiled runtime acceptance remains pending. Only tasks/todo.md and tasks/lessons.md edited, pre-existing work preserved.
+Verification: bounded selected Docker queries passed with exact identity and pre/post engine guards; doctor implementation review corrected earlier layout assumption; git diff --check passed. No application tests needed for review-only changes; DB-backed setup would implicitly migrate and is not authorized.
+Disposition: stop at AGENTS.md manual checkpoint gate. Ask one data-use/preservation decision, not another generic metadata authorization. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized existing-data compiled runtime execution checkpoint
+Authorization: user explicitly accepts PostgreSQL/application startup writes on existing dataset, resolving the prior single decision; continue the concrete existing-container lifecycle/runtime proposal and already-approved .env.test test/no-Redis scope.
+Acceptance: exact-container preflight, bounded startup, read-only SQL identity/schema/data checks, retained snapshot freshness and isolated configuration, npm run start:prod, HTTP 200 /health/live status=ok checks={}, owned app/DB cleanup.
+- [x] Preflight exact resources/configuration/snapshot passed; DB start attempted and failed before PostgreSQL readiness.
+- [ ] SQL/schema/data checks and compiled runtime blocked by missing secret bind source; no SQL/app launched.
+- [x] Confirm exact DB stopped after both attempts; no app process created; record sanitized results and git diff --check.
+Risk & Rollback: high, authorized WAL/recovery and app background writes cannot be undone by stop. No migrations, seed, provisioning, copies, installs or rebuilds. Stop only owned app and originally stopped exact DB container; preserve volumes/forensic consumers. SQL is read-only and timeout bounded.
+Dependencies: retained /tmp/smartlearning-start-prod-verify-isod6v4z; .env.test source, default context engine 8820f44b-5227-4afe-8eff-245fcc9e8a31; expected database localhost:5432/smartlearning_test; no Redis or /health/ready.
+SQL plan: read-only transaction with statement timeout; verify current_database and server port; compare applied migration checksums/names to repository SQL and ensure no unfinished migration; compare public model table/column existence to schema; count expired active live_session and eligible live_session_event states/expiry without row payloads. Mutation consent is explicit, not dependent on empty tables.
+Execution evidence: source/snapshot SHA-256 comparison covered 338 tracked src/scripts/prisma/package/lock/Docker/build/config files, zero mismatches. Retained dist/src/main.js exists and dist/main.js absent (existence only; compiled content not inspected). Snapshot has no implicit .env/.env.test/.env.production files. Parsed approved workspace .env.test in memory; intended localhost:5432/smartlearning_test, no realtime Redis or Redis login limiter, and no optional retention/failpoint flags enabled. No environment contents/secrets printed or files copied/edited.
+Lifecycle preflight: no Docker overrides, exact default context and pinned engine; exact stopped candidate ID/name, expected two mounts and localhost 5432 binding confirmed, no running volume consumers, host 5432 and application 3001 unoccupied. Initial bounded docker start of only the approved ID returned nonzero. Exact-container stop completed, state exited. State.Error was empty, so it could not explain the failure.
+Failure diagnosis: one unchanged bounded start reproduction retained only sanitized categories from stderr. Exit 1; missing_bind_source=true and mount_failure=true; no port-conflict, permission-denied, OCI/runtime or endpoint-unavailable category. Raw error and host source path suppressed. This identifies the configured /run/secrets/postgres-password bind's missing host source as a Docker-start prerequisite, distinct from secret credential validity. No automatic source creation, credential replacement, container recreation or mount changes attempted. Exact DB stop returned 0 and final state exited; engine matched during cleanup. No application process exists to stop.
+Results: prior dataset-write authority question is RESOLVED by current user; do not ask again. Compiled runtime acceptance is NOT achieved. PostgreSQL could not start due to missing bind source, so SQL database/schema/data predicates and HTTP liveness were not attempted. No migrations, seeds, rebuild, install, SQL, alternate dataset or runtime configuration changes. Original volume/forensic containers preserved. Temporary bounded drivers: /tmp/smartlearning-runtime-authorized-20261014.cjs and /tmp/smartlearning-runtime-lifecycle-20261014.py; contain no copied secrets and are evidence only, NOT automatically reusable fresh execution approvals. Review freshness and cleanup guards before any rerun.
+Next concrete prerequisite: restore availability of the existing password-file bind source for this exact container, preserving its established credential and mount destination. Do not create a guessed password file, substitute .env.test credentials as cluster credentials, inspect prohibited historical artifact contents or recreate the container automatically. The reviewable next scope should identify an explicitly approved existing credential source and restore the missing bind file with restricted permissions without printing its content/path; if no trusted source is available, obtain the one missing source/recovery decision. This is secret-source recovery, not another generic metadata inventory. Any recovery/configuration write needs explicit scope beyond the accepted database/application startup writes. Once repaired, continue the already-approved exact existing dataset startup, read-only SQL and retained compiled runtime path; no repeated data-write consent needed.
+Verification: snapshot/preflight passed; two starts failed consistently in the second attempt's explicit missing-bind-source category; both owned cleanup paths confirmed exited, final stop exit 0. No application tests run because failure precedes DB startup and DB-backed tests implicitly migrate. git diff --check passed. Checkpoint concluded blocked by actionable filesystem/secret availability prerequisite, not dataset authority or compiled entry layout.
+Disposition: stop per AGENTS.md manual checkpoint gate; next action must resolve this exact missing source rather than repeat metadata. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized original-secret-source restoration checkpoint
+Authorization: user authorizes restoring original password-file source; explicitly forbids guessing/replacing password. Existing dataset startup-write consent and retained runtime scope persist.
+Acceptance: identify authenticated original source without exposing paths/content; restore only exact missing bind source if original provenance can be established, then continue existing lifecycle/runtime checks. Otherwise identify one required original credential artifact; no substitutes or rotation.
+- [x] Inspect exact bind source and configured source references; both point to unavailable WSL runtime location.
+- [x] Record blocker: no authenticated original credential artifact located; no restoration or startup attempted.
+- [x] Verify exact container remains stopped, pre/post pinned engine matches and git diff --check passes.
+Risk & Rollback: high, secret material; no secret contents/paths/hashes printed, no password guessing or resetting, no container recreation, migration, unrelated filesystem search or data adoption. New file only at approved missing source, restricted mode, no overwrite. Preserve existing secret material.
+Evidence: exact candidate remained exited on pinned default-context engine 8820f44b-5227-4afe-8eff-245fcc9e8a31, with Docker overrides absent and identity checked around each inspection. Selected mount metadata confirmed the only bind is read-only at /run/secrets/postgres-password. Its source and parent are absent on the CLI host; Docker previously independently reported missing bind source. Source is a WSL runtime mount location, outside /tmp and this workspace; do not create directories or inject secret bytes into an assumed host/daemon mapping.
+Recovery locator review: selected HostConfig bind/mount source references provide exactly one reference for this secret, identical to the observed unavailable WSL source. No alternate/original persistent location is recorded in these inspected fields. Source references were processed in memory only; no host path, secret content or hash printed. Exact secret-destination rg -l search over scripts, tools/dev, docs, four root compose files, docker-postgresql-setup.md and README.md returned exit 1 (no matches). No broad filesystem search, historical artifacts/local-env read, credential guessing, .env credential substitution or password reset performed.
+Results: original-source restoration is authorized but cannot safely be performed without the original file or a trusted original backup locator. No evidence establishes recoverable original bytes from reviewed locations; this is not proof no backup exists. Do not confuse authorization with availability. No secret content accessed, no filesystem recovery writes, no container starts/recreation, SQL, migrations, rebuild/install or application launch during this checkpoint. Container remains stopped; existing source/resources preserved. Only tasks/todo.md changed.
+Single missing prerequisite/question: Where is the original PostgreSQL password file or a trusted backup of that exact original file? Request only its accessible path, never password text. A supplied path authorizes a bounded recovery review, not blind adoption: establish source provenance, restore exact bytes to an appropriate existing bind origin without exposing material, and verify host/daemon mapping rather than mkdir in an unavailable WSL runtime mount. If no original survives, report original restoration impossible under current no-replacement restriction; do not propose password guessing/reset as equivalent restoration. Continue already-authorized existing-data startup/runtime only once original secret availability is actually restored.
+Verification: selected metadata queries and pre/post engine guards passed, container stopped; targeted provenance search clean no-match; git diff --check passed. No application tests required for task-only record, and no DB-backed migration setup invoked.
+Disposition: checkpoint concluded with one actionable original-artifact locator prerequisite; further metadata repetitions without a source would not advance compiled runtime verification. Stop at AGENTS.md manual checkpoint gate. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Unknown-original-secret recovery decision and alternative proposal
+User answer: original password-file/backup location is unknown. Original-secret restoration authorization and no-guess/no-replacement restriction persist. Do not repeat the answered question or claim no original exists anywhere.
+- [x] Check targeted repository creation/preservation references; no source locator found.
+- [x] Establish an alternative that does not require original password-file reconstruction or password changes.
+- [x] Document concrete separately authorized temporary-container plan; git diff --check passed.
+Evidence: targeted filename-only search over scripts, tools/dev, docs, root compose/setup/README found general POSTGRES_PASSWORD_FILE patterns in newer environment tooling, not a locator for the original test secret. Inspected only matching source lines in checkpoint-e/f/n helpers and e/m plans; no secret material accessed. Selected exact-container/image queries on pinned engine confirmed existing local image sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54, container command plain postgres, command/entrypoint match image defaults, and PGDATA=/var/lib/postgresql/data. Candidate remains exited; engine matched before/after. No new broad inventory or filesystem search.
+Decision: original file restoration cannot currently be proven from accessible authorized evidence. Do not use .env.test password to fabricate the file. A different lifecycle path can avoid the missing bind without changing database passwords: run postgres directly against the existing initialized data directory, bypassing Docker image initialization entrypoint. This is NOT restoring the original file. PostgreSQL uses existing cluster authentication configuration; .env.test is used only for the already-approved client connection. If authentication fails, stop and report SQLSTATE; never reset credentials or weaken pg_hba.conf.
+Concrete proposed scope (NOT executed): on context default / engine 8820f44b-5227-4afe-8eff-245fcc9e8a31, preserve stopped original container b0068d3ee1f6fc6b2fe3fa64a9789d523782b5cd77e24f5336e2ca51f9333d8a and all forensic containers. Reserve fresh temporary container smartlearning-runtime-verify-20261014-01; abort if name exists, exact volume/image differs, any running volume consumer exists, or ports 5432/3001 conflict. No pull, build, replacement password or original container recreation. Create only this temporary container using existing immutable image and exact existing volume sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata; publish only 127.0.0.1:5432, --restart=no, --user=postgres, --entrypoint=postgres, command -D /var/lib/postgresql/data. Explicit existing volume mount at /var/lib/postgresql/data, no secret bind and no password environment. Direct binary invocation excludes initdb/entrypoint initialization and permission repair; an absent/uninitialized/incompatible cluster must fail rather than initialize or repair it. Do not alter cluster config/ownership to make startup pass.
+After bounded startup, continue existing read-only SQL identity/migration checksum/schema/data-safety checks with .env.test; then revalidate retained snapshot and sanitized isolated test/no-Redis configuration, run npm run start:prod and require HTTP 200 /health/live status=ok checks={}. No migrations, seeds, /health/ready, rebuild or dependency install. Retained driver source is evidence only: adapt cleanup ownership for new temporary container and validate it before execution; do not blindly rerun original-container lifecycle wrapper.
+Cleanup/rollback: stop only owned app group and temporary DB container on every path; remove only this freshly created container after capturing sanitized outcome, without -v or volume removal. Preserve original container, data volume and existing stopped consumers. Data writes already authorized remain durable; removing/stopping container does not undo recovery/WAL/app writes. If helper creation times out, resolve exact owned identity before cleanup; never delete a pre-existing same-name resource. Bound operations and preserve sanitized failure evidence on first failure.
+Authorization boundary: previous lifecycle plan starts/stops only existing original container and explicitly forbids resource provisioning. This alternative creates a distinct temporary container, so obtain one explicit approval for this concrete plan; do not re-ask existing dataset write consent. The next question is about this new execution resource, not another metadata checkpoint. This changes approach to bypass a demonstrated missing-mount blocker while retaining the compiled-runtime goal.
+Results: no secrets/file recovery writes, container lifecycle, SQL or app launch in this review. Only tasks/todo.md updated. git diff --check passed; no DB-backed tests invoked.
+Disposition: original-secret restoration remains unavailable; proposed direct-postgres temporary-container path requires approval under AGENTS.md manual checkpoint boundary. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized temporary-container compiled runtime execution
+Authorization: user explicitly authorizes the concrete temporary-container plan above; existing data-write and .env.test/no-Redis compiled runtime scope persist.
+- [x] Revalidate exact engine/image/volume/ports; fresh temporary direct-postgres startup succeeded.
+- [ ] SQL preflight blocked at authentication (28P01); no SQL statements or compiled app launched, health acceptance pending.
+- [x] Stop and remove only owned temporary DB container without volume deletion; verify original/resources and record results.
+Acceptance and rollback: per concrete preceding proposal; no password changes, initdb, migrations, seeds, pull/build/install, original container changes or data-volume deletion. Data writes remain durable. Record failures safely on first attempt.
+Execution evidence: bounded override/context/engine guards passed on default engine 8820f44b-5227-4afe-8eff-245fcc9e8a31. Original exact candidate remained exited, reserved name absent, approved volume and immutable image matched, no running volume consumer, host 5432/3001 free. Retained snapshot rechecked twice: 338 relevant source/config/build files, zero mismatches; entry existence and no implicit env files passed. Approved .env.test target/no-Redis/no-extra-retention-flag assertions passed, no secrets/config contents printed.
+Created only smartlearning-runtime-verify-20261014-01, ID 2616fc74307a1ecfe9e5a7d1e54f28c89a4e0458f302ed99c317c0e8f7689650, using exact existing image sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54 and data volume sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata. Direct postgres user/binary startup, -D existing data directory, no initialization entrypoint/initdb/password environment/secret bind, only 127.0.0.1:5432 publication. Docker start succeeded, container running and pg_isready accepted connections.
+Authentication result: approved .env.test connection via pg Client returned SQLSTATE 28P01, invalid_password / password authentication failed. Error text, role names, connection string and passwords suppressed. No guessing/retry with alternate credentials, password reset, pg_hba.conf change or config substitution. No read-only transaction or identity/schema/migration/data query was reached; failed authentication does not prove intended database existence/identity or role existence. No application process launched or HTTP acceptance attempted.
+Cleanup evidence: exact owned temporary container stop succeeded, state exited, then docker rm of that ID succeeded without -v or volume deletion. Final original state exited; exact data volume still present, engine matches. No app process was created. No other containers started, no original container recreation/config changes, migration/seed/rebuild/install or copied secret files. Authorized PostgreSQL recovery/startup writes may persist; lifecycle cleanup is not a data rollback.
+Results: temporary-container startup successfully bypassed the missing original secret bind without guessing or replacing its contents. Current blocker is now client authentication, not service availability/template/layout/metadata or snapshot freshness. Compiled runtime verification remains incomplete. Execution driver /tmp/smartlearning-runtime-temporary-lifecycle-20261014.py contains no copied credentials; do not blindly rerun it or treat its zero wrapper exit as success: child runtime driver exited 1 and SQLSTATE 28P01 is authoritative failure evidence.
+Next precise prerequisite: obtain a trusted existing client credential/configuration source for this exact cluster and intended smartlearning_test database, or explicitly change the no-reset/no-replacement constraint in a separately reviewed recovery plan. Current authorization does NOT permit guessing, rotating/resetting credentials, trusting alternate authentication or changing application/cluster settings to bypass failure. Do not repeat metadata inventory or start the database again merely to repeat the same rejected credentials. Ask for an existing known-working configuration file path, never password text; original password-file location was already reported unknown and must not be asked repeatedly. Any future known credential must be validated nonmutatingly against the same cluster before SQL/schema/data and compiled startup can proceed.
+Verification: exact resource/freshness preflight passed; direct PostgreSQL startup and pg_isready passed; intended client authentication failed 28P01; owned cleanup and final preservation/engine checks passed; git diff --check passed. No DB-backed tests (implicit migration) or application tests invoked. Only tasks/todo.md edited during this execution, preserving pre-existing work.
+Disposition: checkpoint executed and stopped at actionable authentication prerequisite under AGENTS.md manual gate. Overall compiled runtime acceptance remains pending. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized controlled test-role credential recovery and runtime
+Authorization: user approves controlled recovery: existing local authentication read-only identity/role checks, reset only designated app role password and synchronize .env.test, then retained compiled runtime verification. Prior no-reset restriction superseded only for this exact scope.
+- [x] Preflight and temporary direct-postgres startup passed; local SQL verified cluster/database/owner and found configured app role absent.
+- [ ] Blocked before credential writes: configured target role does not exist; no rotation or .env.test publication.
+- [x] Stop before unauthorized role creation; all owned containers stopped/removed, original resources preserved, results recorded. Runtime/schema checks remain pending.
+Risk & Rollback: high, password change; preserve old verifier and original env bytes in memory during transaction. Stage mode-0600 env file; on failure before successful publication restore old verifier and original env, report rollback outcome without secrets. After verified recovery, keep authorized new credential/config even if schema/runtime later fails. No password/connection-string/hash output, credential argv, pg_hba changes, privilege grants, migrations/seeds/rebuild/install or data deletion. Only .env.test and task notes may change. Stop/remove only fresh owned temporary container without -v, preserve original data/container. SQL timeout bounded.
+Acceptance: exact cluster/database/role verified before credential write; new TCP authentication succeeds and config matches; compiled npm run start:prod returns HTTP 200 /health/live status=ok checks={}, owned cleanup verified. Stop on unsafe identity or failed rollback.
+Execution evidence: bounded pinned-engine/resource and retained snapshot checks passed on each run (338 relevant files, zero mismatches). Three fresh temporary direct-postgres execution attempts used the same reserved name only after prior removal; owned IDs e100d39992be5dfd0bd98afa20f22dda607c9e0f1c3d25c4305833f35eff3d90, 140d30b0ed76b205c16676bcf0454c3cbd3499c5246d393315aae08c75a94428, 22854a38ebded8405f8b52ee224a3576d9eb92a197cf58f527670d2a80dc944f. Every attempt started PostgreSQL/readiness successfully, then stopped/removed only its owned container without -v; final original state exited, data volume present and engine matched.
+Local SQL findings: initial assumed postgres database role absent; explicitly configured .env.test target role also absent. First recovery wrapper emitted only generic local_sql_failed; sanitized classification added before unchanged diagnosis. Next diagnostic used only the original container-recorded POSTGRES_USER as a known initializer identity, not arbitrary username/password guesses. Existing local authentication succeeded; READ ONLY transaction verified current_user equals recorded initializer, administrator is superuser, expected data directory matches, smartlearning_test database exists and is owned by recorded initializer, and .env.test target role does NOT exist. No role names, credentials, verifier hashes, config values, raw SQL diagnostics or row payloads printed. No authentication policy changes.
+Root cause correction: earlier 28P01 did not establish an incorrect password for an existing role; local SQL now proves .env.test names a nonexistent login role. Resetting that role password cannot work. Existing database identity is now partly proven; schema/migration/data checks still not completed. The existing actual administrator is not silently substituted into .env.test and its credential is not reset. No new role or privilege grant is authorized by a password-reset-only plan.
+Results: controlled recovery halted at its required identity/role gate before any ALTER ROLE, staged secret creation, password/config changes or application launch. .env.test unchanged. No migrations, seeds, schema/data deletion, pg_hba changes, install/rebuild or original container changes. Runtime acceptance remains pending. Only tasks/todo.md and tasks/lessons.md changed this checkpoint; existing work preserved.
+Concrete proposed authorization expansion: create only the currently configured missing application login role in the verified existing smartlearning_test cluster, rather than reset the existing administrator or run the app with superuser credentials. Use secure random SCRAM credential, NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS; grant CONNECT only for intended DB, USAGE on public schema, SELECT/INSERT/UPDATE/DELETE only on the application model tables enumerated below, and required USAGE/SELECT on their associated sequences only if present. Grant read-only SELECT on _prisma_migrations solely for preflight. No database/schema/table creation, ownership changes, default privilege changes, broad ALL PRIVILEGES or other role changes. Check existing PUBLIC grants and RLS nonmutatingly; do not weaken policies. Fail on unexpected existing role or incompatible schema. This is explicitly new role/privilege creation and requires user approval, not assumed from credential-reset authorization.
+Application model table manifest (from current schema, verify against DB before grants): system_setting, account, web_session, course, course_enrollment, question_definition, question_option, live_session, live_session_question_selection, session_question, session_question_option, participant, submission, live_session_event_sequence, live_session_event, archived_result, deletion_event, deletion_manifest_outbox, cli_credential, question_validation_token, question_batch_idempotency.
+Recovery publication/rollback proposal: perform role creation/grants transactionally through already verified local initializer, stage mode-0600 .env.test changing only DATABASE_URL password (username remains exactly the designated app role), verify TCP role/database identity and intended effective grants before atomic publication. If transaction or pre-publication checks fail, revoke/drop only this newly created unused role, remove only staged file and leave original env untouched; do not remove a pre-existing role or owned objects. After successful publication retain matching role/config. Then run existing read-only schema/migration/startup-data checks, retained compiled npm run start:prod /health/live scope, and owned-container/app cleanup. Stop on schema incompatibility; no implicit migrations. Existing startup/data-write authorizations persist; no need to ask for those again.
+Verification: local read-only DB/owner/role absence evidence succeeded; all temporary container cleanup/final identity checks passed; node --check passed for recovery/diagnostic scripts, git diff --check passed. No application/DB-backed tests or compiled app executed.
+Disposition: checkpoint stopped at newly proven missing-role boundary per AGENTS.md, with concrete minimal-role creation plan awaiting explicit approval. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-14 Authorized least-privilege app-role creation and compiled runtime
+Authorization: user explicitly approves creating the configured missing application login role, granting only intended DB application-table DML, synchronizing password and continuing runtime. No superuser/createdb/createrole, migrations, seeds, object ownership changes or auth-policy changes.
+- [x] Revalidate snapshot/resources and local database/admin/role/schema before writes.
+- [x] Create scoped login/grants transactionally, verify TCP/effective privileges, atomically synchronize .env.test.
+- [x] Run SQL schema/data preflight, retained compiled start:prod and /health/live; verify owned cleanup/results.
+Risk & rollback: high, new auth role and secret config. Stage mode-0600 config without printing secrets; retain original env bytes in memory. Before publication failure, drop only just-created unused role/grants with scoped cleanup; never drop existing role or schema objects. Keep verified matching role/config after successful publication. Original data startup writes remain authorized; cleanup cannot undo those writes. Temporary original-image direct-postgres container only; preserve original/volume. No privilege grants on other databases or changes to PUBLIC/default privileges. Document inherited PUBLIC access separately, do not claim cross-database isolation from scoped grants alone.
+Verification: node --check temporary orchestrators; exact pinned engine/image/volume and no consumer/port conflict; known recorded initializer local READ ONLY identity/schema review; SQL privilege assertions and TCP; source hashes; HTTP shape/status and owned cleanup; git diff --check. No DB-backed test setup.
+Execution results — COMPILED RUNTIME ACCEPTANCE COMPLETE:
+- Driver: python3 /tmp/smartlearning-app-role-runtime-lifecycle-20261014.py; recovery helper /tmp/smartlearning-create-app-role-20261014.cjs; retained compiled runtime helper /tmp/smartlearning-runtime-authorized-20261014.cjs. These contain no copied credentials. node --check for creation helper passed. Runtime child exited 0; wrapper output alone is not the success criterion.
+- Bounded default-context/pinned engine 8820f44b-5227-4afe-8eff-245fcc9e8a31 checks, exact image/volume and stopped-original preflight passed; no other running volume consumers, ports 5432/3001 initially free. Fresh temporary container smartlearning-runtime-verify-20261014-01, ID d28137f4fbd9982a7dad28ff5422e126f7baef63a7d51cc6a8adcb3d7214f598, used the already-approved immutable image/direct-postgres existing-data path. No initdb, original secret reconstruction/replacement, pull or original container recreation.
+- Known recorded initializer authenticated locally without pg_hba changes. READ ONLY identity/admin/data-directory/target-role-absence checks passed. All 21 mapped application tables and scalar columns existed; no RLS enabled on them, no associated sequences required grants. No existing role was changed or reset.
+- Created only the configured missing app login role transactionally with a cryptographically random SCRAM credential, NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOREPLICATION/NOBYPASSRLS. Granted CONNECT on smartlearning_test, USAGE on public, SELECT/INSERT/UPDATE/DELETE on the exact 21 model tables, SELECT on _prisma_migrations only. No schema CREATE, memberships, TRUNCATE/REFERENCES/TRIGGER privileges; effective role flags, each table DML grant and absence of these extra privileges verified over TCP. No grants on other databases/default PUBLIC policies changed. Existing inherited PUBLIC defaults remain; scoped explicit grants are not a claim of cross-database isolation.
+- .env.test synchronized atomically after successful new TCP identity/privilege checks; only DATABASE_URL password changed, username/target and all other parsed settings unchanged. Mode 0600; ignored by Git; no staged secret remains. New role and matching config persist intentionally. No secret values, connection strings, verifier hashes or raw diagnostics printed.
+- Snapshot /tmp/smartlearning-start-prod-verify-isod6v4z: 338 relevant source/script/schema/package/lock/Docker/build/config SHA-256 matches, zero mismatches; entry existence check passed, no compiled contents read. No rebuild/install or implicit .env files in retained snapshot. Isolated child environment used approved .env.test, NODE_ENV=test, REALTIME_REDIS_MODE=off, LOGIN_RATE_LIMIT_MODE=memory, no Redis URLs or inherited unrelated process config.
+- Intended TCP database/role/server port verified in READ ONLY transaction. All 20 repository migration names/checksums matched finished, non-rolled-back DB records. 177 model scalar columns present. Startup-data counts: expired active sessions=0, outbox event rows=0, cleanup-eligible rows=0. Counts are bounded-time observations, not guarantees of absence of all application side effects; startup writes were explicitly authorized.
+- Actual retained npm run start:prod launched the compiled entry. HTTP GET http://127.0.0.1:3001/health/live returned 200 with status=ok and checks={}; response shape/status were parsed/asserted, not inferred from logs. Runtime driver exited 0. /health/ready not requested or called. No application requests other than scoped liveness probes.
+- Owned application process group stopped; owned temporary DB container stopped and removed by exact ID without -v. Final independent selected checks confirmed ports 3001 and 5432 closed, temporary name absent, no running approved-volume consumers, original container still exited, exact data volume preserved, pinned engine matched, .env.test mode 0600 and staged secret absent.
+Verification commands/results: node --check /tmp/smartlearning-create-app-role-20261014.cjs passed; python3 /tmp/smartlearning-app-role-runtime-lifecycle-20261014.py produced explicit recovery/SQL/runtime success markers and RUNTIME_DRIVER_EXIT 0; final bounded resource/socket/mode assertions passed; git diff --check passed. No Jest/DB-backed tests run (implicit migrate setup outside scope); actual compiled-entry execution and HTTP acceptance were verified directly. No source-code changes needed during this checkpoint; only authorized .env.test and tasks/todo.md changed, preserving all pre-existing work.
+Operational notes / rollback: new least-privilege test role and .env.test credential remain synchronized. DB intentionally stopped after verification, so this proves compiled-entry startup/liveness at execution time, not continuously running service, /health/ready, development environment provisioning or production parity. Recorded build runtime Node v26.5.1/npm 11.17.0 is not Node 24 production parity. Original container still has its missing bind source; successful verification used the approved temporary-container path and does not claim original container repair. Stopping resources does not roll back WAL/recovery/authorized application effects. Do not drop the verified role or revert its config independently; any future rollback needs a matched credential plan. No migrations, seeds, schema creation/deletion, privilege broadening or package changes were performed.
+Disposition: ultimate scoped compiled runtime verification goal achieved; stop at AGENTS.md checkpoint boundary. Further work, if requested, is a distinct objective rather than continuation of a still-unverified runtime claim. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-14 Persistent local database plan — Checkpoint 規劃
+
+授權與目標：使用者依 /tmp/smartlearning-persistent-local-db-plan-handoff-20261014.md 授權本次規劃；先制定持續可用的本機 DB 方案，不執行 lifecycle/SQL/設定變更。先前 compiled runtime 驗證已完成，非待解阻礙。
+
+Acceptance criteria（本次）：提出唯一建議方案、具體資源/設定、實施與回復步驟、未來 DB/runtime 驗收及人工授權範圍；不再以重複 metadata 代替方案。
+- [x] 定向閱讀交接、repo 邊界、最終 runtime 證據與相關 lessons。
+- [x] 比對既有 Compose 與成功啟動路徑，選擇最小獨立 DB 管理方案。
+- [x] 記錄具體部署草案、資料安全、啟停/重啟與 runtime 驗收方式。
+- [x] Verify：確認草案對應已成功命令，git diff --check。
+- [x] 回報結果並停在實施授權邊界。
+
+### 決策與依據
+
+採用新的 DB-only Compose 檔 `tools/dev/compose.local-db.yml`，搭配有界防護入口 `tools/dev/local-db.py` 與 README 操作說明（本次僅規劃，尚未建立）。固定專案名 `smartlearning-local-db`、服務 `db`、新容器名 `smartlearning-local-db`。不改根 docker-compose.yml、不修復/刪除原容器、不重建 missing secret bind、不新建 DB/role，也不將 test dataset 改稱 development。
+
+依據：根 docker-compose.yml 使用另一個 Compose-managed volume、5433、production 配置，且 backend 依賴 migrate；直接 up 有 migration 風險。2026-10-14 最終 runtime 已成功使用既有 PG16 image、既有 volume、OS postgres user 直接啟動 postgres，毋須初始化密碼環境或 secret bind。docker-postgresql-setup.md 已註明歷史範例非權威。tools/dev/env-doctor.sh 只證明 metadata，不能作為實施或 SQL 驗收。
+
+### Dependencies & Environment / 資源固定值
+
+- Docker context `default`；engine `8820f44b-5227-4afe-8eff-245fcc9e8a31`。
+- 原容器 ID `b0068d3ee1f6fc6b2fe3fa64a9789d523782b5cd77e24f5336e2ca51f9333d8a` 必須保持停止；不可和新服務同時掛載寫入。
+- image `sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54`；pull_policy: never。
+- external volume `sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata`，必須已存在；禁止缺失時建立空 volume 替代。
+- 本機 publish `127.0.0.1:5432:5432`；data destination `/var/lib/postgresql/data`。
+- 保留既有 `.env.test` 與受限 role 配對、0600/ignored；DB 服務不載入任何 env_file、不需取得/保存管理員密碼。app 才透過明確隔離的環境載入該設定，禁止列印內容。
+- 沿用測試目標 smartlearning_test；不提供 development/production parity 承諾。Docker daemon/桌面 VM 需由使用者環境保持運作；restart policy 不能啟動已關閉的 daemon。
+
+### Compose 設計草案（非本次執行指令）
+
+```yaml
+name: smartlearning-local-db
+services:
+  db:
+    image: sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
+    pull_policy: never
+    container_name: smartlearning-local-db
+    restart: unless-stopped
+    user: postgres
+    entrypoint: [postgres]
+    command: ['-D', '/var/lib/postgresql/data']
+    ports: ['127.0.0.1:5432:5432']
+    volumes:
+      - type: volume
+        source: retained_pgdata
+        target: /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-h', '127.0.0.1', '-p', '5432']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+volumes:
+  retained_pgdata:
+    external: true
+    name: sl-w3-w3-env-20261005T143441Z-e5560ea0-pgdata
+```
+
+`pg_isready` 只驗證 server accepting connections；需另以受限 role TCP READ ONLY transaction 驗證實際 DB/role。direct entrypoint 刻意只支援已存在且已初始化的資料，禁止 initdb/entrypoint 初始化。
+
+### 下一個實施 Checkpoint：有界步驟與停止條件（尚未授權）
+
+1. 建立上述三個 repo 檔案/說明，不更動現有 env、schema 或 package。入口使用 Python stdlib subprocess 參數陣列、指定 context、每次查詢 timeout、診斷分類不印 raw errors。提供 `review/status/up/stop/start/restart` 子命令，review 為預設；不能用原臨時 runtime wrapper 代替管理入口。
+2. 入口對每次 mutation 驗證 context/engine、固定 image/volume、原容器停止、外部 volume 存在、無其他 running consumer、container ownership labels/name/完整 ID、port 無衝突。既有同名但非本專案容器即停止。重啟現有服務時允許唯一經核實 owned consumer；不自動刪除任何衝突。存在檔案/資源漂移即安全停止，輸出下一步，不另開 metadata-only Checkpoint。
+3. Compose 靜態解析只針對獨立檔案，不合併根 Compose；驗證輸出不含 env。先做 container-free guard/mock 測試與 syntax checks，然後經授權執行 `up -d --no-deps --pull never db`。禁止 build/migrate/seed/db-backed Jest。
+4. 啟動後有界等待健康，以既有 app credential 在記憶體中建立 TCP 連線；READ ONLY 驗證 DB/role、schema/migration 對照與表計數基線，不記錄個資/資料列。失敗即停止 owned 新服務，保留 volume、原容器與 role/config。
+5. App 尚未啟動時，記錄表計數/既有識別資料摘要後受控 restart 新 DB，再以 READ ONLY 比對 DB identity/schema/counts，確認既有資料仍在。只做此單次重啟，不停止 Docker daemon，也不 crash/kill PG。確認 restart policy、健康與連續三次 SQL probe（間隔 5 秒），此證據僅涵蓋受控重啟與短時穩定，不聲稱已驗證主機重開機。
+6. 最短路徑進行 compiled runtime 整合驗收：使用記錄中的 retained snapshot（先確認存在與相關 source hashes；不讀 dist），以隔離 `.env.test` / NODE_ENV=test / Redis off / memory rate limit 啟動 `npm run start:prod`，受限 SQL probe 成功後解析 `/health/live` HTTP 200、status=ok、checks={}。liveness 本身不證明 DB，須保留獨立 SQL 驗收。若 snapshot 缺失或漂移，先回報明確差異及所需 build，不重新查整段歷史。
+7. 停止本次 owned app process group；成功時 DB **留存運作**並記錄容器完整 ID、health/restart/port/volume 證據。原容器保持停止；停止/重啟日後皆透過同一防護入口。README 命令預定為 `python3 tools/dev/local-db.py status|stop|start|restart`；手動 stop 後 unless-stopped 不會自行恢復，需 start。不提供自動 down -v 或資料清理功能。
+
+### Risk & Rollback / 待授權範圍
+
+風險 high：既有資料 volume 掛載寫入、PG WAL/recovery、長期服務及 runtime 背景更新/刪除。規劃本身僅文件變更。
+下一次授權須明確包含：建立上述 repo 管理檔案、新持續容器/Compose network、掛載既有資料並啟停/受控重啟、受限 READ ONLY SQL，以及一次 test compiled startup 的既有背景資料更新/清理（沿用已知 runtime 行為，但不是沿用已耗盡的一次性授權）。成功後留 DB 運行、停止 app。排除 role/password/auth 變更、migration/seed、資料手動刪除、原容器修復、production 操作。
+
+回復：固定 context/engine 並核實本次 owned ID 後，先將新容器 restart policy 設為 no，再 stop；如要撤銷部署，僅 rm 該已停止新容器（不帶 -v），必要時只移除本次空且 owned 的 Compose network。保留 external volume、原容器、role 與 .env.test；不啟動原容器。這只撤回服務，不撤銷 PG recovery/WAL 或 app 已完成的資料修改。若需要資料時間點回復，需另行驗證備份及授權 restore，禁止自動覆寫現有 volume。已記錄歷史 backup 不作本次 fresh backup 保證；若使用者不接受 startup writes，先停在 DB/SQL 驗收，不啟動 app。
+
+監測/停止條件：daemon/engine 漂移、port 衝突、第二個資料 consumer、restart loop、health timeout、SQL 身分不符、前後 schema/counts 不符或 runtime HTTP 不符立即停止本次 owned app/DB、保留脫敏錯誤類別與步驟。禁止自動 reset/rotate/recreate 資料來「修復」。restart: unless-stopped 無法保護兩個管理者同時啟動原/新容器，README 必須警示單一資料 writer；舊容器不納入任何自動啟動流程。
+
+### Results / Verification
+
+本次僅附加此方案至 tasks/todo.md；未執行 Docker/SQL/runtime、未讀秘密設定、未修改任何服務或資料。已核對 Compose 草案對應成功 driver 的 image/user/entrypoint/volume/loopback publish；唯一長期行為差異是 restart policy 與保留容器。靜態讀取證明根 Compose 含 migrate，故不採用它。未執行 tests/build：本次沒有程式碼變更，DB tests 含未授權 migration。git diff --check 通過（exit 0）。
+
+Disposition：規劃 Checkpoint 完成，實施尚未授權。可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Persistent local database implementation — authorized Checkpoint
+Authorization: user explicitly approves the recorded implementation, including PostgreSQL and application background writes.
+Acceptance: guarded persistent DB management, restart/SQL continuity, compiled liveness acceptance; leave DB running and stop owned app on success.
+- [x] Implement independent Compose, guarded manager and documentation.
+- [x] Run container-free regression and syntax/diff checks: 9 tests passed.
+- [x] Deploy pinned resources; SQL identity/schema/count/restart verification (2026-10-15 resumed run passed).
+- [x] Verify rebuilt compiled runtime and record final resource state (2026-10-15 final acceptance passed).
+Risk & Rollback: high; exact engine/image/external volume only. No migration/seed/password changes. Disable restart and stop only verified owned container on failure; never remove volume or start original. Startup writes are durable.
+Dependencies & Environment: Docker default engine pinned to prior plan; .env.test remains private. Initial Docker query failed permission; escalated retry found missing daemon socket. Retained /tmp/smartlearning-start-prod-verify-isod6v4z is absent; no rebuild/install authorized by this implementation plan. Finish safe file work before reporting live blockers.
+
+### Implementation results / live verification blocked
+Files: tools/dev/compose.local-db.yml, tools/dev/local-db.py, tools/dev/local-db.test.py, tools/dev/README.md. Manager supports offline review plus status/up/stop/start/restart; pinned file digest, engine/image/volume/original-state/owned labels/execution/mount/port/network/consumer guards, bounded operations and health checks, sanitized diagnostics. stop disables restart; start restores unless-stopped. No automatic deletion. Concurrent external Docker operators remain unsupported; ownership-ambiguous up timeout reports manual exact-ID review rather than stopping an unproven resource.
+Verification: python3 -B tools/dev/local-db.test.py → 9 passed; AST parse of both Python files passed; offline review passed; git diff --check passed. Tests never load env/contact Docker/run Jest. Effective Compose config validation requires Docker Compose and remains NOT RUN.
+Live evidence: escalated docker --context default info --format '{{.ID}}' returned missing unix /var/run/docker.sock (exit 1), not an engine match. Escalated python3 -B tools/dev/local-db.py status failed safely before resource mutations. Retained /tmp/smartlearning-start-prod-verify-isod6v4z is absent (directory-existence check only). No containers/networks were created, no DB/app started, no SQL/migrations/seeds/build/install run, no secrets read/changed. Existing container/volume state cannot be verified while daemon unavailable; do not claim DB running or cleanup success.
+Remaining: make the originally reviewed Docker engine available (start existing Rancher Desktop/Docker service; do not create a new engine). Re-run manager preflight and offline Compose rendering before up. Missing snapshot requires restore of the known retained build or separately authorized isolated npm ci/Prisma generate/build with source-hash verification. Then perform recorded SQL/migration/schema/count baseline, controlled restart and three probes, compiled liveness acceptance, stop owned app and leave verified DB running. Existing deployment/data-write authorization persists; do not ask again for the same scope.
+Disposition: file implementation and offline verification complete; persistent service/runtime acceptance incomplete due to concrete environment blockers. No further metadata-only checkpoint needed. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-15 Rancher Desktop resumed — authorized continuation
+User confirms Rancher Desktop started. Same deployment/write authorization continues. Engine verified exactly 8820f44b-5227-4afe-8eff-245fcc9e8a31; original container exited; retained image/volume preflight passed. Fixed optional Health map lookup after live non-healthchecked original inspect exposed template incompatibility; 10 offline tests now pass.
+Deployment: python3 -B tools/dev/local-db.py up succeeded; owned ID d053acc4d005b7484ca06dfe5b2d73a7908265e8c9edb580638c99eb26601c4d, healthy. Compose rendering and single-service validation passed as part of up. Added reusable read-only tools/dev/local-db-verify.cjs with bounded connection/statement timeouts and sanitized output. First SQL passed: expected DB/user/port/read-only and least-privilege role flags, 20 exact finished migration/checksum matches, 21 mapped application tables, 197 scalar fields present, no RLS on these tables, aggregate counts collected as digest only. No credentials or rows output.
+Retained old /tmp snapshot remains absent. Asked once for separate isolated npm ci/generate/build authorization while proceeding with already-authorized restart/SQL continuity checks.
+
+Continuity verification complete: fresh READ ONLY baseline → guarded restart of same full ID → three SQL probes five seconds apart all produced identical identity/schema/migrations/counts digests. SQL baseline counts digest 6f95a27d229b86221ec33307f974e2ef5d2d03afda564642c53a4d70dceab54d. Final manager status: same owned ID, running, healthy, restart unless-stopped; manager preflight revalidated exact mount, loopback port, original exited, no other running retained-volume consumer and pinned engine. DB intentionally left running after successful DB acceptance. No app process was launched; no SQL mutations/migrations/seed/role changes or env edits occurred. PostgreSQL startup/restart writes were authorized. Runtime acceptance remains pending solely on missing compiled snapshot and separate isolated rebuild authorization, asked through async question.
+Checks: 10 container-free Python tests pass; node --check tools/dev/local-db-verify.cjs passes; live SQL helper exits 0; restart/probe orchestrator exits 0; git diff --check passes. This validates controlled restart/short-term stability, not host reboot or production parity. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-15 Authorized isolated rebuild and final runtime acceptance
+User explicitly authorizes isolated npm ci, Prisma generate, build and final runtime verification. Earlier no-rebuild restriction superseded for this isolated copy only. Existing startup/background-write authorization persists.
+- [x] Create source-hashed isolated snapshot without secrets/generated/dependencies.
+- [x] npm ci; generate/normalize Prisma; build; verify entry existence and source freshness.
+- [x] Guarded DB metadata + READ ONLY SQL preflight; isolated test/no-Redis compiled start and parsed liveness.
+- [x] Stop owned app group; verify DB remains healthy; record results.
+Risk & rollback: existing high-risk startup scope; no migration/seed/role/config changes. On runtime failure stop owned app and guarded DB per implementation plan; never delete data. Dependencies/build outputs retained only in isolated /tmp directory. Logs private and bounded/sanitized in chat.
+
+Isolated snapshot created: /tmp/smartlearning-start-prod-verify-xaqfbvzm; 398 selected tracked working source/config/schema/test/script files copied, excluding .env/generated/node_modules/dist/artifacts. Manifest receipt /tmp/smartlearning-current-build.json contains only source paths/hashes, no credentials. Initial npm ci failed sandbox esbuild spawnSync EPERM; escalated same npm ci --no-audit --no-fund succeeded, 937 packages. Existing deprecation/allow-scripts notices retained as dependency follow-ups; no package upgrade or extra script approval. Prisma generate succeeded (7.9.1), dummy unreachable build-only URL and NODE_ENV=test, dotenv loaded 0 values. Normalization succeeded, 0 changes. Workspace dependency/env/schema files untouched.
+
+### Final results — persistent DB and compiled runtime acceptance COMPLETE
+- npm run build (nest build) exited 0 in /tmp/smartlearning-start-prod-verify-xaqfbvzm. All 398 source/config/script/schema/test manifest hashes match both workspace and snapshot after build and immediately before launch. dist/src/main.js exists; dist/main.js absent; no compiled contents read, no env files in snapshot.
+- node --check /tmp/smartlearning-persistent-runtime-20261015.cjs passed. Executed that driver with authorized Docker/socket access; exit 0 and explicit PREFLIGHT_PASS, COMPILED_RUNTIME_PASS, SQL_POSTCHECK_PASS and APP_CLEANUP_PASS markers. It never prints child logs or credentials; only bounded in-memory output was retained and discarded.
+- Guarded engine/resource/original-state/volume-exclusivity checks and READ ONLY SQL preflight passed. The intended database/user/port, restricted role flags, exact 20 migration checksums, mapped schema and table counts were checked independently of liveness. Isolated child config loaded approved .env.test in memory, NODE_ENV=test, REALTIME_REDIS_MODE=off, LOGIN_RATE_LIMIT_MODE=memory; no inherited unrelated app config, Redis URLs, optional retention or failpoint activation. .env.test was not copied/edited.
+- Actual npm run start:prod executed compiled entry; HTTP GET http://127.0.0.1:3001/health/live returned 200 with parsed status=ok and checks={}. No /health/ready or business endpoints called. Existing startup background writes were authorized; no migration, seed, auth/role/config edits or manual data deletion performed.
+- Owned app process group stopped and independently verified absent; port 3001 refused connection. Same DB ID d053acc4d005b7484ca06dfe5b2d73a7908265e8c9edb580638c99eb26601c4d remains running/healthy/restart unless-stopped. Final guarded metadata revalidated pinned engine/image/loopback port/exact volume/original exited/no second volume consumer. Post-startup SQL identity/schema/migrations/counts digests unchanged.
+- Earlier same-service controlled restart plus three SQL probes established restart continuity. This completion proves scoped test DB persistence and compiled liveness at execution time, not host reboot, /health/ready, production or development parity. Build uses local Node v26.5.1; production Node 24 parity not established.
+- Validation summary: 10 container-free safety tests passed in preceding code verification; npm ci/generate/normalize/build passed; node syntax checks passed; live SQL/restart/runtime/owned-app cleanup passed; git diff --check passed. DB-backed Jest was intentionally not run because its implicit migrate deploy is excluded. No commit/staging/push or dependency upgrades performed.
+Operations: python3 tools/dev/local-db.py status|stop|start|restart; node tools/dev/local-db-verify.cjs for read-only SQL evidence. See tools/dev/README.md for guard/rollback details. Leave verified DB running on success as authorized. Retain isolated snapshot, manifest and driver for review; /tmp retention is not guaranteed across restart. Rollback stops exact owned DB with restart disabled and preserves volume/original/credentials; it does not undo durable writes.
+Disposition: entire authorized implementation and runtime acceptance complete. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-15 Next-checkpoint authorization — scope clarification pending
+- [x] Recover handoff and named final acceptance results; original persistent test DB + compiled runtime objective is complete.
+- [ ] Define the next user-requested observable outcome before implementation.
+Working notes: generic next-checkpoint authorization received, but handoff defines no further implementation checkpoint. Ask one concrete scope question; do not replay runtime driver or create metadata-only work. No Docker/SQL/runtime/test/migration action performed this turn. Historical acceptance is not a live status claim.
+Results: confirmed recorded completion and preserved existing working changes; new scope pending.
+
+### 2026-10-15 Checkpoint — actual /health/ready acceptance
+Goal authorized by user: compiled runtime GET /health/ready returns HTTP 200, status=ok, db healthy, Redis off healthy, memory login rate limiter healthy, valid timestamp; stop owned app and retain healthy DB.
+- [x] Inspect readiness source, controller and existing guarded runtime driver.
+- [x] Run single bounded freshness/resource/READ ONLY SQL preflight and compiled readiness acceptance.
+- [x] Verify owned-app cleanup and DB postcheck; record evidence.
+Risk & rollback: startup background jobs may write existing test data within requested runtime scope; no migration/seed/deletion/role/env changes. Stop owned app on any outcome, retain DB; stopping cannot undo durable writes. Use existing isolated build only; stop on stale/missing snapshot. No DB-backed Jest setup.
+
+Results — readiness PASS: node --check /tmp/smartlearning-readiness-runtime-20261015.cjs passed. Initial sandbox run blocked on Docker access; separate bounded diagnosis proved zero source/snapshot mismatches and existing compiled entry. Escalated same readiness driver exited 0. All 398 hashes matched; guarded resource and READ ONLY SQL preflight passed. Actual npm run start:prod -> GET /health/ready HTTP 200 at 2026-10-15T08:03:55.592Z, status=ok, db healthy (1 ms), Redis healthy/mode off/adapter local, loginRateLimit healthy/mode memory; timestamp valid, internal httpStatus absent. Owned app group stopped and port 3001 closed. Same DB remains running/healthy/restart unless-stopped; SQL identity/schema/migration digests matched and counts unchanged. No migration/seed/env/role changes or DB-backed Jest. Scope is test configuration readiness; Redis-required, failure-path, production parity and business flows were not exercised. No source code changes required. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+### 2026-10-15 Disaster-recovery guide gap assessment
+- [x] Read guide core requirements (chapters 3–8), persistent DB manager/SQL verifier/Compose, historical C backup/restore results and latest compiled readiness acceptance.
+- [x] Compare implementation and executed evidence; distinguish missing evidence from proven absence.
+Acceptance: provide prioritized gaps without lifecycle/data operations.
+Results: strong exact-engine/image/volume/single-writer guards, external named volume, loopback binding, controlled restart continuity and compiled live/ready acceptance. Historical 2026-10-13 external Windows D backup and isolated SQL restore verified (hashes, ACLs, schema, constraints, extensions and content); not a fresh backup guarantee. No reviewed evidence of daily scheduled backup/failure alerts/retention, newer verified backup of current active dataset, off-host copy, Rancher snapshot exercise, host/WSL reboot recovery, measured RPO/RTO, or compiled app using the restored DB. SQL helper lacks explicit current_schema()/pg_is_in_recovery() assertions; package test/integration/e2e entrypoints do not invoke local DB preflight. Formal dev DB authority remains outside completed test DB scope. Recommended priority: current-source external backup + isolated restore and app readiness against restored DB, then scheduling/alerts/retention and host restart/RPO/RTO drill. No Docker/SQL/backup/restore/tests or Windows scheduler inspection performed for assessment; external backup current existence/freshness and machine-level schedules remain unverified. Assessment complete; implementation requires separately defined next checkpoint. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Full recovery acceptance — authorized Checkpoint
+Authorization: current user explicitly authorizes the next checkpoint defined in /tmp/smartlearning-full-recovery-handoff-20261015.md; includes new backup, isolated restore and restored-target startup/background writes.
+Acceptance: fresh external Windows backup with verified ACL/SHA256, same-snapshot source/restored structure/constraints/indexes/extensions/table hashes/counts/sequences, compiled /health/ready HTTP 200 with db healthy, Redis off and limiter memory; timings and owned cleanup proven.
+- [x] Recover authoritative context and verify source identity on pinned engine.
+- [x] Prepare bounded executor and container-free safety verification: 5 regression cases passed; Python/Node syntax checks and git diff --check passed.
+- [x] Execute backup -> fresh-volume restore -> SQL comparison -> compiled readiness.
+- [x] Verify cleanup/source retained and record results.
+Scope: run sl-full-recovery-20261015-01; source exact d053acc4d005b7484ca06dfe5b2d73a7908265e8c9edb580638c99eb26601c4d, pinned image/engine from local-db.py; Windows D:\Backups\SmartLearning\sl-full-recovery-20261015-01 (no overwrite/fallback); fresh volume sl-full-recovery-20261015-01-data, container sl-full-recovery-20261015-01-pg, dedicated bridge sl-full-recovery-20261015-01-net, 127.0.0.1:55433 -> 5432; app 3001.
+Risk & rollback: medium, sensitive backup and isolated runtime writes. Restore role definitions/ACLs from password-free globals only into new cluster, never modify source roles/passwords. Temporary restore host trust limited to app role/database and dedicated bridge gateway; no passwords copied into dumps. Stop exact owned app and restore container on all outcomes; retain dump/volume/container/network, source remains running. No migration/db push/seed/Jest/deletion/production/old-volume writes. Never delete or overwrite retained resources.
+Dependencies & environment: existing Node build snapshot/398 hashes, .env.test read only in memory, Docker default/pinned engine/image, mounted Windows D drive, Windows ACL APIs. Snapshot exporter bounds consistent source SQL/dump; sequence changes during capture fail comparison rather than misreport consistency. One bounded preflight then actual data operations.
+Working notes: historical C inventory reused through a new target/snapshot adapter, never replay historical lifecycle. Runtime preflight independently checks restored cluster_name, database, role and published target before starting compiled app. Data comparison precedes startup jobs. Sandbox Docker permission granted separately for status only; new executor requires its own approval.
+
+### Full recovery results — PASS
+- Fresh external backup: D:\Backups\SmartLearning\sl-full-recovery-20261015-01 (WSL /mnt/d/...); mount identity, free space, current Windows owner, protected ACL inheritance and current-user/SYSTEM/Administrators-only file ACLs verified. globals.sql excludes role passwords. Custom dumps postgres.dump/smartlearning_test.dump parse successfully; original dump/globals/source-manifest SHA256 unchanged through restore; final sha256.json covers dumps/TOCs and both manifests. No backup data stored in repo or /tmp.
+- Shared exported REPEATABLE READ snapshot per database supplied to source inventory and pg_dump. Restored postgres and smartlearning_test schema/object definitions, constraints/indexes/columns/ACLs, extensions, sorted JSON row hashes and counts match; 22 tables in smartlearning_test, 0 in postgres; 0 sequences and no large objects. Database ownership/encoding/collation/ACL/connection limits match. Source/restore system identifiers differ; restore cluster_name sl-full-recovery-20261015-01 and current_schema public/pg_is_in_recovery false proven independently.
+- Compiled runtime: 398 workspace/snapshot hashes current; actual npm run start:prod against 127.0.0.1:55433 only. At 2026-10-15T08:21:34.202Z GET /health/ready HTTP 200, parsed status ok, db healthy (1 ms), Redis healthy/off, limiter healthy/memory, valid timestamp. Read-only app-role SQL independently proved restore cluster/schema/DB/role, restricted role flags and all 20 migration checksums before app start. Post-startup identity/schema/migrations/counts unchanged. .env.test only read into memory and DB URL replaced in isolated child env.
+- Timings: backup 6.236 s; restore + equality comparison 13.752 s; app start to readiness 1.036 s. Accumulated command execution 82.061 s; wall elapsed from scope start through cleanup 365.697 s (includes diagnosed failures/retries; timestamp start precision 1 s). These are measured drill timings, not a defined RPO/RTO guarantee.
+- Recovery evidence: first attempt stopped before import at overstrict empty-postgres TOC check; second safely exited on one-shot init restart. Both retained. A fresh direct-postgres continuation container then restored the same owned new volume without overlapping writers. Host SQL preflight diagnosed Rancher forwarding SQLSTATE 28000; restore-only HBA now permits observed 192.168.143.2/32 solely for smartlearning_test/smartlearning, plus original dedicated gateway rule. Published address remains loopback. No source role/password/HBA changes.
+- Final cleanup PASS: owned npm/app group absent and port 3001 refused; original restore-init container 2df58874d676a785eb7f61ddd7e4296f206396cdc9f6f4daad155f69a8114c6c and continuation d16ab4d2b4bb3a94f9c4eab8d31697310fabba79c734e33ab415371086be46fb both stopped/restart no. Volume sl-full-recovery-20261015-01-data and dedicated network retained; no deletes. Source exact d053acc4... running/healthy/unless-stopped, original historical container remains exited; source volume single writer guard passed.
+- Verification: 7 container-free Python regressions, Python/Node syntax, git diff --check; real pg_dump/pg_restore/SQL/data comparison/runtime/cleanup passed. No DB-backed Jest, migration, db push, seed, production access, staging/commit/push. Independent agent read-only correctness/security review found no remaining material blocker. Saved verifier source is byte-identical to executed /tmp SQL helper; runtime now references retained repository copy.
+- Evidence: artifacts/local-env/sl-full-recovery-20261015-01/{scope,backup,restore,runtime,result,verification-assets}.json and retained attempt records. Sensitive detailed manifests/TOCs remain only in external protected backup. Full checkpoint complete. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Post-recovery guide gap assessment
+Goal: compare latest completed recovery acceptance with the named Windows/WSL2/Rancher/PostgreSQL guide; assessment only, no environment/data operations.
+- [x] Read guide sections 3, 4.3–4.5, 7.2/7.3/7.6, 8.1–8.3 and latest authoritative acceptance artifacts.
+- [x] Check source verification helper, package test entrypoints and scoped tooling filenames.
+- [x] Rank remaining gaps and record evidence limits.
+Results: current-data external backup, isolated full SQL/data comparison and restored compiled /health/ready are now proven (2026-10-15 drill), closing the previous assessment's main recovery-evidence gap. Pinned engine/image/named-volume/single-writer and controlled restart safeguards already exist. Main remaining P0: recurring backup production, failure/freshness alerts, retention/space policy and an independently stored off-host/off-disk copy; these have no reviewed operational evidence, not proof they do not exist. Current single-run executor is explicitly non-replayable; backup files are written directly under final dump names rather than .partial + validated publication, so durable reusable daily backup tooling is still required. P1: unified SQL preflight before DB-mutating tests/workloads (package test entrypoints lack local-db gate; source SQL helper lacks explicit current_schema/pg_is_in_recovery checks); periodic restore acceptance and clean repeatability; Rancher/WSL maintenance/version/Snapshot rollback evidence and host/daemon reboot verification. RPO/RTO remain undefined: drill wall 365.697 s includes fixes/retries with already-running engine and prebuilt snapshot, not a cold disaster-recovery guarantee. Restored trust rule and test/Redis-off/memory configuration prove scoped test readiness, not regular development/production parity or full business behavior. No Windows scheduler/BitLocker/offsite inventory or live freshness/health check performed in this assessment.
+Verification: compared guide requirements with saved scope/backup/restore/runtime/result artifacts and source/package tooling; no Jest/build/Docker/SQL/migration or external writes. git diff --check passed. Assessment complete; suggested next bounded result: reusable fresh-ID external backup command with verified publication/status manifest, then daily scheduling + failure/staleness notifications and retention. Do not replay this run's consumed executor authorizations. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Daily backup next-checkpoint handoff
+- [x] Preserve user's four-stage objective: reusable validated-publication backup, daily schedule/failed-or-stale notification/retention, second failure-domain copy, periodic restore/host restart/Snapshot and RPO/RTO acceptance.
+- [x] Write and validate /tmp/smartlearning-daily-backup-handoff-20261015.md with authoritative artifact references, next planning deliverable, safety/authorization boundaries and explicit metadata-only drift warning.
+Results: handoff only; no new backup/SQL/Docker/scheduler/deletion/reboot/Snapshot or external message operation. Next session first produces a concrete local-DB/daily-backup plan and bounded executable acceptance scope; historical full-recovery run is complete and its one-shot authorizations must not be replayed. Handoff required sections and goal markers verified; git diff --check passed. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Sustainable local database and daily backup plan
+Scope: planning only, per /tmp/smartlearning-daily-backup-handoff-20261015.md.
+- [x] Recover retained-test DB and full-recovery evidence; distinguish measured recovery from RPO/RTO targets.
+- [x] Specify reusable validated publication, scheduling/failed-and-stale monitoring/retention, independent second copy and periodic restore/reboot/Snapshot.
+- [x] Define first implementation scope, acceptance, dependencies and rollback in tools/dev/daily-backup-plan.md.
+- [x] Verify plan coverage and whitespace; no runtime/DB-backed tests required for documentation.
+- [x] Human authorization for Checkpoint 1: user replied 是; execution/results recorded below.
+Acceptance: concrete four-stage proposal and executable first-stage contract; no implementation or external operations in planning phase.
+Risk & rollback: medium for future backup execution; planning changes are additive docs only. No DB mutations, scheduler installation, migration, deletion, reboot, Snapshot, upload or notifications authorized/executed here.
+Dependencies & environment: pinned engine/image/retained volume; Windows D mount and verified ACL; Python/Node/PG clients, private .env.test memory-only. Scheduler account/distro, encryption, second destination and external notification remain deployment prerequisites.
+Working notes: existing worktree preserved. Use one bounded preflight then actual acceptance; historical one-shot drivers remain consumed. Targets 24h data interval/26h escalation and 60min local/4h host RTO are proposals, not guarantees.
+Results: tools/dev/daily-backup-plan.md contains daily operation/cold-start path, publication/crash contract, explicit safe failure, scheduler/watchdog, retention safeguards, second-domain contract, monthly/quarterly drills and first implementation Checkpoint. Verification: document coverage assertions and git diff --check (recorded below). Stop at manual gate; 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Daily backup Checkpoint 1 — authorized implementation
+Authorization: user replied 是 to the complete Checkpoint 1 scope in daily-backup-plan.md.
+Acceptance: reusable runner and ACL helper; offline regression tests; one fresh external verified publication and one safe preflight failure leaving last-success unchanged. No restore/runtime, scheduler, deletion, migration or source configuration changes.
+- [x] Locate reviewed source manager, ACL APIs and pure inventory functions.
+- [x] Implement runner/publication/status and offline coverage.
+- [x] Execute offline checks and review safety: 18 container-free regressions; syntax/whitespace and focused subagent review.
+- [x] Execute bounded actual success and safe failure, record evidence.
+Risk & rollback: medium; source read-only dump load and sensitive external files. Stop owned subprocesses/transactions, retain restricted partials and existing published versions. Do not delete on failure.
+Dependencies: pinned local-db contract, Docker access, verified Windows D mount/ACL, Python and powershell.exe. Secrets/rows never emitted.
+
+### Daily backup Checkpoint 1 results — PASS
+- New files: tools/dev/daily-backup.py, daily-backup-dir.ps1, daily-backup.test.py; usage in tools/dev/README.md. Historical executors unchanged; only pure checkpoint-c SQL inventory is imported via a snapshot/socket adapter, never its lifecycle.
+- Live success: sl-daily-20261015T083555Z-418358a9, D:\Backups\SmartLearning\daily-v1\sl-daily-20261015T083555Z-418358a9, 19.802 s. ACL, archive/database parse, SHA256 readback, sensitive manifest and final non-overwriting publication passed; last-success updated. Source remains running; no restore volume or app started.
+- Safe failure: sl-daily-20261015T083702Z-7ec3ddb5, expected exit 1, published=false, sourceAccessed=false, lastSuccessUnchanged=true. No sensitive partial generated by this rejection.
+- Final live status: PASS, one generation, stale=false, backupVerified=true, restoreVerified=false, secondCopy=not-configured; re-read payload hashes and published Windows ACLs. Receipts in artifacts/local-env/<run-id>/{scope,result}.json.
+- Initial sandbox attempt sl-daily-20261015T083528Z-16565e6b failed at destination before source access; rerun used fresh ID after explicit sandbox escalation. No fallback or overwrite.
+- Verification: python3 -B tools/dev/daily-backup.test.py → 18 passed, Python AST parse and git diff --check passed. No DB-backed Jest/migration/build run; documentation/runner work uses its own container-free tests. Focused review findings (TOC DB mapping, interrupted snapshot cleanup, published ACL) fixed and covered.
+- Limits: no new restore proof, scheduler, second copy, notification, deletion, host reboot or Snapshot. Retention remains blocked/dry-run with no candidates. Rename publication exercised normally; crash/power-loss scenarios are simulated, not a host power-cut test. Source app credential unchanged and not read by backup runner; socket admin is existing reviewed backup access.
+- Next gate: Checkpoint 2 requires concrete scheduler account/distro/timezone definition and notification destination; second-copy destination and RPO/RTO policy still require user decisions before deployment. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Guide gap reassessment after daily backup Checkpoint 1
+Scope: evidence-based assessment only against docs/Windows 11 + WSL2 + Rancher Desktop + PostgreSQL 的 Docker 環境防災與復原實戰指南.md. No current health/freshness claim.
+- [x] Read guide requirements for external backup, Volume safety, settings, Snapshot, restore, test gate, daily maintenance and RPO/RTO.
+- [x] Compare current README/runner, package test entries, source SQL helper and saved live receipts.
+- [x] Rank remaining implementation/operational evidence gaps and record results.
+Acceptance: distinguish implemented-and-tested, proposed-only and unknown external configuration; preserve four-stage objective.
+Results:
+- Guide 3.1/4.3: reusable external backup now implemented, verified publication, ACL/hash/parse/database mapping, safe rejection and 18 offline tests. 19.802s successful run; sourceAccessed=false/lastSuccessUnchanged=true rejection. Previous reusable-command gap is closed for supported retained test scope.
+- Guide 3.2: pinned named external volume/image/engine, owned service and competing-writer guards exist. Check-based source manager is not an exclusive lock against arbitrary Docker clients; no production/dev DB provisioning guarantee.
+- Guide 3.1/4.5/8.1: daily scheduling, missing-run/failure/stale notifications and long-term success history are not implemented by the delivered runner. status detects age only when invoked. Actual Windows task inventory not reviewed; do not assert no tasks exist anywhere. P0 next delivery: scheduler/watchdog, failure/staleness tests and at least seven days evidence.
+- Guide 4.5/8.1: 30-day/8-week/12-month retention and minimum generations remain proposals. retention --dry-run currently returns BLOCKED with an empty candidate list; no functioning policy selector or authorized deletion. Need real selection dry-run, disk-pressure alert and second-copy/last-good safeguards; preserve historical backups.
+- Guide 3.1/4.3: D drive is outside Rancher virtual disk; separate physical/off-host copy and disk encryption have not been established. Actual encryption/offsite inventory is unknown, not proven absent. Need selected real destination, credential/key recovery, encryption, copy/hash receipts and failure handling.
+- Guide 4.4/8.1: historical full recovery proved fresh-volume SQL equality and restored compiled readiness. New daily generation has backupVerified=true, restoreVerified=false; it needs its own fresh-volume restore-to-readiness acceptance and recurring schedule. Full-recovery scripts remain consumed one-shot artifacts.
+- Guide 3.3/5.4/8.1: Snapshot creation/recovery and host/daemon cold-start drills have design only, no reviewed end-to-end evidence. Durable build/secrets/runtime startup cannot depend on old /tmp artifacts. Snapshot operations require affected-service scope and rollback before authorization.
+- Guide 3.5/7.2/7.6: backup runner checks schema/public and primary identity; local-db-verify.cjs still lacks current_schema()/pg_is_in_recovery() assertions, and ordinary package test/integration/e2e entries do not force the retained-DB gate. Separate migration/data-write authorization remains mandatory.
+- Guide 3.4/5.1-5.3: engine/image/context/volume pinning implemented; Windows scheduler account, exact WSL startup/distro contract and recurring WSL/Rancher maintenance/version evidence remain unverified.
+- Guide 8.3: 24h data interval/26h escalation and 60min local/4h whole-host recovery are proposed targets only. Historical 365.697s drill wall elapsed and 19.802s daily backup do not establish cold RTO or continuously achieved RPO.
+Priority: (1) scheduler/watchdog + retention selection/space alerts, (2) independent verified second copy, (3) daily-generation restore/runtime and recurring drills, (4) separately authorized host/Snapshot drills; integrate mandatory workload identity gate before any DB-mutating tests. No further metadata-only discovery checkpoint is needed to re-prove historical recovery.
+Verification: guide section comparison; inspected package test entrypoints/source SQL symbols; parsed two saved run result receipts. No Docker/SQL/PowerShell/current status, DB-backed Jest, migration, deletion, scheduler, upload, notification, reboot or Snapshot executed. git diff --check passed.
+可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Checkpoint 2 handoff
+- [x] Preserve ongoing four-stage local-DB/daily-backup goal and explicit metadata-only drift warning.
+- [x] Write /tmp/smartlearning-checkpoint2-handoff-20261015.md, referencing plan, latest guide gap assessment and completed Checkpoint 1 receipts rather than duplicating specs.
+- [x] Include next concrete launcher/watchdog/retention-selection deliverables, staged runtime path, pending destination/account/channel decisions and authorization boundaries.
+Results: handoff only; no new backup, SQL, scheduler, notification, upload, deletion, reboot or Snapshot. Handoff required-section checks and git diff --check passed. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Daily backup Checkpoint 2 — authorized implementation
+- [x] Read handoff and existing backup/publication contract; user authorized next checkpoint.
+- [x] Implement pinned Windows launcher and independent native watchdog.
+- [x] Implement owned-generation retention selection dry-run with blocked deletion.
+- [x] Verify fake-clock/failure/recovery regressions and bounded Windows execution.
+- [ ] Deploy only after proposed settings are adopted; record seven-day observation pending.
+Acceptance: real exit codes, finite retry/overlap protection, independent stale/failed/missed/recovery states, exact owned retention inventory; no deletes or DB mutations.
+Risk & rollback: medium/high scheduler persistence; disable only exact new tasks; preserve backup generations and source service. No migrations/Jest/restore/restart/upload.
+Environment: WSL Ubuntu/user; repo /home/user/projects/smartLearning/smartLearning-backend; Windows identity/timezone verification in progress.
+Working notes: initial broad heading query truncated; switched to bounded excerpts. Seven-day evidence cannot pass on deployment day. Settings question pending; independent implementation proceeds.
+
+### Checkpoint 2 results — implementation/manual acceptance PASS; deployment PENDING
+- Windows account/SID, Taipei timezone, Ubuntu/user uid1000, fixed repo and Rancher Docker/Python/PowerShell paths verified. Proposed time/retention/local-state notification adoption question remains unanswered; no tasks registered.
+- Added native launcher/watchdog, clean-environment scheduled wrapper, genuine owned-manifest retention policy selection and container-free regressions. Native state/installed script location is restricted C:\Users\USER\AppData\Local\SmartLearningDailyBackup-v1 so D or WSL failure does not prevent state notification.
+- Successful native launcher backups: sl-daily-20261015T085341Z-af019f97 and subsequent fresh runs recorded in artifacts/local-env/sl-scheduler-20261015-v1/result.json. Safe preflight failures preserve last-success, sourceAccessed=false, exit1. Final C-state actual failure→success yields recovered execution-failed; repeated watchdog check leaves notification unchanged. Second-copy-unverified correctly remains active and watchdog exit1. No external messages.
+- Verification: 18 existing backup tests, 6 retention tests, 14 native fake-clock/parser/durable-notification checks; Python AST and git diff --check PASS. Native missing-backup-path fixture never unmounts D; tests retain isolated Windows TEMP state. Actual DB-unavailable failure was not induced; noninteractive Docker CLI absence failed source-preflight safely before fixed PATH acceptance. No DB-backed Jest/migrate/db push, source writes, deletes, service shutdowns/restart or upload.
+- Real retention dry-run inventories three then-published generations with exact paths/files/hashes, status BLOCKED and empty deletion candidates; receipt captures that point in time, before later generations. Always blocks pending independently verified second copy, daily restore baseline and latest-attempt safety authority.
+- Focused subagent review found pre-ACL reparse checks, corrupt-state handling and mixed future snapshot validation gaps; fixed. Partial-install risk addressed by registering/exporting both tasks disabled, enabling watchdog before backup; partial-deploy recovery documented. Task registration, native local-script execution policy, principal/settings readback, scheduling/retries/catch-up and seven-day operational observation remain unverified until deployment.
+- Manual execution policy refusal on unsigned UNC tests handled with explicitly approved process-only Bypass; no machine policy change. Native Security/Get-FileHash module issues avoided through .NET APIs. Lessons recorded.
+- Rollback: disable only SmartLearning-DailyBackup-v1 / SmartLearning-DailyWatchdog-v1; preserve all state/backup/source assets. Local files are machine-readable notification only; no toast/external delivery; interactive tasks require login and cannot promise startup/logged-out/off-host coverage.
+Next: receive settings adoption response, deploy/review exact tasks and observe seven scheduled days. Checkpoint 2 is not fully complete; no authorization for Checkpoint 3 assumed. 可以開啟新 Session 接續本 Checkpoint 的部署與觀察；完成後再繼續下一個 Checkpoint。
+
+Final additional verification: native New-ScheduledTaskSettingsSet/Principal/Trigger objects constructed without registration: Enabled=false, StartWhenAvailable=true, WakeToRun=false, RestartCount=2/PT15M, ExecutionTimeLimit=PT20M, hourly PT1H, daily 12:00Z=20:00 Taipei, interactive principal. git diff --check and retention6 passed after disabled-first deployment change.
+
+## 2026-10-15 Guide gap assessment after Checkpoint 2 manual acceptance
+- [x] Compare guide sections 3, 4.4–4.5, 5.1–5.4, 7.6 and 8.1–8.3 with current implementation and saved acceptance receipts.
+- [x] Confirm retained-volume/image contract, SQL helper and package test entrypoints; distinguish manual tests from deployment/operations.
+- [x] Rank remaining gaps and state evidence limitations.
+Acceptance: evidence-backed gap matrix; assessment only, no scheduling/DB/environment changes.
+Results: reusable backup/publication and Windows launcher/native watchdog/manual failure→recovery/dedup are implemented and accepted; retention now has a genuine owned-generation selector, unlike previous metadata-only BLOCKED output. Checkpoint 2 remains undeployed pending settings adoption; scheduled retries/catch-up, local installed-script policy/readback and seven scheduled days are not accepted. Current notifications are machine-readable local files only. C native state avoids dependence on D/WSL, but interactive task design does not provide logged-out/host-off monitoring or unattended boot acceptance.
+Remaining P0: daily scheduler/watchdog operational deployment and visible delivery decision; second independently verified failure-domain copy with encryption/key recovery; version-specific Snapshot creation/restore/rollback acceptance before major changes. D is outside Rancher disk, not proven separate physical disk/host. Retention deletion remains safely blocked on second-copy/restore/latest-attempt authority; policy proposal is not a guide-mandated 30d/8w/12m requirement. Disk-space preflight exists; periodic disk-pressure warning/weekly maintenance evidence incomplete.
+Remaining P1: restore a fresh daily-v1 generation and compiled app against a new isolated volume (historical full recovery already PASS, cannot transfer restoreVerified to new backups); recurring monthly drills, host/WSL/Rancher cold-start and durable build/secret readiness; explicit current_schema()/pg_is_in_recovery() assertions in local-db-verify.cjs plus mandatory workload entrypoint gate, with separate migration/fixture/cleanup authorization. Current scope retained smartlearning_test/Redis off/memory limiter, not ordinary dev DB or production parity.
+RPO/RTO: 24h/26h and local60min/host4h remain proposals; warm recovery wall365.697s is a measured historical drill, not cold RTO or sustained RPO proof.
+Verification: read local guide and targeted source/package sections; parsed saved scheduler/full-recovery evidence, confirming tasksRegisteredByThisCheckpoint=false, scheduledSevenDays=pending, latest captured daily restoreVerified=false and remaining second-copy-unverified alert. No live Windows task inventory, DB/engine health/freshness, BitLocker, physical storage or Snapshot inventory performed; absence of project evidence does not prove machine-wide absence. No tests/build/migration/external messages run for this assessment. git diff --check recorded below.
+Recommended sequence: finish existing Checkpoint2 deployment/monitoring (seven-day observation in parallel), designate and verify second copy, fresh daily restore/runtime and recurring drills, separately authorize cold-start/Snapshot exercises. Assessment complete. 可以開啟新 Session 繼續下一個 Checkpoint；實作接續時先完成尚未部署的 Checkpoint 2。
+
+## 2026-10-15 Checkpoint 2 deployment handoff
+- [x] Save bounded next-session handoff to /tmp/smartlearning-checkpoint2-deployment-handoff-20261015.md; reference authoritative implementation/results rather than replaying historical discovery.
+- [x] Preserve user sequence: finish CP2 deployment/notification decision/seven-day observation → independently verified second copy → fresh daily restore/runtime → separately authorized cold-start/Snapshot.
+- [x] Include explicit metadata-only deviation warning, pending settings/deployment evidence, no new execution authorization, safe operating boundaries and suggested skills.
+Verification: required-section assertions PASS; no scheduler/DB/backup/copy/notification/restart operations for handoff. 可以開啟新 Session 接續既有 Checkpoint 2 部署。
+
+## 2026-10-15 Checkpoint 2 deployment continuation
+- [x] Recover named handoff and authoritative Checkpoint 2 deployment contract.
+- [x] Confirm next scope is existing Checkpoint 2 deployment; user authorized continuation.
+- [x] Inspect concrete Install actions, exact task names, disabled-first registration/export and rollback.
+- [x] Run container-free regressions: backup 18/18; retention 6/6 PASS.
+- [ ] In progress: receive explicit adoption of pending schedule/local-file notification settings (async question submitted).
+- [ ] Perform bounded native preflight; register and read back exact tasks after settings adoption.
+- [ ] Verify installed local-script execution and scheduler-origin evidence; record seven scheduled days as pending.
+Acceptance: exact definitions/export/readback, actual scheduler execution linked to receipts, observation start evidence; seven-day success requires seven actual scheduled dates.
+Risk & rollback: persistent Windows scheduling, medium/high; disable only SmartLearning-DailyBackup-v1 and SmartLearning-DailyWatchdog-v1, retain all state/backups.
+Dependencies: pinned Windows identity/timezone, WSL Ubuntu, Rancher CLI, logged-in interactive user.
+Results: deployment prepared and offline regressions PASS; no Windows tasks registered or enabled by this continuation. Settings adoption remains a real unresolved decision per handoff, distinct from checkpoint continuation authorization. No DB-backed tests/migrations/deletes/restarts/uploads.
+
+### Checkpoint 2 deployment results — DEPLOYED; seven-day observation PENDING
+- [x] User explicitly adopted proposed schedule/retention/local-state notification and authorized deployment.
+- [x] Native preflight: correct SID/timezone, no exact-task or installed-script collision.
+- [x] Install copied hash-identical native script, registered/exported both disabled, enabled watchdog then backup.
+- [x] Readback verifies interactive limited principal, both enabled/Ready, fixed native actions, daily20:00/hourly+logon, StartWhenAvailable, IgnoreNew, no wake, backup2 retries/PT15M and PT20M limit.
+- [x] Installed native script runs under default process policy without Bypass. Installer alone used process-only Bypass; no machine policy changes.
+- [x] Enabled Operational log with UAC after ordinary access denied; confirmed enabled.
+- [x] Manual Start-ScheduledTask acceptance: backup result0/PASS and watchdog result1 with only second-copy-unverified. Captured exact-task event110 (manual trigger), action/start/completion events, immutable attempt and installed hash.
+- [x] Started observation baseline 2026-10-15T10:23:50Z (18:23:50 Taipei); next daily due 2026-10-15 20:00. Manual run counts as zero scheduled dates.
+- [ ] Seven actual scheduled successful dates; automatic trigger, catch-up and retry operational acceptance remain pending.
+Evidence: artifacts/local-env/sl-scheduler-deployment-20261015-v1/result.json and adjacent compact task readback, enabled XML, events and receipts. Verification: deterministic XML/CIM/hash/event/receipt assertions PASS; git diff --check below. Existing offline regressions in preceding continuation: backup18 + retention6 PASS. No DB-backed Jest or migration.
+Working notes: task defaults prohibit battery starts and stop on battery; retain and document this availability constraint. Windows exports contain UTF-16 declaration despite UTF-8 Set-Content bytes; repository evidence copies normalize declaration, original files retained, decode explicitly before import. XML omission of default Enabled/WakeToRun/RunLevel is normal; validate effective CIM values rather than requiring redundant XML nodes.
+Risk/rollback: disable only exact backup/watchdog task names; retain source services, state and all generations. Operational log was previously disabled; may disable with elevated wevtutil sl Microsoft-Windows-TaskScheduler/Operational /e:false if reverting monitoring configuration, preserving existing events.
+Results: persistent deployment and real manual scheduler execution PASS; seven-day observation OPEN, not complete. Second destination still unspecified, no second-copy upload/restore/restart/deletion performed. Next milestone requires a real independent destination and copy contract, then fresh daily isolated runtime recovery. 可以開啟新 Session 繼續下一個 Checkpoint；七天觀察可平行進行，不應延後第二份副本或 runtime 驗證。
+
+## 2026-10-15 Second independent copy and fresh daily runtime continuation
+Authorization: user requests the second-copy checkpoint with seven-day observation in parallel, followed by fresh daily isolated restore/runtime. Existing checkpoint gates remain; no new destination is inferred.
+Acceptance: real destination failure domain and access/encryption/recovery contract confirmed; copy an existing formal verified daily generation via partial, full readback hash, safe publication and independent receipt; controlled failure preserves source and prior copies. Seven scheduled successful dates require trigger events correlated with immutable receipts. Next runtime checkpoint uses fresh daily generation, isolated resources, data comparison before compiled readiness.
+- [x] Recover handoff, repository AGENTS, plan sections 3–6 and latest deployed scheduler result.
+- [ ] In progress: obtain actual independent destination and access/encryption method (one async question submitted; no secret values requested).
+- [ ] Implement destination-specific minimal copy and controlled failure validation; verify hashes, publication and independent receipt.
+- [ ] Verify copy success/failure and document results; stop at existing checkpoint boundary.
+- [ ] Continue seven-day scheduled-origin evidence collection alongside copy/runtime work; no seven-day wait inside agent turn.
+- [ ] After checkpoint authorization, fresh daily isolated restore, SQL/data comparison, compiled /health/ready and owned-resource cleanup.
+Risk & rollback: medium, sensitive copy destination writes; no upload until destination/access contract is specified and authorized. Never propagate deletions; preserve source, prior copies and partial evidence. Retention remains blocked. No migrations/db push/seed, DB-backed Jest, source changes, host restart or Snapshot operations.
+Dependencies & environment: deployed Windows exact tasks and restricted C state; formal D daily generations; destination credentials/keys must remain outside chat/git; pinned restore engine and persistent build/source-hash contract required later.
+Working notes: one read-only freshness peek through the current C mount parsed attempt.json status PASS/exitCode0; watchdog externalHeartbeat remains not-configured. This does not prove automatic trigger origin or add a scheduled success date; last authoritative accepted count remains zero. No copy, restore or task mutation performed. Real destination is the only current user-input dependency; do not invent a remote target or split preflights into more checkpoints.
+Results: continuation scope recovered; destination decision pending, second-copy and runtime acceptance remain incomplete. No tests run because no executable code changed; no DB setup invoked.
+
+### Fresh daily runtime goal correction and handoff — second copy CANCELLED
+User explicitly cancelled second copy. Destination/access question and second-copy implementation above are superseded; do not block fresh daily restore/runtime on a second destination. User requests next checkpoint handoff, not execution in this turn.
+- [x] Record authoritative goal: verify latest formal daily generation -> fresh isolated volume/network restore -> data/structure comparison -> compiled /health/ready HTTP200 -> stop owned processes.
+- [x] Create OS-temp handoff: /tmp/smartlearning-fresh-daily-runtime-handoff-20261015.md (actual temp root may follow TMPDIR).
+- [ ] Execute next runtime checkpoint after applicable human gate; seven-day observation runs in parallel.
+Results: handoff prepared; no copy/restore/runtime performed. Watchdog second-copy warning has not been reconfigured; retention remains blocked. Tripwire: repeated metadata work without removing runtime blockers is goal deviation; explicitly notify user and redirect. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Fresh daily isolated runtime — authorized
+Acceptance: newest formal daily hashes/ACL/source pass; independent cluster restores same-snapshot inventory and DB properties before app writers; compiled readiness HTTP200; owned app/container stopped, source running.
+- [x] Scope and authorization recovered; second copy cancelled.
+- [x] Minimal new executor, persistent build/source contract, latest generation validation.
+- [x] Fresh isolated restore and inventory/properties comparison, runtime readiness, cleanup.
+- [x] Offline regression and final evidence review.
+Risk & rollback: medium; restore-only writes in fresh labeled volume/network, stop owned processes on failure; retain all assets. No source writes, migrations, seeds, deletion, scheduler changes or DB-backed Jest.
+Environment: pinned local Docker engine/image, D Windows restricted backups, retained test DB, Redis off and memory limiter. Seven-day observation does not gate runtime.
+
+Results — PASS:
+- Run `sl-daily-runtime-20261015-01`; newest formal `sl-daily-20261015T102351Z-0a8e4f93`, 6 payload hashes and manifest stable, Windows ACL PASS, pinned source/engine/image/volume proven. No new dump or source mutations.
+- Snapshot smartlearning_test `2026-10-15T10:23:55.584206+00:00`; age 960.907s at validation. Consistency per database, not atomic cluster snapshot.
+- Restored 22 tables; same-snapshot row hashes/counts, structure/constraints/indexes/extensions/object ACL and database properties equal before app writers. Inventory explicitly requires zero sequences and zero large objects.
+- System identifiers differ: source 7693192948338032678, restore 7696842547779285008; expected cluster/database/role/schema/primary proven.
+- Persistent build: artifacts/local-env/sl-daily-runtime-20261015-01/build + build-receipt.json, 291 source hashes checked against root and build; fresh local compile exit0, no env files copied. Existing dependencies linked, no install. Runtime secrets read from mode0600 .env.test, endpoint override only in child environment; no secret output.
+- Parsed readiness HTTP200, status ok, db healthy, Redis off, limiter memory; timestamp `2026-10-15T10:40:20.359Z`. App process group stopped and 3001 closed; runtime read-only postcheck identity/schema/migrations/counts unchanged.
+- Restore container c84516909a3aa04bc05da7c4dd818f9256e1e7d06178adf46657dc0e1ee6516c stopped; source healthy/running; labeled volume/network retained. Backup unchanged. One-shot init container must not restart; driver rejects evidence collision.
+- Execution timings: restore+compare 13.776s; app readiness 1.547s; runtime including cleanup 3.018s; driver total including fresh build/validation/cleanup 29.723s. Excludes planning/review/permission wait; no cold RTO claim.
+- Verification: daily-runtime.test.py 2 tests; daily-backup.test.py 18 tests; full-recovery.test.py 7 tests; Python AST/Node syntax checks PASS. Focused independent correctness/isolation review no live blockers; timeout diagnostic receipt improved before execution. No DB-backed Jest/migrations/seed.
+- Seven-day observation: single C attempt peek PASS/exit0, no correlated automatic origin receipt; accepted count remains zero. Second-copy/watchdog/retention policies unchanged; second copy cancelled.
+Evidence: artifacts/local-env/sl-daily-runtime-20261015-01/{daily-integrity,build-receipt,restore,runtime,result,owned}.json. No stage/commit/push/deletion. This authorized daily restore/runtime checkpoint is complete; host cold restart/Snapshot and retention deletion remain outside scope. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Disaster recovery guide gap assessment — second copy excluded
+Acceptance: compare requested external guide with implementation and actual evidence; distinguish proven DB recovery from whole-environment recovery; cancelled second copy is not an outstanding task.
+- [x] Read requested guide and relevant local implementation/docs.
+- [x] Verify latest daily drill receipts and inspect test entry/preflight boundaries.
+- [x] Identify operational gaps and recommended order without changing runtime/scheduler/policies.
+Results: logical backup + fresh same-snapshot restore + compiled readiness proven; metadata guards and isolated lifecycle present. Remaining gaps: scheduled-origin seven-day acceptance; second-copy cancellation reflected in active watchdog/retention and old plan prerequisites (currently stale); mandatory DB-identity guard integration at mutating test/workload entry; whole-host/Rancher/WSL cold recovery; Snapshot create/restore acceptance; repeatable drill tool independent of one-shot run IDs/root dependencies; measurable RPO/RTO and ongoing maintenance. D disk encryption/physical failure domain not proven. Second independent copy is CANCELLED, not required scope. Its cancelled status does not establish protection against loss of the host/D disk.
+Verification: read-only artifact result PASS, restoreStopped true/sourceRetainedRunning true/cleanupFailures empty, runtime parsed readiness and cleanup markers; source inspection package.json/test/setup/db.ts/tools/dev/README.md. No new tests or environment operations: assessment only; no current live-health claim. No migration, scheduler/policy edit, Snapshot or reboot performed.
+
+## 2026-10-15 Policy cancellation next-checkpoint handoff
+- [x] Preserve user ordered goals and explicit goal-deviation reminder.
+- [x] Create OS-temp handoff with exact policy edit points, installed-watchdog deployment/rollback acceptance, seven-day provenance requirements and later test/cold-recovery boundaries.
+- [ ] Next session: obtain checkpoint execution authorization, then policy implementation/verification/deployment; observation in parallel.
+Results: handoff saved at /tmp/smartlearning-policy-cancelled-copy-next-checkpoint-20261015.md. Second copy cancelled, deletion separately authorized; latest daily runtime already passed and must not replay. No executable code, Windows installation, scheduler, DB or policy changes this turn. Verification: handoff required-section check and git diff --check. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Cancelled second-copy policy — authorized checkpoint
+Acceptance: healthy verified backup has no second-copy warning; explicit cancelled/not-required policy; other alerts retained; retention dry-run stays BLOCKED with no delete candidates. Installed exact watchdog updated with hash/ACL/action readback and retained rollback. One fresh scheduled-origin observation, no seven-day inference.
+- [x] Recover scope and authoritative policy/runtime/deployment evidence.
+- [x] Minimal policy/docs change and container-free/native regression.
+- [x] Verify exact installed hash/ACL/actions; preserve rollback, update and read back native watchdog.
+- [x] Collect bounded fresh scheduler-origin evidence and document results.
+Risk & rollback: medium, shared native launcher/watchdog script only; retain restricted original and atomic replacement; restore original only against expected new hash under same mutexes. No task registration/restart, backup dump/restore, DB mutation, retention deletion or host restart.
+Dependencies: Windows PowerShell interop, exact native installed tasks and restricted control directory; Python standard library tests.
+
+Results — cancelled-copy policy checkpoint COMPLETE:
+- Watchdog no longer raises second-copy-unverified solely for absent copy; explicit cancelled/required=false. Native recovery regression proves old warning recovered once without deleting history. Other failure/overdue/expired/missing mount/corrupt state tests pass.
+- Retention removes only cancelled-copy blocker, preserves restore-baseline/latest-attempt blockers, dryRun/BLOCKED, deleteCandidates=[] and effectiveDecision=keep-blocked. No receipt linkage or immutable manifest rewrite.
+- Installed original hash 5306e48c30e1f347827f7c31f940fb21e05d0948920da2f2e97920ca16286763 matched baseline; new hash 01d2caf1945e8ac4c0108b4ae3f18e9b30addf8f9f89718528e48a38b68f3447 read back with safe ACL and unchanged task definitions. Both mutexes held for atomic replacement; restricted original retained. Rollback procedure in tools/dev/README.md.
+- Final real installed Watch under no execution-policy override exit0; active=[], cancelled/required=false; recovered=[second-copy-unverified]. Explicit Default probe was rejected; actual task invocation passed, no system policy change.
+- Fresh observation 2026-10-15T10:49:59Z: only event110 manual-origin chain (5 events), three immutable attempts, no automatic trigger. Accepted scheduled dates remain zero; first daily due20:00 Taipei. No seven-day wait or runtime replay.
+- Verification: daily-backup.test.py 18/18, daily-retention.test.py 7/7; native daily-scheduler.test.ps1 PASS including policy recovery/dedup, failure/age/missing mount/corrupt state. No DB-backed Jest/migrations/seed/deletes/restarts/task reinstallation.
+Evidence: artifacts/local-env/sl-policy-cancelled-20261015-v1/{deployment,health-normal-policy,observation}.json; failed Default probe retained as health.json. Repo policy/docs synchronized. Next separately authorized checkpoint: identity guards at mutating test entry points, then cold/Snapshot recovery. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Handoff — test mutation entry identity guards
+- [x] User requested handoff focused on actual migration/truncate entry guards and explicit goal-drift reminder.
+- [x] Read handoff skill; bounded read-only inspection of test/setup/db.ts, test scripts/config and guard candidates; no implementation/test/DB execution.
+- [x] Saved OS-temp handoff: /tmp/smartlearning-test-mutation-guards-next-checkpoint-20261015.md
+Next checkpoint requires authorization; target is concrete fail-closed mutation guards with isolated regression, not repeated metadata intake. Existing cancelled-copy deployment and daily runtime PASS remain authoritative. DB-backed migrate/truncate requires separate concrete authorization. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Test mutation identity guards — authorized checkpoint
+
+Acceptance: migrate/truncate require test environment, explicit operation authorization and pinned expected identity; offline rejection paths perform zero mutations. No live DB actions authorized.
+- [x] Locate helper callers and existing identity SQL.
+- [x] Implement minimal guards and awaited callers.
+- [x] Verify with isolated mocks, typecheck and lint.
+- [x] Record limitations and results; stop at human boundary.
+
+Risk & Rollback: high, test mutation entry points. Revert only this checkpoint code; no schema/role/service changes. Never disable guards to run tests.
+Dependencies: existing pg, Jest/ts-jest, Prisma interactive transactions. Expected contract must be independently reviewed and SHA-256 pinned, never learned from the current connection.
+
+### Results
+- Added test/setup/mutation-guard.ts: independently SHA-256-pinned contract, launch-time operation authorization and test environment, strict cluster/system/database/role/schema/primary checks. Env-file import cannot supply launch authorization in shared integration/e2e configs (guard preloaded in setupFiles). No live contract automatically generated/adopted.
+- test/setup/db.ts: async pg precheck before migrate, pinned child DATABASE_URL, redacted failures and deadlines; truncate verifies identity and executes on same Prisma interactive transaction. Public table identifiers safely quoted. 39 suite callers now await setup (static check covers 40 files including offline test).
+- Offline-only config test/jest-mutation-guards.json loads mocks, no DB setup or globalSetup. 21 tests PASS: each identity dimension, malformed rows, unavailable/timeout/permission errors, development, missing authorization/contract, hash/endpoint mismatch, dotenv escalation, operation separation, positive migrate and truncate spies. Rejected paths assert zero mutation calls.
+- Verification: npx jest --config test/jest-mutation-guards.json --runInBand → 21/21 PASS; npm run typecheck → PASS; targeted eslint → PASS; targeted prettier --check → PASS; npm run build → PASS; git diff --check → PASS. No integration/e2e execution, migrations, truncate, seed, services or runtime replay. Logs: /tmp/sl-mutation-{tests,typecheck,lint,build,format-check}.log.
+- Initial offline test fixture had generic transaction type and Jest table-shape compile errors; corrected fixture typing, then repaired resetModules mock references. Final verification passes. No claim of an executed old-code fail-first baseline.
+- Scope/limits and exact offline commands: test/setup/MUTATION-GUARDS.md. Direct writes/app background writers, external CP5/6/7 verifiers and load-harness cleanup are outside shared helper guard coverage. Existing setup catches may skip suites; skipped suites do not establish runtime success.
+- Live follow-up NOT executed/authorized: independently review/pin isolated target contract from provisioning evidence, confirm existing app role can read system identifier without privilege expansion, define retained backup and mutation scope, then seek explicit migrate/truncate + relevant startup mutation authorization. Fail closed if identity unavailable.
+- Remaining migration race: separate CLI connection can see a replaced endpoint after precheck; requires stable isolated lifecycle control. Truncate CASCADE requires a dedicated database. No claim of universal SQL firewall or complete live readiness.
+- Checkpoint implementation/offline scope complete; stopped at human boundary. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Guide gap assessment — second copy cancelled
+
+Goal: compare the user-specified Windows/WSL/Rancher/PostgreSQL disaster recovery guide with repository evidence, excluding cancelled second copy from acceptance. Read-only assessment; no live operational verification requested.
+- [x] Read guide sections 3, 4.4/4.5, 7.2/7.6, 8.1–8.3 and local implementation/evidence summaries.
+- [x] Parse full-recovery and daily-runtime result.json: both status PASS.
+- [x] Compare latest mutation guard implementation and its offline evidence, distinguish from older README future-checkpoint wording.
+- [x] Report remaining gaps and priorities.
+
+Results / working notes:
+- Proven: external-to-Rancher D-drive logical backup; guarded volume lifecycle and metadata doctor; full isolated restore and formal-daily-generation restore + compiled app readiness PASS. Daily result reports 13.776s restore/compare, 1.547s readiness, 29.723s driver (not cold RTO). Scope retained smartlearning_test, not proof of smartlearning_dev recovery.
+- Scheduled backup/watchdog deployed, but latest recorded observation only supports zero accepted automatic scheduled dates. No fresh scheduler query performed for this assessment; current accumulated dates unknown. Seven-day operation acceptance remains unproven in reviewed evidence, not necessarily zero executions now. Logged-out/boot unattended operation not accepted.
+- Watchdog durable C-drive local files exist; active external delivery/heartbeat absent. Host-off alerting not covered. Independent backup copy CANCELLED/not-required, not an acceptance gap; whole-host/D-drive failure coverage not claimed.
+- Retention policy dry-run exists, all deletion remains blocked because daily restore-baseline/latest-attempt receipts are not linked to exact generation/manifest digest. Cancellation of second copy is not this blocker.
+- Guard code/offline checkpoint complete (21 mock cases/typecheck/lint/build/format PASS as recorded); no live contract published and no real migrate/truncate verification. Existing role ability to read pg_control_system unverified; external manual/load cleanup/direct writes/background writers not universally covered; separate CLI identity race remains.
+- Host/WSL/Rancher cold recovery, Snapshot create/restore drill, complete environment rebuild and end-to-end measured RTO remain unproven. RPO/RTO proposals are not accepted guarantees.
+- Readme historical references still say test guards are future work; latest authority is test/setup/MUTATION-GUARDS.md plus previous checkpoint task results. No broad documentation rewrite performed during assessment.
+- Recommended order: close guard live-target/least-privilege and concrete isolated verification gap; collect scheduled-origin observations in parallel; then separately scope cold/Snapshot drill; connect receipt-based retention safety before enabling any deletion. No new execution authorized by this assessment.
+Verification: local document/source review and structured PASS-field reads only; no DB-backed Jest, migrations, truncate, lifecycle changes or scheduler operations. Can open a new Session for the next authorized Checkpoint.
+
+## 2026-10-15 Isolated test runtime — handoff only
+- [x] Created and checked /tmp/smartlearning-isolated-test-runtime-next-checkpoint-20261015.md using handoff skill.
+- Preserves user priority: trusted contract + least-privilege identity proof → specifically authorized isolated migrate/truncate/runtime verification; warn explicitly if repeated metadata stops advancing this goal.
+- Seven-day scheduled-origin evidence runs in parallel (latest historical zero is not a fresh observation); second copy cancelled; cold/Snapshot and receipt-linked retention deletion separately gated.
+- Handoff only, no new live execution authorization, migrations, truncate, DB-backed tests, lifecycle changes or deletion. Can open new Session for next checkpoint.
+
+## 2026-10-15 Isolated test runtime preparation — authorized checkpoint
+
+Acceptance: preserve launcher endpoint; reproducible expected contract from retained restore receipts, never candidate SQL; prepare exact lifecycle/role/mutation acceptance before requesting live authorization.
+- [x] Read named authority and verify retained target is stopped (Docker read-only inspect).
+- [x] Fix dotenv endpoint overwrite with fail-first offline regression.
+- [x] Prepare private contract generator, gated continuation/read-only audit executor and bounded mutation execution plan.
+- [x] Run offline tests/typecheck/lint and record results, unresolved live predicates and final authorization scope.
+
+Risk & Rollback: high for future live mutations; this checkpoint changes files only. Revert only these changes; keep all backups/resources. No migration/truncate/app startup, role grants, source changes, Snapshot or retention deletion authorized.
+Dependencies: existing Node/pg/Jest; stopped retained daily volume; actual app-role capabilities require an authorized direct-postgres continuation, never restart the consumed init command.
+Working notes: historical restore identity and owned resource receipt are expected inputs. Docker inspect confirms owned container ID matches receipt and exited; it proves no SQL capability. Seven-day scheduler evidence not refreshed; second copy cancelled.
+
+### Results — isolated test runtime preparation
+- Fixed test/setup/db.ts dotenv override=false: explicit reviewed isolated URL survives .env.test. Behavioral regression uses actual dotenv.populate; restored old behavior exits 1, fixed guard suite 22/22 PASS. First fixture iteration required stable dotenv mock across resetModules and removal of unsupported populate quiet option; final test exercises behavior, not config shape.
+- tools/dev/prepare-test-contract.cjs pins exact historical restore/owned/result bytes, rejects source/unsafe URLs, emits a private /tmp contract and digest without SQL/credentials output. Prepared summary: /tmp/sl-test-contract-preparation.json. Expected role is the existing private provisioning credential identity; historical evidence does NOT attest current effective grants. No signed provisioning attestation claimed.
+- tools/dev/test-role-audit.cjs: bounded READ ONLY identity/capability query; actual system read only if EXECUTE is available. Checks restricted role flags, schema CREATE, all migration-ledger DML rights, and all target-table TRUNCATE rights. Not proof that arbitrary pending migration DDL will succeed. No privilege escalation.
+- tools/dev/test-entry-role-check.py: explicit run-ID authorization gate, engine/image/original-ID/ownership/mount/network/port checks; creates direct-postgres continuation, runs read-only audit, stops only owned new container and retains resources/receipt. No migration/truncate/grants/app startup. Python offline ownership guards 4/4 PASS. This executor has NOT run live.
+- tools/dev/isolated-test-entry-plan.md: exact live lifecycle, source exclusion, backup retention, failure-stop policy, subsequent migration/truncate/app scope and least-privilege scalar-wrapper proposal (not applied). Future fail-hard mutation suite/driver still must be implemented before mutation approval.
+- Verification: npx jest --config test/jest-mutation-guards.json --runInBand 22 PASS; node tools/dev/prepare-test-contract.test.cjs 9 PASS; python3 -B tools/dev/test-entry-role-check.test.py 4 PASS; npm run typecheck PASS; targeted TS eslint PASS; CJS eslint PASS with no-require-imports disabled only on CLI (existing CJS format); Prettier selected source check PASS; Python compile and Node syntax PASS; git diff --check PASS. Logs /tmp/sl-isolated-*.log. No build repeated: no production application source changed. No DB-backed Jest executed.
+- Live blocker is concrete: retained target is exited; actual-role SQL requires a new direct-postgres start, which existing handoff excludes. Therefore next approval is narrowly scoped to implemented continuation + read-only audit, including isolated PostgreSQL startup writes, without migration/truncate/app/grants. This is a necessary lifecycle boundary, not another metadata intake. If insufficient privileges, report actual missing capability and propose isolated minimum permissions; never promote app role or touch source.
+- This checkpoint completes offline preparation, NOT actual role readiness or runtime acceptance. Seven-day scheduling unrefreshed; cancelled second copy stays excluded. Cold/Snapshot/retention delete unchanged. Stopped at human checkpoint boundary; 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Isolated continuation and read-only role audit — authorized checkpoint
+
+Acceptance: user explicitly approved creating/starting/stopping the single continuation and isolated PostgreSQL startup writes; verify actual role capabilities with read-only SQL; retain source/backups/resources. No migration/truncate/grant/app startup.
+- [x] Verify prepared contract hash/private mode and read executor.
+- [x] Execute gated one-shot continuation/read-only audit.
+- [x] Verify stopped target/source operational state; record capability evidence and next decision.
+Risk & Rollback: isolated volume startup writes only; stop owned continuation, retain volume/backups. Do not start original consumed init entrypoint.
+Dependencies: pinned Docker engine/image, retained dedicated volume/network, private reviewed contract. Any ownership/identity/capability failure stops work without granting privileges.
+
+### Results — actual isolated role audit
+- User explicitly approved previous exact lifecycle/read-only request with 是. Executed gated tools/dev/test-entry-role-check.py once on sl-test-entry-20261015-01.
+- Actual SQL read-only result: BLOCKED_CAPABILITIES, exit 2 (expected safe refusal, not runtime success). restricted=true, login=true, system_read=true, identitySystemVerified=true; schema_create=false, truncate=false, migration_ledger=false. The latter means not all SELECT/INSERT/UPDATE/DELETE permissions on _prisma_migrations; it does not assert each permission individually absent.
+- Independent expected cluster/system/database/role/schema/primary matched actual app-role connection. pg_control_system scalar access succeeds with existing role; no security-definer wrapper/system grant is needed for this target. No migration/truncate/grant/app startup performed.
+- Receipt: artifacts/local-env/sl-test-entry-20261015-01/result.json. PostgreSQL startup writes were limited to approved retained isolated volume. New continuation stopped and retained; no running consumers of isolated volume.
+- Independent postcheck: artifacts/local-env/sl-test-entry-20261015-01/postcheck.json: source running/healthy, original and continuation exited, localhost:55433 closed. This proves operational state, not a before/after full-source data comparison; no source SQL/mutation command was invoked. Backups, old receipts and volume retained; no deletion.
+- Verification: python3 -B tools/dev/test-entry-role-check.test.py 4/4 PASS; real audit exit 2 with structured missing capabilities; postcheck assertions PASS; git diff --check PASS. No DB-backed Jest or implicit migration tests.
+- Next concrete work: prepare a test-only migration/truncate execution-role policy confined to the disposable isolated cluster, with explicit minimal privileges and rollback; do not expand the real application role or substitute admin credentials. Keep app runtime using its restricted role. Then implement fail-hard mutation/runtime acceptance suite and review exact DDL/grant/migrate/truncate authorization. Current lifecycle approval does not include those actions. Avoid another system-ID intake: system-read blocker is resolved.
+- Authorized checkpoint complete; stopped at human boundary. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Isolated execution role and fail-hard runtime — authorized preparation
+Acceptance: separate executor/app contracts, isolated-only ownership/grants, executable shared-helper and readiness acceptance, offline positive/negative checks; no live mutation until precise approval.
+- [x] Recover scope and inspect guards, migrations, app factory.
+- [x] Implement role policy/provisioning and bounded launcher/suite.
+- [x] Verify offline tests, typecheck/lint, syntax and diff.
+- [x] Record exact live scope, rollback and remaining limitations.
+Risk & rollback: high for future live; preparation writes files only. Future isolated owner transfers and truncate destroy restored test contents; preserve formal backup and stop owned container, never repair source or delete evidence.
+Dependencies: existing pinned Docker lifecycle, private app contract, generated Prisma client, local Node/Python; no dependency install.
+Working notes: use separate Jest processes for executor and app, so captured guard inputs and dotenv never switch in a loaded module. Existing app role receives no grants.
+
+### Results — execution-role preparation complete, live NOT run
+- Implemented tools/dev/isolated-role-policy.cjs and isolated-live.cjs; isolated-test-runtime.py owns fresh one-shot sl-test-runtime-20261015-02 continuation lifecycle. No consumed driver replay.
+- Dedicated restricted executor owns only restored public tables; existing admin is provisioning-only via local socket. No app grants, membership or source changes. Compares original app table/schema effective privileges. Exact-peer executor SCRAM HBA additions restored on exit; stop/port/source-operational postchecks; soft-signal and detached process-group cleanup. Private original-owner rollback SQL retained before DDL.
+- Separate preloaded Jest processes/configs: missing-authorization and wrong-system negative cases, actual shared setupTestDb/truncateAll with nonempty sentinels and all-table emptiness/ledger assertions, then original restricted-app factory initialization and HTTP200/db-healthy receipt. Zero skip/todo and exactly one passing test per process required. No loaded-module URL switching or guard weakening.
+- Reviewed 20 migration SQL files and actual system_setting DDL. Live preflight requires all applied names/checksums match local SQL; no pending migration application is authorized by this preparation. Actual migration CLI success on up-to-date ledger remains unproven, as do real truncate and this new suite's readiness.
+- tools/dev/isolated-execution-role-plan.md contains exact future live scope, command, role privileges, rollback, background-write scope, backup retention and limitations. Existing single-role guard docs now reference it.
+- Offline private app contract rebuilt from independently pinned receipts; summary /tmp/sl-test-runtime-contract-preparation.json. Contract /tmp/sl-test-contract-fA6OrY/contract.json, SHA256 73553bad1d3a185ff19d4e3f40d0dc5b413d74744088880eb0d7abb51143c408. Contains credentials: never print/commit. Executor private contract will be generated only during authorized provisioning.
+- Verification: guard Jest 22/22; role-policy Node 7/7; launcher Node 2/2; lifecycle/HBA/signal Python 7/7 = 38 offline tests PASS. npm run typecheck PASS; targeted TS/CJS eslint PASS (no-require-imports disabled only for existing CJS style); selected Prettier PASS; Python AST/Node syntax and git diff --check PASS. Logs /tmp/sl-role-{typecheck,guards,eslint,cjslint,prettier}.log. No build repeated because production source unchanged.
+- Independent focused review identified default SIGTERM bypass; fixed controlled soft-signal unwinding/repeat masking and added regression. SIGKILL/host loss still requires owned-resource manual recovery. Other limitations: migration precheck/CLI race, CASCADE requires exclusive disposable DB, rollback restores role ownership/grants but cannot undo deleted restored data.
+- No Docker/live service starts, SQL, DDL/grants, migration, truncate, DB-backed Jest, seed/db push, source mutation, backup deletion, stage/commit/push performed. Next approval must explicitly cover the whole exact live scope in plan; current next-checkpoint authorization was preparation only.
+- Preparation checkpoint complete; stop at human boundary. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Isolated executor live acceptance — authorized
+User replied 是 to the full precise live scope in isolated-execution-role-plan.md.
+- [x] Verify prepared plan/driver and private contract digest.
+- [x] Execute the one-shot sl-test-runtime-20261015-02 lifecycle and acceptance.
+- [x] Verify receipts, stopped resources, original HBA restoration and source operational health.
+- [x] Record results/limitations and stop at checkpoint boundary.
+Risk/rollback: isolated test DB ownership and destructive truncate only; retain formal backup, original-owner rollback SQL and all evidence. Stop owned worker/container, restore isolated HBA. No source SQL/role/HBA changes, replay, seed/db push, retention or Snapshot.
+
+### Results — live shared-helper and restricted-app acceptance PASS
+- User explicitly authorized entire precise scope with 是. Initial sandbox invocation failed on Docker socket before evidence/resource creation; normal OS escalation ran the authorized one-shot command once. No replay.
+- Run sl-test-runtime-20261015-02, new owned container fa55ddd73e97302ff430f388a0eefbb09dd2c45e866eee3375f4e303ca46a6dc. Retained exact isolated volume/network, image/engine/identity pins passed; bounded executor provisioning completed via local admin socket. Runtime/Jest never used admin credentials.
+- Four live Jest processes each passed exactly one test, zero pending/todo: missing authorization (3636ms), wrong expected system (2424ms), real shared setupTestDb/migrate-deploy + truncateAll/all-table-empty/ledger-preserved (4483ms), original restricted app init/readiness (6057ms). Negative cases preserved nonempty sentinel counts. Durations are Jest suite execution times, not total recovery RTO.
+- Migration ledger names/checksums matched all 20 local migration files. Real migrate deploy succeeded with nothing pending; this does not prove application of new migration DDL. Real truncate succeeded on disposable public test tables with CASCADE/RESTART IDENTITY; both sentinels and all eligible table rows removed, ledger preserved.
+- Actual readiness receipt: HTTP200, status ok, dbHealthy=true, roleRestricted=true. Before/after effective app table/schema privilege snapshots byte-equal; no app grants or admin substitution.
+- Driver result PASS/acceptanceExitCode0; app/workers stopped; original isolated HBA restored/reloaded; owned continuation exited, no running isolated-volume consumers, loopback 55433 closed; source running/healthy; cleanupErrors empty. Source observation is operational only, not full before/after data hashing. No source SQL/mutation commands invoked.
+- Verified private evidence directory mode0700 and files private; receipt verification PASS. Evidence artifacts/local-env/sl-test-runtime-20261015-02/{result,verified-summary,readiness,negative-authorization-pass,negative-identity-pass,executor-pass,app-pass,app-permissions-before,app-permissions-after}.json. Private original HBA, rollback-roles.sql and executor contract reference retained; do not print raw Jest reports/credentials.
+- Executor role/ownership and mutated test contents remain only on the stopped disposable restore. No automatic rollback or cleanup deletion; restoring original content requires a new isolated restore from retained formal backup. Existing run/container is consumed and must not be replayed.
+- Verification: actual fail-hard live suites 4/4 PASS + structured receipt/privacy/post-stop assertions PASS + git diff --check PASS. Prior preparation offline 38/38/typecheck/lint/format remains valid; no source code changed this execution checkpoint. No seed/db push, source role/HBA changes, backup deletion, retention, scheduler, Snapshot, stage/commit/push.
+- Authorized checkpoint complete. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Cold recovery preparation — handoff only
+- [x] Used handoff skill to create /tmp/smartlearning-cold-recovery-preparation-next-checkpoint-20261015.md outside workspace, private mode0600.
+- Scope: environment/downtime/rollback, PostgreSQL/config/secrets/app recovery order, data/readiness/end-to-end RTO criteria, concrete tools/offline checks then one precise live approval. Metadata-only repetition without reducing runtime blockers must be explicitly called goal deviation.
+- References latest completed isolated executor live PASS; consumed run not replayable, second copy cancelled, scheduler evidence parallel and retention deletion still blocked.
+- Handoff only: no new service/DB/host/Snapshot actions authorized or executed. Verified document structure and git diff --check; no tests needed for documentation-only handoff. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Isolated cold rebuild preparation — authorized
+Acceptance: deliver a fresh isolated restore + independent dependency install/generate/build + restricted-app readiness launcher, fail-hard offline regression, explicit recovery/RTO contract and one precise live scope. No live lifecycle in preparation.
+- [x] Locate authoritative recovery/runtime patterns and establish isolated scope.
+- [x] Implement one-shot launcher, runtime acceptance and bounded owned stop.
+- [x] Verify positive/negative offline cases and syntax; review scope.
+- [x] Document results and present single live authorization at checkpoint boundary.
+Risk & rollback: medium; future run writes only fresh labeled isolated volume. Stop only owned app process group/container, retain volumes/network/backups/evidence. No source stop/write, host/WSL/Rancher restart, migration, truncate, Snapshot or deletion.
+Dependencies & Environment: existing Windows/WSL Ubuntu/Rancher engine and pinned PG image; D backup mount + PowerShell ACL; Node/npm/Python; npm registry/cache for independent npm ci. Engine/OS recovery excluded and disclosed. .env.test mode0600 is an explicit independently recoverable secret prerequisite, never copied into build/logs.
+Working Notes: historical runs consumed. Reuse pure audited helpers, never historical main. Second copy cancelled. RTO starts before backup validation and new workspace/dependency install; service-ready measured before cleanup. DB consistency proven before app writers; existing initialization writes only after acceptance barrier.
+
+### Results — preparation complete, live pending
+- Delivered tools/dev/cold-rebuild-plan.md: isolated DB/app rebuild on existing Windows/WSL/Rancher engine; exact fresh run/resources, source exclusion, recovery order, config/secret prerequisites, acceptance/timings and one precise live scope. Whole-host restart and external secret-store recovery explicitly unverified.
+- Delivered cold-rebuild.py and cold-rebuild-{config,credentials,runtime,sql}.cjs. New independent npm install/cache, Prisma generation and build; loopback-only workspace app patch recorded with dual hashes. No root node_modules/generated/dist or /tmp contract reuse. SQL/forwarded peer use fresh dependencies. Restricted-role SCRAM password recovery via private stdin, negative authentication and actual-password SQL; no new app grants.
+- Same-snapshot comparison and independent DB identity before app/background writers; ledger/schema/role/readiness/liveness/unauthenticated-session smoke fail hard. Service-ready timestamp excludes shutdown; cleanup/total recorded separately. Owned process sessions/partial-create reconciliation, 25-minute deadline, sanitized receipts, retained resources and closed-port checks.
+- Offline verification: cold-rebuild.test.py 11/11; cold-rebuild-config.test.cjs 19/19; cold-rebuild-runtime.test.cjs 3/3; cold-rebuild-credentials.test.cjs 3/3 (36 total, zero skip). Existing daily-backup18/full-recovery7/local-db10 regressions35/35. Python AST and four Node syntax checks PASS; git diff --check PASS. Node tests run directly so individual cases, not only file counts, are reported. No production TS changed; no DB-backed Jest/typecheck/build executed in preparation.
+- Independent review found and resolved root dependency fallback, ambiguous Docker-create cleanup, npm descendant cleanup and DB URL query override. Regression checks reject query host/port redirection/protocol/fragment; lessons recorded. SQL credentials/actual npm binary availability are live acceptance, not proven by mocks.
+- No Docker/DB/SQL/network install, service stop/start, migration/truncate/seed, Snapshot, retention, scheduler, stage/commit/push or deletion occurred. Existing dirty work retained. This preparation authorization is consumed; live still requires explicit approval of cold-rebuild-plan.md.
+- Repository AGENTS.md requires stopping at this Checkpoint and waiting for human authorization. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Isolated cold rebuild live — authorized
+User replied 是 to the precise cold-rebuild-plan.md live scope.
+- [x] Confirm scope, unused run and exact engine; read-only sandbox probe required Docker socket escalation, no run evidence created.
+- [x] Execute one-shot sl-cold-rebuild-20261015-01; consumed, BLOCKED at install.
+- [x] Verify sanitized receipts, absence of owned DB/app, closed ports and source health; record result.
+Risk/rollback: isolated-only fresh resources and SCRAM password/data writes, normal restricted-app background writes after snapshot comparison. Stop owned app/PG, retain all evidence/volume/network/backups. No source mutation/stop, migration, truncate, Snapshot or deletion. No replay after failure.
+
+### Results — live BLOCKED, no recovery RTO accepted
+- Ran the authorized driver exactly once after Docker-socket escalation. Newest formal generation sl-daily-20261015T120001Z-23f944d6 passed six payload/hash/source checks and Windows ACL verification. No older-generation fallback.
+- Failed in persistent-build/install after total3.910940872s. No isolated container/volume/network creation, PostgreSQL restore, credential changes or application startup occurred. This elapsed failure time is NOT service-ready RTO.
+- Root cause reproduced without install: npm rejects identical user/global config paths with double-loading config "/dev/null". Fixed future launcher setup to two distinct empty mode0600 config files. Regression now asserts distinct paths/empty/private files; cold-rebuild.test.py11/11 PASS. Actual sanitized npm --version with distinct files PASS (11.17.0); no install retried.
+- Driver cleanupFailures=[] and sourceRetainedRunning=true; separate escalated read-only source postcheck confirmed exact original identity/running/healthy. Separate loopback checks confirmed ECONNREFUSED for3001/55433. Socket checks initially failed under sandbox, then normal escalation completed verification; no live driver replay.
+- Evidence retained under artifacts/local-env/sl-cold-rebuild-20261015-01/{intake,daily-integrity,result,verified-summary}.json, partial independent build and private cache. Summary is mode0600. Source data before/after hashes are not claimed. git diff --check PASS.
+- Plan marked CONSUMED. Next checkpoint must prepare a fresh unique run/resource identity and precise authorization; never reuse this evidence/build/cache or replay this run. No migration/truncate/seed, Snapshot, deletion, source stop/write, stage/commit/push occurred.
+- Authorized single-attempt checkpoint concluded with failure preserved and minimal fix verified offline. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Cold rebuild install failure prevention — authorized
+Acceptance: deterministic root-cause reproduction without install/DB; real npm check using launcher-generated configuration; fail before install on invalid configuration; per-stage sanitized receipts even on failure.
+- [x] Review failed result and identify mocked subprocess verification gap.
+- [x] Share config construction with real no-install preflight and add stage receipts.
+- [x] Run positive/negative real npm regression and lifecycle regression; document limits.
+Risk: low, tooling-only. No live replay/install/DB/network operations. Existing consumed evidence untouched; revert tooling changes if needed.
+
+Results — failure analysis/prevention complete:
+- tools/dev/cold-rebuild-install-postmortem.md records direct cause (same npm config file), escape (mocked external CLI and parent-env-only version pin), and diagnostic weakness (no stage receipt).
+- cold-rebuild.py now shares create_build_env between production and real CLI tests, performs bounded actual-environment npm preflight before install, records npm-preflight plus per-build-stage failure/status/exit/time receipts without raw logs.
+- cold-rebuild-npm.test.py4/4 PASS: real broken/corrected parser behavior, no-install guard, install failure receipt/short-circuit. Existing lifecycle11/11 PASS; Python AST and git diff --check PASS. No npm ci/build/download, DB/Docker/runtime or replay executed. Actual restore/RTO remains unverified; no blanket guarantee about subsequent runtime stages.
+- The consumed run/evidence remains preserved. Next fresh live scenario still requires unique identities and explicit authorization. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Fresh cold rebuild preparation v2 — authorized
+Acceptance: unused sl-cold-rebuild-20261015-02 across launcher/config/credentials/runtime/SQL; no old-run/build/cache reference in executable path; real npm parser checks + offline regressions pass; precise new live scope and prepared-source hashes for review.
+- [x] Update all executable run bindings and add old-authorization/coherence regression.
+- [x] Run real no-install npm checks, offline lifecycle/config/runtime/credentials and syntax checks.
+- [x] Publish v2 scope/evidence; request one live authorization and stop.
+Risk/rollback: medium future isolated DB/app writes, preparation is offline only. Retain consumed01 and every existing backup/resource. Future run stops only owned app/PG and preserves volume/network. No migration, DB-backed Jest, source stop/write, Snapshot/deletion, install/build or Docker lifecycle in this preparation.
+Environment: existing Windows/WSL/Rancher pinned engine/image; Node26.5.1/npm11.17.0; .env.test private escrow, Windows D daily backups. Fresh install/cache required during future live; secret-store/OS recovery excluded. Do not confuse offline parser PASS with npm ci/runtime success.
+
+Results — v2 preparation PASS, live pending:
+- New exact identity sl-cold-rebuild-20261015-02 applied to launcher/config/credential/SQL/runtime and fixture. Fresh owned names02-pg/02-data/02-net, fresh build/cache/evidence; all runtime paths reject reuse of01. Original01 evidence and consumed plan remain preserved. No current Docker resource absence claim; live preflight validates collisions/ports.
+- Added regressions rejecting consumed01 authorization before I/O and checking all runtime bindings/derived resource names agree. Retained collision refusal and failed-stage receipt regression.
+- Verification: lifecycle13 + real-npm4 + config19 + runtime3 + credentials3 =42/42 PASS zero skip; existing daily-backup18/full-recovery7/local-db10 =35/35 PASS. Python AST3 files and Node syntax4 PASS; git diff --check PASS. Real npm11.17.0 preflight independently PASS in private persistent preparation workspace with shared launcher env builder, no install.
+- tools/dev/cold-rebuild-plan-v2.md contains precise one-run scope, 25min plus bounded cleanup, actual RTO boundaries, fresh resources, restore/password/HBA/background-write scope and stop/retention behavior. README points to current v2 plan; historical01 plan stays consumed.
+- Private artifacts/local-env/sl-cold-rebuild-preparation-20261015-v2/{offline-summary,npm-preflight,prepared-source-hashes}.json capture prepared status, 303 tool/source hashes and real npm result. Recheck hashes before live. Actual02 evidence directory absent; no Docker/DB/app/SQL/install/build/download/migration/truncate/Snapshot/deletion, source writes/stops, stage/commit/push occurred.
+- Actual npm ci/native modules/Prisma generate/restore/SCRAM/readiness/RTO remain unverified until separately approved live. Stop here per AGENTS.md; 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Fresh cold rebuild v2 live — authorized
+User replied 是 to the full precise scope in cold-rebuild-plan-v2.md.
+- [x] Verify all303 prepared source hashes, unused02 evidence and exact engine; sandbox Docker probe required normal socket escalation, no run created.
+- [x] Execute single sl-cold-rebuild-20261015-02 invocation; consumed, BLOCKED at config after successful build.
+- [x] Verify sanitized failure receipts, no DB/app allocation, closed ports and source health; document results.
+Risk/rollback: fresh isolated DB/app only, restore/password/HBA/background writes allowed per v2 plan; stop owned app/PG and retain all evidence/volume/network/backups. No source writes/stops, migration/truncate/DB-backed Jest/Snapshot/deletion. Failed run must not replay.
+
+Results — v2 live BLOCKED after successful independent rebuild:
+- Verified303 prepared hashes and unused02 evidence, exact pinned engine; executed launcher once with normal Docker-socket escalation. No replay or resume.
+- Real npm preflight PASS, fresh npm ci PASS17.010575495s, Prisma generate PASS2.273226536s, independent compile PASS5.034347443s. Original npm config-double-load failure resolved in actual execution. Total elapsed27.926302985s is failure duration, NOT service-ready RTO.
+- Failure: CalledProcessError from config subprocess after build. Pure no-connect diagnosis validates private regular0600 .env.test, PostgreSQL scheme/loopback5432/test DB; only query is exactly schema=public. cold-rebuild-config.cjs line6 rejects all search parameters, thus safe existing schema query fails before network/volume/container allocation. No malicious routing override detected; no configuration values/credentials printed.
+- Preparation gap: fixture-only config tests did not exercise actual escrow file compatibility. Version/install/generate/build success did not imply config acceptance. Next prerequisite is precise public-schema canonicalization while retaining unknown/routing/duplicate-query rejection, plus actual-file no-connect validation before any further live authorization. No blind query relaxation, credential edit or live replay performed.
+- Driver cleanupFailures=[]/ownedContainer=null. Separate escalated read-only postcheck verified original source identity/running/healthy and ECONNREFUSED on3001/55433. No isolated DB/app startup, restore, HBA/password changes or background writers occurred; no source writes/stops, migration/truncate/DB-backed Jest/Snapshot/deletion.
+- Private artifacts/local-env/sl-cold-rebuild-20261015-02/{intake,daily-integrity,npm-preflight,build-install,build-generate,build-build,build-receipt,result,verified-summary}.json and independent build/cache retained. No generated/node_modules/dist files read for diagnosis; only executed dotenv dependency to parse secret file in memory with boolean-only output.
+- v2 plan marked CONSUMED and README updated. Verification: receipt assertions, current source/port postchecks and git diff --check PASS; no code change or new test execution this live checkpoint. Prepared source-hash record remains original historical pre-live contract; plan/README now reflect consumed status.
+- Single-attempt checkpoint finished with failure preserved. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Actual config compatibility and run03 — handoff only
+- [x] Used handoff skill to write /tmp/smartlearning-config-compatibility-run03-next-checkpoint-20261015.md (mode0600, outside workspace).
+- User priority preserved: single public-schema query normalization, actual private .env.test no-connect/no-secret preflight plus regressions, then complete fresh03 preparation and one live approval. Repeated metadata-only work without removing runtime blockers must be called out as goal deviation.
+- References current config code, consumed01/02 evidence, actual successful02 dependency/generate/build results and remaining actual-config validation gap; no historical artifacts duplicated or credentials/deployment personal identity copied.
+- This turn is handoff only; no run03 code changes, installation, DB/Docker/runtime action or live authorization. Verified required sections/private mode and git diff --check; document-only, no tests run.
+- 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Actual config compatibility and fresh run03 preparation — authorized
+Acceptance: actual private config passes no-connect validation; only absent query or single schema=public canonicalized to isolated authority; fresh03 bindings and offline checks; one precise live scope.
+- [x] Implement shared normalization and sanitized real-file preflight.
+- [x] Verify actual escrow and positive/negative offline regressions.
+- [x] Publish fresh03 plan, prepared hashes and results; stop for live approval.
+Risk/rollback: preparation low risk; future isolated restore medium risk. Preserve consumed01/02, all backups/resources; stop only fresh owned app/PG, never source. No live/install/DB/migration/Snapshot/deletion authorized here.
+Environment: existing Windows/WSL/Rancher; fresh live dependencies required. Preparation may execute root dotenv only for in-memory parsing; no dependency-file inspection, DB/network connection or secret output.
+Working notes: original handoff superseded by latest consumed02 task results and config/run03 handoff.
+
+Results — fresh03 preparation PASS; live pending:
+- Shared isolatedURL accepts absent query or one decoded schema=public, strips query and fixes127.0.0.1:55433. All four consumers (embedded peer probe, credentials, readonly SQL, compiled app) use it; routing/unknown/alternate/duplicate/encoded-duplicate parameters fail closed. Actual .env.test remains unchanged.
+- Actual private regular0600 escrow passed --preflight using root dotenv for preparation parsing only; behavioral regression denies socket/HTTP/TLS/UDP/child-process APIs and emits only three safe predicates. Live validation uses freshly installed03 dotenv; configuration.json retains sanitized config-specific failure instead of generic CalledProcessError.
+- Fresh sl-cold-rebuild-20261015-03 executable bindings, build/cache/evidence and owned -pg/-data/-net names; old01/02 authorization rejected before I/O. Actual03 evidence absent; no Docker access or current resource/port absence claim. Consumed evidence and plans untouched.
+- Verification: lifecycle15 + real npm4 + configuration32 + runtime3 + credentials3 =57 PASS; shared daily-backup18/full-recovery7/local-db10 =35 PASS; total92, zero skip. Actual-environment npm11.17.0 no-install probe PASS; Python AST3/Node syntax4 and git diff --check PASS. Initial runtime port-assertion mismatch fixed and rerun; no live retry. No production TypeScript changed; DB-backed Jest not run because migration is not authorized or needed for this offline change.
+- tools/dev/cold-rebuild-plan-v3.md and README define precise25min plus bounded-cleanup live scope, prerequisite Windows/WSL/Rancher/secrets, independent reinstall, recovery sequence, same-snapshot comparison before writers, restricted-role SQL/HTTP smoke, readiness RTO and owned-only stop/retention. No whole-host/secret-store recovery or successful service-ready RTO is claimed.
+- Private artifacts/local-env/sl-cold-rebuild-preparation-20261015-v3 stores configuration/npm/offline receipts and current prepared-source-hashes.json. Future live must recheck hashes, actual config and exact environment/collisions before its one invocation.
+- No installation/download/build, DB/Docker/app lifecycle, migration/truncate/seed, source writes/stops, Snapshot, retention/deletion, scheduler changes or git stage/commit/push. Second copy remains cancelled. Per AGENTS.md, stop here for one precise live authorization; 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Fresh cold rebuild v3 live — authorized
+User replied 是 to the single precise run03 scope in cold-rebuild-plan-v3.md.
+Acceptance: one fresh independent install/generate/build, verified daily restore and same-snapshot comparison before writers, SCRAM/restricted-role SQL, compiled readiness/smoke, service-ready RTO, owned stop/retention and source health.
+- [x] Verify304 prepared hashes, actual no-connect configuration and absent03 evidence; exact pinned Docker engine confirmed after socket escalation.
+- [x] Execute single sl-cold-rebuild-20261015-03 invocation; consumed, final status BLOCKED.
+- [x] Verify sanitized receipts, source health, owned shutdown/closed ports; record final result.
+Risk/rollback: medium isolated restore/password/HBA/application writes only.25min plus bounded cleanup; stop only owned app/PG, retain volumes/network/backups/evidence, never replay consumed run. No source writes/stops, host/engine restart, migration/truncate/seed/DB-backed Jest, Snapshot/deletion.
+Environment: existing Windows/WSL/Rancher pinned engine/image, D formal backup and private .env.test. Fresh03 install/cache/build, loopback55433/3001. OS Docker socket permission is separate from user's task authorization.
+
+Results — run03 consumed; service-ready observed, final cleanup acceptance BLOCKED:
+- Executed exactly once after approved Docker/network escalation, following304 matching prepared hashes and actual-file no-connect PASS. Fresh install18.5614s, generate2.2224s, build5.0327s, configuration PASS; previous parser blocker resolved in actual execution.
+- Same-snapshot data/schema comparison and database properties PASS before app writers; independent restore identity passed. SCRAM password recovery and wrong-password rejection PASS; restricted-role SQL/ledger/schema, HTTP readiness/liveness/auth-boundary smoke and app cleanup markers PASS, runtime exit0.
+- Observed service-ready49.800094675s from launcher start; restoreAndCompare15.0086s, appReadiness1.0508s, appCleanup0.1032s, total53.6730s. This is isolated app/DB reconstruction on existing infrastructure, not whole-host RTO or SLA. Overall result is BLOCKED, never rewritten to PASS.
+- Final cleanup strict bind failed: ports-not-closed. Same execution context independent postcheck proves source exact identity/running/healthy, owned container exited/restart=no, both3001/55433 ECONNREFUSED but bind EADDRINUSE; kernel socket state TIME_WAIT2 each, no LISTEN. Sandboxed /proc had different namespace and was not used as final diagnosis. No source-data before/after hash assertion.
+- Minimal future-only fix in cold-rebuild.py: strict bind remains preflight collision guard; post-stop closure requires explicit ECONNREFUSED with2s bound. Connected listener, timeout or other error fails. Owned container/process shutdown checks remain. Port/lifecycle regression18/18 and real npm4/4 PASS; AST2 and git diff --check PASS. Initial test-before-helper failure preserved at /tmp/sl-cold03-port-before.txt; final test output /tmp/sl-cold03-port-after.txt. No live rerun after fix.
+- Evidence private under artifacts/local-env/sl-cold-rebuild-20261015-03: original result/runtime/restore receipts, independent-postcheck.json, same-host socket-state-diagnosis.json, verified-summary.json. Backups, fresh build/cache, stopped volume/network/container retained. Historical01/02 and original preparation hashes untouched; current post-run tool/document differences are deliberate, not a new approved prepared contract.
+- v3 plan/README marked consumed. No migration/truncate/seed/DB-backed Jest, source writes/stops, host/engine restart, Snapshot/deletion or git stage/commit/push. Next live needs fresh identity/preparation and precise authorization, never replay03. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Port cleanup false-block prevention — authorized
+Acceptance: explain run03 TIME_WAIT false block from original receipts; retain strict preflight and refused-connection shutdown check; verify both ports even on first failure, actionable sanitized receipt, failure remains fail-closed; no consumed live replay.
+- [x] Review original result/postcheck/socket-state evidence and current closure helper.
+- [x] Add per-port diagnostics and lifecycle edge-case regressions.
+- [x] Run offline verification; document root cause, prevention and limits.
+Risk/rollback: low tooling-only; revert these local changes if needed. No DB/Docker/service/network drill or migration. Python offline mocks only; original03 evidence stays unchanged.
+Working notes: both ports were ECONNREFUSED with TIME_WAIT2/no LISTEN; bind checks endpoint reusability, not listener closure. Earlier fix removed bind after stop but still short-circuits the second port and hides cleanup-only reason.
+
+Results — analysis/prevention complete, no live replay:
+- Root cause proven from original run03 receipts: strict final bind confused endpoint reservation with listener closure; both ports refused connections and had only TIME_WAIT. Source healthy and owned PG stopped. No original result/evidence/prepared hashes edited; overall03 remains BLOCKED with observed service-ready49.8001s.
+- Existing post-stop ECONNREFUSED fix retained; strict bind remains before launch. Added independent checks for both ports, safe portClosure result fields and explicit cleanup-only failure reason. No waits/socket reuse tricks/network tuning introduced; owned app/container stop requirements remain mandatory.
+- Test-first lifecycle regression reproduced short-circuit ([3001] vs [3001,55433]); final lifecycle/port22/22 and real npm4/4 PASS. Cases reject active listener, timeout code/exception, unexpected network error, and unsuccessful owned shutdown even with closed ports. AST2/git diff --check PASS. Test output /tmp/sl-port-prevention-{before,after,npm}.txt.
+- tools/dev/cold-rebuild-port-cleanup-postmortem.md records evidence, cause, preflight vs post-stop contracts, diagnosis context, regression commands and limits; README links it. Live cleanup with corrected tool remains unverified, no whole-host/RTO guarantee. No Docker/DB/app lifecycle, installation, migration/Jest, new live run or deletion executed. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Fresh run04 complete acceptance — handoff only
+- [x] Used handoff skill to write /tmp/smartlearning-run04-cleanup-runtime-next-checkpoint-20261015.md outside workspace, mode0600.
+- Preserved user goal: fresh04 bindings/resources/scope/source hashes, actual no-connect config and offline regressions, then ONE precise live approval; full restore/readiness/RTO/owned stop/port acceptance aims overall PASS. Repeated metadata without removing runtime blockers must be called goal deviation.
+- References current port postmortem, consumed03 evidence and latest offline correction; no duplication of raw evidence, credentials or deployment personal identity.01–03 immutable/consumed; no replay, host restart or migration.
+- Handoff only: no04 code changes, install, DB/Docker/app lifecycle or live authorization. Verified document sections/mode and git diff --check; documentation-only, no tests needed. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Fresh run04 preparation — authorized
+Acceptance: fresh04 executable bindings and unique evidence identity; actual escrow no-connect PASS; real no-install npm probe and targeted offline regression PASS; complete current source/tool hashes; reviewable v4 scope before one live authorization request. Historical01–03 retained.
+- [x] Update all run/resource/dependency bindings and consumed-run rejection coverage.
+- [x] Run actual config no-connect preflight, npm probe and offline verification.
+- [x] Complete v4 plan/README, source hashes and results; stop for live authorization.
+Risk & Rollback: low preparation-only changes; restore only this checkpoint's tool edits if necessary. Future live is medium risk isolated restore/HBA/password/app writers; owned stop, retain resources, no automatic retry. No DB/Docker/app lifecycle, install, migrations or DB-backed Jest authorized here.
+Dependencies & Environment: existing Python3/Node/npm; root dotenv executes only for preparation parsing; live requires independent fresh04 install/generate/build and exact pinned engine/image/source. Private preparation-v4 separate from unused live04 evidence.
+Working Notes: run03 remains consumed/BLOCKED; corrected refused-connection cleanup still requires live validation. Strict pre-start bind and independent post-stop per-port probes retained. Preparation does not claim current Docker/resource/port health.
+
+Results — run04 preparation complete; live authorization pending:
+- Launcher, embedded probe, config/credential/runtime/SQL dependency lookup and test contracts bind fresh sl-cold-rebuild-20261015-04; old01/02/03 authorization refused before I/O. Build/cache/evidence/cluster and -pg/-data/-net identities are fresh04. Live04 evidence absent; no Docker resource/port absence claim until live preflight. Any collision stops for a newly prepared identity.
+- Offline lifecycle/port23 + real no-install npm4 + config32 + runtime3 + credentials3 =65 PASS. Includes TIME_WAIT/refused/listener/timeout/socket failure, both ports without short-circuit and stop failure despite closed ports. Actual private mode0600 regular non-symlink .env.test no-connect PASS with network/child-process APIs denied; no secret/URL/raw error emitted. npm11.17.0 isolated configuration probe PASS. Root dotenv used only during preparation, never a substitute for fresh live install/generate/build.
+- Python AST3, Node syntax7, git diff --check PASS. Independent read-only agent review found no blocker; runtime group-shutdown tests use mocks, so real shutdown remains mandatory live acceptance.
+- Freshly computed311 current source/tool/config/test/plan/document SHA256 entries in private preparation-v4/prepared-source-hashes.json; preparation-contract.json binds digest/run/resources/command. All src/prisma files included, secrets excluded. Before live compare every digest AND current source path set, repeat no-connect config, then exact engine/source/resource/port preflight; drift or collision stops execution.
+- tools/dev/cold-rebuild-plan-v4.md contains one25min plus bounded-cleanup invocation, precise scope/exclusions, RTO boundaries, ordered restore comparison before writers, independent portClosure/owned-stop/overall status/exit acceptance, failure retention and stop strategy. README points to v4. run01–03/history/preparation-v3 unchanged;03 remains BLOCKED.
+- Evidence: artifacts/local-env/sl-cold-rebuild-preparation-20261015-v4/{offline-summary,configuration-preflight,npm-preflight,prepared-source-hashes,preparation-contract}.json and five bounded test logs. No installation, live DB/Docker/app lifecycle, migration/truncate/seed/DB-backed Jest, source writes/stops, host/engine restart, deletion, git stage/commit/push executed. No new runtime/RTO PASS claimed.
+- Formal preparation Checkpoint ends here; request one precise live authorization using cold-rebuild-plan-v4.md. Per AGENTS.md manual Checkpoint boundary, stop until user reply. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Fresh run04 live — authorized
+User replied 是 to one precise v4 live scope. Acceptance: fresh dependency rebuild, trusted daily restore/snapshot comparison before writers, SCRAM/restricted SQL, readiness/smoke and monotonic service-ready RTO; owned shutdown, independent refused-port receipts, source health, overall PASS/empty cleanupFailures/exit0.
+- [x] Verify311 prepared hashes/current source path set, actual no-connect configuration PASS and absent04 evidence; exact pinned Docker engine confirmed after socket escalation.
+- [x] Execute one fresh04 invocation; consumed, overall PASS, exit0; no retry.
+- [x] Verify sanitized receipts and cleanup/source status; record results and consumed identity.
+Risk/rollback: medium, isolated04 DDL/data/password/HBA/app writers only;25min plus bounded cleanup. Stop only verified owned app/PG and retain all resources/backups/evidence on failure. No migration/truncate/seed/DB-backed Jest, source writes/stops, host/engine restart, Snapshot/deletion or scheduler changes. OS/network escalation separate from task authorization.
+Environment: existing pinned engine/image/source and formal D backup; private escrow; independent fresh04 install/cache/build; loopback55433/3001.
+
+Results — run04 consumed; complete recovery and corrected cleanup acceptance PASS:
+- Exactly one authorized launcher invocation after311 matching prepared hashes/source path set and actual-file no-connect PASS. Docker engine pin verified after OS socket escalation. Launcher exit0, result.status=PASS, reason=null, cleanupFailures=[]; no automatic replay.
+- Independent fresh install14.3501s, generate1.8721s, build5.1329s; actual configuration PASS. Trusted latest daily backup verified; restore/same-snapshot data/schema and database properties PASS before app writers; independent restore identity, SCRAM/wrong-password rejection and restricted-role SQL/schema/migration ledger PASS. Compiled readiness/liveness/auth smoke and APP_CLEANUP_PASS markers present; runtime exit0.
+- Monotonic serviceReadySeconds42.081519274; restoreAndCompare13.2225s, appReadiness1.0532s, appCleanup0.1001s; total including cleanup46.013525234s. Existing-engine isolated application/DB rebuild only, not whole-host/secret-store recovery or SLA. No source-data before/after hash claim.
+- Corrected final portClosure independently records3001 and55433 PASS/ECONNREFUSED. Owned PG verified exited/restart=no; source exact identity/running/healthy. Separate same-context read-only postcheck confirmed ownership/stop/source health and both refused ports without rerunning launcher. No cleanup failure was hidden by port PASS.
+- Private artifacts/local-env/sl-cold-rebuild-20261015-04/{result,runtime,restore,credential,verified-summary,independent-postcheck}.json preserve original and verified receipts. Backups, source, run01–03, all preparation receipts/hashes, run04 build/cache and stopped resources retained. v4 plan/README marked consumed; source tools still bind04 but existing evidence prevents replay. Post-run documentation hash drift is intentional, never rewritten into original prepared contract.
+- No migration/truncate/seed/DB-backed Jest, source writes/stops, host/engine restart, Snapshot/deletion, scheduler change or git stage/commit/push. Normal isolated app background writes occurred only after comparison, within authorized scope. Seven-day scheduler evidence remains separate.
+- Formal live Checkpoint complete. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-15 Guide gap reassessment after run04
+Goal/acceptance: compare user-specified Windows11/WSL2/Rancher/PostgreSQL guide with current local source and receipts; distinguish proven capability, partial scope and missing evidence. Assessment only; no operational change.
+- [x] Read guide backup/restore/Snapshot/diagnosis/preflight/maintenance/RPO-RTO requirements.
+- [x] Review README, mutation guard documentation, isolated executor results and selected run04 verified fields.
+- [x] Report updated gaps and prioritized next steps.
+Results: isolated app/DB recovery now PASS (run04 service-ready42.081519274s, total46.013525234s, empty cleanup failures and independent shutdown/source/port checks). Shared-helper negative identity/authorization and real migrate-deploy/truncate plus restricted-app readiness were already live PASS on disposable target; no pending migration DDL was applied. These are no longer merely offline/unverified capabilities.
+Remaining: seven scheduled-origin dates/retry/catch-up and logged-out/power-state coverage unproven; no fresh Windows scheduler query in this assessment. Run04 used formal generation sl-daily-20261015T120001Z-23f944d6 with snapshot age about3.87h, which does not establish trigger origin/seven-day acceptance. External alert delivery/heartbeat, Snapshot create/restore, host/WSL/engine rebuild plus secret/source retrieval, full outage RTO, routine restore cadence and retention receipt linkage remain gaps. Second copy explicitly cancelled, not required acceptance, but host/D-disk loss coverage not proven. D encryption/physical fault-domain independence not established. Guards cover shared helpers, not every raw CLI/load/manual/background-write entry; migration precheck-to-CLI race remains. Scope is retained smartlearning_test, not dev/production qualification.
+Recommendation: collect durable scheduled-origin evidence and settle operational RPO/RTO first; prioritize additional guard entry coverage if risky workloads will resume; separately prepare Snapshot/host recovery scope only after reviewable safety/rollback; link restore/attempt receipts before considering retention deletion. No repeat run04 needed. Existing guide requests recurring daily/weekly/monthly processes; one PASS does not prove ongoing operation.
+Verification: local guide/source review and UTF-8-sig selected JSON fields; no DB/Docker/scheduler/live commands or tests run. No migrations/deletes/service changes. 可以開啟新 Session 繼續下一個 Checkpoint。
+
+## 2026-10-16 Commit accumulated backend development changes — authorized
+Acceptance: commit all backend development changes in logical groups; exclude artifacts, credentials and env files; preserve history and hooks; no push or live operations.
+- [x] Inventory dependencies and verify source-only scope.
+- [x] Run targeted offline checks and source syntax/whitespace checks.
+- [x] Commit environment/recovery foundation, backup/scheduler, test safety, cold rebuild and audit documentation separately.
+- [x] Verify commit contents against explicit source allowlist; artifacts excluded; final status readback follows documentation commit.
+Risk: repository-only history changes; no DB migration/test setup or Docker lifecycle. Existing consumed run contracts remain historical; committing does not reauthorize execution.
+
+Results — backend development commits grouped by function:
+- 58d6140 environment/recovery foundation (58 files); aec4a5e daily backup/scheduler/restore (13); 8cfe11f pinned-identity test mutation guards and isolated acceptance tooling (65); f2612c7 independent cold rebuild/cleanup (16). Final documentation/audit group contains five files. Exact157-path allowlist excludes artifacts, .env and credential/key files. All commits retain normal hooks; no push.
+- Verification this checkpoint: offline mutation Jest22/22 PASS; metadata-only doctor12/12 PASS; fifteen targeted Python/Node suite entry points PASS (local-db, full-recovery, daily backup/retention/runtime, cold lifecycle/npm/config/runtime/credentials, isolated runtime/live/role policy, test-entry role check and contract preparation). Python AST43 and Node syntax19 PASS. Focused ESLint on shared guard/helper and offline/live test definitions PASS. No actual live suites executed.
+- Unmodified npm run typecheck fails because retained artifacts workspaces are included by root tsconfig. A temporary /tmp config with explicit absolute repository include, artifact/node_modules/dist exclusions, root typeRoots and incremental=false passes tsc --noEmit. Default command remains unchanged; evidence logs /tmp/sl-commit-{typecheck,scoped-typecheck,guard-tests,lint,doctor}.txt. Windows-native scheduler tests were not rerun in this Linux commit checkpoint; prior recorded acceptance retained.
+- Removed one extra EOF blank line in daily-scheduler.test.ps1 for staged whitespace check. git diff --cached --check passes per batch. No DB-backed Jest, migration, install, DB/Docker/app lifecycle, deletion or source mutation executed. Consumed recovery runs remain consumed; commits do not grant operational authorization.
+- Commit checkpoint complete; final readback verifies all157 selected paths and only untracked artifacts remain. 可以開啟新 Session 繼續下一個 Checkpoint。

@@ -16,6 +16,15 @@ Design premise: follow the project design documentation for the M2 technical dec
 - PostgreSQL 14+ (dev: see `docker-postgresql-setup.md`; or use the
   [Docker deployment](#docker-deployment-uat--staging) stack which bundles PG)
 
+## Recovery-sensitive local environment
+
+As of 2026-10-13, no development PostgreSQL database or external backup has
+been verified. Stopped test, recovery, and forensic volumes must remain preserved.
+Do not use the historical PostgreSQL setup recipe or Quick start migrations to
+initialize or adopt a volume until its authority and backup are verified.
+See [local environment safety checks](tools/dev/README.md) for the metadata-only
+`env:doctor` and the separate Checkpoint C data-operation gate.
+
 ## Quick start
 
 ```bash
@@ -162,10 +171,10 @@ the `import.meta` shim, so `nest build` → `node dist/src/main` runs on plain
 Node (no `tsx` / TS-aware loader needed at runtime). The script is idempotent
 and only touches relative (`./`, `../`) specifiers.
 
-> **`start:prod` note**: `package.json` defines `start:prod` as `node dist/main`,
-> but `nest build` actually emits `dist/src/main.js` (tsconfig `rootDir=src` is
-> preserved under `outDir`). The Docker `CMD` uses `node dist/src/main`. If you
-> run `npm run start:prod` directly, use `node dist/src/main` instead.
+> **`start:prod` note**: After building, `npm run start:prod` runs
+> `node dist/src/main`, targeting `dist/src/main.js` and matching the Docker
+> runtime `CMD`. Local builds also require the generated-client normalization
+> described above.
 
 ### CP8 production-like proxy verification
 
@@ -189,7 +198,7 @@ verified`.
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `npm run build`                 | Compile via `nest build` → `dist/`                                                                                                                                       |
 | `npm run start:dev`             | Dev mode with `--watch`                                                                                                                                                  |
-| `npm run start:prod`            | Run compiled output — note `nest build` emits `dist/src/main.js` (tsconfig `rootDir=src` is preserved under `outDir`), so run `node dist/src/main`, not `node dist/main` |
+| `npm run start:prod`            | Run compiled output via `node dist/src/main`, matching the Docker runtime                                                                                                 |
 | `npm run typecheck`             | `tsc --noEmit`                                                                                                                                                           |
 | `npm run lint`                  | ESLint with auto-fix                                                                                                                                                     |
 | `npm run lint:check`            | ESLint, no fix (CI)                                                                                                                                                      |
