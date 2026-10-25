@@ -1,2 +1,0 @@
-rd-internal-port-test-net
-rd-normal-port-test-net
