@@ -1,9 +1,0 @@
-{
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
-  "testRegex": "retention-operations-artifacts\\.spec\\.ts$",
-  "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
-  },
-  "testEnvironment": "node"
-}
