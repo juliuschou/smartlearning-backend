@@ -1,39 +1,3 @@
-# Repository Guidelines
-
-## Project Structure & Module Organization
-
-This NestJS 11 backend uses TypeScript and Prisma/PostgreSQL. Application entry points are `src/main.ts` and `src/app.module.ts`. Feature code lives in `src/modules/`, commonly divided into `api/`, `application/`, and `domain/` layers. Shared utilities belong in `src/common/`; configuration and database integration live in `src/config/` and `src/prisma/`. Prisma schema, migrations, and seeds reside in `prisma/`. Unit tests sit beside source files; integration and end-to-end suites live in `test/`, with shared fixtures in `test/setup/`. Operational guidance is in `docs/`, `ops/`, and `tools/dev/`.
-
-## Build, Test, and Development Commands
-
-Use Node.js 24+ and npm. Install locked dependencies with `npm ci`.
-
-- `npm run prisma:generate`: generate the Prisma client.
-- `npm run start:dev`: start the server with watch mode.
-- `npm run build`: compile the NestJS application.
-- `npm run typecheck`: check TypeScript without emitting files.
-- `npm run lint:check` and `npm run format:check`: check ESLint and Prettier rules without modifying files.
-- `npm test -- --runInBand`: run source unit tests.
-- `npm run test:integration` and `npm run test:e2e`: run database-backed suites after verifying the test environment.
-- `npm run test:cov`: generate coverage in `coverage/`.
-
-## Coding Style & Naming Conventions
-
-Use two-space indentation, single quotes, and trailing commas as enforced by Prettier. Follow existing NestJS naming: kebab-case filenames such as `account.service.ts`, PascalCase classes, and camelCase methods and variables. Preserve feature-layer boundaries. ESLint rejects unused variables; intentionally unused parameters may use an underscore prefix. `npm run lint` and `npm run format` modify files.
-
-## Testing Guidelines
-
-Tests use Jest and ts-jest; HTTP suites use Supertest. Name unit tests `*.spec.ts`, integration tests `*.integration-spec.ts`, and end-to-end tests `*.e2e-spec.ts`. Add focused regression coverage for behavior changes, including error paths. No numeric coverage threshold is configured. Run targeted tests first, then relevant broader suites.
-
-## Commit & Pull Request Guidelines
-
-Follow the history’s Conventional Commit pattern: `feat(recovery): ...`, `fix(test): ...`, or `docs(dev): ...`. Keep changes focused. PR descriptions should explain behavior, link relevant issues, list verification commands and outcomes, and document migration or rollback steps when applicable.
-
-## Security & Configuration
-
-Use `.env.example` as a configuration reference; never commit secrets or log credentials. Read `tools/dev/README.md` before database operations. Preserve recovery volumes and verify database authority and backups before migrations or initialization. Database-backed tests require the guarded, isolated `smartlearning_test` environment.
-
-
 # AI Agent 操作行為邊界
 
 在協助開發本專案時，你必須嚴格遵守以下約束：
@@ -57,15 +21,8 @@ Use `.env.example` as a configuration reference; never commit secrets or log cre
 
 ## Windows／WSL2／Rancher Desktop 操作規範
 
-### 1. 適用範圍與必要閱讀
 
-- 涉及本機環境、容器、資料庫、備份、排程或復原時，先閱讀：
-  - `tools/dev/windows-wsl-rancher-guide.md`
-  - `tools/dev/README.md` 中與任務相關的章節。
-- 指南為操作索引，不代表執行授權；各工具與核准計畫的具體限制仍須遵守。
-- 歷史 PASS 不代表目前環境健康，也不授權重播已消耗的演練。
-
-### 2. 操作分級與授權
+### 1. 操作分級與授權
 
 - 執行前辨識操作屬於：
   1. 離線閱讀、靜態檢查或 mock 測試。
@@ -81,7 +38,7 @@ Use `.env.example` as a configuration reference; never commit secrets or log cre
 - 根目錄 Compose 與測試入口可能隱式執行 migration／truncate；
   執行前必須檢查實際呼叫鏈。
 
-### 3. 身分與資料保護
+### 2. 身分與資料保護
 
 - 操作前核對適用的 context、engine、container、volume、
   database、備份 generation 與 ownership。
@@ -93,7 +50,7 @@ Use `.env.example` as a configuration reference; never commit secrets or log cre
 - 不覆寫 immutable manifest，不重用 consumed run ID，
   不自動清除失敗資產或備份。
 
-### 4. Sub-agent 委派規則
+### 3. Sub-agent 委派規則
 
 - 主代理對任務範圍、授權、安全與最終結論負責；
   委派不會擴大任何代理的權限。
@@ -110,7 +67,7 @@ Use `.env.example` as a configuration reference; never commit secrets or log cre
 - Sub-agent 不得自行轉委派，除非主代理明確允許，
   並將相同限制傳遞給後續代理。
 
-### 5. 並行與共享狀態
+### 4. 並行與共享狀態
 
 - 可並行進行獨立的閱讀、分析與 mock 測試。
 - 會修改同一檔案或操作同一 DB、volume、備份目的地、
@@ -122,7 +79,7 @@ Use `.env.example` as a configuration reference; never commit secrets or log cre
 - 主代理不得在 sub-agent 尚可能操作資源時進行清理、
   重啟或交接；先確認其工作已停止。
 
-### 6. 證據與驗收
+### 5. 證據與驗收
 
 - Sub-agent 回報須包含：
   - 查閱或修改的檔案及關鍵位置。
@@ -136,7 +93,7 @@ Use `.env.example` as a configuration reference; never commit secrets or log cre
 - Windows 原生、整機復原與排程運作能力，
   不得僅憑 Linux mock 測試宣稱已驗收。
 
-### 7. Checkpoint 與大型紀錄
+### 6. Checkpoint 與大型紀錄
 
 - 主代理負責統一判定正式 Checkpoint 是否完成，
   寫入進度並依既有規定等待使用者授權。
