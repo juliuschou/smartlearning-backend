@@ -1,0 +1,32 @@
+services:
+  test-db:
+    image: postgres:16
+    restart: 'no'
+    environment:
+      POSTGRES_DB: smartlearning_test
+      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    ports:
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
+    volumes:
+      - test_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USERNAME:?DB_USERNAME is required} -d smartlearning_test',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - test-db
+
+volumes:
+  # Dedicated disposable integration-test data. Never share this with development.
+  test_pgdata:
+
+networks:
+  test-db:
+    driver: bridge

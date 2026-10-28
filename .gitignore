@@ -28,6 +28,4 @@ coverage
 /ops/topology/.env.cp8
 /artifacts/gate3/
 
-# Prisma generated client（由 prisma generate 產生，不入版控）
-/generated/
 ops/staging-replica/tls/

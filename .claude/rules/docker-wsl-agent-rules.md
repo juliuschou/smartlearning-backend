@@ -55,7 +55,7 @@
 
 - `docker compose up`、`docker compose run`(可能自動觸發資料庫 migration)
 - 任何 migration 或 schema 變更指令,例如:
-  - Prisma:`prisma migrate dev` / `deploy` / `reset`、`prisma db push`、`prisma db seed`
+  - ORM/database tooling: migration, schema push/reset, or seed commands
   - Flyway / Liquibase:`flyway migrate`、`flyway clean`、`liquibase update`
   - 其他框架(TypeORM、Django、Rails、Spring Boot 啟動時的自動 migration 設定)的同類指令
 - 任何會對資料庫執行 `DROP`、`TRUNCATE`、`DELETE`、`ALTER` 的 SQL
