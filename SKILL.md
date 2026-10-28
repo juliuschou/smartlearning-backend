@@ -1,6 +1,8 @@
-# SKILL.md — SmartLearning Backend
+# Historical Backend Notes
 
-> 智學互動平台 後端服務。本文件由 git commit 歷史與 README 整理而成，
+> **Archived:** Backend application sources have been removed. Persistence and application design are pending redevelopment; do not treat the historical architecture and commands below as current instructions.
+>
+> 智學互動平台後端歷史紀錄。本文件由 git commit 歷史與 README 整理而成，
 > 描述此專案的技術棧、架構、開發流程與開發時應遵守的不變量（invariants）。
 > 適用於任何要在這個 codebase 進行實作、除錯、或擴充功能的 AI coding agent。
 

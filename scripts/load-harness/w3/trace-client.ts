@@ -57,7 +57,6 @@ export interface TraceRecord {
   gatewayDispatchReturnedMonoMs?: number;
   dispatchThrew?: {
     errorType: string;
-    prismaCode?: string;
     databaseCode?: string;
   };
   transitionTo?: string;

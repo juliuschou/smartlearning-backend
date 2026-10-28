@@ -35,7 +35,6 @@ export interface SubmitOnlyTimingRecord {
     succeeded?: boolean;
     error?: {
       errorType: string;
-      prismaCode?: string;
       databaseCode?: string;
     };
   };
@@ -48,7 +47,6 @@ export interface SubmitOnlyTransactionEvidence {
   callbackMs?: number;
   succeeded?: boolean;
   errorType?: string;
-  prismaCode?: string;
   databaseCode?: string;
 }
 
@@ -131,9 +129,6 @@ export function projectSubmitOnlyTransactionEvidence(
       ...(diagnostic.error
         ? {
             errorType: diagnostic.error.errorType,
-            ...(diagnostic.error.prismaCode
-              ? { prismaCode: diagnostic.error.prismaCode }
-              : {}),
             ...(diagnostic.error.databaseCode
               ? { databaseCode: diagnostic.error.databaseCode }
               : {}),
@@ -157,7 +152,7 @@ export function classifySubmitOnlyContention(input: {
   }
   return input.http500Count > 0 ||
     input.transactionEvidence.some(
-      (evidence) => evidence.succeeded === false || evidence.prismaCode,
+      (evidence) => evidence.succeeded === false || evidence.databaseCode,
     )
     ? 'CONTENTION_OBSERVED'
     : 'NO_CONTENTION_OBSERVED';

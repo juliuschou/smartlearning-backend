@@ -1,5 +1,25 @@
 # Phase 0 關鍵決策 + Phase 1 工程基礎 — 工作紀錄
 
+## 2026-10-28 Persistence architecture reset
+
+### Goal & acceptance criteria
+- [x] Remove the prior persistence schema, migration history, seed/config tooling, and package dependencies for redevelopment.
+- [x] Remove all matching design/history documents from the separate docs repository; preserve non-matching local files.
+- [x] Confirm no database or Docker lifecycle operations were run and PostgreSQL infrastructure files remain untouched.
+
+### Risk & rollback
+- **Risk: high** — schema and 20 migration records were removed from the working tree.
+- **Rollback:** restore the deleted files from Git history if the redesign scope changes; no database data was modified.
+
+### Dependencies & environment
+- No database or container was used; package manifests were updated offline from the existing lockfile.
+
+### Results
+- Removed 39 tracked and one untracked matching document, plus backend persistence configuration, schema, migrations, dependencies, and generated client.
+- `package.json` and `package-lock.json` parse and no longer declare the retired dependencies; docs search and `git diff --check` pass. Build/tests were not run because application sources were removed in the prior task.
+
+---
+
 ## 2026-10-26 EnrollmentService unit tests
 
 ### Goal & acceptance criteria

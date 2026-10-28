@@ -9,7 +9,7 @@
 
 ## 2. 資料庫與環境安全 (Safety & Database)
 
-- **禁止未授權的 Migration:** 除非使用者明確指示，否則**絕對禁止**主動執行 `npx prisma migrate deploy` 或 `prisma db push`。
+- **禁止未授權的資料庫結構異動:** 除非使用者明確指示，否則不得主動執行 migration、schema push、DDL 或其他資料庫結構修改。
 - **注意隱式操作:** 已知 `test/setup/db.ts` 內部會自動執行 `migrate deploy`。在執行測試前，必須先向使用者確認是否允許該隱式操作。
 - **禁止跨環境污染:** 嚴禁在 `NODE_ENV=development` 執行會清空資料的指令。
 

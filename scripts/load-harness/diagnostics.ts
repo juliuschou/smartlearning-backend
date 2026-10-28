@@ -213,7 +213,7 @@ export class W1DiagnosticsCollector {
         waitingCount: null,
         status: 'unavailable',
         reason:
-          'POOL ACQUISITION EVIDENCE GAP: Prisma adapter pool is not exposed by the current application.',
+          'POOL ACQUISITION EVIDENCE GAP: the current application does not expose database pool metrics.',
       },
       runtime: {
         client: {
@@ -237,7 +237,7 @@ export class W1DiagnosticsCollector {
           'per-session event ordering remains serialized on live_session_event_sequence',
         ],
         unavailable: [
-          'Prisma pool acquisition duration and waitingCount',
+          'database pool acquisition duration and waitingCount',
           'isolated PostgreSQL lock-wait duration',
           'backend CPU/RSS and PostgreSQL CPU/memory/active connections',
           'event-loop delay',
