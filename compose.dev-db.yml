@@ -1,0 +1,31 @@
+services:
+  dev-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smartlearning_dev
+      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    ports:
+      - '127.0.0.1:${DB_PORT:-5433}:5432'
+    volumes:
+      - dev_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USERNAME:?DB_USERNAME is required} -d smartlearning_dev',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - dev-db
+
+volumes:
+  dev_pgdata:
+
+networks:
+  dev-db:
+    driver: bridge
