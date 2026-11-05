@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint check when TypeScript sources exist
+        run: |
+          if find src apps libs test -type f -name '*.ts' -print -quit 2>/dev/null | grep -q .; then
+            npm run lint:check
+          else
+            echo "::notice::Skipping lint: no TypeScript files found in src/, apps/, libs/, or test/."
+          fi
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests when specs exist
+        run: |
+          if find src -type f -name '*.spec.ts' -print -quit 2>/dev/null | grep -q .; then
+            npm test -- --runInBand
+          else
+            echo "::notice::Skipping unit tests: no *.spec.ts files found under src/."
+          fi
