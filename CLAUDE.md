@@ -28,7 +28,7 @@ npm run test:e2e
 npm run test:integration
 ```
 
-`npm run lint` and `npm run format` modify files; prefer their `:check` variants for read-only verification. The single-test command is the Jest pattern; use it only when the target test file exists.
+`npm run lint` and `npm run format` modify files; prefer their `:check` variants for read-only verification. The single-test command is the Jest pattern; use it only when the target test file exists. Work in small, verifiable steps: after each focused change, run the narrowest relevant check before expanding verification.
 
 Prisma development commands are explicitly scoped to `.env.development` and the `app` schema:
 
@@ -39,6 +39,8 @@ npm run prisma:dev:status
 ```
 
 `npm run prisma:dev:deploy` changes database schema. Do not run it without explicit authorization and the required environment/database identity checks. Database service lifecycle scripts (`db:dev:up`, `db:test:up`, `db:*:down`) affect containers and must follow `.claude/rules/docker-wsl-agent-rules.md` and repository authorization rules before use. Check a command's call chain before running tests or scripts that may touch a database; do not assume they are offline.
+
+Database-backed integration tests must use a newly created, isolated, disposable test database environment for that run; never connect them to `smartlearning_dev` or another shared database. Before running them, inspect the test setup and command call chain for migrations, truncation, cleanup, or other writes, and follow `AGENTS.md` plus `.claude/rules/docker-wsl-agent-rules.md` for authorization and read-only preflight. Use `.env.test` and `compose.test-db.yml` only after verifying their current identity and that the environment is safely isolated and reproducible; a `test` filename alone is not proof. Do not remove volumes or reuse a retained environment without explicit authorization.
 
 ## Architecture and contract sources
 
