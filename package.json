@@ -6,6 +6,7 @@
   "packageManager": "npm",
   "scripts": {
     "build": "nest build",
+    "openapi:export": "npm run build && node dist/src/export-openapi.js",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
