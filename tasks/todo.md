@@ -99,3 +99,34 @@
 - 新增 `prisma.ci.config.ts`，僅讀取 CI 注入的 `DATABASE_URL` 並指定 `app` schema；不載入開發／測試 `.env`。新增 Prisma migration lock，標示 PostgreSQL provider。
 - Verification: Python YAML parse PASS; `git diff --check` PASS。`actionlint` 未安裝；Ruby 不可用。
 - 未驗證：沒有在本機建立資料庫或跑 migration；fresh PostgreSQL 上 migration 及可下載 artifact 的實際結果仍需 GitHub Actions job 執行確認。
+
+# 2026-11-10 OpenAPI 產生與詞彙檢查
+
+## Goal / acceptance criteria
+- [x] 匯出的 OpenAPI 文件可被 TypeScript client 型別產生工具接受並生成暫存輸出；不提交產物、不維護前端 client。
+- [x] 自動檢查 OpenAPI 名稱是否使用權威詞彙表標記的 Avoid 用詞，錯誤含精確位置；空 `paths` 可通過。
+- [x] CI、文件及本機命令一致；不新增業務 API、不連 DB、不讀取環境 secret。
+
+## Risk & rollback
+- Risk: 低；只新增 OpenAPI 靜態檢查、工具依賴和 CI 步驟。
+- Rollback: 移除新增 scripts、工具、檢查資料及 CI 步驟；不觸及資料。
+
+## Working notes
+- 現有 `openapi:export` 已建置並匯出，CI 有 OpenAPI job。
+- 權威 GLOSSARY 在 repo 外；CI 使用 repo 內精簡且需同步的檢查詞彙資料。
+- 目前無業務 API，因此本次只能驗證空規格可生成；不代表前端正式 client 已驗證。
+
+## Steps
+- [x] 加入暫存 client 型別產生檢查與詞彙靜態檢查。
+- [x] 補單元測試並接入 CI。
+- [x] 更新 OpenAPI 文件及結果紀錄。
+- [x] 執行 targeted tests、OpenAPI 匯出／產生、lint、typecheck、diff check。
+
+## Results
+- 新增 `openapi:client:check`：使用 `openapi-typescript` 將 `dist/openapi.json` 產生至忽略追蹤的 `dist/openapi-client.d.ts`；CI 在 Node 22 執行，前端正式 client 仍由前端 repo 管理。
+- 新增 `openapi:names:check`，對路徑、操作名稱、標籤、路徑／操作參數、元件 schema 名稱及巢狀欄位，檢查 repo 內精簡同步的 55 條詞彙規則；指出 JSON 位置及建議用詞，並保留詞彙表明確允許的 `Instructor-Led` 例外。
+- 為避免新產生工具受原本全域 `js-yaml@5.3.0` override 影響，僅對 `@redocly/openapi-core` 還原其相容的 `js-yaml@4.3.2`；其他套件仍維持既有 override。
+- CI OpenAPI job 現在依序匯出規格、產生 TypeScript 型別並檢查命名；更新 `docs/openapi.md` 說明責任界線與詞彙表同步要求。
+- Verification: `npm test -- --runInBand openapi-name-check.spec.ts` PASS（5 tests）；`npm run typecheck` PASS；`npm run lint:check` PASS；`npm run openapi:export` PASS；`npm run openapi:client:check` PASS；`npm run openapi:names:check` PASS（55 條規則）；`git diff --check` PASS。
+- 沒有資料庫／Docker 操作。OpenAPI 目前仍無業務 endpoint，所以這證明產生工具可讀取空規格，不能代表實際業務 API 或前端 client 已驗證。
+- `npm audit --json` 回報整體依賴樹有 32 筆弱點（8 low、16 moderate、6 high、2 critical）；新增的 `openapi-typescript`、`@redocly/openapi-core` 與其隔離的 `js-yaml@4.3.2` 未被列為受影響項目。既有全域 `js-yaml@5.3.0` 有 moderate advisory，本次未擴大範圍修正，需另行評估。
