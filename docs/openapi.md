@@ -8,7 +8,7 @@
 - 本機／CI 匯出：`npm run openapi:export`
 - 匯出檔案：`dist/openapi.json`（建置輸出，會被 Git 忽略，不需提交）
 
-`npm run openapi:export` 會先建置 NestJS app，再建立 OpenAPI 文件並檢查 OpenAPI 3 格式與文件版本；此流程不啟動 HTTP server，也不連線資料庫。
+`npm run openapi:export` 會先建置 NestJS app，再建立 OpenAPI 文件並檢查 OpenAPI 3 格式與文件版本；此流程不啟動 HTTP server，也不連線資料庫。`npm run openapi:client:check` 會用 `openapi-typescript` 將匯出規格轉成暫存型別檔，確認產生工具能接受這份規格；產物留在被忽略的 `dist/`，不提交，也不代表前端正式 client 已產生或驗證。`npm run openapi:names:check` 會檢查匯出文件中的路徑、操作名稱、標籤、參數及 schema／欄位名稱有沒有使用詞彙規範明確列出的不建議用詞。檢查使用 `tools/openapi/glossary-rules.json` 內由權威詞彙表整理出的規則；詞彙表更新時需同步檢查與更新此檔。
 
 ## 服務端點啟用政策
 
