@@ -67,6 +67,61 @@ jobs:
       - name: Apply migrations to the fresh database
         run: npx prisma migrate deploy --config prisma.ci.config.ts
 
+      - name: Save successful migration result
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { Client } = require('pg');
+
+          async function main() {
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            await client.connect();
+            try {
+              const { rows } = await client.query(
+                'SELECT current_setting(\'server_version\') AS postgres_version, migration_name FROM app._prisma_migrations WHERE rolled_back_at IS NULL AND finished_at IS NOT NULL ORDER BY started_at, migration_name',
+              );
+              const migrations = rows.map(({ migration_name }) => migration_name);
+              if (migrations.length === 0) {
+                throw new Error('No successfully applied migrations were found');
+              }
+
+              const outputPath = path.join(process.env.RUNNER_TEMP, 'migration-result.json');
+              fs.writeFileSync(
+                outputPath,
+                `${JSON.stringify(
+                  {
+                    result: 'success',
+                    completed_at: new Date().toISOString(),
+                    commit_sha: process.env.GITHUB_SHA,
+                    workflow_run_id: process.env.GITHUB_RUN_ID,
+                    workflow_run_attempt: process.env.GITHUB_RUN_ATTEMPT,
+                    postgres_version: rows[0].postgres_version,
+                    applied_migrations: migrations,
+                  },
+                  null,
+                  2,
+                )}\n`,
+              );
+            } finally {
+              await client.end();
+            }
+          }
+
+          main().catch((error) => {
+            console.error('Could not create the migration success record:', error.message);
+            process.exitCode = 1;
+          });
+          NODE
+
+      - name: Upload successful migration result
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-database-migration-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/migration-result.json
+          if-no-files-found: error
+          retention-days: 14
+
   openapi:
     name: OpenAPI contract
     runs-on: ubuntu-latest
