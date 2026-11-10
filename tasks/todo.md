@@ -66,3 +66,36 @@
 - HTTP 驗證：production 預設回 404；設定 `OPENAPI_ENABLED=true` 回 200，內容是可解析的 OpenAPI 3 JSON，`paths` 暫為空物件。
 - Verification: `npm run lint:check` PASS; `npm run typecheck` PASS; `npm run openapi:export` PASS（含 build）。無 DB、Docker 或 migration 操作。
 - 未驗證／限制：尚無業務 Controller、DTO 或 endpoint，故目前 OpenAPI spec 不含業務路徑；前端 client 產生與驗證由前端 repo 負責。
+
+# 2026-11-06 CI 全新資料庫 migration 驗證
+
+## Goal / acceptance criteria
+- [ ] 每次 push／Pull Request 的 CI 在新建 PostgreSQL 16 上從空資料庫套用 repo 內所有 Prisma migrations。
+- [ ] migration 只執行一次；失敗即讓 CI job 失敗，不重試或隱藏錯誤。
+- [ ] 成功後保存可下載的結果紀錄，包含成功套用的 migration、版本與執行識別；不含連線密碼或資料庫內容。
+- [ ] 不讀取 `.env.development`／`.env.test`，不連接既有或共享資料庫；既有 CI jobs 維持不變。
+
+## Risk & rollback
+- Risk: 低；新增 GitHub Actions 隔離服務 job，不觸及持久資料庫。
+- Rollback: 移除 CI migration job；不需要資料回復。
+
+## Working notes
+- Prisma 7 schema 在 `prisma/schema.prisma`；migration 位於 `prisma/migrations/`，SQL 會建立 `app` schema。
+- `prisma.dev.config.ts` 強制載入 `.env.development`，CI 不使用此 config。
+- workflow 已採 Node 22 與 `npm ci`。
+- 新增 `prisma/migrations/migration_lock.toml`，明確指定 PostgreSQL provider。
+- 未在本機啟動資料庫或執行 migration；fresh DB 的實際套用結果須由 GitHub Actions 執行確認。
+
+## Steps
+- [x] 新增隔離 PostgreSQL migration job，使用臨時連線設定與健康檢查。
+- [x] migration 成功後查詢已完成的 migration 記錄與 PostgreSQL 版本，產生不含憑證／資料庫內容的 JSON 結果檔，並上傳為 14 天的 workflow artifact。
+- [x] 使用臨時 `DATABASE_URL` 離線執行 Prisma schema/config validate。
+- [x] YAML parse、內嵌 Node.js 語法檢查與 `git diff --check` 通過；無本機 DB 或 migration 操作。
+- [x] 記錄結果與尚未由 GitHub Actions 實跑的項目。
+
+## Results
+- 新增 CI `database-migrations` job：每次 push／Pull Request 啟動 PostgreSQL 16 service，健康檢查通過後，使用 job 專屬連線執行一次 `prisma migrate deploy`；步驟失敗會使 job 失敗。
+- 新增成功後的結果檔：查詢 `app._prisma_migrations` 中完成且未回滾的 migration，並記錄結果、UTC 時間、commit SHA、workflow run／attempt 與 PostgreSQL 版本；只在 job 成功時上傳 14 天，不包含連線資訊、SQL dump 或業務資料。
+- 新增 `prisma.ci.config.ts`，僅讀取 CI 注入的 `DATABASE_URL` 並指定 `app` schema；不載入開發／測試 `.env`。新增 Prisma migration lock，標示 PostgreSQL provider。
+- Verification: Python YAML parse PASS; `git diff --check` PASS。`actionlint` 未安裝；Ruby 不可用。
+- 未驗證：沒有在本機建立資料庫或跑 migration；fresh PostgreSQL 上 migration 及可下載 artifact 的實際結果仍需 GitHub Actions job 執行確認。
