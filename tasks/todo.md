@@ -99,3 +99,33 @@
 - 新增 `prisma.ci.config.ts`，僅讀取 CI 注入的 `DATABASE_URL` 並指定 `app` schema；不載入開發／測試 `.env`。新增 Prisma migration lock，標示 PostgreSQL provider。
 - Verification: Python YAML parse PASS; `git diff --check` PASS。`actionlint` 未安裝；Ruby 不可用。
 - 未驗證：沒有在本機建立資料庫或跑 migration；fresh PostgreSQL 上 migration 及可下載 artifact 的實際結果仍需 GitHub Actions job 執行確認。
+
+# 2026-11-11 建立 backend WBS 執行與驗收 skill
+
+## Goal / acceptance criteria
+- [x] 建立 backend 專用 `run-smartlearning-backend` skill 與可重複執行的 driver。
+- [x] Driver 執行非資料庫 CI 等價檢查，啟動真實 NestJS process，並透過 HTTP 驗證 `/openapi.json`。
+- [x] 結果明確區分 PASS、SKIPPED、BLOCKED，且不宣稱未執行的資料庫 migration 或 UI 驗收通過。
+
+## Risk & rollback
+- Risk: 低；新增 agent 工具與說明，driver 不啟動 Docker、不連資料庫、不執行 migration/DDL、不清理資源。
+- Rollback: 移除新增 `.claude/skills/run-smartlearning-backend/` skill 目錄；不影響 app/db。
+
+## Working notes
+- Backend 來源是 Prisma 初始 migration `20261105000000_init_app_schema` 與 `schema.prisma`；沒有找到獨立 `er_model_postgresql.sql`。
+- 後端目前沒有業務 API paths；`/openapi.json` smoke 只驗證 NestJS skeleton。後端不產生 `packages/api-client`；client ownership 在 frontend。
+- 使用者選擇僅涵蓋 backend，frontend `/admin` 與 `/learner` 不屬於此 skill。
+- 原工作樹 `.gitignore` 已有使用者變更，未修改。
+
+## Steps
+- [x] 檢視 CI、package scripts、NestJS bootstrap、Prisma migration 與現有 skills。
+- [x] 新增 `SKILL.md` 與 `driver.mjs`，包含 DB 操作的授權與隔離防護。
+- [x] 語法及 diff whitespace 檢查。
+- [x] 執行 skill driver：lint、unit-test skip 判定、typecheck、build、OpenAPI export 與實際 HTTP smoke。
+- [x] 記錄驗證結果和未驗證限制。
+
+## Results
+- 新增 `.claude/skills/run-smartlearning-backend/SKILL.md` 與 `driver.mjs`。driver 支援 `all|checks|smoke|audit`，產生權限受限且不含原始 log 的 JSON 摘要；全流程只終止自己啟動的 server process。資料庫 migration 設為 `NOT_RUN`，不執行 Docker/database/DDL/cleanup。
+- 驗證命令 `node .claude/skills/run-smartlearning-backend/driver.mjs all`：lint PASS；unit tests SKIPPED（無 tracked `src/**/*.spec.ts`）；typecheck PASS；build PASS；OpenAPI export PASS；實際 NestJS HTTP `GET /openapi.json` PASS（OpenAPI 3.0.0，0 API paths）。結果記錄：`artifacts/run-backend-20261111133423-133521/results.json`。
+- `node --check .claude/skills/run-smartlearning-backend/driver.mjs` 與 `git diff --check -- .claude/skills/run-smartlearning-backend` PASS。
+- 未執行 fresh DB migration，也未驗證 live catalog 欄位註解；需在獲准且新建隔離 PostgreSQL 上執行，或取得對應 CI migration artifact。未實作/驗證業務錯誤模糊化、分頁 API 與 client 產生；後續應以實際功能及測試作為驗收依據。前端 shell 驗收依使用者選擇不納入本 skill。
