@@ -30,3 +30,4 @@ coverage
 /artifacts/gate3/
 
 ops/staging-replica/tls/
+/artifacts/ci-equivalent-20261110T123101Z-243984/

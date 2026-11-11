@@ -130,3 +130,68 @@
 - Verification: `npm test -- --runInBand openapi-name-check.spec.ts` PASS（5 tests）；`npm run typecheck` PASS；`npm run lint:check` PASS；`npm run openapi:export` PASS；`npm run openapi:client:check` PASS；`npm run openapi:names:check` PASS（55 條規則）；`git diff --check` PASS。
 - 沒有資料庫／Docker 操作。OpenAPI 目前仍無業務 endpoint，所以這證明產生工具可讀取空規格，不能代表實際業務 API 或前端 client 已驗證。
 - `npm audit --json` 回報整體依賴樹有 32 筆弱點（8 low、16 moderate、6 high、2 critical）；新增的 `openapi-typescript`、`@redocly/openapi-core` 與其隔離的 `js-yaml@4.3.2` 未被列為受影響項目。既有全域 `js-yaml@5.3.0` 有 moderate advisory，本次未擴大範圍修正，需另行評估。
+
+# 2026-11-11 驗證前端空殼啟動與測試資料庫狀態
+
+## Goal / acceptance criteria
+- [ ] 驗證前端 `/admin` 與 `/learner` 空殼能正常啟動並回應。
+- [ ] 確認測試資料庫遵守當次隔離與清理規範；無法確認時明確記錄阻礙，不擅自清除。
+
+## Risk & rollback
+- Risk: 前端啟動為低；資料庫環境檢查需唯讀，任何啟停、migration 或刪除資源皆停止等待額外同意。
+- Rollback: 不變更程式碼、資料庫或 Docker 資源；關閉本次啟動的前端程序（若有）。
+
+## Working notes
+- Admin 與 learner 是同一 Next.js app 的 `/admin`、`/learner` 路由，開發伺服器預設使用 3001。
+- Backend `.gitignore` 有既存修改，未觸碰；frontend Git status 尚待 test subagent 回報。
+- 初次查核時 Docker socket 不存在；使用者再次要求查核時 socket 已恢復。最新唯讀結果以再次查核為準；`.env.test` 存在但內容不作回報，設定存在不證明資料庫狀態已清理。
+- Backend `AGENTS.md` 指出整合測試可能隱式執行 `migrate deploy`；目前未執行任何資料庫測試或 Docker 資源操作。
+
+## Steps
+- [x] 執行前端 lint、typecheck、unit tests 與 HTTP route smoke check。
+- [x] 唯讀檢查測試 DB 呼叫鏈與環境狀態；Docker 不可用則記錄受阻。
+- [x] 記錄結果、未驗證事項與安全限制。
+
+## Results
+- 前端工作目錄乾淨，未修改前端檔案。`npm run lint:check` PASS；`npm run typecheck` PASS；`npm test` PASS（4 files、23 tests；僅有 Vite configLoader deprecation warning）。
+- port 3001 預檢無既有 listener；以 `npm run dev` 啟動後 `/`、`/admin`、`/learner` 均 HTTP 200。只停止本次啟動的 PID 7395，未碰觸其他程序。
+- 2026-11-11 再次唯讀檢查時 Docker context 為 `default`，Engine 可連線（Client 29.6.2-rd / Server 29.5.3）。`docker ps -a` 僅列出健康運作中的 `smartlearning-dev-db-dev-db-1`；`docker volume ls` 僅列出 `smartlearning-dev-db_dev_pgdata`。`docker inspect` 確認該容器掛載的是 dev volume。
+- 測試 Compose `ps -a` 無任何服務列出，且 volume 清單沒有測試專用 volume；可確認目前沒有該 Compose 專案的測試容器或資料卷殘留。進一步唯讀檢查發現 localhost:5432 無 listener（`ss -ltn '( sport = :5432 )'`）；`pg_isready` 不可用（系統未安裝該工具）。因此沒有可查詢的本機測試 DB，無法確認任何資料表內容是否為空或乾淨；未連線或檢查其他外部資料庫服務。
+- 未執行 Docker／資料庫變更或整合測試；development DB 容器與資料卷保持原狀。
+
+# 2026-11-11 定義並建立隔離乾淨測試資料庫
+
+## Goal / acceptance criteria
+- [x] 定義可量測的乾淨基線：完成 repo migrations；`app._prisma_migrations` 完整成功；每一張 app 業務表 0 rows；無意外 app 表／型別。
+- [x] 建立唯一 Compose project 的 PostgreSQL 16 測試環境，與開發容器/資料卷隔離；驗證實際資料庫身份及乾淨基線。
+- [x] Postgres 密碼不進容器環境或命令 metadata；暫存秘密僅傳至 Docker 管理 volume 並清除本機暫存。
+
+## Risk & rollback
+- Risk: 中高；建立專屬容器、網路、資料／秘密 volume，並在全新測試資料庫執行 Prisma DDL migration。
+- Target: 由唯一 RUN_ID/project 控制的新測試資源，測試 DB `smartlearning_test`、app schema、loopback port 5432。
+- Rollback: 本次核准保留新環境運作，不自行 down 或刪除任何 volume；若需移除須另行核對並取得授權。開發 DB 5433 與其 volume不碰。
+
+## Working notes
+- 使用者明確同意建立新隔離 Compose 資源、執行 Prisma migrations、確認 app 業務表為空，並保留環境運作；也明確同意同步本機忽略追蹤的 `.env.test` 內 `DATABASE_URL` 密碼，與 `DB_PASSWORD` 一致（秘密值不記錄）。
+- Prisma CI 設定 `prisma.ci.config.ts` 由 process `DATABASE_URL` 取得連線並強制 `schema=app`；既有 CI 使用此設定部署 migrations。
+- 為避免 Docker inspect metadata 洩漏密碼，測試 Postgres 使用 `POSTGRES_PASSWORD_FILE`；一次性 root init 只設定 `root:postgres 0440` 權限，資料庫唯讀掛載 Docker 管理秘密 volume，並由 `postgres` 身分驗證可讀。
+- 初次新環境建立已成功建立唯一 project/container/兩個專屬 volumes，健康檢查通過，實際 DB identity 為 `smartlearning_test`/`smartlearning`；migration 尚未執行。初始資料庫檢查錯把 PostgreSQL 系統 schema `pg_toast` 當成使用者 schema而中止；已保留證據，唯讀查詢確認除了系統 schema 外沒有任何 schema/table。檢查器現改為排除 `pg_` 系統 schema，並加入僅針對 `creating` 狀態、健康且仍為空 DB 的精確 `resume` 動作，避免重建或刪除目前 run。
+- 該 run：`20261111115809-e2d12f2b` / project `sltest-20261111115809-e2d12f2b`；Docker context `default`、dev DB 仍在 5433。本次保留既有 dev DB/volume，不執行清除。
+
+## Steps
+- [x] 唯讀 preflight：Docker context/Engine、port、postgres image、現有容器/network/volumes、Compose 展開檢查，不輸出 secrets。
+- [x] 更新測試 Compose 以支援安全密碼檔掛載與一次性秘密初始化服務；新增可重複 create/resume/status 工具與標準說明，嚴格唯一 run ID 和身份驗證。
+- [x] 靜態驗證 Compose、腳本語法、型別檢查及 diff；migration inventory parser 對目前 SQL 得到 36 tables/21 enums。
+- [x] 續跑目前已建立、仍健康且尚未 migration 的精確測試 DB；核對身份後部署 migrations。
+- [x] 執行唯讀 catalog、migration ledger、逐表 row-count 驗收，證明所有業務表為 0 rows。
+- [x] 記錄結果與保留資源狀態；確認開發 DB 資源未變。
+
+## Results
+- 「乾淨」定義：新建專用 DB，所有 repo migrations 成功，`app._prisma_migrations` 與預期一致且無失敗紀錄，36 張 app 業務表全為 0 rows，21 個 enum、表／relation inventory 與 migration 相符，沒有額外使用者 schema/table/view/sequence/custom type。Postgres 系統 schema（如 `pg_toast`）與 Prisma migration ledger 不算應用資料。
+- 建立並保留 run `20261111115809-e2d12f2b`，Compose project `sltest-20261111115809-e2d12f2b`。PostgreSQL 16.15 healthy，loopback `127.0.0.1:5432`；資料 volume 與 secret volume 均為該 project 專屬。Migration `20261105000000_init_app_schema` 已成功套用，`prisma migrate status` up-to-date。
+- 驗收摘要：DB `smartlearning_test`、role `smartlearning`；36 app tables、21 enums、1 successful migration、0 failed/rolled-back migrations、0 app business rows。`app._prisma_migrations` 有完整成功紀錄。腳本驗證所有 app relation/custom-type inventory，並對每張業務表逐表 count；另以唯讀 SQL 重查得到相同 aggregate。
+- 密碼使用短暫本機 `0400` 檔案經一次性 init 容器複製至 run 專屬 Docker volume；本機暫存已刪除。Postgres 容器只含 `POSTGRES_PASSWORD_FILE` 路徑，inspect 檢查 `POSTGRES_PASSWORD` value 不存在；`postgres` 使用者可讀 root:postgres `0440` secret file，volume 為 read-only mount。
+- 初次建立檢查錯把 PostgreSQL 系統 schema `pg_toast` 當成使用者 schema，故在 migration 前安全中止。已保存容器/volume identity、健康狀態、啟動 logs 及 catalog 證據；唯讀檢查確認無使用者 schema/table；修正檢查器排除 `pg_` system schemas 後，使用專用 `resume` 僅續跑同一個仍健康且空白的 run，沒有重建或刪除任何資源。
+- 靜態驗證：`node --check tools/test-db/db-test-env.cjs` PASS；`npm run db:test:preflight`（建立前）PASS；`docker compose ... config --quiet` PASS；`npm run typecheck` PASS；`git diff --check` PASS；migration parser counted 36 table statements / 21 enum statements；`npm run db:test:status` 顯示 healthy。
+- `.env.test` 是本機忽略追蹤檔；依使用者明確同意，將 `DATABASE_URL` 內的測試密碼同步為 `DB_PASSWORD`，未輸出或記錄秘密值。
+- 開發 DB `smartlearning-dev-db-dev-db-1` 仍 healthy、綁定 5433 並掛載原 `smartlearning-dev-db_dev_pgdata`；未修改或清理 dev/test 資料卷。未執行整合測試或任何 seed/write operation；本資料庫在後續測試寫入後即不再符合「乾淨」基線。

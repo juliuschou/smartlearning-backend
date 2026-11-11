@@ -5,11 +5,12 @@ services:
     environment:
       POSTGRES_DB: smartlearning_test
       POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME is required}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     ports:
       - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
       - test_pgdata:/var/lib/postgresql/data
+      - test_db_secrets:/run/secrets:ro
     healthcheck:
       test:
         [
@@ -23,9 +24,23 @@ services:
     networks:
       - test-db
 
+  # One-shot root initializer: copies a protected temp file into this run's
+  # Docker-managed secret volume as root:postgres, readable only by that group.
+  test-db-secret-init:
+    image: postgres:16
+    profiles: ['secret-init']
+    user: '0:0'
+    entrypoint: ['sh', '-ec']
+    command: ['install -m 0440 -g postgres /source/postgres_password /secret-volume/postgres_password']
+    volumes:
+      - ${TEST_DB_SECRET_SOURCE:-/tmp/smartlearning-test-password}:/source/postgres_password:ro
+      - test_db_secrets:/secret-volume
+
 volumes:
   # Dedicated disposable integration-test data. Never share this with development.
   test_pgdata:
+  # Secret is copied in by test-db-secret-init and read-only mounted by Postgres.
+  test_db_secrets:
 
 networks:
   test-db:
