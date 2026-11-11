@@ -141,6 +141,12 @@ jobs:
       - name: Build and validate OpenAPI document
         run: npm run openapi:export
 
+      - name: Verify OpenAPI can generate TypeScript client types
+        run: npm run openapi:client:check
+
+      - name: Check API names against curated glossary rules
+        run: npm run openapi:names:check
+
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest
