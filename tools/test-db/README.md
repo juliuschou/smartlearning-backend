@@ -20,9 +20,12 @@ npm run db:test:preflight # 唯讀檢查 Docker 身分、埠、image 與殘留�
 npm run db:test:up       # 建立全新隔離環境、套用 migration、驗收乾淨基線
 npm run db:test:resume -- <run-id> # 僅續跑已建妥、仍健康且未套用 migration 的精確 run
 npm run db:test:status   # 查詢目前最新 run 的容器狀態
+npm run db:test:assert-integration -- <run-id> # 唯讀確認指定 run 可供 Checkpoint B 整合測試
 npm run db:test:logs     # 看目前最新 run 的最近 100 行資料庫日誌
 npm run db:test:down     # 停止本次容器與網路，但保留資料／秘密 volume
 ```
+
+Checkpoint B 整合測試前，`db:test:assert-integration` 必須帶明確 run ID。它唯讀驗證 run state、Docker context、指定 Compose project/container、健康狀態、run 專屬資料與秘密 volumes、loopback port、資料庫身分、migration ledger，以及所有 app 業務表目前為 0 rows。成功後整合測試可建立並精確清除自己的 fixture；再次執行該檢查可確認 fixture 已清除。任何已有 app row 的 run 都會被拒絕，須新建 run，不能清表或重用。
 
 每次建立會產生新的 run ID 與 Compose project；不重用已停止或保留的 run。狀態檔只記錄 run ID、資源名稱和驗收摘要，存放於 `$XDG_STATE_HOME/smartlearning/test-db/runs/`（若未設定則 `~/.local/state/smartlearning/test-db/runs/`），不含密碼。`status`、`logs`、`down` 可選擇性帶 run ID：
 
