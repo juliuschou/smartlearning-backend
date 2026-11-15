@@ -27,7 +27,7 @@ coverage
 .env.production
 .env.sandbox-rehearsal
 /ops/topology/.env.cp8
-/artifacts/gate3/
+/artifacts/**
 
 ops/staging-replica/tls/
 /artifacts/ci-equivalent-20261110T123101Z-243984/
