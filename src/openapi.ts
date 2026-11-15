@@ -8,6 +8,11 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
       'OpenAPI contract for the SmartLearning backend. The frontend project is responsible for generating and maintaining its API caller code.',
     )
     .setVersion('0.0.1')
+    .addSecurity('sessionCookie', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'sl_session',
+    })
     .build();
 
   return SwaggerModule.createDocument(app, config);
