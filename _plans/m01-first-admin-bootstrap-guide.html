@@ -1,0 +1,142 @@
+<title>M01 測試帳號準備</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: an operations runbook with a clear separation between test-only provisioning and production bootstrap. */
+:root {
+  --bg: #f3f6f7; --surface: #ffffff; --surface-muted: #e8eff1;
+  --fg: #182d37; --muted: #536b75; --line: #c9d7dc;
+  --accent: #176c69; --accent-contrast: #ffffff;
+  --good: #286442; --warn: #815517; --danger: #8c3838;
+  --code-bg: #172b34; --code-fg: #e4f2ef;
+  --font-display: "Space Grotesk", "Trebuchet MS", sans-serif;
+  --font-body: "Inter", "Segoe UI", sans-serif;
+  --font-mono: "DM Mono", "SFMono-Regular", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111e23; --surface: #1b2c33; --surface-muted: #233940;
+  --fg: #e5eff1; --muted: #b0c2c8; --line: #3d555d;
+  --accent: #80d2c5; --accent-contrast: #10231f;
+  --good: #91d5a8; --warn: #f1ca80; --danger: #f1a5a5;
+  --code-bg: #0b1519; --code-fg: #e0f4ef; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #111e23; --surface: #1b2c33; --surface-muted: #233940;
+  --fg: #e5eff1; --muted: #b0c2c8; --line: #3d555d;
+  --accent: #80d2c5; --accent-contrast: #10231f;
+  --good: #91d5a8; --warn: #f1ca80; --danger: #f1a5a5;
+  --code-bg: #0b1519; --code-fg: #e0f4ef; color-scheme: dark;
+}
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+* { box-sizing: border-box; }
+body { margin: 0; padding-block: 2rem 4rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: var(--bg); color: var(--fg); font: 1rem/1.65 var(--font-body); }
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 1.5rem; }
+header, section { display: grid; gap: 1rem; }
+header { padding: 1.2rem 0 1.4rem; border-bottom: 1px solid var(--line); }
+h1,h2,h3 { font-family: var(--font-display); line-height: 1.16; text-wrap: balance; }
+h1 { font-size: clamp(2rem, 7vw, 3.4rem); letter-spacing: -.045em; max-width: 20ch; margin: 0; }
+h2 { font-size: clamp(1.35rem, 4vw, 1.85rem); margin: 0; }
+h3 { font-size: 1.05rem; margin: 0; }
+p,ul,ol { margin: 0; }
+.kicker { color: var(--accent); font: 500 .76rem/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.lead { color: var(--muted); font-size: 1.08rem; max-width: 68ch; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; flex-wrap: wrap; }
+.panel { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: clamp(1rem, 3vw, 1.35rem); display: grid; gap: .8rem; }
+.callout { border-left: 4px solid var(--accent); background: var(--surface-muted); padding: 1rem 1.1rem; border-radius: 0 8px 8px 0; }
+.callout.warn { border-color: var(--warn); } .callout.danger { border-color: var(--danger); }
+.grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .8rem; }
+.row { display: flex; gap: .55rem; flex-wrap: wrap; }
+.tag { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 99px; padding: .14rem .55rem; font: 500 .72rem var(--font-mono); color: var(--muted); }
+.tag.good { color: var(--good); } .tag.warn { color: var(--warn); } .tag.danger { color: var(--danger); }
+li + li { margin-top: .4rem; }
+.small { color: var(--muted); font-size: .9rem; }
+code,pre { font-family: var(--font-mono); }
+.inline { font-size: .88em; overflow-wrap: anywhere; background: var(--surface-muted); padding: .06rem .28rem; border-radius: 3px; }
+pre { max-width: 100%; overflow-x: auto; padding: .85rem 1rem; background: var(--code-bg); color: var(--code-fg); border-radius: 7px; line-height: 1.55; font-size: .84rem; }
+strong { font-weight: 700; }
+footer { color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; font-size: .88rem; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 620px) { .grid { grid-template-columns: 1fr; } body { padding-block: 1.2rem 3rem; } }
+</style>
+<main>
+  <header>
+    <div class="kicker">SmartLearning Backend · M01 / Checkpoint B</div>
+    <h1>準備測試帳號，執行 Login 驗收</h1>
+    <p class="lead">這份手冊現在聚焦於如何在一次性隔離測試資料庫中，安全建立最低權限的測試帳號並執行真實 HTTP／PostgreSQL 驗收。測試帳號由整合測試短暫建立與清除，不需要人工取得或保存帳密。</p>
+    <div class="row"><span class="tag warn">資料庫整合測試：需另行核准</span><span class="tag">角色：TEACHER</span><span class="tag">不使用 SYSTEM_ADMIN</span></div>
+  </header>
+
+  <section>
+    <div class="section-head"><h2>這次測試會做什麼</h2><span class="tag">Checkpoint B 範圍</span></div>
+    <div class="panel">
+      <p>整合測試會先確認指定 run 是本機新建、隔離且完成 migration 的 `smartlearning_test`／`app` 資料庫，並確認應用資料表目前全空。之後測試程式在交易中建立臨時 `TEACHER` 角色與幾個唯一測試帳號；成功帳號設為啟用、Email 已驗證並使用 Argon2 雜湊密碼。它不建立管理者、不建立公開 API，也不配置任何權限映射。</p>
+      <ul><li>真實 NestJS HTTP 路由、CSRF／Origin guard、cookie 與 Prisma/PostgreSQL repository。</li><li>CSRF bootstrap、登入成功、登入 Session 驗證、登出及登出後拒絕舊登入 Session。</li><li>不存在、停用、未驗證、沒有啟用角色及密碼錯誤均回覆一致的登入失敗。</li><li>測試帳號、角色、登入 Session 僅以本次建立的精確識別碼清理；秘密不輸出。</li></ul>
+      <div class="callout warn"><strong>基線變化：</strong>整合測試寫入資料後，資料庫不再符合「乾淨基線」。套件會精確刪除自己建立的 fixture；若測試或清理中斷，不能假設資料庫仍乾淨，必須唯讀檢查並改用新 run，不能廣泛清空。</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>重要區分：測試帳號不是第一個管理者</h2></div>
+    <div class="grid">
+      <div class="panel"><h3>Checkpoint B 測試帳號</h3><ul><li>只為 Login／Session／Logout 驗收服務。</li><li>由 `test/auth.integration-spec.ts` 在測試開始時隨機產生，測試結束精確清除。</li><li>只指派 `TEACHER`，不建立授權映射，不給 `SYSTEM_ADMIN`。</li><li>不需要人員複製帳號或密碼，命令列也不帶秘密。</li></ul></div>
+      <div class="panel"><h3>正式第一個系統管理者</h3><ul><li>屬於部署／維運初始化流程，不是 Checkpoint B fixture。</li><li>必須以正式核定的受控 bootstrap 建立，且帳號與 `SYSTEM_ADMIN` 關聯同一交易完成。</li><li>執行身分、正式命令、初始秘密交付、有效期、首次登入及入口停用仍依部署契約核定。</li><li>目前 checkout 沒有可查證的正式 bootstrap 原始碼；不要執行 `npm run bootstrap:admin` 或 `npm run bootstrap:w1-teacher`。</li></ul></div>
+    </div>
+    <div class="callout danger"><strong>禁止替代操作：</strong>不要手動 SQL、不要將正式帳號流程用在測試 DB，也不要將 development／production／共用 DB 指向測試程式。測試資料只能由新增的測試專用 fixture 建立。</div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>執行前核准與準備</h2><span class="tag danger">Docker／DB 寫入需另行授權</span></div>
+    <div class="panel">
+      <ol>
+        <li><strong>先取得明確核准：</strong>核准建立新的隔離 Docker 測試 DB、套用 Prisma migrations、寫入並清除短暫測試資料，以及保留／清理本次資源的範圍。這份文件不構成操作授權；volume 刪除永遠需要另行核准。</li>
+        <li><strong>確認工作目錄與設定：</strong>位於 backend repository 根目錄；`.env.test` 必須存在且只指向 localhost 的 `smartlearning_test`，不要貼出或輸出檔案秘密。必需有核准的 `COOKIE_SECRET`、精確的 `CORS_ORIGIN` 及符合契約的 Session 設定。</li>
+        <li><strong>執行唯讀 preflight：</strong></li>
+      </ol>
+      <pre><code>npm run db:test:preflight</code></pre>
+      <p class="small">preflight 檢查 Docker context／Engine、5432 port、Postgres image、test DB 設定及殘留資源；任何一項不符就停下。不可為了通過檢查而切換到 dev DB、刪除舊 volume 或重用舊 run。</p>
+      <ol start="4"><li><strong>建立全新隔離測試資料庫：</strong>只有核准涵蓋 Docker 建立與 migration 時才執行下列命令。</li></ol>
+      <pre><code>npm run db:test:up</code></pre>
+      <p>等待輸出 <code>Clean test database verified</code>，抄下輸出的 <code>run_id</code>。若畫面只看到 Compose project，例如 <code>sltest-20261114113654-e98890d8</code>，它不是 run ID；去掉開頭的 <code>sltest-</code>，此例的 <code>RUN_ID</code> 是 <code>20261114113654-e98890d8</code>。</p>
+      <p>若需要從本機 run 狀態檔查已記錄的 ID，在 repository 根目錄執行唯讀指令：</p>
+      <pre><code>find "${XDG_STATE_HOME:-$HOME/.local/state}/smartlearning/test-db/runs" -maxdepth 1 -type f -name '*.json' -printf '%f\n'</code></pre>
+      <p class="small">每個輸出的檔名去掉最後的 <code>.json</code> 就是 <code>RUN_ID</code>。若沒有輸出，先確認建立工具的輸出與 <code>XDG_STATE_HOME</code>；不要猜 ID、重建、resume 或刪除資源。若建立失敗，保留現場供診斷；只有工具明確回報可安全 resume 時，才依精確 run ID 和 README 規則續跑。</p>
+      <div class="callout"><strong>本次核准 DB 的身份：</strong>run 專屬 Compose project、PostgreSQL `smartlearning_test`、`app` schema、localhost port 5432。實際以當次工具輸出與唯讀檢查為準；不沿用過去執行的容器／volume 身分。</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>執行真實整合驗收</h2><span class="tag">測試會自動建立短暫帳號</span></div>
+    <div class="panel">
+      <ol>
+        <li><strong>先確認精確 run 仍可用：</strong>將尖括號換成本次建立時輸出的 run ID。這項唯讀檢查確認 run 記錄、Docker project／container、健康狀態、DB 身分、migration ledger，並拒絕已有應用資料列的資料庫。</li>
+      </ol>
+      <pre><code>npm run db:test:assert-integration -- &lt;run-id&gt;</code></pre>
+      <ol start="2"><li><strong>執行 Checkpoint B PostgreSQL／HTTP 測試：</strong>維持在 repository 根目錄，將相同 run ID 設定給測試程序。不要把帳密、cookie 或 token 放進命令。</li></ol>
+      <pre><code>TEST_DB_RUN_ID=&lt;run-id&gt; NODE_ENV=test npm run test:integration -- --runTestsByPath test/auth.integration-spec.ts</code></pre>
+      <p>測試開始前會再次執行精確 run 身分與乾淨資料檢查；缺少 run ID、DB 設定不符、容器不健康、migration ledger 不完整或資料庫不是乾淨基線時會拒絕寫入。測試帳密在記憶體中隨機產生，不會列印或存入版本控制。測試結束會精確清除本次建立的角色、帳號與登入 Session。</p>
+      <p class="small"><strong>預期：</strong>三個整合案例通過，分別涵蓋成功登入／Session／登出撤銷、一般化登入失敗、CSRF／Origin 拒絕。任何 setup、HTTP、DB assertion 或 cleanup 失敗都算失敗；不能只看最後一行或把部分結果標成完整 PASS。</p>
+      <ol start="3"><li><strong>確認 fixture 已清除：</strong>再次執行只讀精確 run 檢查；應回報通過。若檢查因殘留應用列而失敗，停止，不可手動清表或重用該 run。</li></ol>
+      <pre><code>npm run db:test:assert-integration -- &lt;run-id&gt;</code></pre>
+      <p class="small">如果測試被中斷或清理失敗，保留錯誤與 run ID，先唯讀檢查 `npm run db:test:status -- &lt;run-id&gt;` 和必要的 logs；下一輪使用新的 disposable run。不要執行 prune、`down -v`、全庫清除或 wildcard cleanup。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>測試結果如何回報</h2></div>
+    <div class="grid">
+      <div class="panel"><h3>可記錄</h3><ul><li>Run ID、repository revision、命令、時間與各測試案例狀態。</li><li>DB 名稱／schema、migration 數、容器健康摘要。</li><li>HTTP status、DB fixture 是否精確清除，以及是否產生 session 撤銷資料。</li></ul></div>
+      <div class="panel"><h3>不可記錄</h3><ul><li>`.env.test` 內容、資料庫密碼、COOKIE_SECRET。</li><li>明文測試密碼、`sl_session` cookie、CSRF token 或完整 cookie jar。</li><li>含個資或完整資料列的 DB dump、完整內部錯誤回應。</li></ul></div>
+    </div>
+    <div class="callout warn"><strong>狀態區分：</strong>只有本次整合 suite、DB assertions 與 fixture 清理全部通過，才可把對應 Checkpoint B 認證整合案例記為 PASS。未獲准執行 DB、未建立新 run 或 suite 未跑時記為 BLOCKED／NOT RUN。既有 unit tests、mock API tests、build 或 OpenAPI smoke 不等於此項整合驗收。</div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>與 Checkpoint B 測試手冊銜接</h2></div>
+    <div class="panel">
+      <p>本手冊提供測試帳號的自動建立方式；`_plans/m01-checkpoint-b-integration-guide.html` 說明 API 驗收項目與通過條件。現在不需要先手動建立帳號，也不需要照舊手冊貼入互動式 curl 帳密步驟。整合 suite 直接執行真實 HTTP 路由並檢查 PostgreSQL 持久化。</p>
+      <p class="small">帳號資格依 `src/auth/auth.service.ts`：帳號啟用、Email 已驗證、至少一個啟用角色且密碼符合雜湊驗證。fixture 僅建立此次驗收所需條件。正式帳號／第一位系統管理者建立仍須依權威《第一個帳號與角色建立指引》及核准部署契約另行處理。</p>
+    </div>
+  </section>
+
+  <footer>操作依據：`tools/test-db/README.md`、`tools/test-db/db-test-env.cjs`、`tools/test-db/assert-integration-ready.cjs`、`test/auth.integration-spec.ts`、`src/auth/auth.controller.ts`、`src/auth/auth.service.ts`、M01 Bootstrap 規格。命令僅在目前 checkout 對應程式與設定存在、操作獲核准且 preflight 通過時適用。</footer>
+</main>
