@@ -17,6 +17,10 @@ jest.mock('argon2', () => ({
 describe('AuthService', () => {
   const repository = {
     findAccountForLogin: jest.fn(),
+    findOwnProfile: jest.fn(),
+    updateOwnProfile: jest.fn(),
+    findPasswordHashForActiveAccount: jest.fn(),
+    changePasswordAndRevokeSessions: jest.fn(),
     createSession: jest.fn(),
     touchValidSession: jest.fn(),
     revokeSession: jest.fn(),
@@ -64,6 +68,7 @@ describe('AuthService', () => {
     );
   });
 
+  // 登入時整理信箱但不改密碼內容，並固定記下當下可用的權限資料。
   it('normalizes Email, verifies password, stores only its hash and captures the permission snapshot', async () => {
     repository.findAccountForLogin.mockResolvedValue(activeAccount);
 
@@ -94,6 +99,12 @@ describe('AuthService', () => {
       { ...activeAccount, status: user_status_e.DISABLED },
       { ...activeAccount, emailVerified: false },
       { ...activeAccount, roleIds: [], roleCodes: [], permissionCodes: [] },
+      {
+        ...activeAccount,
+        roleIds: ['learner-role-id'],
+        roleCodes: ['LEARNER'],
+        permissionCodes: ['JOIN_ACTIVITY'],
+      },
       activeAccount,
     ];
     const responses: unknown[] = [];
@@ -116,6 +127,69 @@ describe('AuthService', () => {
       new Set(responses.map((response) => JSON.stringify(response))).size,
     ).toBe(1);
     expect(argon2.hash).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns and updates only the authenticated account profile fields', async () => {
+    const profile = {
+      email: 'user@example.test',
+      name: '王小明',
+      phone: null,
+    };
+    repository.findOwnProfile.mockResolvedValue(profile);
+    repository.updateOwnProfile.mockResolvedValue(profile);
+
+    await expect(service.getOwnProfile('account-id')).resolves.toEqual(profile);
+    await expect(
+      service.updateOwnProfile('account-id', { name: '王小明' }),
+    ).resolves.toEqual(profile);
+    expect(repository.updateOwnProfile).toHaveBeenCalledWith('account-id', {
+      name: '王小明',
+    });
+    await expect(
+      service.updateOwnProfile('account-id', {}),
+    ).rejects.toMatchObject({
+      response: { code: 'PROFILE_UPDATE_EMPTY' },
+    });
+  });
+
+  it('validates the current password, hashes the new one, and revokes all sessions', async () => {
+    repository.findPasswordHashForActiveAccount.mockResolvedValue('old-hash');
+    repository.changePasswordAndRevokeSessions.mockResolvedValue(true);
+    (argon2.verify as jest.Mock).mockResolvedValue(true);
+    (argon2.hash as jest.Mock).mockResolvedValue('new-hash');
+
+    await expect(
+      service.changeOwnPassword('account-id', 'old-password', 'new-password'),
+    ).resolves.toBeUndefined();
+
+    expect(argon2.verify).toHaveBeenCalledWith('old-hash', 'old-password');
+    expect(argon2.hash).toHaveBeenCalledWith('new-password');
+    expect(repository.changePasswordAndRevokeSessions).toHaveBeenCalledWith({
+      userAccountId: 'account-id',
+      currentPasswordHash: 'old-hash',
+      newPasswordHash: 'new-hash',
+    });
+  });
+
+  it('does not change the password when current credentials are wrong', async () => {
+    repository.findPasswordHashForActiveAccount.mockResolvedValue('old-hash');
+    (argon2.verify as jest.Mock).mockResolvedValue(false);
+
+    await expect(
+      service.changeOwnPassword('account-id', 'wrong-password', 'new-password'),
+    ).rejects.toMatchObject({
+      response: { code: 'CURRENT_PASSWORD_INVALID' },
+    });
+    expect(repository.changePasswordAndRevokeSessions).not.toHaveBeenCalled();
+  });
+
+  it('rejects a new password shorter than the agreed minimum', async () => {
+    await expect(
+      service.changeOwnPassword('account-id', 'old-password', 'short'),
+    ).rejects.toMatchObject({
+      response: { code: 'PASSWORD_POLICY_FAILED' },
+    });
+    expect(repository.findPasswordHashForActiveAccount).not.toHaveBeenCalled();
   });
 
   it('maps persistence failure to a retryable generic service error', async () => {

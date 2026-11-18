@@ -22,6 +22,7 @@ export class AuthSessionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<CookieRequest>();
+    // 只依伺服器發出的登入 cookie 確認身分，驗證通過後才把本人資料交給後續處理。
     const credential = request.cookies?.[this.config.sessionCookieName];
     if (!credential) throw this.unauthorized();
 

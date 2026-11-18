@@ -7,6 +7,7 @@ import { AuthConfig } from './auth.config';
 import { AuthSecurityService } from './auth-security.service';
 import { AuthController } from './auth.controller';
 import { AuthSessionGuard } from './auth-session.guard';
+import { PasswordResetService } from './password-reset.service';
 import { CsrfGuard } from './csrf.guard';
 
 describe('AuthController', () => {
@@ -15,6 +16,13 @@ describe('AuthController', () => {
     login: jest.fn(),
     logout: jest.fn(),
     validateSession: jest.fn(),
+    getOwnProfile: jest.fn(),
+    updateOwnProfile: jest.fn(),
+    changeOwnPassword: jest.fn(),
+  };
+  const passwordResetService = {
+    requestPasswordReset: jest.fn(),
+    resetPassword: jest.fn(),
   };
   const config = {
     sessionCookieName: 'sl_session',
@@ -45,6 +53,7 @@ describe('AuthController', () => {
         { provide: AuthService, useValue: authService },
         { provide: AuthConfig, useValue: config },
         { provide: AuthSecurityService, useValue: security },
+        { provide: PasswordResetService, useValue: passwordResetService },
         { provide: CsrfGuard, useValue: { canActivate: () => true } },
         { provide: AuthSessionGuard, useClass: AuthSessionGuard },
       ],
@@ -70,6 +79,22 @@ describe('AuthController', () => {
       csrfToken: 'signed-session-csrf-token',
     });
     authService.logout.mockResolvedValue(undefined);
+    authService.getOwnProfile.mockResolvedValue({
+      email: 'user@example.test',
+      name: '王小明',
+      phone: null,
+    });
+    authService.updateOwnProfile.mockResolvedValue({
+      email: 'user@example.test',
+      name: '王小明',
+      phone: null,
+    });
+    authService.changeOwnPassword.mockResolvedValue(undefined);
+    passwordResetService.requestPasswordReset.mockResolvedValue({
+      message:
+        'If the account is eligible, password reset instructions will be sent.',
+    });
+    passwordResetService.resetPassword.mockResolvedValue(undefined);
     authService.validateSession.mockResolvedValue({
       sessionId: 'session-id',
       userAccountId: 'account-id',
@@ -82,6 +107,7 @@ describe('AuthController', () => {
     await app.close();
   });
 
+  // 登入狀態放在瀏覽器不可直接讀取的 Cookie，前端只拿到防偽用的值。
   it('sets a readable CSRF cookie and returns the token for the client header', async () => {
     const response = await request(app.getHttpServer())
       .get('/auth/csrf')
@@ -147,5 +173,85 @@ describe('AuthController', () => {
       'valid-session-credential',
     );
     expect(response.body).toEqual({ authenticated: true });
+  });
+
+  it('reads and updates only the authenticated account profile', async () => {
+    const profile = await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Cookie', 'sl_session=valid-session-credential')
+      .expect(200);
+    expect(profile.body).toEqual({
+      email: 'user@example.test',
+      name: '王小明',
+      phone: null,
+    });
+    expect(authService.getOwnProfile).toHaveBeenCalledWith('account-id');
+
+    await request(app.getHttpServer())
+      .post('/auth/me/profile')
+      .set('Cookie', 'sl_session=valid-session-credential')
+      .send({ name: ' 王小明 ' })
+      .expect(200);
+    expect(authService.updateOwnProfile).toHaveBeenCalledWith('account-id', {
+      name: '王小明',
+    });
+
+    await request(app.getHttpServer())
+      .post('/auth/me/profile')
+      .set('Cookie', 'sl_session=valid-session-credential')
+      .send({ email: 'attacker@example.test', role: 'SYSTEM_ADMIN' })
+      .expect(400);
+    expect(authService.updateOwnProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts forgot-password requests without exposing account eligibility', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/password/forgot')
+      .send({ email: 'User@example.test' })
+      .expect(202);
+
+    expect(response.body).toEqual({
+      message:
+        'If the account is eligible, password reset instructions will be sent.',
+    });
+    expect(passwordResetService.requestPasswordReset).toHaveBeenCalledWith(
+      'User@example.test',
+    );
+  });
+
+  it('resets a password from a one-time token without returning credentials', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/password/reset')
+      .send({ token: 'a'.repeat(43), newPassword: 'new-password' })
+      .expect(204);
+
+    expect(passwordResetService.resetPassword).toHaveBeenCalledWith(
+      'a'.repeat(43),
+      'new-password',
+    );
+  });
+
+  it('rejects unexpected forgot-password fields', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/password/forgot')
+      .send({ email: 'user@example.test', accountId: 'someone-else' })
+      .expect(400);
+    expect(passwordResetService.requestPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it('changes password for the authenticated account without returning secrets', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/password/change')
+      .set('Cookie', 'sl_session=valid-session-credential')
+      .send({
+        currentPassword: 'current-password',
+        newPassword: 'new-password',
+      })
+      .expect(204);
+    expect(authService.changeOwnPassword).toHaveBeenCalledWith(
+      'account-id',
+      'current-password',
+      'new-password',
+    );
   });
 });

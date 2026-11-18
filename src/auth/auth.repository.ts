@@ -49,9 +49,14 @@ export class AuthRepository {
     });
     if (!account) return null;
 
+    // 只有仍啟用且允許登入的角色及權限會放進登入資料，停用的設定不會被沿用。
     const validRoles = account.user_role_user_role_user_account_idTouser_account
       .map((assignment) => assignment.role)
-      .filter((role) => role.status === role_status_e.ENABLED);
+      .filter(
+        (role) =>
+          role.status === role_status_e.ENABLED &&
+          ['SYSTEM_ADMIN', 'TEACHER'].includes(role.role_code),
+      );
     const permissionCodes = new Set<string>();
     for (const role of validRoles) {
       for (const rolePermission of role.role_permission) {
@@ -73,6 +78,83 @@ export class AuthRepository {
     };
   }
 
+  async findOwnProfile(userAccountId: string): Promise<{
+    email: string;
+    name: string;
+    phone: string | null;
+  } | null> {
+    return this.prismaService.client.user_account.findFirst({
+      where: { id: userAccountId, status: user_status_e.ACTIVE },
+      select: { email: true, name: true, phone: true },
+    });
+  }
+
+  async updateOwnProfile(
+    userAccountId: string,
+    input: { name?: string; phone?: string | null },
+  ): Promise<{
+    email: string;
+    name: string;
+    phone: string | null;
+  } | null> {
+    if (input.name === undefined && input.phone === undefined) return null;
+
+    return this.prismaService.client.$transaction(async (transaction) => {
+      await transaction.user_account.updateMany({
+        where: { id: userAccountId, status: user_status_e.ACTIVE },
+        data: { ...input, updated_at: new Date() },
+      });
+      return transaction.user_account.findFirst({
+        where: { id: userAccountId, status: user_status_e.ACTIVE },
+        select: { email: true, name: true, phone: true },
+      });
+    });
+  }
+
+  async findPasswordHashForActiveAccount(
+    userAccountId: string,
+  ): Promise<string | null> {
+    const account = await this.prismaService.client.user_account.findFirst({
+      where: {
+        id: userAccountId,
+        status: user_status_e.ACTIVE,
+        email_verified: true,
+      },
+      select: { password_hash: true },
+    });
+    return account?.password_hash ?? null;
+  }
+
+  async changePasswordAndRevokeSessions(input: {
+    userAccountId: string;
+    currentPasswordHash: string;
+    newPasswordHash: string;
+  }): Promise<boolean> {
+    // 密碼更新與舊登入狀態撤銷一起完成，避免只成功一半時舊密碼或舊登入仍有效。
+    return this.prismaService.client.$transaction(async (transaction) => {
+      const updatedAccounts = await transaction.$executeRaw(Prisma.sql`
+        UPDATE app.user_account
+        SET password_hash = ${input.newPasswordHash},
+            updated_at = statement_timestamp()
+        WHERE id = ${input.userAccountId}::uuid
+          AND password_hash = ${input.currentPasswordHash}
+          AND status = 'ACTIVE'::app.user_status_e
+          AND email_verified = TRUE
+      `);
+      if (updatedAccounts !== 1) return false;
+
+      await transaction.$executeRaw(Prisma.sql`
+        UPDATE app.login_session
+        SET status = 'REVOKED'::app.login_session_status_e,
+            revoked_at = statement_timestamp()
+        WHERE user_account_id = ${input.userAccountId}::uuid
+          AND status = 'ACTIVE'::app.login_session_status_e
+          AND revoked_at IS NULL
+      `);
+      return true;
+    });
+  }
+
   async createSession(input: {
     userAccountId: string;
     tokenHash: string;
@@ -91,6 +173,7 @@ export class AuthRepository {
   }
 
   async touchValidSession(tokenHash: string): Promise<TouchedSession | null> {
+    // 每次使用都先檢查帳號、角色、資料期限與登入狀態；失效的登入會在同一次資料操作中撤銷。
     const rows = await this.prismaService.client.$queryRaw<
       Array<{
         id: string;
@@ -200,6 +283,7 @@ export class AuthRepository {
   }
 }
 
+// 資料庫裡的內容仍需重新檢查形狀，避免格式錯誤的資料被當成有效權限。
 function parsePermissionSnapshot(
   value: Prisma.JsonValue,
 ): PermissionSnapshot | null {

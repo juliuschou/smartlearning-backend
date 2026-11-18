@@ -3,6 +3,7 @@ import { validate } from 'class-validator';
 import { isValidPasswordInput, LoginDto } from './login.dto';
 
 describe('LoginDto', () => {
+  // 信箱可整理前後空白，但密碼必須原樣保留，避免不知情地改變使用者輸入。
   it('trims and validates Email while preserving the password exactly', async () => {
     const input = plainToInstance(LoginDto, {
       email: '  User@example.test  ',

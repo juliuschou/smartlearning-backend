@@ -9,6 +9,10 @@ import { AuthService } from './auth.service';
 import { AuthSessionGuard } from './auth-session.guard';
 import { CsrfGuard } from './csrf.guard';
 import { OriginPolicyService } from './origin-policy.service';
+import { PasswordResetRepository } from './password-reset.repository';
+import { PasswordResetService } from './password-reset.service';
+import { ResetMailService } from './reset-mail.service';
+import { EmailOutboxProcessor } from './email-outbox.processor';
 
 @Module({
   imports: [PrismaModule],
@@ -19,8 +23,13 @@ import { OriginPolicyService } from './origin-policy.service';
     AuthSecurityService,
     AuthService,
     AuthSessionGuard,
+    // 所有會改變資料的入口先經過這道檢查，避免端點漏設保護。
     { provide: APP_GUARD, useClass: CsrfGuard },
     OriginPolicyService,
+    PasswordResetRepository,
+    PasswordResetService,
+    ResetMailService,
+    EmailOutboxProcessor,
   ],
   exports: [AuthService, AuthSessionGuard],
 })

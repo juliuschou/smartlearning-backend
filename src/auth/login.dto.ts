@@ -8,6 +8,7 @@ import {
   ValidatorConstraintInterface,
 } from 'class-validator';
 
+// 同時限制使用者看得到的字數與實際傳輸大小，避免多位元字元繞過長度限制。
 export function isValidPasswordInput(value: string): boolean {
   return [...value].length >= 8 && Buffer.byteLength(value, 'utf8') <= 1024;
 }

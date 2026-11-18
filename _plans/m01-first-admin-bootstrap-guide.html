@@ -133,8 +133,8 @@ footer { color: var(--muted); border-top: 1px solid var(--line); padding-top: 1r
   <section>
     <div class="section-head"><h2>與 Checkpoint B 測試手冊銜接</h2></div>
     <div class="panel">
-      <p>本手冊提供測試帳號的自動建立方式；`_plans/m01-checkpoint-b-integration-guide.html` 說明 API 驗收項目與通過條件。現在不需要先手動建立帳號，也不需要照舊手冊貼入互動式 curl 帳密步驟。整合 suite 直接執行真實 HTTP 路由並檢查 PostgreSQL 持久化。</p>
-      <p class="small">帳號資格依 `src/auth/auth.service.ts`：帳號啟用、Email 已驗證、至少一個啟用角色且密碼符合雜湊驗證。fixture 僅建立此次驗收所需條件。正式帳號／第一位系統管理者建立仍須依權威《第一個帳號與角色建立指引》及核准部署契約另行處理。</p>
+      <p>自動 Checkpoint B HTTP／PostgreSQL 整合測試會使用短暫 fixture，帳密不會提供給人工登入。若要在瀏覽器手動驗證 `/login`，請另建專用本機 UI 測試 DB，依 `tools/test-db/README.md` 執行 `npm run db:test:ui-account:create -- &lt;run-id&gt;`；工具會提示輸入 Email、姓名與兩次隱藏密碼，成功後以你輸入的 Email／密碼登入。這個持續測試帳號只具 `TEACHER`，不授予 `SYSTEM_ADMIN`。</p>
+      <p class="small">佈建後該 DB 不再是乾淨基線，不可用於自動整合測試；自動測試請建立另一個全新 run。手動驗收完成後，可用 `npm run db:test:ui-account:revoke -- &lt;run-id&gt;` 精確停用帳號並撤銷 sessions。忘記密碼／重設 API 已新增；須先套用 email outbox migration 並設定 Gmail SMTP、前端重設 URL 與 outbox encryption key，才會排程寄送。正式帳號與第一位系統管理者仍須依核准流程建立。</p>
     </div>
   </section>
 

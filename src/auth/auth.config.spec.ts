@@ -9,6 +9,7 @@ function createConfig(values: Record<string, string | undefined>): AuthConfig {
 }
 
 describe('AuthConfig', () => {
+  // 來源清單只接受完整網址；不明確的設定應採取拒絕而不是放寬。
   it('parses an exact comma-separated Origin allowlist', () => {
     const config = createConfig({
       CORS_ORIGIN: 'https://app.example.test,http://localhost:3000',

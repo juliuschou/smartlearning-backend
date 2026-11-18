@@ -47,6 +47,7 @@ describe('CsrfGuard', () => {
     } as unknown as ExecutionContext;
   }
 
+  // 只有核准的來源，加上同一登入狀態產生且兩處相符的值，才可執行寫入操作。
   it('accepts an exact allowlisted Origin and session-bound matching token pair', () => {
     const sessionCredential = 'session-credential';
     const subject = security.hashSessionCredential(sessionCredential);

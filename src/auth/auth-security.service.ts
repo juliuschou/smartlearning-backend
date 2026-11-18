@@ -36,11 +36,20 @@ export class AuthSecurityService {
     return randomBytes(32).toString('base64url');
   }
 
+  createOneTimeCredential(): string {
+    return randomBytes(32).toString('base64url');
+  }
+
   hashSessionCredential(credential: string): string {
     return createHash('sha256').update(credential, 'utf8').digest('hex');
   }
 
+  hashOneTimeCredential(credential: string): string {
+    return createHash('sha256').update(credential, 'utf8').digest('hex');
+  }
+
   createCsrfToken(subject: string, now = Date.now()): string {
+    // 把產生時間和隨機內容一起加上只有伺服器能辨認的記號，之後可查出有沒有被竄改或過期。
     const issuedAt = Math.floor(now / 1000).toString();
     const nonce = randomBytes(24).toString('base64url');
     const signature = this.signCsrf(subject, issuedAt, nonce);
@@ -68,6 +77,7 @@ export class AuthSecurityService {
       return false;
     }
 
+    // 用固定時間比對簽章，避免比對過程的快慢透露內容是否接近正確。
     const expected = Buffer.from(this.signCsrf(subject, issuedAt, nonce));
     const actual = Buffer.from(signature);
     return (
@@ -85,6 +95,7 @@ export class AuthSecurityService {
     return cookie.length === header.length && timingSafeEqual(cookie, header);
   }
 
+  // 登入用的值不讓網頁程式直接讀取；另一個防偽值則需由網頁讀出並隨請求送回。
   sessionCookieOptions(): SessionCookieOptions {
     return {
       httpOnly: true,

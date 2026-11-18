@@ -36,6 +36,7 @@ export class AuthConfig {
       .map((origin) => origin.trim())
       .filter(Boolean);
 
+    // 來源採精確清單，不接受萬用設定或帶路徑的網址，避免意外放行其他網站。
     const normalized = new Set<string>();
     for (const origin of origins) {
       if (origin === '*') {
@@ -61,6 +62,7 @@ export class AuthConfig {
     return normalized;
   }
 
+  // 設定不足或仍是範例值時直接拒絕服務，不以較弱的預設值繼續運作。
   get cookieSigningSecret(): Buffer {
     const secret = this.config.get<string>('COOKIE_SECRET');
     if (

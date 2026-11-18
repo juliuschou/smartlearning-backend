@@ -32,11 +32,13 @@ export class CsrfGuard implements CanActivate {
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase())) {
       return true;
     }
+    // 先確認請求來自允許的網站，再核對瀏覽器和請求中是否帶著相同防偽值。
     this.originPolicy.assertAllowed(request.get('origin'));
 
     const cookieToken = request.cookies?.[CSRF_COOKIE_NAME];
     const headerValue = request.get(CSRF_HEADER_NAME);
     const sessionCredential = request.cookies?.[this.config.sessionCookieName];
+    // 登入前後使用不同的防偽值，避免登入前拿到的值被拿去操作登入後的帳號。
     const subject = sessionCredential
       ? this.security.hashSessionCredential(sessionCredential)
       : 'preauth';

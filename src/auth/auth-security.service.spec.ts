@@ -9,6 +9,7 @@ describe('AuthSecurityService', () => {
   } as unknown as ConfigService);
   const security = new AuthSecurityService(config);
 
+  // 重要資料只保留不可反推的摘要，避免原始登入憑證落在儲存區。
   it('creates unguessable session credentials and stores only their digest', () => {
     const credential = security.createSessionCredential();
     const anotherCredential = security.createSessionCredential();
@@ -17,6 +18,13 @@ describe('AuthSecurityService', () => {
     expect(credential).toMatch(/^[A-Za-z0-9_-]{40,}$/);
     expect(security.hashSessionCredential(credential)).not.toBe(credential);
     expect(security.hashSessionCredential(credential)).toHaveLength(64);
+  });
+
+  it('creates random one-time credentials and hashes them before storage', () => {
+    const token = security.createOneTimeCredential();
+    expect(token).toMatch(/^[A-Za-z0-9_-]{40,}$/);
+    expect(security.hashOneTimeCredential(token)).not.toBe(token);
+    expect(security.hashOneTimeCredential(token)).toHaveLength(64);
   });
 
   it('signs CSRF tokens for one subject and rejects tampering or expiry', () => {

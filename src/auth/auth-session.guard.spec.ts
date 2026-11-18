@@ -20,6 +20,7 @@ describe('AuthSessionGuard', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  // 沒有登入憑證或憑證失效時都要擋下請求，不能繼續查詢受保護資料。
   it('rejects requests without a session cookie', async () => {
     const { context } = contextFor();
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(

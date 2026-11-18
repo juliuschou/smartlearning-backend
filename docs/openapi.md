@@ -24,6 +24,8 @@
 3. 執行 `npm run openapi:export` 並檢視 `dist/openapi.json` 中變更的路徑與 schema。
 4. 讓前端專案從服務的 `/openapi.json` 或其取得的規格檔更新前端 client；前端工具、輸出位置、測試與版本控制均由前端專案決定。
 
-## 目前限制
+## 目前 API 範圍與限制
 
-目前 `src/` 僅是最小 NestJS 啟動骨架，尚無業務 Controller、DTO 或 API endpoint。因此目前產出的規格只有 API 基本資訊與空的 `paths`；這不代表業務 API 已存在或已完成文件化。新增業務 API 後，必須為每個實際端點補上 Swagger 描述並檢查匯出內容。
+OpenAPI 由 NestJS `src/openapi.ts` 依執行中的 Controller decorators 動態產生，不是手工維護的靜態 endpoint 清單。Auth controller 已提供 CSRF、登入、登出及登入 Session 驗證；帳號本人資料讀取／更新與本人密碼修改亦由該 controller 提供。每次新增或調整實際 endpoint，必須補上 Swagger 描述並執行匯出檢查。
+
+忘記密碼請求與一次性密碼重設 API 已提供，透過持久化加密 Email outbox 排程寄送；只有在套用 `email_outbox` migration、設定 `EMAIL_OUTBOX_ENABLED=true`、Gmail SMTP App Password、`PASSWORD_RESET_URL` 與 `RESET_OUTBOX_ENCRYPTION_KEY` 後才會啟用。公開請求回覆不揭露帳號是否存在，寄送失敗由 outbox 重試並以不含收件人／token／秘密的伺服器紀錄告警。`RESET_OUTBOX_ENCRYPTION_KEY` 應以 `openssl rand -base64 32` 產生並在 pending 郵件排空前保持不變；Gmail SMTP App Password 應由部署 secret 管理機制注入。Email 變更驗證信與老師邀請寄送仍未完成；不可將資料模型中的 `one_time_link` 或 enum 當作相關流程已實作的證據。
