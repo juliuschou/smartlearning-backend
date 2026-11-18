@@ -86,7 +86,7 @@ function loadTarget(runId) {
   return { runRecord, config, databaseUrl: config.DATABASE_URL };
 }
 
-async function assertIntegrationReady(runId) {
+async function assertTestTarget(runId, { requireEmpty = false } = {}) {
   const { runRecord, config, databaseUrl } = loadTarget(runId);
   if (run('docker', ['context', 'show']) !== 'default') {
     fail('Docker context changed; refusing to target an unverified engine.');
@@ -141,19 +141,25 @@ async function assertIntegrationReady(runId) {
         JSON.stringify(successful) !== JSON.stringify(expectedMigrations)) {
       fail('The selected test database migration ledger is not complete and successful.');
     }
-    const tables = await client.query(
-      "SELECT tablename FROM pg_tables WHERE schemaname = 'app' AND tablename <> '_prisma_migrations' ORDER BY tablename",
-    );
-    for (const { tablename } of tables.rows) {
-      const result = await client.query(`SELECT count(*)::text AS count FROM app."${tablename.replaceAll('"', '""')}"`);
-      if (result.rows[0].count !== '0') {
-        fail('The selected test database contains application rows; create a fresh test run.');
+    if (requireEmpty) {
+      const tables = await client.query(
+        "SELECT tablename FROM pg_tables WHERE schemaname = 'app' AND tablename <> '_prisma_migrations' ORDER BY tablename",
+      );
+      for (const { tablename } of tables.rows) {
+        const result = await client.query(`SELECT count(*)::text AS count FROM app."${tablename.replaceAll('"', '""')}"`);
+        if (result.rows[0].count !== '0') {
+          fail('The selected test database contains application rows; create a fresh test run.');
+        }
       }
     }
     return { runId, database: identity.rows[0].db, schema: schemaName, migrationCount: successful.length };
   } finally {
     await client.end();
   }
+}
+
+async function assertIntegrationReady(runId) {
+  return assertTestTarget(runId, { requireEmpty: true });
 }
 
 if (require.main === module) {
@@ -166,4 +172,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { assertIntegrationReady, assertRunRecord, loadTarget };
+module.exports = { assertIntegrationReady, assertTestTarget, assertRunRecord, loadTarget };
