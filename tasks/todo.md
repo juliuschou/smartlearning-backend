@@ -99,3 +99,103 @@
 - Updated M01 D05 and acceptance scenarios to record the approved no-enumeration response policy, internal SMTP retry, and 503 behavior when request persistence is unavailable; corrected the bootstrap guide's stale reset status.
 - Verified offline: `npm run prisma:dev:validate`; `npm test -- --runInBand auth` (14 suites, 68 tests); `npm run typecheck`; targeted Prettier check; `npm run lint:check`; `npm run build`; and `npm run openapi:export` all passed.
 - No database integration, migration execution, Docker, or live Gmail delivery was run. The schema migration is additive and has not been applied.
+
+# 2026-11-19 M01 Reset Token URL Fragment Hardening
+
+## Acceptance criteria
+- [ ] Reset email tokens are placed in URL fragments, never query strings, so the initial HTTP request excludes the bearer token.
+- [ ] Configured reset URL is validated as a clean HTTP(S) page URL with no credentials, query, or fragment.
+- [ ] Unit tests assert fragment placement and fail-closed handling of unsafe base URLs.
+- [ ] Configuration documentation states the token fragment contract.
+- [ ] No database, migration, container, SMTP credential, live email, or deployment operation is performed.
+
+## Risk & rollback
+- Risk: medium-high; bearer-token link contract.
+- Affected: M01 email reset URL producer and frontend parser.
+- Rollback: revert only URL producer/UI parser/docs together. Do not re-enable query tokens as a fallback; users with pre-change query links should request a new link.
+- No schema or OpenAPI payload changes.
+
+## Working notes
+- Existing reset links use `?token=...`, which can enter request logs and URL/referrer paths before client-side cleanup.
+- Backend was clean at start; UI already contains this session's M01 frontend work plus existing checklist edits. Preserve them.
+- UI must read `#token=...`, scrub the current browser history entry, and keep the existing reset API payload unchanged.
+
+## Steps
+- [x] Change backend reset link URL construction to fragment form and validate base URL.
+- [x] Update backend mail/password-reset unit tests and env/config notes.
+- [x] Change frontend parsing to fragment only; scrub query/fragment and reject legacy query links.
+- [x] Update frontend tests and M01 documentation without marking backend integration acceptance passed.
+- [x] Run focused backend/UI tests, typecheck, lint, UI build, and `git diff --check` in both repos.
+
+## Results
+- Backend reset URL builder now rejects non-HTTP(S), credentials, query, and fragment in base configuration, and appends `token` as a URL fragment. UI captures only the fragment on mount, scrubs query/hash from current history, and rejects legacy query-token URLs. Tests include React StrictMode double-effect coverage.
+- Backend unit tests: `npm test -- --runInBand auth/reset-mail.service.spec.ts auth/password-reset.service.spec.ts auth/email-outbox.processor.spec.ts` PASS (3 suites, 16 tests); backend typecheck PASS; lint and Prettier checks PASS; backend `git diff --check` PASS.
+- UI focused auth tests PASS (2 files, 15 tests); typecheck, lint, build, and `git diff --check` PASS.
+- No DB, migration, Docker, SMTP, live email, or deployment was run. Previously issued query-token links require a fresh reset request. M01 backend email/security integration remains unverified.
+
+# 2026-11-19 Fail Fast on Database Startup
+
+## Acceptance criteria
+- [x] Backend startup awaits Prisma adapter initialization and rejects when initialization itself fails.
+- [x] Failure output must be actionable and must not disclose connection strings or credentials.
+- [x] Add deterministic unit coverage for successful adapter initialization, rejected initialization, missing `DATABASE_URL`, and safe disconnect lifecycle.
+- [x] Do not run migrations or mutate Docker/database resources; keep static OpenAPI export independent of a live database.
+
+## Risk & rollback
+- Risk: medium; DB connectivity becomes a required dependency for starting the API.
+- Affected: `src/database/prisma.service.ts` and its unit tests.
+- Rollback: revert the lifecycle hook and focused tests; no DB state changes are involved.
+
+## Steps
+- [x] Add lifecycle connection check to PrismaService and focused unit tests.
+- [x] Run targeted test, typecheck, lint/format check, and build; inspect Nest lifecycle to confirm OpenAPI export does not invoke app initialization hooks.
+- [x] Record results and confirm no Docker/database operations were performed.
+
+## Results
+- `PrismaService.onModuleInit()` awaited `$connect()` and sanitized initialization failures, but later investigation found that Prisma 7.10.1 with `@prisma/adapter-pg` can initialize the lazy pool without proving a query-level PostgreSQL connection. That check alone did not establish database reachability; the follow-up correction is recorded in the 2026-11-20 section below.
+- Added five mock-based lifecycle tests for adapter initialization, rejected initialization/error sanitization/cleanup, missing URL, normal disconnect, and unused client. Static OpenAPI export remains DB-independent because its script creates the Nest app but never calls `app.init()` or `listen()`; checked against the installed Nest lifecycle implementation.
+- Verification PASS: `npm test -- --runInBand database/prisma.service.spec.ts` (1 suite, 5 tests); `npm run typecheck`; `npm run lint:check`; `npx prettier --check src/database/prisma.service.ts src/database/prisma.service.spec.ts`; `npm run build`; `env -u DATABASE_URL npm run openapi:export`; `git diff --check`.
+- No Docker, database, integration test, migration, or other external-resource operation was run.
+
+# 2026-11-20 DB Startup Probe Hangs on Unresponsive Endpoint
+
+## Acceptance criteria
+- [x] Startup probe against an unresponsive PostgreSQL endpoint fails within a bounded time, not hang forever.
+- [x] Runtime reproduction drives the acceptance (no real/dev DB or Docker used).
+- [ ] Fail-fast error remains credential-safe and prevents listening.
+
+## Root cause
+- pg.Pool defaults to waiting forever when an endpoint accepts TCP but never completes the handshake (a stopped container can behave this way). `$connect()` + `SELECT 1` may hang indefinitely; Nest never reaches `app.listen()` and never reports failure, so the process appears "started" but serves nothing.
+
+## Steps
+- [x] Runtime repro (loopback port with no listener, 5436): initially exited only via 60s timeout (exit 124), no error logged — confirmed hang.
+- [x] Add bounded `connectionTimeoutMillis` (5000) via `createPgAdapterFactory` in prisma.service.ts.
+- [x] Add unit test for bounded timeout configuration.
+- [x] Rebuild and rerun repro (exit 1 in seconds; error logged; no success log).
+- [ ] Record final verification and note remaining unverified items.
+
+## Results
+- Focused tests: `.spec.ts` 6/6 PASS; typecheck, lint, prettier, `npm run build`, `git diff --check` PASS.
+- Runtime repro before fix: exit 124 no error; after fix: exit 1 with sanitized error; `successfully started` line absent.
+- No Docker, no real DB, no other processes used during repro; port 5436/3457 were confirmed free and are ephemeral.
+- Fail-fast error credential-safe and listening prevented: confirmed in same repro (sanitized message in log; no success log; no listener needed — process exited during init).
+
+# 2026-11-20 Require a Real Database Probe at Startup (Superseded Root Cause Note)
+
+## Acceptance criteria
+- [x] Startup waits for a real PostgreSQL query, not only Prisma adapter initialization.
+- [x] Probe failure prevents successful startup and reports a credential-safe error.
+- [x] Unit tests cover successful probe, failed probe, and disconnect cleanup.
+- [x] Preserve unrelated worktree changes; no Docker/app/DB/migration operations.
+
+## Steps
+- [x] Add `SELECT 1` probe after `$connect()` in Prisma startup hook.
+- [x] Extend Prisma lifecycle mocks and regression coverage.
+- [x] Run focused unit tests, typecheck, lint/format checks, and build via test subagent.
+- [x] Record verification and explicitly note runtime startup not exercised (initially); runtime hang root cause now covered by the 2026-11-20 "DB Startup Probe Hangs on Unresponsive Endpoint" section above.
+
+## Results
+- `PrismaService.onModuleInit()` now awaits `$connect()` and a constant `SELECT 1` query before Nest completes initialization. Query/connect failures use the existing sanitized diagnostic and best-effort disconnect.
+- Expanded unit coverage verifies the query probe runs, a rejected probe fails startup, and a disconnect failure cannot replace the sanitized startup error.
+- Final verification PASS: `npm test -- --runInBand src/database/prisma.service.spec.ts` (now 6 tests); `npm run typecheck`; `npm run lint:check`; `npx prettier --check src/database/prisma.service.ts src/database/prisma.service.spec.ts`; `npm run build`.
+- Runtime reproduction was later performed with the bounded `connectionTimeoutMillis` fix (see 2026-11-20 hang section); before that fix the probe could hang indefinitely, which is now resolved.
