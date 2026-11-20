@@ -128,19 +128,20 @@ export class ResetMailService {
         message: 'Authentication service is temporarily unavailable.',
       });
     }
-    // 只接受一般網頁連結，設定中不可先放入重設代碼；每次寄信的代碼由程式另外加入。
+    // 只接受乾淨的網頁連結；一次性 bearer token 放在 fragment，避免進入 HTTP request URL、伺服器日誌或 referrer。
     if (
       !['http:', 'https:'].includes(url.protocol) ||
       url.username ||
       url.password ||
-      url.searchParams.has('token')
+      url.search ||
+      url.hash
     ) {
       throw new ServiceUnavailableException({
         code: 'AUTH_SERVICE_UNAVAILABLE',
         message: 'Authentication service is temporarily unavailable.',
       });
     }
-    url.searchParams.set('token', token);
+    url.hash = new URLSearchParams({ token }).toString();
     return url.toString();
   }
 

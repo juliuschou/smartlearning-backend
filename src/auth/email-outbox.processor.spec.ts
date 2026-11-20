@@ -36,7 +36,7 @@ describe('EmailOutboxProcessor', () => {
     repository.isPasswordResetLinkPending.mockResolvedValue(true);
     mail.decryptPayload.mockReturnValue({
       recipient: 'user@example.test',
-      resetUrl: 'https://app.example.test/reset?token=secret-token',
+      resetUrl: 'https://app.example.test/reset#token=secret-token',
     });
     mail.sendPasswordResetEmail.mockResolvedValue(undefined);
     repository.markOutboxSent.mockResolvedValue(undefined);
@@ -50,7 +50,7 @@ describe('EmailOutboxProcessor', () => {
     expect(repository.claimOutboxBatch).toHaveBeenCalledWith(10);
     expect(mail.sendPasswordResetEmail).toHaveBeenCalledWith(
       'user@example.test',
-      'https://app.example.test/reset?token=secret-token',
+      'https://app.example.test/reset#token=secret-token',
     );
     expect(repository.markOutboxSent).toHaveBeenCalledWith({
       id: 'outbox-id',

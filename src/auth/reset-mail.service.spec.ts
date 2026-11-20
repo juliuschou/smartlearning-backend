@@ -30,7 +30,7 @@ describe('ResetMailService', () => {
   it('encrypts and decrypts the recipient and reset URL', () => {
     const payload = {
       recipient: 'user@example.test',
-      resetUrl: 'https://app.example.test/reset?token=opaque',
+      resetUrl: 'https://app.example.test/reset#token=opaque',
     };
     const encrypted = service.encryptPayload(payload);
 
@@ -41,7 +41,7 @@ describe('ResetMailService', () => {
   it('rejects tampering with the encrypted payload', () => {
     const encrypted = service.encryptPayload({
       recipient: 'user@example.test',
-      resetUrl: 'https://app.example.test/reset?token=opaque',
+      resetUrl: 'https://app.example.test/reset#token=opaque',
     });
 
     expect(() =>
@@ -64,13 +64,34 @@ describe('ResetMailService', () => {
     expect(() => service.buildResetUrl('token')).toThrow();
   });
 
+  it('places the reset token in a URL fragment, not the request query', () => {
+    const token = 'a'.repeat(43);
+    const resetUrl = new URL(service.buildResetUrl(token));
+
+    expect(resetUrl.search).toBe('');
+    expect(new URLSearchParams(resetUrl.hash.slice(1)).get('token')).toBe(
+      token,
+    );
+    expect(resetUrl.toString()).toBe(
+      `https://app.example.test/reset#token=${token}`,
+    );
+  });
+
+  it('rejects reset base URLs with a query or fragment', () => {
+    values.PASSWORD_RESET_URL = 'https://app.example.test/reset?next=/account';
+    expect(() => service.buildResetUrl('token')).toThrow();
+
+    values.PASSWORD_RESET_URL = 'https://app.example.test/reset#existing';
+    expect(() => service.buildResetUrl('token')).toThrow();
+  });
+
   it('uses Gmail SMTP with TLS and never returns transport credentials', async () => {
     const sendMail = jest.fn().mockResolvedValue({ messageId: 'message-id' });
     (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
 
     await service.sendPasswordResetEmail(
       'user@example.test',
-      'https://app.example.test/reset?token=opaque',
+      'https://app.example.test/reset#token=opaque',
     );
 
     expect(nodemailer.createTransport).toHaveBeenCalledWith(
@@ -89,7 +110,7 @@ describe('ResetMailService', () => {
       expect.objectContaining({
         to: 'user@example.test',
         text: expect.stringContaining(
-          'https://app.example.test/reset?token=opaque',
+          'https://app.example.test/reset#token=opaque',
         ),
       }),
     );

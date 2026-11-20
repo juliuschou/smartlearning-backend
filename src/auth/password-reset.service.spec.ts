@@ -84,7 +84,7 @@ describe('PasswordResetService', () => {
     expect(JSON.stringify(request)).not.toContain('z'.repeat(43));
     expect(mail.decryptPayload(request.mailPayload)).toEqual({
       recipient: 'user@example.test',
-      resetUrl: `https://app.example.test/reset-password?token=${'z'.repeat(43)}`,
+      resetUrl: `https://app.example.test/reset-password#token=${'z'.repeat(43)}`,
     });
   });
 
