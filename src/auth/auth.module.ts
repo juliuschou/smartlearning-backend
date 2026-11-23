@@ -31,6 +31,13 @@ import { EmailOutboxProcessor } from './email-outbox.processor';
     ResetMailService,
     EmailOutboxProcessor,
   ],
-  exports: [AuthService, AuthSessionGuard],
+  exports: [
+    AuthConfig,
+    AuthService,
+    AuthSessionGuard,
+    AuthRepository,
+    AuthSecurityService,
+    ResetMailService,
+  ],
 })
 export class AuthModule {}

@@ -62,7 +62,10 @@ export class EmailOutboxProcessor implements OnModuleInit, OnModuleDestroy {
         });
         return;
       }
-      const payload = this.mail.decryptPayload(job);
+      const payload = this.mail.decryptPayload(job, 'PASSWORD_RESET');
+      if (!('resetUrl' in payload)) {
+        throw new Error('Invalid encrypted mail payload.');
+      }
       await this.mail.sendPasswordResetEmail(
         payload.recipient,
         payload.resetUrl,

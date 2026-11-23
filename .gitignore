@@ -32,3 +32,4 @@ coverage
 ops/staging-replica/tls/
 /artifacts/ci-equivalent-20261110T123101Z-243984/
 tasks/todo.md
+tasks/note-sltest-residue.html

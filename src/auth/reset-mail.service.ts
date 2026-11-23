@@ -8,6 +8,18 @@ export interface PasswordResetMailPayload {
   resetUrl: string;
 }
 
+export interface TeacherInvitationMailPayload {
+  recipient: string;
+  invitationUrl: string;
+}
+
+export type EncryptedMailKind = 'PASSWORD_RESET' | 'TEACHER_INVITATION';
+
+const KIND_KEY: Record<EncryptedMailKind, string> = {
+  PASSWORD_RESET: 'resetUrl',
+  TEACHER_INVITATION: 'invitationUrl',
+};
+
 export interface EncryptedMailPayload {
   encryptedPayload: string;
   encryptionNonce: string;
@@ -33,8 +45,10 @@ export class ResetMailService {
     this.resetUrl('validation-token');
   }
 
-  encryptPayload(payload: PasswordResetMailPayload): EncryptedMailPayload {
-    // 信件內容會暫存在資料庫等待寄送，因此先加密，避免收件地址與重設連結被直接讀出。
+  encryptPayload(
+    payload: PasswordResetMailPayload | TeacherInvitationMailPayload,
+  ): EncryptedMailPayload {
+    // 信件內容會暫存在資料庫等待寄送，因此先加密，避免收件地址與一次性連結被直接讀出。
     const nonce = randomBytes(12);
     const cipher = createCipheriv('aes-256-gcm', this.encryptionKey(), nonce);
     const encrypted = Buffer.concat([
@@ -48,7 +62,10 @@ export class ResetMailService {
     };
   }
 
-  decryptPayload(payload: EncryptedMailPayload): PasswordResetMailPayload {
+  decryptPayload(
+    payload: EncryptedMailPayload,
+    kind: EncryptedMailKind = 'PASSWORD_RESET',
+  ): PasswordResetMailPayload | TeacherInvitationMailPayload {
     const decipher = createDecipheriv(
       'aes-256-gcm',
       this.encryptionKey(),
@@ -60,15 +77,16 @@ export class ResetMailService {
       decipher.final(),
     ]).toString('utf8');
     const value: unknown = JSON.parse(plaintext);
+    const linkKey = KIND_KEY[kind];
     if (
       !value ||
       typeof value !== 'object' ||
-      typeof (value as PasswordResetMailPayload).recipient !== 'string' ||
-      typeof (value as PasswordResetMailPayload).resetUrl !== 'string'
+      typeof (value as Record<string, unknown>).recipient !== 'string' ||
+      typeof (value as Record<string, unknown>)[linkKey] !== 'string'
     ) {
       throw new Error('Invalid encrypted mail payload.');
     }
-    return value as PasswordResetMailPayload;
+    return value as PasswordResetMailPayload | TeacherInvitationMailPayload;
   }
 
   buildResetUrl(token: string): string {
