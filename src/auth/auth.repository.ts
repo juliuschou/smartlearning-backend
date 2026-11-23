@@ -281,6 +281,22 @@ export class AuthRepository {
         )
     `);
   }
+
+  async revokeSessionsForRoleInTransaction(
+    transaction: Prisma.TransactionClient,
+    roleId: string,
+  ): Promise<void> {
+    await transaction.$executeRaw(Prisma.sql`
+      UPDATE app.login_session
+      SET status = 'REVOKED'::app.login_session_status_e,
+          revoked_at = statement_timestamp()
+      WHERE status = 'ACTIVE'::app.login_session_status_e
+        AND revoked_at IS NULL
+        AND permission_snapshot @> jsonb_build_object(
+          'roleIds', jsonb_build_array(${roleId}::text)
+        )
+    `);
+  }
 }
 
 // 資料庫裡的內容仍需重新檢查形狀，避免格式錯誤的資料被當成有效權限。

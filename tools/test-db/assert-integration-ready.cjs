@@ -143,7 +143,9 @@ async function assertTestTarget(runId, { requireEmpty = false } = {}) {
     }
     if (requireEmpty) {
       const tables = await client.query(
-        "SELECT tablename FROM pg_tables WHERE schemaname = 'app' AND tablename <> '_prisma_migrations' ORDER BY tablename",
+        // Exclude migration metadata and the migration-seeded fixed role/permission
+        // catalog; a freshly migrated run legitimately contains those rows.
+        "SELECT tablename FROM pg_tables WHERE schemaname = 'app' AND tablename <> '_prisma_migrations' AND tablename NOT IN ('role', 'permission', 'role_permission') ORDER BY tablename",
       );
       for (const { tablename } of tables.rows) {
         const result = await client.query(`SELECT count(*)::text AS count FROM app."${tablename.replaceAll('"', '""')}"`);

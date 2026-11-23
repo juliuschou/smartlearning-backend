@@ -318,11 +318,15 @@ async function validateDatabase(config) {
       fail('Prisma migration ledger is incomplete, failed, or does not match repository migrations.');
     }
     let totalRows = 0n;
+    // Migrations owned by M02 seed the fixed role/permission catalog; these tables
+    // legitimately hold rows on a fresh baseline. Everything else must be empty.
+    const seededCatalogTables = new Set(['role', 'permission', 'role_permission']);
     for (const tableName of expectedNames) {
       const quoted = `"${tableName.replaceAll('"', '""')}"`;
       const result = await client.query(`SELECT count(*)::text AS row_count FROM "app".${quoted}`);
       const rows = BigInt(result.rows[0].row_count);
       totalRows += rows;
+      if (seededCatalogTables.has(tableName)) continue;
       if (rows !== 0n) fail(`Application table ${tableName} contains ${rows} rows; clean baseline check failed.`);
     }
     return {

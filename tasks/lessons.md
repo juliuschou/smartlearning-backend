@@ -41,3 +41,10 @@
 - **Detection signal:** 指令已進入 Node 程序，但終端只顯示啟動命令與游標，沒有 Email／輸入提示。
 - **Prevention rule:** 普通文字輸入直接使用 `rl.question(提示字串, callback)`；隱藏輸入則在切換 raw mode 後輸出明確提示。每個互動步驟都要有可見提示，且非 TTY 時安全拒絕。
 - **Tripwire:** 對互動式 CLI 檢查每個 `question` 都帶非空提示；人工驗收時確認第一個提示在輸入前可見，不能只以非互動測試通過代表 UX 已驗證。
+
+## 更新 task checklist 前必須保留既有歷史
+
+- **Failure mode:** 以整檔 Write 建立新任務區塊，覆寫了累積中的 `tasks/todo.md` 歷史紀錄。
+- **Detection signal:** `git diff --stat` 顯示 todo 檔大量刪除，遠超本次新增任務區塊。
+- **Prevention rule:** 更新任務追蹤前先讀取完整檔案；以精確 Edit 在尾端附加區塊，不得用 Write 替換累積檔案。若發現覆寫，保留證據並取得使用者同意後才從基準版本恢復。
+- **Tripwire:** 修改前後比對 `git diff --numstat -- tasks/todo.md`；若刪除行數非預期，停止交付並先確認恢復方案。

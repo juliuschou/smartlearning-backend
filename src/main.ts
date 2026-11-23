@@ -19,7 +19,7 @@ async function bootstrap(): Promise<void> {
       return callback(null, allowedOrigins.has(origin) ? origin : false);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'X-CSRF-Token'],
   });
   app.useGlobalPipes(

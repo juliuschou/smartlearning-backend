@@ -3,7 +3,7 @@ import cookieParser from 'cookie-parser';
 import { randomBytes, randomUUID } from 'node:crypto';
 import * as argon2 from 'argon2';
 import request from 'supertest';
-import { role_status_e, user_status_e } from '../generated/prisma-app/client';
+import { user_status_e } from '../generated/prisma-app/client';
 import { AppModule } from '../src/app.module';
 import { AuthConfig } from '../src/auth/auth.config';
 import { AuthSecurityService } from '../src/auth/auth-security.service';
@@ -233,14 +233,10 @@ async function createFixture(
   const passwordHash = await argon2.hash(password);
 
   return prisma.$transaction(async (tx) => {
-    const role = await tx.role.create({
-      data: {
-        role_code: 'TEACHER',
-        name: '老師',
-        description: 'Checkpoint B integration fixture role',
-        is_system_reserved: true,
-        status: role_status_e.ENABLED,
-      },
+    // The TEACHER role is seeded by migration 20261122000000 and is
+    // migration-owned: look it up instead of creating it, and never delete it.
+    const role = await tx.role.findUniqueOrThrow({
+      where: { role_code: 'TEACHER' },
       select: { id: true },
     });
 
@@ -312,9 +308,6 @@ async function removeFixture(
     });
     await tx.user_role.deleteMany({ where: { user_account_id: { in: ids } } });
     await tx.user_account.deleteMany({ where: { id: { in: ids } } });
-    await tx.role.deleteMany({
-      where: { id: fixture.roleId, role_code: 'TEACHER' },
-    });
   });
 }
 
